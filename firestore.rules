@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "janrelbugtay03@gmail.com" || 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidAssignment(data) {
+      return data.keys().hasAll(['title', 'description', 'type', 'content', 'createdBy', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 7 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.type is string && data.type.matches('^(reading|listening|writing)$') &&
+             data.content is string && data.content.size() <= 10000 &&
+             data.createdBy is string && data.createdBy == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidSubmission(data) {
+      return data.keys().hasAll(['assignmentId', 'userId', 'answers', 'createdAt']) &&
+             data.assignmentId is string && isValidId(data.assignmentId) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.answers is string && data.answers.size() <= 100000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['name', 'createdBy', 'createdAt']) &&
+             data.keys().size() == 3 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.createdBy is string && data.createdBy == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['classId', 'name', 'avatarSeed', 'points', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             data.classId is string && isValidId(data.classId) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.avatarSeed is string && data.avatarSeed.size() <= 100 &&
+             data.points is number && data.points >= 0 &&
+             data.createdAt is timestamp;
+    }
+
+    match /assignments/{assignmentId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isAdmin() && isValidId(assignmentId) &&
+                       isValidAssignment(incoming()) &&
+                       incoming().createdAt == request.time &&
+                       incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isAdmin() && isValidId(assignmentId) &&
+                       isValidAssignment(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().createdBy == existing().createdBy &&
+                       incoming().updatedAt == request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'type', 'content', 'updatedAt']);
+      allow delete: if isSignedIn() && isAdmin() && isValidId(assignmentId);
+    }
+
+    match /submissions/{submissionId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(submissionId) &&
+                       isValidSubmission(incoming()) &&
+                       incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isAdmin() && isValidId(classId) && isValidClass(incoming());
+      allow update: if isSignedIn() && isAdmin() && isValidId(classId);
+      allow delete: if isSignedIn() && isAdmin() && isValidId(classId);
+    }
+    
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isAdmin() && isValidId(studentId) && isValidStudent(incoming());
+      allow update: if isSignedIn() && isAdmin() && isValidId(studentId);
+      allow delete: if isSignedIn() && isAdmin() && isValidId(studentId);
+    }
+
+    match /admins/{userId} {
+      allow read: if isSignedIn() && isAdmin();
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && userId == request.auth.uid;
+    }
+  }
+}

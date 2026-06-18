@@ -1,0 +1,6 @@
+{
+  "name": "IELTS Hub",
+  "description": "A platform for English learners to complete the teacher's IELTS reading, writing, and listening assignments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
