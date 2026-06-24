@@ -5,7 +5,7 @@ import { Assignment, Submission, OperationType } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { handleFirestoreError } from '../lib/errorHandler';
-import { FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight } from 'lucide-react';
+import { FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function Dashboard() {
@@ -23,6 +23,9 @@ export function Dashboard() {
   const [filterType, setFilterType] = useState('all');
   const [filterSort, setFilterSort] = useState('desc');
   const [expandedWritingIds, setExpandedWritingIds] = useState<Record<string, boolean>>({});
+  const [testToDelete, setTestToDelete] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Auto-clear January writing test content per user request
@@ -136,6 +139,29 @@ export function Dashboard() {
     if (scored.length === 0) return 0;
     const sum = scored.reduce((acc, curr) => acc + (curr.bandScore || 0), 0);
     return Math.round((sum / scored.length) * 2) / 2; // round to nearest 0.5
+  };
+
+  const handleDeleteTest = async (submissionId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // In iframe, window.confirm might be blocked. Using a custom approach or direct delete.
+    setDeleteError(null);
+    setTestToDelete(submissionId);
+  };
+
+  const confirmDeleteTest = async () => {
+    if (!testToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteDoc(doc(db, 'submissions', testToDelete));
+      setTestToDelete(null);
+    } catch (err: any) {
+      console.error("Error deleting test:", err);
+      setDeleteError(err.message || "Failed to delete test. It may be due to permission settings.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const readingSubs = getSubmissionsByType('reading');
@@ -259,12 +285,13 @@ export function Dashboard() {
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Type</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Date</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Score</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {submissions.length === 0 ? (
                   <tr>
-                     <td colSpan={4} className="px-6 py-12 text-center text-slate-500">No recent activity yet.</td>
+                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No recent activity yet.</td>
                   </tr>
                 ) : submissions.slice(0, 5).map((sub) => {
                   const assignment = assignments.find(a => a.id === sub.assignmentId);
@@ -284,7 +311,12 @@ export function Dashboard() {
                         {sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : ''}
                       </td>
                       <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right">
-                        {sub.bandScore ? sub.bandScore.toFixed(1) : 'Pending'}
+                        {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   )
@@ -394,12 +426,13 @@ export function Dashboard() {
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Time Spent</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden md:table-cell">Feedback</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Band Score</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {submissions.length === 0 ? (
                   <tr>
-                     <td colSpan={6} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
+                     <td colSpan={7} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
                         <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                         <p className="text-sm font-medium">No results found.</p>
                      </td>
@@ -411,7 +444,7 @@ export function Dashboard() {
                     if (filtered.length === 0) {
                         return (
                           <tr>
-                             <td colSpan={6} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
+                             <td colSpan={7} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
                                 <p className="text-sm font-medium">No results match your filters.</p>
                              </td>
                           </tr>
@@ -449,6 +482,11 @@ export function Dashboard() {
                       <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                         {sub.bandScore ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   )
                 })})()}
@@ -479,6 +517,7 @@ export function Dashboard() {
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Feedback</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Estimated Band</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -516,12 +555,17 @@ export function Dashboard() {
                                )}
                             </td>
                             <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
-                              {sub.bandScore ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                              {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                            </td>
+                            <td className="px-6 py-5 text-right whitespace-nowrap">
+                              <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </td>
                           </tr>
                           {expandedWritingIds[sub.id as string] && (
                             <tr>
-                               <td colSpan={4} className="px-6 py-6 border-b border-t border-slate-100 bg-slate-50/50">
+                               <td colSpan={5} className="px-6 py-6 border-b border-t border-slate-100 bg-slate-50/50">
                                   <div className="flex flex-col gap-4 max-w-4xl mx-auto w-full">
                                      <div className="flex justify-between items-center">
                                        <h4 className="font-bold text-slate-800 text-lg">Response Preview</h4>
@@ -610,6 +654,7 @@ export function Dashboard() {
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Audio/Feedback</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Estimated Band</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -618,7 +663,7 @@ export function Dashboard() {
                     if (filtered.length === 0) {
                         return (
                           <tr>
-                             <td colSpan={4} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
+                             <td colSpan={5} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
                                 <Mic className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                                 <p className="text-sm font-medium">No speaking submissions yet.</p>
                              </td>
@@ -654,6 +699,11 @@ export function Dashboard() {
                           <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                             {sub.bandScore ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                           </td>
+                          <td className="px-6 py-5 text-right whitespace-nowrap">
+                            <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       )
                     });
@@ -662,6 +712,38 @@ export function Dashboard() {
             </table>
           </div>
         </section>
+      )}
+
+      {testToDelete && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-xl border border-slate-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Test Result</h3>
+            <p className="text-slate-600 mb-6">Are you sure you want to delete this test result? This action cannot be undone and will affect your progress statistics.</p>
+            
+            {deleteError && (
+              <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100">
+                {deleteError}
+              </div>
+            )}
+            
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setTestToDelete(null)} 
+                disabled={isDeleting}
+                className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors border border-slate-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteTest} 
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-600 text-white font-bold hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Test'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

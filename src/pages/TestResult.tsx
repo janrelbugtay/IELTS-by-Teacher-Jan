@@ -8,6 +8,9 @@ import { format } from 'date-fns';
 import { FileText, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { renderMarkdown } from '../lib/markdown';
 import { ANSWER_KEY } from './ComputerReadingTest';
+import { LISTENING_ANSWER_KEY } from './ComputerListeningTest';
+import { ComputerReadingTest } from './ComputerReadingTest';
+import { ComputerListeningTest } from './ComputerListeningTest';
 
 export function TestResult() {
   const { id } = useParams<{ id: string }>();
@@ -57,7 +60,21 @@ export function TestResult() {
   }
 
   const title = submission.assignmentTitle || assignment?.title || 'Test Submission';
-  const type = submission.assignmentType || assignment?.type || 'unknown';
+  const rawType = submission.assignmentType || assignment?.type || 'unknown';
+  let type = rawType.toLowerCase();
+  if (type === 'unknown' && submission.assignmentTitle) {
+      if (submission.assignmentTitle.toLowerCase().includes('reading')) type = 'reading';
+      if (submission.assignmentTitle.toLowerCase().includes('listening')) type = 'listening';
+  }
+
+  if (type === 'reading') {
+      return <ComputerReadingTest submissionId={id} />;
+  }
+
+  if (type === 'listening') {
+      return <ComputerListeningTest submissionId={id} />;
+  }
+
   
   let parsedAnswers: Record<string, string> = {};
   if (typeof submission.answers === 'string') {
@@ -73,10 +90,11 @@ export function TestResult() {
   let bandScoreCalc = 0;
   let percentageCalc = 0;
 
-  if (type === 'reading') {
+  if (type === 'reading' || type === 'listening') {
+      const activeAnswerKey = type === 'reading' ? ANSWER_KEY : LISTENING_ANSWER_KEY;
       readingScoreCalc = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => {
           const userAns = (parsedAnswers[qNum] || '').toString().trim().toUpperCase();
-          const correctAns = ANSWER_KEY[qNum];
+          const correctAns = activeAnswerKey[qNum];
           if (!correctAns) return false;
           if (userAns === correctAns) return true;
           if (userAns.startsWith(correctAns + " ") || userAns.startsWith(correctAns + ".")) return true;
@@ -84,21 +102,39 @@ export function TestResult() {
       }).length;
       
       let bandScore = 0;
-      if (readingScoreCalc >= 39) bandScore = 9.0;
-      else if (readingScoreCalc >= 37) bandScore = 8.5;
-      else if (readingScoreCalc >= 35) bandScore = 8.0;
-      else if (readingScoreCalc >= 33) bandScore = 7.5;
-      else if (readingScoreCalc >= 30) bandScore = 7.0;
-      else if (readingScoreCalc >= 27) bandScore = 6.5;
-      else if (readingScoreCalc >= 23) bandScore = 6.0;
-      else if (readingScoreCalc >= 19) bandScore = 5.5;
-      else if (readingScoreCalc >= 15) bandScore = 5.0;
-      else if (readingScoreCalc >= 13) bandScore = 4.5;
-      else if (readingScoreCalc >= 10) bandScore = 4.0;
-      else if (readingScoreCalc >= 8) bandScore = 3.5;
-      else if (readingScoreCalc >= 6) bandScore = 3.0;
-      else if (readingScoreCalc >= 4) bandScore = 2.5;
-      else if (readingScoreCalc >= 2) bandScore = 2.0;
+      if (type === 'reading') {
+          if (readingScoreCalc >= 39) bandScore = 9.0;
+          else if (readingScoreCalc >= 37) bandScore = 8.5;
+          else if (readingScoreCalc >= 35) bandScore = 8.0;
+          else if (readingScoreCalc >= 33) bandScore = 7.5;
+          else if (readingScoreCalc >= 30) bandScore = 7.0;
+          else if (readingScoreCalc >= 27) bandScore = 6.5;
+          else if (readingScoreCalc >= 23) bandScore = 6.0;
+          else if (readingScoreCalc >= 19) bandScore = 5.5;
+          else if (readingScoreCalc >= 15) bandScore = 5.0;
+          else if (readingScoreCalc >= 13) bandScore = 4.5;
+          else if (readingScoreCalc >= 10) bandScore = 4.0;
+          else if (readingScoreCalc >= 8) bandScore = 3.5;
+          else if (readingScoreCalc >= 6) bandScore = 3.0;
+          else if (readingScoreCalc >= 4) bandScore = 2.5;
+          else if (readingScoreCalc >= 2) bandScore = 2.0;
+      } else {
+          if (readingScoreCalc >= 39) bandScore = 9.0;
+          else if (readingScoreCalc >= 37) bandScore = 8.5;
+          else if (readingScoreCalc >= 35) bandScore = 8.0;
+          else if (readingScoreCalc >= 32) bandScore = 7.5;
+          else if (readingScoreCalc >= 30) bandScore = 7.0;
+          else if (readingScoreCalc >= 26) bandScore = 6.5;
+          else if (readingScoreCalc >= 23) bandScore = 6.0;
+          else if (readingScoreCalc >= 18) bandScore = 5.5;
+          else if (readingScoreCalc >= 16) bandScore = 5.0;
+          else if (readingScoreCalc >= 13) bandScore = 4.5;
+          else if (readingScoreCalc >= 11) bandScore = 4.0;
+          else if (readingScoreCalc >= 8) bandScore = 3.5;
+          else if (readingScoreCalc >= 6) bandScore = 3.0;
+          else if (readingScoreCalc >= 4) bandScore = 2.5;
+          else if (readingScoreCalc >= 2) bandScore = 2.0;
+      }
 
       bandScoreCalc = bandScore;
       percentageCalc = (readingScoreCalc / 40) * 100;
@@ -123,7 +159,7 @@ export function TestResult() {
              </div>
              <div className="text-right">
                  <div className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">Band Score</div>
-                 <div className="text-4xl font-bold text-[#1E4DB7]">{finalBandScore ? finalBandScore.toFixed(1) : 'Pending'}</div>
+                 <div className="text-4xl font-bold text-[#1E4DB7]">{finalBandScore !== undefined && finalBandScore !== null ? finalBandScore.toFixed(1) : 'Pending'}</div>
              </div>
          </div>
          
@@ -162,7 +198,7 @@ export function TestResult() {
       )}
 
       {/* Raw answers breakdown */}
-      {Object.keys(parsedAnswers).length > 0 && (
+      {(Object.keys(parsedAnswers).length > 0 || type === 'reading' || type === 'listening') && (
           <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Your Answers</h2>
               
@@ -192,11 +228,12 @@ export function TestResult() {
                           </div>
                       )}
                   </div>
-              ) : type === 'reading' ? (
+              ) : (type === 'reading' || type === 'listening') ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 flex-wrap gap-4">
                       {Array.from({ length: 40 }, (_, i) => i + 1).map((qNum) => {
+                          const activeAnswerKey = type === 'reading' ? ANSWER_KEY : LISTENING_ANSWER_KEY;
                           const userAns = (parsedAnswers[qNum] || '').toString().trim().toUpperCase();
-                          const correctAns = ANSWER_KEY[qNum];
+                          const correctAns = activeAnswerKey[qNum];
                           let isCorrect = false;
                           if (correctAns && (userAns === correctAns || userAns.startsWith(correctAns + " ") || userAns.startsWith(correctAns + "."))) {
                               isCorrect = true;

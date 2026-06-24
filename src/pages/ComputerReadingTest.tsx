@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
 
@@ -258,7 +258,7 @@ const getQuestionTextForReview = (qId: number) => {
   return `Question ${qId}`;
 };
 
-export function ComputerReadingTest() {
+export function ComputerReadingTest({ submissionId }: { submissionId?: string }) {
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -288,6 +288,34 @@ export function ComputerReadingTest() {
 
   // --- CUSTOM DIALOG CONFIRMATION STATE ---
   const [modalConfig, setModalConfig] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadSubmission() {
+      if (submissionId) {
+        try {
+          const docRef = doc(db, 'submissions', submissionId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            let parsedAnswers: Record<number, string> = {};
+            if (typeof data.answers === 'string') {
+              try { parsedAnswers = JSON.parse(data.answers); } catch (e) {}
+            } else {
+              parsedAnswers = data.answers || {};
+            }
+            setAnswers(parsedAnswers);
+            setHasStarted(true);
+            setIsSubmitted(true);
+            setReviewMode(false);
+            setTimeLeft(0);
+          }
+        } catch (error) {
+          console.error("Error loading submission:", error);
+        }
+      }
+    }
+    loadSubmission();
+  }, [submissionId]);
 
   const checkAnswer = (qNum: number) => {
     const userAns = (answers[qNum] || '').toString().trim().toUpperCase();
@@ -869,6 +897,10 @@ export function ComputerReadingTest() {
               <CheckCircle2 size={24} />
               <span className="text-[1.125em] font-bold">Test Submitted Successfully</span>
             </div>
+
+            <button onClick={() => navigate('/dashboard')} className={`mb-6 flex items-center text-[0.875em] font-bold transition-colors ${theme.text} hover:opacity-70`}>
+               <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
+            </button>
 
             <h1 className={`text-[2.25em] font-bold text-center mb-10 font-serif ${theme.heading}`}>IELTS Reading Results</h1>
             

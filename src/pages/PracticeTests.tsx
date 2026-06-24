@@ -11,7 +11,7 @@ const generateMockTests = () => {
   const skills = [
     { name: 'Reading', duration: '60 mins', image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80' },
     { name: 'Listening', duration: '60 mins', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Speaking', duration: '15 mins', image: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=600&q=80' },
+    { name: 'Writing', duration: '60 mins', image: 'https://images.unsplash.com/photo-1455390582262-044cdead27d8?auto=format&fit=crop&w=600&q=80' },
   ];
 
   let idCounter = 1;
@@ -136,7 +136,7 @@ export function PracticeTests() {
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
-        {['Listening', 'Reading', 'Speaking'].map(skill => (
+        {['Listening', 'Reading', 'Writing'].map(skill => (
           <button 
             key={skill}
             onClick={() => setActiveSkill(skill)}
@@ -202,7 +202,7 @@ export function PracticeTests() {
               
               <div className="mt-auto">
                 <Link 
-                  to={test.skill === 'Writing' ? `/test/writing/${test.id}` : (test.title === 'January Reading Practice' ? `/test/reading/${test.id}` : `/assignment/${test.id}`)}
+                  to={test.skill === 'Writing' ? `/test/writing/${test.id}` : (test.title === 'January Reading Practice' ? `/test/reading/${test.id}` : (test.title === 'January Listening Practice' ? `/test/listening/${test.id}` : `/assignment/${test.id}`))}
                   className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
                 >
                   Start Test <ArrowRight className="w-4 h-4" />

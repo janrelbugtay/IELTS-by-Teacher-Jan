@@ -14,6 +14,7 @@ import { TestResult } from './pages/TestResult';
 import { EraAIIeltsApp } from './pages/EraAIIeltsApp';
 import { ComputerWritingTest } from './pages/ComputerWritingTest';
 import { ComputerReadingTest } from './pages/ComputerReadingTest';
+import { ComputerListeningTest } from './pages/ComputerListeningTest';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, loading, isAdmin } = useAuth();
@@ -45,6 +46,7 @@ function AppContent() {
       <Routes>
         <Route path="/test/writing/:id" element={<ProtectedRoute><ComputerWritingTest /></ProtectedRoute>} />
         <Route path="/test/reading/:id" element={<ProtectedRoute><ComputerReadingTest /></ProtectedRoute>} />
+        <Route path="/test/listening/:id" element={<ProtectedRoute><ComputerListeningTest /></ProtectedRoute>} />
         
         <Route path="*" element={
           <Layout>
