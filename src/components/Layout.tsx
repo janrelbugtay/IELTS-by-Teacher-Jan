@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award } from 'lucide-react';
+import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award , Facebook, Instagram, Youtube} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EraLogo } from './EraLogo';
+
+
+const TiktokIcon = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 448 512" 
+    className={className}
+    fill="currentColor"
+  >
+    <path d="M448 209.9a210.1 210.1 0 0 1 -122.8-39.3V349.4A162.6 162.6 0 1 1 185 188.3V278.2a74.6 74.6 0 1 0 52.2 71.2V0l88 0a121.2 121.2 0 0 0 1.9 22.2h0A122.2 122.2 0 0 0 381 102.4a121.4 121.4 0 0 0 67 20.1z"/>
+  </svg>
+);
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, signOut } = useAuth();
@@ -224,12 +236,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </p>
               <div className="flex gap-4">
                 {/* Social icons placeholders */}
-                {['facebook', 'twitter', 'instagram', 'youtube'].map((social) => (
-                  <a key={social} href="#" className="w-10 h-10 rounded-full bg-slate-50 border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#2563EB] hover:border-[#2563EB] transition-colors">
-                    <span className="sr-only">{social}</span>
-                    <div className="w-4 h-4 bg-current rounded-sm"></div>
-                  </a>
-                ))}
+                <a href="https://www.facebook.com/eraenglishphuhoa" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#1877F2] hover:border-[#1877F2] hover:scale-110 shadow-sm hover:shadow-md hover:shadow-[#1877F2]/20 transition-all duration-300">
+                  <span className="sr-only">Facebook</span>
+                  <Facebook className="w-5 h-5" />
+                </a>
+                <a href="https://www.tiktok.com/@eraenglishtdm" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-black hover:border-black hover:scale-110 shadow-sm hover:shadow-md hover:shadow-black/20 transition-all duration-300">
+                  <span className="sr-only">TikTok</span>
+                  <TiktokIcon className="w-5 h-5" />
+                </a>
+                <a href="#" className="w-11 h-11 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] hover:border-transparent hover:scale-110 shadow-sm hover:shadow-md hover:shadow-[#dc2743]/20 transition-all duration-300">
+                  <span className="sr-only">Instagram</span>
+                  <Instagram className="w-5 h-5" />
+                </a>
+                <a href="#" className="w-11 h-11 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#FF0000] hover:border-[#FF0000] hover:scale-110 shadow-sm hover:shadow-md hover:shadow-[#FF0000]/20 transition-all duration-300">
+                  <span className="sr-only">YouTube</span>
+                  <Youtube className="w-5 h-5" />
+                </a>
               </div>
             </div>
             

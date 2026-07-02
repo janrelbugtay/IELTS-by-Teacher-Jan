@@ -6,13 +6,13 @@ import { db } from '../lib/firebase';
 import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 
 const courses = [
-  { id: 'Pre-Starter', name: 'Pre-Starters', age: 'Ages 4–6', icon: '⭐', color: 'bg-blue-500 text-white' },
-  { id: 'Starters', name: 'Starters', age: 'Ages 6–8', icon: '⭐', color: 'bg-yellow-400 text-white' },
-  { id: 'Movers', name: 'Movers', age: 'Ages 8–10', icon: '🚀', color: 'bg-emerald-400 text-white' },
-  { id: 'Flyers', name: 'Flyers', age: 'Ages 10–12', icon: '✈️', color: 'bg-purple-400 text-white' },
-  { id: 'KET', name: 'KET', age: 'Ages 12+', icon: '🏅', color: 'bg-orange-500 text-white' },
-  { id: 'PET', name: 'PET', age: 'Ages 13+', icon: '📖', color: 'bg-teal-400 text-white' },
-  { id: 'IELTS', name: 'IELTS', age: 'Ages 16+', icon: '🏆', color: 'bg-rose-400 text-white' },
+  { id: 'Pre-Starter', name: 'Pre-Starters', age: 'Ages 4–6', image: 'https://drive.google.com/thumbnail?id=1h_In0NTl7lPBaZwLl1vKFz-O4dAs8m0E&sz=w1000', color: 'bg-blue-500 text-white' },
+  { id: 'Starters', name: 'Starters', age: 'Ages 6–8', image: 'https://drive.google.com/thumbnail?id=1PZEu_s4S_5KwHtnHeY4RRwuw4BKqIYY2&sz=w1000', color: 'bg-yellow-400 text-white' },
+  { id: 'Movers', name: 'Movers', age: 'Ages 8–10', image: 'https://drive.google.com/thumbnail?id=1CG1M0-jE1Nv49K01RGYYMpB16q6eUAHw&sz=w1000', color: 'bg-emerald-400 text-white' },
+  { id: 'Flyers', name: 'Flyers', age: 'Ages 10–12', image: 'https://drive.google.com/thumbnail?id=1J6PPGe9OnH3ABpzIDfOn3OsLG1dpWpJh&sz=w1000', color: 'bg-purple-400 text-white' },
+  { id: 'KET', name: 'KET', age: 'Ages 12+', image: 'https://drive.google.com/thumbnail?id=1pgTKRKvYvOuG6vTT4P36e6VUX1smqndL&sz=w1000', color: 'bg-orange-500 text-white' },
+  { id: 'PET', name: 'PET', age: 'Ages 13+', image: 'https://drive.google.com/thumbnail?id=1ExrKOMdB7SSDtPmIUfMK9_yCbx2_Us4z&sz=w1000', color: 'bg-teal-400 text-white' },
+  { id: 'IELTS', name: 'IELTS', age: 'Ages 16+', image: 'https://drive.google.com/thumbnail?id=1YjzWqy769jNBA46EBgyf-dWGdykjV7Yk&sz=w1000', color: 'bg-rose-400 text-white' },
 ];
 
 export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { defaultCourse?: string, hideCourseTabs?: boolean }) {
@@ -137,8 +137,8 @@ export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { de
                   {isActive && (
                     <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#2563EB]"></div>
                   )}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm ${course.color}`}>
-                    {course.icon}
+                  <div className="w-10 h-10 rounded-full flex overflow-hidden items-center justify-center text-lg shadow-sm">
+                    <img src={course.image} alt={course.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="text-left">
                     <div className={`font-bold leading-none mb-1 ${isActive ? 'text-[#2563EB]' : 'text-[#0F172A]'}`}>

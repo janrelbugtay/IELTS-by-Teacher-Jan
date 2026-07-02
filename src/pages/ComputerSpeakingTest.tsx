@@ -228,13 +228,22 @@ const CameraCheckContent = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    let stream: MediaStream | null = null;
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(s => {
+          stream = s;
           if (videoRef.current) videoRef.current.srcObject = s;
         })
-        .catch(console.error);
+        .catch(err => {
+          console.warn("Camera not available, ignoring:", err);
+        });
     }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+    };
   }, []);
 
   return (

@@ -119,8 +119,24 @@ export const LiveSpeakingTestScreen = ({ onComplete }: any) => {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       mediaStreamRef.current = stream;
     } catch (err: any) {
-      console.warn("Camera/Mic not accessible:", err);
-      setError("Camera and Microphone are required for the live session.");
+      console.warn("Camera/Mic not accessible, falling back to audio only:", err);
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaStreamRef.current = stream;
+        } else {
+          throw new Error("Media devices not supported.");
+        }
+      } catch (err2: any) {
+        console.error("Audio also not accessible:", err2);
+        setError("Microphone is required for the live session.");
+        setIsConnecting(false);
+        return;
+      }
+    }
+    
+    if (!stream) {
+      setError("Microphone is required for the live session.");
       setIsConnecting(false);
       return;
     }

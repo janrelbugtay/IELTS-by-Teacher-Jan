@@ -11,17 +11,17 @@ export function CourseDetails() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('overview');
 
-  const courseData: Record<string, { name: string, icon: string, color: string }> = {
-    'pre-starter': { name: 'Pre-Starter', icon: '🌟', color: 'from-blue-400 to-blue-500' },
-    'starters': { name: 'Starters', icon: '🚀', color: 'from-orange-400 to-orange-500' },
-    'movers': { name: 'Movers', icon: '⛵', color: 'from-green-400 to-green-500' },
-    'flyers': { name: 'Flyers', icon: '✈️', color: 'from-purple-400 to-purple-500' },
-    'ket': { name: 'KET', icon: '🔑', color: 'from-rose-400 to-rose-500' },
-    'pet': { name: 'PET', icon: '📖', color: 'from-teal-400 to-teal-500' },
-    'ielts': { name: 'IELTS', icon: '🎓', color: 'from-indigo-400 to-indigo-500' }
+  const courseData: Record<string, { name: string, image: string, color: string }> = {
+    'pre-starter': { name: 'Pre-Starter', image: 'https://drive.google.com/thumbnail?id=1h_In0NTl7lPBaZwLl1vKFz-O4dAs8m0E&sz=w1000', color: 'from-blue-400 to-blue-500' },
+    'starters': { name: 'Starters', image: 'https://drive.google.com/thumbnail?id=1PZEu_s4S_5KwHtnHeY4RRwuw4BKqIYY2&sz=w1000', color: 'from-orange-400 to-orange-500' },
+    'movers': { name: 'Movers', image: 'https://drive.google.com/thumbnail?id=1CG1M0-jE1Nv49K01RGYYMpB16q6eUAHw&sz=w1000', color: 'from-green-400 to-green-500' },
+    'flyers': { name: 'Flyers', image: 'https://drive.google.com/thumbnail?id=1J6PPGe9OnH3ABpzIDfOn3OsLG1dpWpJh&sz=w1000', color: 'from-purple-400 to-purple-500' },
+    'ket': { name: 'KET', image: 'https://drive.google.com/thumbnail?id=1pgTKRKvYvOuG6vTT4P36e6VUX1smqndL&sz=w1000', color: 'from-rose-400 to-rose-500' },
+    'pet': { name: 'PET', image: 'https://drive.google.com/thumbnail?id=1ExrKOMdB7SSDtPmIUfMK9_yCbx2_Us4z&sz=w1000', color: 'from-teal-400 to-teal-500' },
+    'ielts': { name: 'IELTS', image: 'https://drive.google.com/thumbnail?id=1YjzWqy769jNBA46EBgyf-dWGdykjV7Yk&sz=w1000', color: 'from-indigo-400 to-indigo-500' }
   };
 
-  const course = courseData[id || ''] || { name: 'Course', icon: '📚', color: 'from-blue-400 to-blue-500' };
+  const course = courseData[id || ''] || { name: 'Course', image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=400&q=80', color: 'from-blue-400 to-blue-500' };
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -125,8 +125,8 @@ export function CourseDetails() {
           </Link>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-[#E2E8F0] flex-1">
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${course.color} flex items-center justify-center text-3xl shadow-md text-white`}>
-                {course.icon}
+              <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-sm border border-slate-100">
+                <img src={course.image} alt={course.name} className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-[#0F172A] leading-tight tracking-tight">{course.name}</h1>

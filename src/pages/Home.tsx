@@ -45,20 +45,20 @@ export function Home() {
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
   const courses = [
-    { id: 'pre-starter', name: 'Pre-Starter', age: 'Ages 4-6', level: 'Beginner', desc: 'First steps into English with fun games and songs.', icon: '🌟', color: 'from-blue-400 to-blue-500' },
-    { id: 'starters', name: 'Starters', age: 'Ages 7-8', level: 'Pre-A1', desc: 'Building basic vocabulary and simple sentences.', icon: '🚀', color: 'from-orange-400 to-orange-500' },
-    { id: 'movers', name: 'Movers', age: 'Ages 8-10', level: 'A1', desc: 'Developing confidence in speaking and writing.', icon: '⛵', color: 'from-green-400 to-green-500' },
-    { id: 'flyers', name: 'Flyers', age: 'Ages 10-12', level: 'A2', desc: 'Advanced everyday communication skills.', icon: '✈️', color: 'from-purple-400 to-purple-500' },
-    { id: 'ket', name: 'KET', age: 'Ages 12-14', level: 'A2 Key', desc: 'Essential English for real-life situations.', icon: '🔑', color: 'from-rose-400 to-rose-500' },
-    { id: 'pet', name: 'PET', age: 'Ages 14-16', level: 'B1 Preliminary', desc: 'Practical English for work, study and travel.', icon: '📖', color: 'from-teal-400 to-teal-500' },
-    { id: 'ielts', name: 'IELTS', age: 'Ages 16+', level: 'B2-C1', desc: 'Academic preparation for university and immigration.', icon: '🎓', color: 'from-indigo-400 to-indigo-500' },
+    { id: 'pre-starter', name: 'Pre-Starter', age: 'Ages 4-6', level: 'Beginner', desc: 'A fun introduction to English through interactive games, songs, stories, and hands-on activities that build confidence from the very beginning.', image: 'https://drive.google.com/thumbnail?id=1h_In0NTl7lPBaZwLl1vKFz-O4dAs8m0E&sz=w1000', color: 'from-blue-400 to-blue-500' },
+    { id: 'starters', name: 'Starters', age: 'Ages 7-8', level: 'Pre-A1', desc: 'Build a strong foundation in English by developing essential vocabulary, simple grammar, and everyday communication skills.', image: 'https://drive.google.com/thumbnail?id=1PZEu_s4S_5KwHtnHeY4RRwuw4BKqIYY2&sz=w1000', color: 'from-orange-400 to-orange-500' },
+    { id: 'movers', name: 'Movers', age: 'Ages 8-10', level: 'A1', desc: 'Strengthen speaking, reading, writing, and listening skills while encouraging confident communication in real-life situations.', image: 'https://drive.google.com/thumbnail?id=1CG1M0-jE1Nv49K01RGYYMpB16q6eUAHw&sz=w1000', color: 'from-green-400 to-green-500' },
+    { id: 'flyers', name: 'Flyers', age: 'Ages 10-12', level: 'A2', desc: 'Advance English fluency through engaging lessons that develop independent communication, critical thinking, and language accuracy.', image: 'https://drive.google.com/thumbnail?id=1J6PPGe9OnH3ABpzIDfOn3OsLG1dpWpJh&sz=w1000', color: 'from-purple-400 to-purple-500' },
+    { id: 'ket', name: 'KET', age: 'Ages 12-14', level: 'A2 Key', desc: 'Gain practical English skills for school, travel, and everyday life while preparing for the Cambridge A2 Key examination.', image: 'https://drive.google.com/thumbnail?id=1pgTKRKvYvOuG6vTT4P36e6VUX1smqndL&sz=w1000', color: 'from-rose-400 to-rose-500' },
+    { id: 'pet', name: 'PET', age: 'Ages 14-16', level: 'B1 Preliminary', desc: 'Develop confident, independent English for academic success, travel, and future career opportunities with real-world communication practice.', image: 'https://drive.google.com/thumbnail?id=1ExrKOMdB7SSDtPmIUfMK9_yCbx2_Us4z&sz=w1000', color: 'from-teal-400 to-teal-500' },
+    { id: 'ielts', name: 'IELTS', age: 'Ages 16+', level: 'B2-C1', desc: 'Master academic English and effective test strategies to achieve your target IELTS score for university admission and international opportunities.', image: 'https://drive.google.com/thumbnail?id=1YjzWqy769jNBA46EBgyf-dWGdykjV7Yk&sz=w1000', color: 'from-indigo-400 to-indigo-500' },
   ];
 
   const features = [
-    { title: 'Cambridge Curriculum', desc: 'Official materials and proven methodologies from Cambridge University Press.', icon: <BookOpen className="w-6 h-6" /> },
-    { title: 'Certified Teachers', desc: 'Passionate educators with international TEFL/CELTA qualifications.', icon: <Award className="w-6 h-6" /> },
-    { title: 'Interactive Learning', desc: 'Modern classrooms equipped with interactive smartboards and digital resources.', icon: <PlayCircle className="w-6 h-6" /> },
-    { title: 'Weekly Mock Exams', desc: 'Regular practice tests to track progress and build exam confidence.', icon: <BarChart3 className="w-6 h-6" /> },
+    { title: 'Cambridge Curriculum', desc: 'Official materials and proven methodologies from Cambridge University Press.', icon: <BookOpen className="w-6 h-6" />, color: 'from-blue-500 to-cyan-500', shadow: 'shadow-blue-500/20' },
+    { title: 'Certified Teachers', desc: 'Passionate educators with international TEFL/CELTA qualifications.', icon: <Award className="w-6 h-6" />, color: 'from-purple-500 to-pink-500', shadow: 'shadow-purple-500/20' },
+    { title: 'Interactive Learning', desc: 'Modern classrooms equipped with interactive smartboards and digital resources.', icon: <PlayCircle className="w-6 h-6" />, color: 'from-orange-500 to-amber-500', shadow: 'shadow-orange-500/20' },
+    { title: 'Monthly Mock Exams', desc: 'Regular practice tests to track progress and build exam confidence.', icon: <BarChart3 className="w-6 h-6" />, color: 'from-emerald-500 to-teal-500', shadow: 'shadow-emerald-500/20' },
   ];
 
   const faqs = [
@@ -129,39 +129,73 @@ export function Home() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-              className="flex-1 w-full relative z-10"
+              className="flex-1 w-full relative z-10 lg:pl-10"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#2563EB]/20 to-transparent blur-3xl rounded-[40px] -z-10 transform rotate-3"></div>
+                <div className="absolute -inset-4 bg-gradient-to-tr from-[#2563EB]/30 via-purple-400/20 to-pink-400/20 blur-3xl rounded-[40px] -z-10 animate-pulse"></div>
                 
-                <div className="grid grid-cols-12 gap-4">
+                <div className="grid grid-cols-12 gap-4 relative">
+                  {/* Floating elements */}
+                  <motion.div 
+                    animate={{ y: [-10, 10, -10] }} 
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-8 -left-8 bg-white p-4 rounded-2xl shadow-xl z-20 hidden md:block"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <Award className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-slate-800">100% Pass Rate</div>
+                        <div className="text-xs text-slate-500">Cambridge Exams</div>
+                      </div>
+                    </div>
+                  </motion.div>
+
+
+
                   {/* Main Large Image */}
-                  <div className="col-span-12 sm:col-span-8 h-[400px] rounded-[24px] overflow-hidden shadow-2xl relative group">
+                  <motion.div 
+                    whileHover={{ scale: 1.02, rotate: -1 }}
+                    transition={{ duration: 0.3 }}
+                    className="col-span-12 sm:col-span-8 h-[400px] md:h-[480px] rounded-[32px] overflow-hidden shadow-2xl relative group cursor-pointer border-4 border-white"
+                  >
+                    <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors z-10 duration-500"></div>
                     <img 
                       src="https://lh3.googleusercontent.com/d/1bfR_OFAkxKeeHJPmCFETZDo8KKs1m7Qd" 
                       alt="Learning Center" 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                      <span className="text-white font-semibold">Premium Classrooms</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-8 z-20">
+                      <div>
+                        <span className="inline-block px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full mb-3">Campus</span>
+                        <h3 className="text-white font-bold text-2xl">Premium Classrooms</h3>
+                        <p className="text-slate-200 mt-2 text-sm max-w-sm">Modern facilities designed for optimal learning and student engagement.</p>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Grid of Small Images */}
-                  <div className="col-span-12 sm:col-span-4 grid grid-cols-2 gap-4 h-[400px]">
+                  <div className="col-span-12 sm:col-span-4 grid grid-cols-2 sm:grid-cols-1 gap-4 h-auto sm:h-[480px]">
                     {[
                       "https://lh3.googleusercontent.com/d/1ZV8IXVDbZad2fAUwaj_YH1tGYiH8Ep1i",
                       "https://lh3.googleusercontent.com/d/16hvnUkj8M1VkFzowovBccarw6KzVUnDv",
-                      "https://lh3.googleusercontent.com/d/1fbbwBgb3iG0z2ePIttR2upjlecZgvOnx",
-                      "https://lh3.googleusercontent.com/d/1uLEmaMxQQvL7XxF2PluF3IMPSzfs7k3A"
+                      "https://lh3.googleusercontent.com/d/1fbbwBgb3iG0z2ePIttR2upjlecZgvOnx"
                     ].map((img, idx) => (
-                      <div key={idx} className="rounded-[20px] overflow-hidden shadow-lg relative group h-full">
+                      <motion.div 
+                        key={idx} 
+                        whileHover={{ scale: 1.05, zIndex: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 + (idx * 0.1) }}
+                        className={`rounded-[24px] overflow-hidden shadow-lg relative group h-[190px] sm:h-full border-2 border-white cursor-pointer ${idx === 2 ? 'col-span-2 sm:col-span-1 hidden sm:block' : ''}`}
+                      >
+                        <div className="absolute inset-0 bg-blue-900/20 group-hover:bg-transparent transition-colors z-10 duration-300"></div>
                         <img src={img} alt="Student" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
-
               </div>
             </motion.div>
 
@@ -191,36 +225,33 @@ export function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ y: -8 }}
-                className="cursor-pointer min-w-[300px] md:min-w-0 snap-start bg-white/60 backdrop-blur-xl rounded-[24px] p-6 border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col h-full"
+                whileHover={{ y: -12, scale: 1.02 }}
+                className="group cursor-pointer min-w-[300px] md:min-w-0 snap-start bg-white rounded-[24px] overflow-hidden border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.15)] transition-all duration-300 flex flex-col h-full relative"
               >
-                <div className={`w-14 h-14 rounded-[16px] bg-gradient-to-br ${course.color} flex items-center justify-center text-2xl shadow-inner mb-6`}>
-                  {course.icon}
+                <div className="w-full h-52 sm:h-60 overflow-hidden flex-shrink-0 bg-slate-100 relative">
+                  <div className={`absolute inset-0 bg-gradient-to-t ${course.color} mix-blend-multiply opacity-0 group-hover:opacity-40 transition-opacity duration-500 z-10`}></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
+                  <img src={course.image} alt={course.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                 </div>
                 
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="px-3 py-1 bg-slate-100 text-[#64748B] text-xs font-bold rounded-full">{course.age}</span>
-                  <span className="px-3 py-1 bg-blue-50 text-[#2563EB] text-xs font-bold rounded-full">{course.level}</span>
+                <div className="p-6 md:p-8 flex flex-col flex-1 relative z-20">
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className={`px-4 py-1.5 text-white text-[13px] font-bold rounded-full tracking-wide shadow-md bg-gradient-to-r ${course.color}`}>{course.age}</span>
+                    <span className="px-3.5 py-1.5 bg-slate-100 text-[#64748B] text-[13px] font-bold rounded-full tracking-wide">{course.level}</span>
+                  </div>
+                  
+                  <h3 className={`text-2xl font-extrabold text-[#0F172A] mb-3 transition-colors flex items-center justify-between`}>
+                    <span className={`group-hover:bg-clip-text group-hover:text-transparent group-hover:bg-gradient-to-r ${course.color}`}>{course.name}</span>
+                    <ArrowRight className="w-6 h-6 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 text-[#0F172A]" />
+                  </h3>
+                  <p className="text-[#64748B] text-[15px] leading-relaxed flex-1 group-hover:text-[#334155] transition-colors duration-300">{course.desc}</p>
                 </div>
                 
-                <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{course.name}</h3>
-                <p className="text-[#64748B] text-[15px] mb-8 leading-relaxed flex-1">{course.desc}</p>
+                <div className={`absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r ${course.color} scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}></div>
               </motion.div>
             ))}
             
-            {/* Explore More Card */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="min-w-[300px] md:min-w-0 snap-start bg-gradient-to-br from-[#0F172A] to-[#1E293B] rounded-[24px] p-8 border border-[#334155] shadow-xl flex flex-col items-center justify-center text-center h-full group"
-            >
-              <h3 className="text-2xl font-bold text-white mb-4">Not sure which level?</h3>
-              <p className="text-slate-300 text-[15px] mb-8">Take our free placement test to find your perfect starting point.</p>
-              <Link to="/practice-tests" className="px-6 py-3 bg-white text-[#0F172A] rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform duration-300">
-                Take Placement Test
-              </Link>
-            </motion.div>
+            {/* Explore More Card - Removed */}
           </div>
         </div>
       </section>
@@ -237,17 +268,24 @@ export function Home() {
             {features.map((feature, idx) => (
               <motion.div 
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="p-8 rounded-[24px] bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-white hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300"
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+                whileHover={{ y: -10, scale: 1.02 }}
+                className={`group relative p-8 rounded-[32px] bg-white border border-[#E2E8F0] overflow-hidden transition-all duration-500 shadow-sm hover:shadow-2xl hover:border-transparent ${feature.shadow}`}
               >
-                <div className="w-12 h-12 rounded-[14px] bg-blue-50 text-[#2563EB] flex items-center justify-center mb-6">
-                  {feature.icon}
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} text-white flex items-center justify-center mb-6 shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-[#0F172A] mb-3 group-hover:text-white transition-colors duration-300">{feature.title}</h3>
+                  <p className="text-[#64748B] text-[15px] leading-relaxed group-hover:text-white/90 transition-colors duration-300">{feature.desc}</p>
                 </div>
-                <h3 className="text-xl font-bold text-[#0F172A] mb-3">{feature.title}</h3>
-                <p className="text-[#64748B] text-[15px] leading-relaxed">{feature.desc}</p>
+                
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
               </motion.div>
             ))}
           </div>
@@ -300,7 +338,7 @@ export function Home() {
               className="flex-1 w-full relative z-10 perspective-[1000px]"
             >
               <div className="relative rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.3)] border border-white/10 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-                <img src="https://lh3.googleusercontent.com/d/1w6MDQU0blj1rMVEqaMD7IGvEoPfzYMfL" alt="Testing Platform" className="w-full h-auto object-cover opacity-90" />
+                <img src="https://drive.google.com/thumbnail?id=1mmdsudZKL5susowwXkm_sdGxSGbeaKZB&sz=w1000" alt="Testing Platform" className="w-full h-auto object-cover opacity-90" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent"></div>
                 
                 {/* Mock UI Overlay */}
@@ -362,10 +400,9 @@ export function Home() {
                 <Star className="w-6 h-6 fill-current" />
               </div>
               <p className="text-xl md:text-2xl font-medium leading-relaxed mb-10 italic">
-                "The structured IELTS preparation course and the online practice tests were game-changers for me. I achieved a Band 8.0 overall in just 3 months of intense study with my incredible teacher."
+                "Thanks to the comprehensive IELTS preparation program and effective online practice tests, I was able to reach my goal. With consistent effort and the support of my exceptional teacher, I achieved an overall Band 8.0."
               </p>
               <div className="flex items-center gap-4">
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" alt="Student" className="w-14 h-14 rounded-full border-2 border-white/20 object-cover" />
                 <div>
                   <div className="font-bold text-lg">Minh Hoang</div>
                   <div className="text-slate-400 text-sm">IELTS Band 8.0 Achiever</div>
@@ -429,7 +466,7 @@ export function Home() {
             {[
               { title: 'How to prepare for IELTS Speaking Part 3', date: 'March 15, 2026', img: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop' },
               { title: 'Top 10 Grammar Mistakes to Avoid in PET', date: 'March 10, 2026', img: 'https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?q=80&w=2068&auto=format&fit=crop' },
-              { title: 'Congratulations to our Starters Graduates!', date: 'March 05, 2026', img: 'https://images.unsplash.com/photo-1523580494112-071d16928afb?q=80&w=2070&auto=format&fit=crop' },
+              { title: 'Congratulations to our Starters Graduates!', date: 'March 05, 2026', img: 'https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=800&q=80' },
             ].map((post, idx) => (
               <motion.div 
                 key={idx}
