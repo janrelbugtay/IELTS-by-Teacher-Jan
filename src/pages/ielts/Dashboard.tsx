@@ -1,3 +1,4 @@
+import { PerformanceTable } from '../../components/PerformanceTable';
 import React, { useEffect, useState, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, getDocs, where, deleteDoc, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -609,74 +610,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </div>
       </section>
 
-      {/* Assignments Section */}
+      {/* Performance Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900">My Practice Assignments</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Performance Table</h2>
           <button className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
             Browse Library <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-          <button className="px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap">Assigned by Teacher</button>
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-sm font-bold rounded-xl whitespace-nowrap transition-colors">In Progress Tests</button>
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-sm font-bold rounded-xl whitespace-nowrap transition-colors">Completed Tests</button>
-          <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-sm font-bold rounded-xl whitespace-nowrap transition-colors">My Writing Portfolio</button>
-        </div>
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {assignments.length === 0 ? (
-            <div className="col-span-1 py-16 text-center border-2 border-dashed border-slate-300 rounded-3xl bg-slate-50">
-              <FileText className="w-10 h-10 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-slate-900 mb-2">No assigned class work</h3>
-              <p className="text-slate-600 max-w-sm mx-auto">When your teacher posts new practice tasks, they will appear right here.</p>
-            </div>
-          ) : (
-            assignments.map((assignment) => {
-              const isCompleted = submissions.some(s => s.assignmentId === assignment.id);
-              
-              return (
-                <Link
-                  key={assignment.id}
-                  to={`/assignment/${assignment.id}`}
-                  className="group relative flex flex-col bg-white p-8 md:p-10 rounded-[2rem] border border-slate-200 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="flex items-start justify-between mb-8 relative z-10">
-                    <div className="p-4 bg-slate-50 rounded-[1.5rem] group-hover:bg-white group-hover:shadow-md transition-all duration-300">
-                      {getIcon(assignment.type)}
-                    </div>
-                    {isCompleted ? (
-                      <span className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-100 px-4 py-2 rounded-full border border-green-200 shadow-sm">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Completed
-                      </span>
-                    ) : (
-                      <div className="bg-blue-100 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-blue-700 shadow-sm">
-                        <ArrowRight className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <h3 className="text-2xl font-extrabold text-slate-900 mb-4 leading-tight group-hover:text-blue-700 transition-colors duration-300 relative z-10">{assignment.title}</h3>
-                  <p className="text-slate-600 line-clamp-3 mb-8 flex-1 text-lg relative z-10">
-                    {assignment.description}
-                  </p>
-                  
-                  <div className="mt-auto pt-6 border-t border-slate-100 flex items-center justify-between text-[0.95rem] relative z-10">
-                    <span className={`font-extrabold uppercase tracking-widest ${getTypeStyle(assignment.type)}`}>{assignment.type}</span>
-                    {assignment.createdAt && (
-                      <span className="font-semibold text-slate-500">
-                        {assignment.createdAt ? format(assignment.createdAt, 'MMM d, yyyy') : 'N/A'}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })
-          )}
-        </div>
+        
+        <PerformanceTable submissions={submissions} assignments={assignments} currentTab={currentTab} />
       </section>
       </>
       )}
