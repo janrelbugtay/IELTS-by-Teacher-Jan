@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { renderMarkdown } from '../lib/markdown';
 import { Award, CheckCircle2 } from 'lucide-react';
+
+import { JanuaryWritingTest } from './JanuaryWritingTest';
+import { FebruaryWritingTest } from './FebruaryWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -177,7 +180,7 @@ const Header = ({ studentName, candidateNumber, timeLeft, saveStatus, onOpenSett
 };
 
 const PromptPanel = ({ activePart, textSize }: any) => (
-    <div className="w-1/2 bg-white border border-gray-200 p-8 overflow-y-auto shadow-inner rounded-l-md" style={{ fontSize: `${textSize}px` }}>
+    <div className="flex-1 bg-white border border-gray-200 p-8 overflow-y-auto shadow-inner md:rounded-l-md" style={{ fontSize: `${textSize}px` }}>
         {activePart === 1 ? (
             <div className="text-gray-800 leading-relaxed animate-in fade-in">
                 <p className="font-bold mb-5">The chart below gives information about global energy consumption by source from 2000 to 2020.</p>
@@ -251,7 +254,7 @@ const WritingEditor = ({ text, onTextChange, textSize, minWords, isActive, isSub
     }, [isActive, isSubmitted]);
 
     return (
-        <div className={`w-1/2 flex flex-col bg-white border-y border-r border-gray-200 rounded-r-md ${!isActive ? 'hidden' : ''}`}>
+        <div className={`flex-1 flex flex-col bg-white border-y border-r border-gray-200 md:rounded-r-md ${!isActive ? 'hidden' : ''}`}>
             <div className="flex-1 relative">
                 {isSubmitted && (
                     <div className="absolute inset-0 bg-gray-50/50 z-10 cursor-not-allowed"></div>
@@ -360,11 +363,18 @@ const FooterNavigation = ({ activePart, setActivePart, words1, words2, reviewSta
     );
 };
 
-export const ComputerWritingTest = () => {
+export const ComputerWritingTest = ({ submissionId }: { submissionId?: string }) => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
     
+    if (id === '3' && !submissionId) {
+        return <JanuaryWritingTest />;
+    }
+    if (id === '6' && !submissionId) {
+        return <FebruaryWritingTest />;
+    }
+
     const [state, setState] = useState({
         studentName: user?.displayName || "",
         candidateNumber: "",
@@ -386,33 +396,168 @@ export const ComputerWritingTest = () => {
 
     const [isEvaluating, setIsEvaluating] = useState(false);
 
+    const [isEditingReport, setIsEditingReport] = useState(false);
+    const [editedFeedback, setEditedFeedback] = useState("");
+    const [editedBandScore, setEditedBandScore] = useState(0);
+
+    const handleGenerateReport = async () => {
+        setIsEvaluating(true);
+        let finalFeedback = "";
+        let finalBandScore = 0;
+
+        try {
+            const textToEvaluate = state.textPart2.trim() || state.textPart1.trim();
+            const response = await fetch('/api/evaluate-writing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ inputText: textToEvaluate, taskType: state.textPart2.trim() ? 'task2' : 'task1' })
+            });
+            if (!response.ok) {
+                let errText = await response.text();
+                try {
+                    const parsedErr = JSON.parse(errText);
+                    if (parsedErr.error) errText = parsedErr.error;
+                } catch(e) {}
+                throw new Error(`Evaluation failed: ${errText}`);
+            }
+            const result = await response.json();
+            if (response.ok && result.feedback) {
+                finalFeedback = result.feedback;
+                const bandMatch = finalFeedback.match(/Final IELTS Band\s*=\s*([\d.]+)/i);
+                finalBandScore = bandMatch ? parseFloat(bandMatch[1]) : 0;
+            }
+
+            setState(prev => ({
+                ...prev,
+                aiFeedback: finalFeedback,
+                aiBandScore: finalBandScore
+            }));
+
+            if (submissionId) {
+                const { updateDoc, doc } = await import('firebase/firestore');
+                const docRef = doc(db, 'submissions', submissionId);
+                await updateDoc(docRef, {
+                    bandScore: finalBandScore,
+                    aiFeedback: finalFeedback,
+                    requiresEvaluation: false
+                });
+            } else if (id) {
+                // local save
+                const key = `${STORAGE_KEY}_${id}`;
+                const saved = localStorage.getItem(key);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.aiFeedback = finalFeedback;
+                    parsed.aiBandScore = finalBandScore;
+                    localStorage.setItem(key, JSON.stringify(parsed));
+                }
+            }
+
+        } catch (err: any) {
+            console.error("AI Evaluation failed", err);
+            alert(err?.message || "AI Evaluation failed. Please try again later.");
+        } finally {
+            setIsEvaluating(false);
+        }
+    };
+
+    const handleSaveEditedReport = async () => {
+        try {
+            if (submissionId) {
+                const { updateDoc, doc } = await import('firebase/firestore');
+                const docRef = doc(db, 'submissions', submissionId);
+                await updateDoc(docRef, {
+                    bandScore: editedBandScore,
+                    aiFeedback: editedFeedback
+                });
+            } else if (id) {
+                const key = `${STORAGE_KEY}_${id}`;
+                const saved = localStorage.getItem(key);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.aiFeedback = editedFeedback;
+                    parsed.aiBandScore = editedBandScore;
+                    localStorage.setItem(key, JSON.stringify(parsed));
+                }
+            }
+            setState(prev => ({
+                ...prev,
+                aiFeedback: editedFeedback,
+                aiBandScore: editedBandScore
+            }));
+            setIsEditingReport(false);
+        } catch (err) {
+            console.error("Error saving report", err);
+            alert("Failed to save edited report.");
+        }
+    };
+
     const stateRef = useRef(state);
     useEffect(() => { stateRef.current = state; }, [state]);
 
     // Cleanup and load
     useEffect(() => {
-        const key = `${STORAGE_KEY}_${id}`;
-        const saved = localStorage.getItem(key);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                if (parsed.examStarted && !parsed.isSubmitted) {
-                    setState(parsed);
-                    const elapsed = Math.floor((Date.now() - parsed.testStartTime) / 1000);
-                    const remaining = Math.max(0, TEST_DURATION - elapsed);
-                    setTimeLeft(remaining);
-                } else if (parsed.isSubmitted) {
-                    setState(parsed);
-                    setTimeLeft(0);
+        async function loadSubmission() {
+            if (submissionId) {
+                try {
+                    const docRef = doc(db, 'submissions', submissionId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        let parsedAnswers: any = {};
+                        if (typeof data.answers === 'string') {
+                            try {
+                                parsedAnswers = JSON.parse(data.answers);
+                            } catch (e) {
+                                parsedAnswers = { part1: data.answers, part2: '' };
+                            }
+                        } else if (typeof data.answers === 'object' && data.answers !== null) {
+                            parsedAnswers = data.answers;
+                        }
+                        setState(prev => ({
+                            ...prev,
+                            examStarted: true,
+                            isSubmitted: true,
+                            studentName: data.studentName || prev.studentName,
+                            textPart1: parsedAnswers.part1 || '',
+                            textPart2: parsedAnswers.part2 || '',
+                            submitTime: data.createdAt?.toMillis ? data.createdAt.toMillis() : (typeof data.createdAt === 'number' ? data.createdAt : Date.now()),
+                            aiFeedback: data.aiFeedback || '',
+                            aiBandScore: data.bandScore || null
+                        }));
+                        setTimeLeft(0);
+                        return; // do not load local state if viewing a past submission
+                    }
+                } catch (error) {
+                    console.error("Error loading submission:", error);
                 }
-            } catch (e) {
-                console.error("Failed to parse saved state.");
+            }
+            
+            // load from local storage if not viewing a past submission
+            const key = `${STORAGE_KEY}_${id}`;
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.examStarted && !parsed.isSubmitted) {
+                        setState(parsed);
+                        const elapsed = Math.floor((Date.now() - parsed.testStartTime) / 1000);
+                        const remaining = Math.max(0, TEST_DURATION - elapsed);
+                        setTimeLeft(remaining);
+                    } else if (parsed.isSubmitted) {
+                        setState(parsed);
+                        setTimeLeft(0);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse saved state.");
+                }
             }
         }
-    }, [id]);
+        loadSubmission();
+    }, [id, submissionId]);
 
     useEffect(() => {
-        if (!state.examStarted) return;
+        if (!state.examStarted || state.isSubmitted || submissionId) return;
         
         setSaveStatus("Saving...");
         const timer = setTimeout(() => {
@@ -422,7 +567,7 @@ export const ComputerWritingTest = () => {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [state, id]);
+    }, [state, id, submissionId]);
 
     useEffect(() => {
         if (!state.examStarted || state.isSubmitted) return;
@@ -489,37 +634,14 @@ export const ComputerWritingTest = () => {
             return;
         }
 
-        setIsEvaluating(true);
-        let finalFeedback = "";
-        let finalBandScore = 0;
-
-        try {
-            // Only evaluate part 2 for time reasons, or combine them
-            const textToEvaluate = state.textPart2.trim() || state.textPart1.trim();
-            const response = await fetch('/api/evaluate-writing', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ inputText: textToEvaluate, taskType: state.textPart2.trim() ? 'task2' : 'task1' })
-            });
-            const result = await response.json();
-            if (response.ok && result.feedback) {
-                finalFeedback = result.feedback;
-                const bandMatch = finalFeedback.match(/Final IELTS Band\s*=\s*([\d.]+)/i);
-                finalBandScore = bandMatch ? parseFloat(bandMatch[1]) : 0;
-            }
-        } catch (err) {
-            console.error("AI Evaluation failed", err);
-            finalFeedback = "AI Evaluation is currently pending. Please check back later.";
-        }
-        
         const submitTime = Date.now();
         setState(prev => {
             const newState = {
                 ...prev,
                 isSubmitted: true,
                 submitTime,
-                aiFeedback: finalFeedback,
-                aiBandScore: finalBandScore
+                aiFeedback: "",
+                aiBandScore: 0
             };
             localStorage.setItem(`${STORAGE_KEY}_${id}`, JSON.stringify(newState));
             return newState;
@@ -527,7 +649,6 @@ export const ComputerWritingTest = () => {
         
         setShowSubmitModal(false);
         setTimeLeft(0);
-        setIsEvaluating(false);
 
         if (user) {
             try {
@@ -545,8 +666,8 @@ export const ComputerWritingTest = () => {
                     createdAt: serverTimestamp(),
                     status: 'submitted',
                     answers: JSON.stringify({ part1: state.textPart1, part2: state.textPart2 }),
-                    aiFeedback: finalFeedback,
-                    bandScore: finalBandScore,
+                    aiFeedback: "",
+                    bandScore: 0,
                     timeSpent: TEST_DURATION - timeLeft,
                     requiresEvaluation: false 
                 });
@@ -619,22 +740,88 @@ export const ComputerWritingTest = () => {
                         <div className="w-full max-w-4xl p-6 md:p-10 my-6 bg-white rounded-2xl shadow-md border border-slate-200">
                             <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
                                 <h3 className="text-2xl font-bold text-slate-800">ERA AI Examiner Report</h3>
-                                {state.aiBandScore > 0 && (
-                                    <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2 rounded-xl flex items-center gap-2">
-                                        <Award className="w-5 h-5 text-blue-600" />
-                                        <span className="font-bold">Overall Band: {state.aiBandScore}</span>
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-3">
+                                    {isAdmin && state.aiFeedback && !state.aiFeedback.includes('pending') && !isEditingReport && (
+                                        <button
+                                            onClick={() => {
+                                                setEditedFeedback(state.aiFeedback);
+                                                setEditedBandScore(state.aiBandScore);
+                                                setIsEditingReport(true);
+                                            }}
+                                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition border border-slate-200"
+                                        >
+                                            Edit Report
+                                        </button>
+                                    )}
+                                    {state.aiBandScore > 0 && !isEditingReport && (
+                                        <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2 rounded-xl flex items-center gap-2">
+                                            <Award className="w-5 h-5 text-blue-600" />
+                                            <span className="font-bold">Overall Band: {state.aiBandScore}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             
                             <div className="prose prose-blue max-w-none prose-p:text-slate-700 prose-headings:text-slate-800">
-                                {state.aiFeedback && !state.aiFeedback.includes('pending') ? (
+                                {isEditingReport ? (
+                                    <div className="flex flex-col gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Overall Band Score</label>
+                                            <input 
+                                                type="number" 
+                                                step="0.5" 
+                                                min="0" 
+                                                max="9" 
+                                                value={editedBandScore} 
+                                                onChange={e => setEditedBandScore(parseFloat(e.target.value))}
+                                                className="w-32 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Detailed Feedback (Markdown)</label>
+                                            <textarea 
+                                                value={editedFeedback}
+                                                onChange={e => setEditedFeedback(e.target.value)}
+                                                className="w-full h-96 p-4 border border-slate-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            ></textarea>
+                                        </div>
+                                        <div className="flex justify-end gap-3 mt-4">
+                                            <button 
+                                                onClick={() => setIsEditingReport(false)}
+                                                className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={handleSaveEditedReport}
+                                                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md"
+                                            >
+                                                Save Changes
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : state.aiFeedback && !state.aiFeedback.includes('pending') ? (
                                     <div dangerouslySetInnerHTML={renderMarkdown(state.aiFeedback)} />
                                 ) : (
                                     <div className="text-center p-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                                         <CheckCircle2 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                                         <p className="text-slate-600 mb-2 font-medium">Your essay has been saved successfully.</p>
-                                        <p className="text-slate-500 text-sm">Detailed feedback is currently unavailable. Please check the dashboard later.</p>
+                                        <p className="text-slate-500 text-sm mb-6">Detailed feedback is currently unavailable. Please check the dashboard later.</p>
+                                        
+                                        {isAdmin && (
+                                            <button 
+                                                onClick={handleGenerateReport}
+                                                disabled={isEvaluating}
+                                                className="mx-auto bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-4 rounded-xl font-bold shadow-xl hover:shadow-2xl hover:from-blue-700 hover:to-indigo-800 transition-all transform hover:-translate-y-1 flex items-center space-x-3 cursor-pointer border border-indigo-400/30 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                            >
+                                                {isEvaluating ? (
+                                                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <svg className="w-6 h-6 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                                )}
+                                                <span className="text-lg tracking-wide">{isEvaluating ? 'Generating...' : 'Generate Official Report'}</span>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -650,7 +837,7 @@ export const ComputerWritingTest = () => {
                     </p>
                 </div>
 
-                <div className="flex-1 flex bg-[#f1f5f9] p-4 gap-4 overflow-hidden min-h-0">
+                <div className="flex-1 flex flex-col md:flex-row bg-[#f1f5f9] p-4 gap-4 overflow-hidden min-h-0">
                     <PromptPanel 
                         activePart={state.activePart} 
                         textSize={state.textSize} 

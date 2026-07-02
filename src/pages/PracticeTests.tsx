@@ -1,8 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router';
-import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router';
+import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard } from 'lucide-react';
 
-const generateMockTests = () => {
+const generateMockTests = (courseName: string) => {
+  if (courseName !== 'IELTS') {
+    return [];
+  }
+
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -11,7 +15,8 @@ const generateMockTests = () => {
   const skills = [
     { name: 'Reading', duration: '60 mins', image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80' },
     { name: 'Listening', duration: '60 mins', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Writing', duration: '60 mins', image: 'https://images.unsplash.com/photo-1455390582262-044cdead27d8?auto=format&fit=crop&w=600&q=80' },
+    { name: 'Writing', duration: '60 mins', image: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=600&q=80' },
+    { name: 'Speaking', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=600&q=80' },
   ];
 
   let idCounter = 1;
@@ -36,7 +41,7 @@ const generateMockTests = () => {
     skills.forEach(skill => {
       tests.push({
         id: idCounter,
-        title: `${month} ${skill.name} Practice`,
+        title: `${month} ${skill.name} Practice (${courseName})`,
         skill: skill.name,
         month: month,
         attempts: randomAttempts(idCounter),
@@ -52,10 +57,25 @@ const generateMockTests = () => {
   return tests;
 };
 
-const allMockTests = generateMockTests();
-
 export function PracticeTests() {
-  const [activeTab, setActiveTab] = useState('All Tests');
+  const [searchParams] = useSearchParams();
+  const courseId = searchParams.get('course') || 'ielts';
+
+  const courseData: Record<string, { name: string, title: string, desc: string }> = {
+    'pre-starter': { name: 'Pre-Starter', title: 'Pre-Starter Practice Tests', desc: 'Fun interactive games and tests for early learners.' },
+    'starters': { name: 'Starters', title: 'Starters Practice Tests', desc: 'Basic vocabulary and simple sentence tests.' },
+    'movers': { name: 'Movers', title: 'Movers Practice Tests', desc: 'Speaking and writing tests for young learners.' },
+    'flyers': { name: 'Flyers', title: 'Flyers Practice Tests', desc: 'Advanced everyday communication practice tests.' },
+    'ket': { name: 'KET', title: 'KET Practice Tests', desc: 'Essential English real-life situations practice.' },
+    'pet': { name: 'PET', title: 'PET Practice Tests', desc: 'Practical English for work, study and travel practice.' },
+    'ielts': { name: 'IELTS', title: '2026 Practice Test Collection', desc: 'Choose from over 100 official-style IELTS tests updated for 2026.' }
+  };
+
+  const courseInfo = courseData[courseId] || courseData['ielts'];
+
+  const allMockTests = useMemo(() => generateMockTests(courseInfo.name), [courseInfo.name]);
+
+  const [activeTab, setActiveTab] = useState('Dashboard');
   const [activeSkill, setActiveSkill] = useState('Reading');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Newest');
@@ -106,24 +126,12 @@ export function PracticeTests() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">2026 Practice Test Collection</h1>
-        <p className="text-slate-600 text-lg">Choose from over 100 official-style IELTS tests updated for 2026.</p>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">{courseInfo.title}</h1>
+        <p className="text-slate-600 text-lg">{courseInfo.desc}</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl overflow-x-auto w-full lg:w-auto">
-          {['All Tests'].map(tab => (
-            <button 
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition-colors bg-white text-[#1E4DB7] shadow-sm`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative w-full lg:w-[300px]">
+        <div className="relative w-full lg:w-[300px] ml-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input 
             type="text" 
@@ -136,7 +144,7 @@ export function PracticeTests() {
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
-        {['Listening', 'Reading', 'Writing'].map(skill => (
+        {['Listening', 'Reading', 'Writing', 'Speaking'].map(skill => (
           <button 
             key={skill}
             onClick={() => setActiveSkill(skill)}
@@ -202,7 +210,7 @@ export function PracticeTests() {
               
               <div className="mt-auto">
                 <Link 
-                  to={test.skill === 'Writing' ? `/test/writing/${test.id}` : (test.title === 'January Reading Practice' ? `/test/reading/${test.id}` : (test.title === 'January Listening Practice' ? `/test/listening/${test.id}` : `/assignment/${test.id}`))}
+                  to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                   className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
                 >
                   Start Test <ArrowRight className="w-4 h-4" />
@@ -216,8 +224,10 @@ export function PracticeTests() {
       {filteredTests.length === 0 && (
         <div className="text-center py-20 bg-white rounded-3xl border border-slate-200">
           <Book className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-900 mb-2">No tests found</h3>
-          <p className="text-slate-600">Try adjusting your search criteria or filters.</p>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">No tests available</h3>
+          <p className="text-slate-600">
+            {courseId !== 'ielts' ? 'Practice tests are currently only available for the IELTS course.' : 'Try adjusting your search criteria or filters.'}
+          </p>
         </div>
       )}
     </div>

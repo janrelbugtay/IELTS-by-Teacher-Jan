@@ -44,6 +44,7 @@ const Flag = (p: any) => <Icon {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-
 const Eraser = (p: any) => <Icon {...p}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></Icon>;
 const ArrowLeft = (p: any) => <Icon {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>;
 const Info = (p: any) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></Icon>;
+const Copy = (p: any) => <Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
 
 // --- APPLICATION DATA ---
 const passagesData = [
@@ -240,8 +241,10 @@ const EXPLANATIONS: Record<number, any> = {
   40: { passageId: 3, highlights: ["fail to be aware of the illness until it has reached a late stage"], explanation: "Paragraph B references the fact that people can sometimes suffer from a disease without realizing they are ill." }
 };
 
-const getQuestionTextForReview = (qId: number) => {
-  for (let p of passagesData) {
+import { getReadingTestData } from '../data/readingTestData';
+
+const getQuestionTextForReview = (qId: number, currentPassagesData: any) => {
+  for (let p of currentPassagesData) {
     for (let block of p.questionBlocks) {
       if (block.questions) {
         const q = block.questions.find((q: any) => q.id === qId);
@@ -258,10 +261,17 @@ const getQuestionTextForReview = (qId: number) => {
   return `Question ${qId}`;
 };
 
-export function ComputerReadingTest({ submissionId }: { submissionId?: string }) {
+export function ComputerReadingTest({ submissionId, assignmentId }: { submissionId?: string, assignmentId?: string }) {
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  const testId = assignmentId || id;
+  const testData = getReadingTestData(testId);
+  const currentPassagesData = testData ? testData.passages : passagesData;
+  const currentAnswerKey = testData ? testData.answers : ANSWER_KEY;
+  const currentExplanations = testData ? testData.explanations : EXPLANATIONS;
+
   const [currentPassageIdx, setCurrentPassageIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [reviewFlags, setReviewFlags] = useState<Record<number, boolean>>({});
@@ -269,6 +279,31 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
   const [hasStarted, setHasStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(3600);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submissionIdState, setSubmissionIdState] = useState<string | null>(null);
+
+  // Safely clamp the index in case data changed length
+  const safePassageIdx = Math.max(0, Math.min(currentPassageIdx, currentPassagesData.length - 1));
+  const passage = currentPassagesData[safePassageIdx];
+
+  if (!passage) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-gray-500 font-medium">Loading test content...</div>
+      </div>
+    );
+  }
+
+  // Reset state when navigating to a different test ID
+  useEffect(() => {
+    setCurrentPassageIdx(0);
+    setAnswers({});
+    setReviewFlags({});
+    setHasStarted(false);
+    setTimeLeft(3600);
+    setIsSubmitted(false);
+    setReviewMode(false);
+    setActiveReviewQuestion(null);
+  }, [id]);
   
   // --- REVIEW MODE STATE ---
   const [reviewMode, setReviewMode] = useState(false);
@@ -318,12 +353,30 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
   }, [submissionId]);
 
   const checkAnswer = (qNum: number) => {
-    const userAns = (answers[qNum] || '').toString().trim().toUpperCase();
-    const correctAns = ANSWER_KEY[qNum];
+    let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
+    const correctAns = currentAnswerKey[qNum];
     
     if (!correctAns) return false;
-    if (userAns === correctAns) return true;
-    if (userAns.startsWith(correctAns + " ") || userAns.startsWith(correctAns + ".")) return true;
+
+    if (userAns === 'T') userAns = 'TRUE';
+    if (userAns === 'F') userAns = 'FALSE';
+    if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
+    if (userAns === 'Y') userAns = 'YES';
+    if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
+
+    // Convert to string and handle possible 'OR' / '/' cases if the answer key has them
+    const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+    
+    for (let ans of correctAnswers) {
+      ans = ans.trim();
+      if (userAns === ans) return true;
+      if (userAns.startsWith(ans + " ") || userAns.startsWith(ans + ".")) return true;
+      
+      const cleanUser = userAns.replace(/[^A-Z0-9]/g, '');
+      const cleanAns = ans.replace(/[^A-Z0-9]/g, '');
+      if (cleanUser === cleanAns && cleanAns.length > 0) return true;
+    }
+    
     return false;
   };
 
@@ -462,35 +515,37 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
   const startReview = (qNum: number) => {
     setActiveReviewQuestion(qNum);
     setReviewMode(true);
-    let pIdx = 0;
-    if (qNum >= 14 && qNum <= 26) pIdx = 1;
-    if (qNum >= 27 && qNum <= 40) pIdx = 2;
-    setCurrentPassageIdx(pIdx);
+    if (qNum > 0) {
+      let pIdx = 0;
+      if (qNum >= 14 && qNum <= 26) pIdx = 1;
+      if (qNum >= 27 && qNum <= 40) pIdx = 2;
+      setCurrentPassageIdx(pIdx);
+    }
   };
 
   const getTheme = (themeName: string) => {
     const themes: any = {
       'standard': {
-        mainBg: 'bg-gray-100',
-        panelLeft: 'bg-white',
-        panelRight: 'bg-gray-50',
-        text: 'text-gray-800',
-        heading: 'text-gray-900',
-        muted: 'text-gray-500',
-        border: 'border-gray-200',
-        box: 'bg-white',
-        boxHeader: 'bg-blue-50 border-blue-100',
+        mainBg: 'bg-gradient-to-br from-indigo-50 via-blue-50 to-white',
+        panelLeft: 'bg-white shadow-[0_0_40px_rgba(0,0,0,0.05)] rounded-r-[2rem]',
+        panelRight: 'bg-transparent',
+        text: 'text-slate-800',
+        heading: 'text-slate-900',
+        muted: 'text-slate-500',
+        border: 'border-slate-200',
+        box: 'bg-white/80 backdrop-blur-md',
+        boxHeader: 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100',
         boxTitle: 'text-blue-900',
-        boxSub: 'text-blue-700',
-        input: 'bg-white border-gray-300 text-gray-800',
-        optionBg: 'bg-white',
+        boxSub: 'text-indigo-700',
+        input: 'bg-white border-slate-300 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm',
+        optionBg: 'bg-white shadow-sm hover:shadow-md transition-shadow',
         highlight: 'bg-yellow-200 hover:bg-yellow-300 text-black',
-        iconBg: 'bg-gray-100',
-        iconText: 'text-gray-600',
-        radioChecked: 'border-blue-500 bg-blue-50 text-blue-700',
-        radioUnchecked: 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300',
-        resizerBg: 'bg-gray-300 hover:bg-blue-400 border-gray-200',
-        resizerLines: 'bg-gray-600'
+        iconBg: 'bg-gradient-to-br from-blue-50 to-indigo-50',
+        iconText: 'text-blue-700',
+        radioChecked: 'border-blue-500 bg-blue-50 text-blue-800 shadow-md transform scale-[1.02]',
+        radioUnchecked: 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-300 hover:shadow-sm',
+        resizerBg: 'bg-transparent hover:bg-blue-400/20 border-transparent',
+        resizerLines: 'bg-blue-300'
       },
       'white-on-black': {
         mainBg: 'bg-black',
@@ -542,9 +597,9 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
 
   const theme = getTheme(colorTheme);
   const textClass = ({
-    'standard': 'text-[11pt]',
-    'large': 'text-[14pt]',
-    'xlarge': 'text-[18pt]'
+    'standard': 'text-[13pt] md:text-[14pt] leading-relaxed',
+    'large': 'text-[16pt] md:text-[18pt] leading-relaxed',
+    'xlarge': 'text-[20pt] md:text-[22pt] leading-relaxed'
   } as any)[textSize];
 
   // --- HIGHLIGHT LOGIC ---
@@ -589,7 +644,7 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
           type: 'new',
           x: rect.left - containerRect.left + leftPanelRef.current.scrollLeft + (rect.width / 2),
           y: rect.top - containerRect.top + leftPanelRef.current.scrollTop,
-          passageId: passagesData[currentPassageIdx].id,
+          passageId: currentPassagesData[safePassageIdx].id,
           paragraphIdx,
           start: actualStart,
           end: actualEnd,
@@ -632,9 +687,48 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
       y: rect.top - containerRect.top + leftPanelRef.current.scrollTop,
       passageId,
       paragraphIdx,
+      start: hl.start,
+      end: hl.end,
+      text: hl.text || '',
       highlightId: hl.id,
       noteText: hl.note
     });
+  };
+
+  const handleCopyText = () => {
+    if (!popover?.text) return;
+    
+    const fallbackCopy = () => {
+      const textArea = document.createElement("textarea");
+      textArea.value = popover.text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error("Fallback copy failed", err);
+      }
+      textArea.remove();
+    };
+
+    try {
+      if (navigator.clipboard && window.isSecureContext && window === window.parent) {
+         navigator.clipboard.writeText(popover.text).catch(() => fallbackCopy());
+      } else {
+         fallbackCopy();
+      }
+      setPopover(null);
+      window.getSelection()?.removeAllRanges();
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+      fallbackCopy();
+      setPopover(null);
+      window.getSelection()?.removeAllRanges();
+    }
   };
 
   const updateNote = () => {
@@ -705,7 +799,7 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
 
   const renderParagraphWithReviewHighlight = (text: string, passageId: number) => {
     if (!reviewMode || !activeReviewQuestion) return text;
-    const explanation = EXPLANATIONS[activeReviewQuestion];
+    const explanation = currentExplanations[activeReviewQuestion];
     if (!explanation || explanation.passageId !== passageId || !explanation.highlights) return text;
 
     let elements: any[] = [text];
@@ -800,8 +894,6 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
     );
   };
 
-  const passage = passagesData[currentPassageIdx];
-
   const renderSummaryText = (text: string, type: string, options: any = null) => {
     const parts = text.split(/(\{\d+\})/g);
     return (
@@ -811,14 +903,30 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
           if (match) {
             const qId = parseInt(match[1]);
             const isFlagged = reviewFlags[qId];
+            const isCorrect = reviewMode ? checkAnswer(qId) : undefined;
+            const inputClass = reviewMode
+              ? (isCorrect
+                  ? (colorTheme !== 'standard' ? 'border-green-800 bg-[#1a2e1a] text-green-400 cursor-pointer' : 'border-green-400 bg-green-50 text-green-900 cursor-pointer hover:bg-green-100')
+                  : (colorTheme !== 'standard' ? 'border-red-800 bg-[#3a1a1a] text-red-400 cursor-pointer line-through' : 'border-red-400 bg-red-50 text-red-900 cursor-pointer line-through hover:bg-red-100'))
+              : `focus:border-blue-500 ${theme.input}`;
+              
             return (
               <span key={i} id={`question-${qId}`} className="inline-block mx-2 align-middle transition-all duration-500 relative group">
                 <span className={`text-[0.75em] font-bold mr-1 ${theme.boxTitle}`}>{qId}</span>
                 {type === 'summary-options' ? (
                   <select
-                    className={`border-b-2 focus:outline-none focus:border-blue-500 py-1 px-2 pr-6 rounded ${theme.input} shadow-sm`}
+                    className={`border-b-2 focus:outline-none py-1 px-2 pr-6 rounded shadow-sm transition-colors ${inputClass}`}
                     value={answers[qId] || ''}
-                    onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                    disabled={false}
+                    onChange={(e) => {
+                      if (!reviewMode) handleAnswerChange(qId, e.target.value);
+                    }}
+                    onClick={(e) => {
+                      if (reviewMode) {
+                        e.preventDefault();
+                        startReview(activeReviewQuestion === qId ? 0 : qId);
+                      }
+                    }}
                   >
                     <option value="">Select...</option>
                     {options.map((opt: string) => (
@@ -828,19 +936,30 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                 ) : (
                   <input
                     type="text"
-                    className={`border-b-2 focus:outline-none focus:border-blue-500 py-1 px-2 w-32 text-center rounded shadow-sm ${theme.input}`}
+                    className={`border-b-2 focus:outline-none py-1 px-2 w-32 text-center rounded shadow-sm transition-colors cursor-pointer ${inputClass}`}
                     value={answers[qId] || ''}
-                    onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                    readOnly={reviewMode}
+                    onChange={(e) => {
+                      if (!reviewMode) handleAnswerChange(qId, e.target.value);
+                    }}
+                    onClick={(e) => {
+                      if (reviewMode) {
+                        e.preventDefault();
+                        startReview(activeReviewQuestion === qId ? 0 : qId);
+                      }
+                    }}
                     placeholder="Type answer..."
                   />
                 )}
-                <button 
-                  onClick={() => toggleReviewFlag(qId)} 
-                  title="Flag for review"
-                  className={`absolute -top-3 -right-2 p-1 rounded-full bg-white shadow-sm border border-gray-100 transition-opacity ${isFlagged ? 'opacity-100 text-blue-600' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700'}`}
-                >
-                  <Flag size={12} fill={isFlagged ? 'currentColor' : 'none'} />
-                </button>
+                {!reviewMode && (
+                  <button 
+                    onClick={() => toggleReviewFlag(qId)} 
+                    title="Flag for review"
+                    className={`absolute -top-3 -right-2 p-1 rounded-full bg-white shadow-sm border border-gray-100 transition-opacity ${isFlagged ? 'opacity-100 text-blue-600' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700'}`}
+                  >
+                    <Flag size={12} fill={isFlagged ? 'currentColor' : 'none'} />
+                  </button>
+                )}
               </span>
             );
           }
@@ -855,11 +974,34 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
   // -------------------------------------------------------------
   if (isSubmitted && !reviewMode) {
     const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+    let bandScore = 0;
+    if (score >= 39) bandScore = 9.0;
+    else if (score >= 37) bandScore = 8.5;
+    else if (score >= 35) bandScore = 8.0;
+    else if (score >= 33) bandScore = 7.5;
+    else if (score >= 30) bandScore = 7.0;
+    else if (score >= 27) bandScore = 6.5;
+    else if (score >= 23) bandScore = 6.0;
+    else if (score >= 19) bandScore = 5.5;
+    else if (score >= 15) bandScore = 5.0;
+    else if (score >= 13) bandScore = 4.5;
+    else if (score >= 10) bandScore = 4.0;
+    else if (score >= 8) bandScore = 3.5;
+    else if (score >= 6) bandScore = 3.0;
+    else if (score >= 4) bandScore = 2.5;
+    else if (score >= 2) bandScore = 2.0;
+    else if (score >= 1) bandScore = 1.0;
 
     const renderGradedRow = (qNum: number) => {
       const isCorrect = checkAnswer(qNum);
-      const userAns = answers[qNum] || '';
-      
+      let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
+
+      if (userAns === 'T') userAns = 'TRUE';
+      if (userAns === 'F') userAns = 'FALSE';
+      if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
+      if (userAns === 'Y') userAns = 'YES';
+      if (userAns === 'N' && String(currentAnswerKey[qNum]).includes('NO')) userAns = 'NO';
+
       return (
         <button 
           key={qNum} 
@@ -876,7 +1018,7 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
             </span>
             {!isCorrect && (
               <span className={`text-[0.875em] font-bold block mt-1 flex items-center gap-1 ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>
-                 <CheckCircle2 size={14} /> {ANSWER_KEY[qNum]}
+                 <CheckCircle2 size={14} /> {currentAnswerKey[qNum]}
               </span>
             )}
           </div>
@@ -898,8 +1040,11 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
               <span className="text-[1.125em] font-bold">Test Submitted Successfully</span>
             </div>
 
-            <button onClick={() => navigate('/dashboard')} className={`mb-6 flex items-center text-[0.875em] font-bold transition-colors ${theme.text} hover:opacity-70`}>
-               <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
+            <button 
+              onClick={() => navigate('/ielts/dashboard')} 
+              className="mb-8 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold text-[1.125em] transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 w-full md:w-auto mx-auto group"
+            >
+               <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
             </button>
 
             <h1 className={`text-[2.25em] font-bold text-center mb-10 font-serif ${theme.heading}`}>IELTS Reading Results</h1>
@@ -926,9 +1071,15 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                 </div>
               </div>
               
-              <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[160px] transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-700' : 'bg-white border-blue-100'}`}>
-                <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-2 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>Final Score</span>
-                <span className={`text-[3.75em] font-black ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{score}<span className={`text-[0.5em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-300'}`}>/40</span></span>
+              <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[200px] flex flex-col justify-center gap-6 transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-700' : 'bg-white border-blue-100'}`}>
+                 <div>
+                     <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-1 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>Band Score</span>
+                     <span className={`text-[4.5em] leading-none font-black ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>{bandScore.toFixed(1)}</span>
+                 </div>
+                 <div className={`border-t pt-4 ${colorTheme !== 'standard' ? 'border-gray-800' : 'border-blue-50'}`}>
+                     <span className={`block text-[0.75em] font-bold uppercase tracking-widest mb-1 ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>Raw Score</span>
+                     <span className={`text-[1.5em] font-black ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{score}<span className={`text-[0.6em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>/40</span></span>
+                 </div>
               </div>
             </div>
 
@@ -937,7 +1088,8 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
             </p>
 
             <div className={`font-bold text-[1.25em] py-3 px-6 flex justify-between mb-8 rounded-lg shadow-md uppercase tracking-widest ${colorTheme !== 'standard' ? 'bg-[#111] text-gray-400 border border-gray-800' : 'bg-[#183473] text-white'}`}>
-              <span>Reading</span><span>Reading</span><span>Reading</span><span>Reading</span><span>Reading</span>
+              <span className="flex-1 text-center border-r border-white/20">Questions 1-20</span>
+              <span className="flex-1 text-center">Questions 21-40</span>
             </div>
 
             {/* Grid for answers: 1-20 left, 21-40 right */}
@@ -1014,7 +1166,7 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
       <CustomStyles />
       <div className={`flex flex-col h-screen font-sans ${theme.mainBg} ${textClass}`}>
         {/* Header */}
-        <header className="bg-[#1a3673] text-white shadow-md flex items-center justify-between px-6 py-3 shrink-0 z-20 relative">
+        <header className="bg-gradient-to-r from-blue-900 via-[#1a3673] to-indigo-900 text-white shadow-xl flex items-center justify-between px-6 py-4 shrink-0 z-20 relative border-b border-white/10">
           {/* Left Nav */}
           <div className="flex items-center gap-3 relative z-30">
             {reviewMode ? (
@@ -1102,20 +1254,32 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
           </div>
         </header>
 
+        {/* Progress Bar (Visible only when not in review mode) */}
+        {!reviewMode && (
+          <div className={`w-full h-1.5 shrink-0 z-20 ${colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-blue-900/50'}`}>
+            <div 
+              className={`h-full transition-all duration-300 ${colorTheme !== 'standard' ? 'bg-yellow-500' : 'bg-blue-400'}`}
+              style={{ width: `${(Object.keys(answers).filter(k => (answers[parseInt(k)] || '').toString().trim() !== '').length / 40) * 100}%` }} 
+            />
+          </div>
+        )}
+
         {/* Passage Navigation Tabs (Top) */}
         <div className={`flex px-6 shrink-0 z-10 shadow-sm ${colorTheme !== 'standard' ? 'bg-[#1a1a1a] border-b border-gray-800' : 'bg-blue-800 border-b border-blue-900'}`}>
-          {passagesData.map((p, idx) => (
+          {currentPassagesData.map((p, idx) => (
             <button
               key={p.id}
               onClick={() => {
-                if (reviewMode) return; 
                 setCurrentPassageIdx(idx);
+                if (reviewMode) {
+                  setActiveReviewQuestion(null);
+                }
               }}
               className={`px-6 py-2.5 text-[0.875em] font-bold tracking-wide transition-all ${
-                currentPassageIdx === idx 
+                safePassageIdx === idx 
                   ? (colorTheme !== 'standard' ? 'border-b-4 border-yellow-500 text-yellow-400 bg-[#333]' : 'border-b-4 border-white text-white bg-blue-900') 
                   : (colorTheme !== 'standard' ? 'border-b-4 border-transparent text-gray-400 hover:bg-[#222]' : 'border-b-4 border-transparent text-blue-200 hover:bg-blue-900/50 hover:text-white')
-              } ${reviewMode && currentPassageIdx !== idx ? 'opacity-50 cursor-not-allowed' : ''}`}
+              }`}
             >
               {p.title.replace('READING ', '')}
             </button>
@@ -1129,7 +1293,7 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
           <div 
             ref={leftPanelRef}
             style={{ width: isDesktop ? `${leftWidth}%` : '100%' }}
-            className={`h-full border-r overflow-y-auto shadow-inner relative selection:bg-blue-300 selection:text-black scroll-smooth ${theme.panelLeft} ${theme.border}`}
+            className={`h-1/2 md:h-full border-r overflow-y-auto shadow-inner relative selection:bg-blue-300 selection:text-black scroll-smooth ${theme.panelLeft} ${theme.border}`}
             onMouseUp={handleTextSelect}
           >
             <div className="p-8 max-w-3xl mx-auto">
@@ -1177,6 +1341,14 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                         <Edit3 size={16} strokeWidth={2.5} className="text-blue-500" />
                         Add Note
                       </button>
+                      <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                      <button 
+                        onClick={handleCopyText}
+                        className="flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                      >
+                        <Copy size={16} strokeWidth={2.5} className="text-gray-600" />
+                        Copy
+                      </button>
                     </div>
                   )}
                   
@@ -1197,6 +1369,14 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                           title="Edit Note"
                         >
                           <Edit3 size={16} strokeWidth={2.5} className={popover.noteText ? "text-blue-500" : "text-gray-500"} /> {popover.noteText ? 'Edit Note' : 'Add Note'}
+                        </button>
+                        <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                        <button 
+                          onClick={handleCopyText}
+                          className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                          title="Copy Highlighted Text"
+                        >
+                          <Copy size={16} strokeWidth={2.5} className="text-gray-600" /> Copy
                         </button>
                         <div className="w-px h-5 bg-gray-200 mx-1"></div>
                         <button 
@@ -1269,70 +1449,47 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
           {/* Right Side: Questions OR Review Panel */}
           <div 
             style={{ width: isDesktop ? `${100 - leftWidth}%` : '100%' }}
-            className={`h-full overflow-y-auto ${theme.panelRight}`}
+            className={`h-1/2 md:h-full overflow-y-auto ${theme.panelRight}`}
           >
-            {reviewMode ? (
-               // --- EXPLANATION PANEL ---
-               <div className="p-8 max-w-3xl mx-auto pb-32">
-                  <div className="flex items-center justify-between mb-8">
-                     <h2 className={`text-[1.875em] font-bold font-serif ${theme.heading}`}>Question {activeReviewQuestion}</h2>
-                     <div className="flex gap-3">
-                        <button 
-                          onClick={() => activeReviewQuestion && startReview(activeReviewQuestion - 1)} 
-                          disabled={!activeReviewQuestion || activeReviewQuestion <= 1}
-                          className={`p-2 border ${theme.border} rounded-full transition-colors disabled:opacity-30 ${colorTheme !== 'standard' ? 'text-white hover:bg-[#333]' : 'text-gray-700 hover:bg-white'}`}
-                        >
-                           <ChevronLeft size={24} />
-                        </button>
-                        <button 
-                          onClick={() => activeReviewQuestion && startReview(activeReviewQuestion + 1)} 
-                          disabled={!activeReviewQuestion || activeReviewQuestion >= 40}
-                          className={`p-2 border ${theme.border} rounded-full transition-colors disabled:opacity-30 ${colorTheme !== 'standard' ? 'text-white hover:bg-[#333]' : 'text-gray-700 hover:bg-white'}`}
-                        >
-                           <ChevronRight size={24} />
-                        </button>
-                     </div>
-                  </div>
-
-                  <div className={`${theme.box} p-8 rounded-2xl shadow-sm border ${theme.border}`}>
-                     <p className={`font-bold text-[1.25em] mb-8 leading-relaxed ${theme.text}`}>
-                       {activeReviewQuestion ? getQuestionTextForReview(activeReviewQuestion) : ''}
-                     </p>
-                     
-                     <div className="flex flex-col md:flex-row gap-6 mb-8 font-sans">
-                        <div className={`flex-1 p-5 rounded-xl border shadow-inner ${colorTheme !== 'standard' ? 'bg-[#333] border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                           <span className={`${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'} text-[0.875em] uppercase tracking-wider font-bold mb-2 block`}>Your Answer</span>
-                           <span className={`text-[1.5em] font-black ${activeReviewQuestion && checkAnswer(activeReviewQuestion) ? (colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600') : (colorTheme !== 'standard' ? 'text-red-400 line-through' : 'text-red-600 line-through')}`}>
-                              {activeReviewQuestion && answers[activeReviewQuestion] ? answers[activeReviewQuestion] : 'No Answer'}
-                           </span>
-                        </div>
-                        <div className={`flex-1 p-5 rounded-xl border shadow-inner ${colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800' : 'bg-green-50 border-green-200'}`}>
-                           <span className={`text-[0.875em] uppercase tracking-wider font-bold mb-2 block ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-700'}`}>Correct Answer</span>
-                           <span className={`text-[1.5em] font-black ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-700'}`}>
-                              {activeReviewQuestion ? ANSWER_KEY[activeReviewQuestion] : ''}
-                           </span>
-                        </div>
-                     </div>
-
-                     <hr className={`my-8 border-t ${theme.border}`}/>
-                     
-                     <h3 className={`font-bold text-[1.25em] mb-4 flex items-center gap-2 ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-900'}`}>
-                        <Info size={24} className="text-blue-500"/> Explanation
-                     </h3>
-                     
-                     <div className={`whitespace-pre-wrap text-[1.125em] leading-relaxed p-6 rounded-xl border shadow-sm ${colorTheme !== 'standard' ? 'bg-[#332800] text-yellow-100 border-yellow-700' : 'bg-yellow-50/70 text-gray-800 border-yellow-200'}`}>
-                        {activeReviewQuestion ? (EXPLANATIONS[activeReviewQuestion]?.explanation || "Explanation not found.") : ''}
-                     </div>
-                  </div>
-               </div>
-            ) : (
-               // --- STANDARD QUESTIONS PANEL ---
-               <div className="p-8 max-w-3xl mx-auto pb-32">
+            <div className="p-8 max-w-3xl mx-auto pb-32">
                   {passage.questionBlocks.map((block: any, bIdx: number) => (
                     <div key={bIdx} className={`mb-12 rounded-xl shadow-md border overflow-hidden ${theme.box} ${theme.border}`}>
                       <div className={`p-5 border-b ${theme.boxHeader}`}>
                         <h4 className={`font-bold text-[1.125em] ${theme.boxTitle}`}>{block.title}</h4>
-                        <p className={`mt-2 whitespace-pre-wrap italic text-[0.875em] ${theme.boxSub}`}>{block.instruction}</p>
+                        {(() => {
+                          const lines = (block.instruction || '').split('\n');
+                          const normalLines: string[] = [];
+                          const optionLines: string[] = [];
+                          
+                          lines.forEach((line: string) => {
+                            if (/^[A-K][\.\)]?\s+/.test(line.trim())) {
+                              optionLines.push(line);
+                            } else {
+                              if (optionLines.length === 0) {
+                                normalLines.push(line);
+                              } else {
+                                optionLines.push(line); 
+                              }
+                            }
+                          });
+
+                          return (
+                            <>
+                              {normalLines.length > 0 && (
+                                <p className={`mt-2 whitespace-pre-wrap italic text-[0.875em] ${theme.boxSub}`}>
+                                  {normalLines.join('\n')}
+                                </p>
+                              )}
+                              {optionLines.length > 0 && (
+                                <div className={`mt-4 p-5 border-2 rounded-lg shadow-sm font-sans not-italic text-[1.125em] font-semibold ${theme.box} ${theme.border} ${theme.text}`}>
+                                  {optionLines.map((line: string, idx: number) => (
+                                    <div key={idx} className="mb-1.5 last:mb-0">{line}</div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       
                       <div className="p-6">
@@ -1347,14 +1504,49 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                               </div>
                             )}
                             {renderSummaryText(block.text, block.type, block.options)}
+                            {reviewMode && activeReviewQuestion && block.text.includes(`{${activeReviewQuestion}}`) && (
+                              <div className={`mt-6 pt-4 border-t ${colorTheme !== 'standard' ? 'border-gray-700' : 'border-gray-300'}`}>
+                                {!checkAnswer(activeReviewQuestion) && (
+                                  <div className="mb-4">
+                                    <span className={`text-[0.875em] uppercase tracking-wider font-bold mb-1 block ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-700'}`}>Correct Answer</span>
+                                    <span className={`text-[1.25em] font-black ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-700'}`}>
+                                      {currentAnswerKey[activeReviewQuestion]}
+                                    </span>
+                                  </div>
+                                )}
+                                <h3 className={`font-bold text-[1.125em] mb-2 flex items-center gap-2 ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-900'}`}>
+                                  <Info size={20} className="text-blue-500"/> Explanation
+                                </h3>
+                                <div className={`whitespace-pre-wrap text-[1em] leading-relaxed p-4 rounded-lg border shadow-sm ${colorTheme !== 'standard' ? 'bg-[#332800] text-yellow-100 border-yellow-700' : 'bg-yellow-50/70 text-gray-800 border-yellow-200'}`}>
+                                  {currentExplanations[activeReviewQuestion]?.explanation || "Explanation not found."}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
                         {/* Standard Questions */}
                         {block.questions && block.questions.map((q: any) => {
                           const isFlagged = reviewFlags[q.id];
+                          const isCorrect = reviewMode ? checkAnswer(q.id) : undefined;
+                          const qThemeClass = reviewMode 
+                            ? (isCorrect 
+                                ? (colorTheme !== 'standard' ? 'border-green-800 bg-[#1a2e1a] hover:bg-[#223d22]' : 'border-green-400 bg-green-50 hover:bg-green-100')
+                                : (colorTheme !== 'standard' ? 'border-red-800 bg-[#3a1a1a] hover:bg-[#4d2222]' : 'border-red-400 bg-red-50 hover:bg-red-100'))
+                            : (isFlagged ? (colorTheme !== 'standard' ? 'border-blue-500 bg-blue-900/20' : 'border-blue-300 bg-blue-50/30') : 'border-transparent');
+
                           return (
-                            <div key={q.id} id={`question-${q.id}`} className={`mb-8 last:mb-0 p-4 rounded-xl transition-all duration-500 border ${isFlagged ? (colorTheme !== 'standard' ? 'border-blue-500 bg-blue-900/20' : 'border-blue-300 bg-blue-50/30') : 'border-transparent'}`}>
+                            <div 
+                              key={q.id} 
+                              id={`question-${q.id}`} 
+                              className={`mb-8 last:mb-0 p-4 rounded-xl transition-all duration-500 border ${qThemeClass} ${reviewMode ? 'cursor-pointer' : ''}`}
+                              onClick={(e) => {
+                                if (reviewMode) {
+                                  e.preventDefault();
+                                  startReview(activeReviewQuestion === q.id ? 0 : q.id);
+                                }
+                              }}
+                            >
                               <div className="flex gap-4">
                                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-inner border ${isFlagged ? 'bg-blue-500 text-white border-blue-600' : `${theme.iconBg} ${theme.iconText} border-gray-200`}`}>
                                   {q.id}
@@ -1364,13 +1556,15 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                                     <p className={`font-medium text-[1em] leading-relaxed ${theme.text}`}>{q.text}</p>
                                     
                                     {/* Flag for Review Toggle Button */}
-                                    <button 
-                                      onClick={() => toggleReviewFlag(q.id)}
-                                      className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${isFlagged ? (colorTheme !== 'standard' ? 'text-blue-400 bg-blue-900/50 hover:bg-blue-800' : 'text-blue-600 bg-blue-100 hover:bg-blue-200') : (colorTheme !== 'standard' ? 'text-gray-500 hover:bg-[#333] hover:text-gray-300' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700')}`}
-                                      title={isFlagged ? "Unflag question" : "Flag for review"}
-                                    >
-                                      <Flag size={20} fill={isFlagged ? 'currentColor' : 'none'} />
-                                    </button>
+                                    {!reviewMode && (
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); toggleReviewFlag(q.id); }}
+                                        className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${isFlagged ? (colorTheme !== 'standard' ? 'text-blue-400 bg-blue-900/50 hover:bg-blue-800' : 'text-blue-600 bg-blue-100 hover:bg-blue-200') : (colorTheme !== 'standard' ? 'text-gray-500 hover:bg-[#333] hover:text-gray-300' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700')}`}
+                                        title={isFlagged ? "Unflag question" : "Flag for review"}
+                                      >
+                                        <Flag size={20} fill={isFlagged ? 'currentColor' : 'none'} />
+                                      </button>
+                                    )}
                                   </div>
                                   
                                   {/* MCQ and Matching logic */}
@@ -1382,19 +1576,31 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                                         return (
                                           <label 
                                             key={optIdx} 
-                                            className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all shadow-sm ${
+                                            onClick={(e) => {
+                                              if (reviewMode) {
+                                                e.preventDefault();
+                                                startReview(activeReviewQuestion === q.id ? 0 : q.id);
+                                              }
+                                            }}
+                                            className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all shadow-sm ${
                                               isSelected ? theme.radioChecked : theme.radioUnchecked
-                                            }`}
+                                            } cursor-pointer`}
                                           >
                                             <input
                                               type="radio"
                                               name={`question-${q.id}`}
                                               value={optionLetter}
                                               checked={isSelected}
-                                              onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                                              className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer"
+                                              disabled={false}
+                                              onChange={(e) => {
+                                                if (!reviewMode) handleAnswerChange(q.id, e.target.value);
+                                              }}
+                                              className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                             />
-                                            <span className="font-medium text-[1em] leading-relaxed">{opt}</span>
+                                            <span className="text-[1em] leading-relaxed flex items-start font-serif">
+                                              <span className="font-bold font-sans mr-2 shrink-0">{optionLetter}.</span>
+                                              <span>{opt.substring(2).trim()}</span>
+                                            </span>
                                           </label>
                                         );
                                       })}
@@ -1409,11 +1615,17 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                                         return (
                                           <label 
                                             key={opt}
-                                            className={`flex-1 min-w-[120px] text-[1em] text-center p-3 rounded-lg border-2 cursor-pointer transition-all font-bold shadow-sm ${
+                                            onClick={(e) => {
+                                              if (reviewMode) {
+                                                e.preventDefault();
+                                                startReview(activeReviewQuestion === q.id ? 0 : q.id);
+                                              }
+                                            }}
+                                            className={`flex-1 min-w-[120px] text-[1em] text-center p-3 rounded-lg border-2 transition-all font-bold shadow-sm ${
                                               isSelected 
                                                 ? theme.radioChecked 
                                                 : theme.radioUnchecked
-                                            }`}
+                                            } cursor-pointer`}
                                           >
                                             <input
                                               type="radio"
@@ -1421,7 +1633,10 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                                               value={opt}
                                               className="hidden"
                                               checked={isSelected}
-                                              onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                              disabled={false}
+                                              onChange={(e) => {
+                                                if (!reviewMode) handleAnswerChange(q.id, e.target.value);
+                                              }}
                                             />
                                             {opt}
                                           </label>
@@ -1434,11 +1649,40 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                                   {block.type === 'input' && (
                                      <input
                                        type="text"
-                                       className={`w-full border-2 rounded-lg p-4 focus:outline-none focus:border-blue-500 transition-all shadow-inner font-medium text-[1em] ${theme.input} ${theme.border}`}
+                                       className={`w-full border-2 rounded-lg p-4 focus:outline-none transition-all shadow-inner font-medium text-[1em] cursor-pointer ${theme.input} ${theme.border} ${reviewMode ? '' : 'focus:border-blue-500'}`}
                                        placeholder="Type your answer here..."
                                        value={answers[q.id] || ''}
-                                       onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                       readOnly={reviewMode}
+                                       onChange={(e) => {
+                                         if (!reviewMode) handleAnswerChange(q.id, e.target.value);
+                                       }}
+                                       onClick={(e) => {
+                                         if (reviewMode) {
+                                           e.preventDefault();
+                                           startReview(activeReviewQuestion === q.id ? 0 : q.id);
+                                         }
+                                       }}
                                      />
+                                  )}
+
+                                  {/* Explanation Block */}
+                                  {reviewMode && activeReviewQuestion === q.id && (
+                                    <div className={`mt-6 pt-4 border-t ${colorTheme !== 'standard' ? 'border-gray-700' : 'border-gray-300'}`} onClick={e => e.stopPropagation()}>
+                                      {!isCorrect && (
+                                        <div className="mb-4">
+                                          <span className={`text-[0.875em] uppercase tracking-wider font-bold mb-1 block ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-700'}`}>Correct Answer</span>
+                                          <span className={`text-[1.25em] font-black ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-700'}`}>
+                                            {currentAnswerKey[q.id]}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <h3 className={`font-bold text-[1.125em] mb-2 flex items-center gap-2 ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-900'}`}>
+                                        <Info size={20} className="text-blue-500"/> Explanation
+                                      </h3>
+                                      <div className={`whitespace-pre-wrap text-[1em] leading-relaxed p-4 rounded-lg border shadow-sm ${colorTheme !== 'standard' ? 'bg-[#332800] text-yellow-100 border-yellow-700' : 'bg-yellow-50/70 text-gray-800 border-yellow-200'}`}>
+                                        {currentExplanations[q.id]?.explanation || "Explanation not found."}
+                                      </div>
+                                    </div>
                                   )}
 
                                 </div>
@@ -1450,7 +1694,6 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                     </div>
                   ))}
                </div>
-            )}
           </div>
         </main>
 
@@ -1480,13 +1723,13 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                 <div className="flex flex-col gap-2.5">
                   {/* Row 1 */}
                   <div className="flex flex-wrap items-center gap-6">
-                    <div className={`flex items-center gap-3 p-1.5 rounded-lg ${currentPassageIdx === 0 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
+                    <div className={`flex items-center gap-3 p-1.5 rounded-lg ${safePassageIdx === 0 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
                       <span className={`font-bold text-[0.75em] uppercase tracking-wider w-14 shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 1</span>
                       <div className="flex flex-wrap gap-[1px]">
                         {Array.from({ length: 13 }, (_, i) => i + 1).map(renderQuestionBox(0))}
                       </div>
                     </div>
-                    <div className={`flex items-center gap-3 p-1.5 rounded-lg ${currentPassageIdx === 1 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
+                    <div className={`flex items-center gap-3 p-1.5 rounded-lg ${safePassageIdx === 1 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
                       <span className={`font-bold text-[0.75em] uppercase tracking-wider w-14 shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 2</span>
                       <div className="flex flex-wrap gap-[1px]">
                         {Array.from({ length: 13 }, (_, i) => i + 14).map(renderQuestionBox(1))}
@@ -1495,7 +1738,7 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                   </div>
                   {/* Row 2 */}
                   <div className="flex flex-wrap items-center gap-6">
-                    <div className={`flex items-center gap-3 p-1.5 rounded-lg ${currentPassageIdx === 2 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
+                    <div className={`flex items-center gap-3 p-1.5 rounded-lg ${safePassageIdx === 2 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
                       <span className={`font-bold text-[0.75em] uppercase tracking-wider w-14 shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 3</span>
                       <div className="flex flex-wrap gap-[1px]">
                         {Array.from({ length: 14 }, (_, i) => i + 27).map(renderQuestionBox(2))}
@@ -1520,8 +1763,20 @@ export function ComputerReadingTest({ submissionId }: { submissionId?: string })
                       if (user) {
                         try {
                           let title = 'January Reading Practice';
-                          if (id && isNaN(Number(id))) {
-                            title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                          if (id) {
+                            const numericId = Number(id);
+                            if (!isNaN(numericId) && numericId >= 1) {
+                              const months = [
+                                'January', 'February', 'March', 'April', 'May', 'June',
+                                'July', 'August', 'September', 'October', 'November', 'December'
+                              ];
+                              const monthIndex = Math.floor((numericId - 1) / 3);
+                              if (monthIndex >= 0 && monthIndex < months.length) {
+                                title = `${months[monthIndex]} Reading Practice`;
+                              }
+                            } else {
+                              title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                            }
                           }
                           const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
                           let bandScore = 0;

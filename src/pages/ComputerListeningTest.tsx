@@ -4,6 +4,8 @@ import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/fires
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
 import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
+import { CustomAudioPlayer } from '../components/CustomAudioPlayer';
+import { FebruaryListeningTest } from './FebruaryListeningTest';
 
 const CustomStyles = () => (
   <style>{`
@@ -35,20 +37,29 @@ const CustomStyles = () => (
     .mcq-label {
         display: flex;
         align-items: flex-start;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
+        padding: 16px;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .mcq-label:hover {
-        background-color: #f3f4f6;
+        background-color: #f9fafb;
+        border-color: #93c5fd;
+    }
+    .mcq-label.selected {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+        color: #1e3a8a;
     }
     .mcq-radio {
-        margin-top: 4px;
-        margin-right: 12px;
+        margin-top: 5px;
+        margin-right: 16px;
         cursor: pointer;
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
     }
     .nav-btn {
         width: 22px;
@@ -114,6 +125,10 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+
+  if (id === '5' && !submissionId) {
+      return <FebruaryListeningTest />;
+  }
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
   const [hasStarted, setHasStarted] = useState(false);
@@ -203,10 +218,26 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
       let title = 'January Listening Practice';
       
       const checkAnswer = (qNum: number) => {
-          const userAns = (answers[qNum] || '').toString().trim().toUpperCase();
+          let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
           const correctAns = LISTENING_ANSWER_KEY[qNum];
           if (!correctAns) return false;
-          return userAns === correctAns || userAns.startsWith(correctAns + " ");
+
+          if (userAns === 'T') userAns = 'TRUE';
+          if (userAns === 'F') userAns = 'FALSE';
+          if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
+          if (userAns === 'Y') userAns = 'YES';
+          if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
+
+          const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+          for (let ans of correctAnswers) {
+            ans = ans.trim();
+            if (userAns === ans) return true;
+            if (userAns.startsWith(ans + " ") || userAns.startsWith(ans + ".")) return true;
+            const cleanUser = userAns.replace(/[^A-Z0-9]/g, '');
+            const cleanAns = ans.replace(/[^A-Z0-9]/g, '');
+            if (cleanUser === cleanAns && cleanAns.length > 0) return true;
+          }
+          return false;
       };
 
       const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
@@ -256,16 +287,56 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
 
   if (isSubmitted) {
     const checkAnswer = (qNum: number) => {
-        const userAns = (answers[qNum] || '').toString().trim().toUpperCase();
+        let userAns = (answers[qNum] || '').toString().trim().toUpperCase();
         const correctAns = LISTENING_ANSWER_KEY[qNum];
         if (!correctAns) return false;
-        return userAns === correctAns || userAns.startsWith(correctAns + " ");
+
+        if (userAns === 'T') userAns = 'TRUE';
+        if (userAns === 'F') userAns = 'FALSE';
+        if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
+        if (userAns === 'Y') userAns = 'YES';
+        if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
+
+        const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+        for (let ans of correctAnswers) {
+          ans = ans.trim();
+          if (userAns === ans) return true;
+          if (userAns.startsWith(ans + " ") || userAns.startsWith(ans + ".")) return true;
+          const cleanUser = userAns.replace(/[^A-Z0-9]/g, '');
+          const cleanAns = ans.replace(/[^A-Z0-9]/g, '');
+          if (cleanUser === cleanAns && cleanAns.length > 0) return true;
+        }
+        return false;
     };
     const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+    let bandScore = 0;
+    if (score >= 39) bandScore = 9.0;
+    else if (score >= 37) bandScore = 8.5;
+    else if (score >= 35) bandScore = 8.0;
+    else if (score >= 32) bandScore = 7.5;
+    else if (score >= 30) bandScore = 7.0;
+    else if (score >= 26) bandScore = 6.5;
+    else if (score >= 23) bandScore = 6.0;
+    else if (score >= 18) bandScore = 5.5;
+    else if (score >= 16) bandScore = 5.0;
+    else if (score >= 13) bandScore = 4.5;
+    else if (score >= 11) bandScore = 4.0;
+    else if (score >= 8) bandScore = 3.5;
+    else if (score >= 6) bandScore = 3.0;
+    else if (score >= 4) bandScore = 2.5;
+    else if (score >= 2) bandScore = 2.0;
+    else if (score >= 1) bandScore = 1.0;
 
     const renderGradedRow = (qNum: number) => {
       const isCorrect = checkAnswer(qNum);
-      const userAns = answers[qNum] || '';
+      let userAns = (answers[qNum] || '').toString().trim().toUpperCase();
+
+      if (userAns === 'T') userAns = 'TRUE';
+      if (userAns === 'F') userAns = 'FALSE';
+      if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
+      if (userAns === 'Y') userAns = 'YES';
+      if (userAns === 'N' && String(LISTENING_ANSWER_KEY[qNum]).includes('NO')) userAns = 'NO';
+
       return (
         <div key={qNum} className={`w-full text-left flex border h-auto min-h-[44px] rounded-lg overflow-hidden ${isCorrect ? 'border-green-300 shadow-sm' : 'border-red-300 shadow-sm'}`}>
           <div className={`w-10 flex items-center justify-center font-bold text-[1.125em] border-r shrink-0 ${isCorrect ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
@@ -325,9 +396,15 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                   </div>
                 </div>
               </div>
-              <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[160px] transform hover:scale-105 transition-transform bg-white border-blue-100`}>
-                <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-2 text-gray-500`}>Final Score</span>
-                <span className={`text-[3.75em] font-black text-blue-600`}>{score}<span className={`text-[0.5em] font-bold text-gray-300`}>/40</span></span>
+              <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[200px] flex flex-col justify-center gap-6 transform hover:scale-105 transition-transform bg-white border-blue-100`}>
+                 <div>
+                     <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-1 text-gray-500`}>Band Score</span>
+                     <span className={`text-[4.5em] leading-none font-black text-green-600`}>{bandScore.toFixed(1)}</span>
+                 </div>
+                 <div className={`border-t pt-4 border-blue-50`}>
+                     <span className={`block text-[0.75em] font-bold uppercase tracking-widest mb-1 text-gray-400`}>Raw Score</span>
+                     <span className={`text-[1.5em] font-black text-blue-600`}>{score}<span className={`text-[0.6em] font-bold text-gray-400`}>/40</span></span>
+                 </div>
               </div>
             </div>
 
@@ -409,10 +486,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
               <p className="text-[13px] text-gray-700">Listen and answer questions <span className="font-bold">{navQuestionRange}</span>.</p>
           </div>
           <div>
-              <audio controls className="h-10" ref={audioRef}>
-                  <source src="https://docs.google.com/uc?export=download&id=1OuGcq0z6bZ28Uv0nKogXeu40tEZTD5Jl" type="audio/mpeg" />
-                  Your browser does not support the audio element.
-              </audio>
+              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1OuGcq0z6bZ28Uv0nKogXeu40tEZTD5Jl" />
           </div>
       </div>
 
@@ -594,9 +668,9 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                                 <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
                                 <div className="pl-8 space-y-1">
                                     {['A', 'B', 'C'].map(opt => (
-                                        <label key={opt} className="mcq-label">
+                                        <label key={opt} className={`mcq-label ${answers[q.qNum] === opt ? "selected" : ""}`}>
                                             <input type="radio" name={`q${q.qNum}`} value={opt} className="mcq-radio" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
-                                            <span className="font-bold mr-3">{opt}</span> {q.options[opt as keyof typeof q.options]}
+                                            <span className="font-bold font-sans mr-3 shrink-0">{opt}.</span> <span className="font-serif">{q.options[opt as keyof typeof q.options]}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -622,9 +696,9 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                                 <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
                                 <div className="pl-8 space-y-1">
                                     {['A', 'B', 'C'].map(opt => (
-                                        <label key={opt} className="mcq-label">
+                                        <label key={opt} className={`mcq-label ${answers[q.qNum] === opt ? "selected" : ""}`}>
                                             <input type="radio" name={`q${q.qNum}`} value={opt} className="mcq-radio" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
-                                            <span className="font-bold mr-3">{opt}</span> {q.options[opt as keyof typeof q.options]}
+                                            <span className="font-bold font-sans mr-3 shrink-0">{opt}.</span> <span className="font-serif">{q.options[opt as keyof typeof q.options]}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -690,9 +764,9 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                                 <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
                                 <div className="pl-8 space-y-1">
                                     {['A', 'B', 'C'].map(opt => (
-                                        <label key={opt} className="mcq-label">
+                                        <label key={opt} className={`mcq-label ${answers[q.qNum] === opt ? "selected" : ""}`}>
                                             <input type="radio" name={`q${q.qNum}`} value={opt} className="mcq-radio" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
-                                            <span className="font-bold mr-3">{opt}</span> {q.options[opt as keyof typeof q.options]}
+                                            <span className="font-bold font-sans mr-3 shrink-0">{opt}.</span> <span className="font-serif">{q.options[opt as keyof typeof q.options]}</span>
                                         </label>
                                     ))}
                                 </div>

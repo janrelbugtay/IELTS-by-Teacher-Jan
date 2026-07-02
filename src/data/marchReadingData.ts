@@ -1,0 +1,203 @@
+export const marchPassages = [
+  {
+    id: 1,
+    title: "READING PASSAGE 1",
+    subtitle: "The development of the silk industry",
+    content: [
+      "Silk, a natural fibre produced by a particular worm called a silkworm, has been used in clothing for many centuries.",
+      "When silk was first discovered in China over 4,500 years ago, it was reserved exclusively for the use of the emperor, his close relations and the very highest of his dignitaries. Within the palace, the emperor is believed to have worn a robe of white silk; outside, he, his principal wife, and the heir to the throne wore yellow, the colour of the earth.",
+      "Gradually silk came into more general use, and the various classes of Chinese society began wearing tunics of silk. As well as being used for clothing and decoration, silk was quite quickly put to industrial use, and rapidly became one of the principal elements of the Chinese economy. It was used in the production of musical instruments, as string for fishing, and even as the world’s first luxury paper. Eventually even the common people were able to wear garments of silk.",
+      "During the Han dynasty (206 BC-220 AD), silk ceased to be a mere fabric and became a form of currency. Farmers paid their taxes in grain and silk, and silk was used to pay civil servants and to reward subjects for outstanding services. Values were calculated in lengths of silk as they had previously been calculated in weight of gold. Before long, silk became a currency used in trade with foreign countries, which continued into the Tang dynasty (616-907 AD). It is possible that this added importance was the result of a major increase in production. Silk also found its way so thoroughly into the Chinese language that 230 of the 5,000 most common characters of Mandarin* have 'silk' as their key component.",
+      "Silk became a precious commodity, highly sought after by other countries from an early date, and it is believed that the silk trade actually existed before the Silk Road was officially opened in the second century BC. An Egyptian mummy with a silk thread in her hair, dating from 1070 BC, has been discovered in the village of Deir el Medina near the Valley of the Kings, and is probably the earliest evidence of the silk trade. During the second century BC, the Chinese emperor Han Wu Di’s ambassadors travelled as far west as Persia and Mesopotamis, bearing gifts including silks. A range of important finds of Chinese silks have also been made along the Silk Road. One of the most dramatic of these finds was some Tang silk discovered in 1900. It is believed that around 1015 AD Buddhist monks, possibly alarmed by the threat of invasion by Tibetan people, had sealed more than ten thousand manuscripts and silk paintings, silk banners and textiles in caves near Dunhuang, a trading station on the Silk Road in north-west China.",
+      "Some historians believe the first Europeans to set eyes upon the fabulous fabric were the Roman legions of Marcus Licinius Crassus, Governor of Syria. According to certain accounts of the period, at an important battle near the Euphrates River in 53 BC, the Roman soldiers were so startled by the bright silken banners of the enemy that they fled in panic. Yet, within decades Chinese silks were widely worn by the rich and noble families of Rome. The Roman Emperor Heliogabalus (218-222 AD) wore nothing but silk. By 380 AD, the Roman historian Marcellinnus Ammianus reported that. The use of silk, which was one confined to the nobility, has now spread to all classes without distinction - even to the lowest. The desire for silk continued to increase over the centuries. Despite this demand, the price of silk remained very high.",
+      "In spite of their secrecy about production methods, the Chinese eventually lost their monopoly on silk production. Knowledge of silk production methods reached Korea around 200 BC, when waves of Chinese immigrants arrived there. Shortly after 300 AD, it travelled westward, and the cultivation of the silkworm was established in India.",
+      "Around 550 AD silk production reached the Middle East. Records indicate that two monks from Constantinople (modern-day Istanbul), capital of the Byzantine Empire, appeared at their emperor’s court with silkworm eggs which they had obtained secretly, and hidden in their hollow bamboo walking sticks. Under their supervision the eggs hatched into worms, and the worms spun silk threads. Byzantium was in the silk business at last. The Byzantine church and state created imperial workshops, monopolising production and keeping the secret to themselves.",
+      "This allowed a silk industry to be established, undercutting the market for ordinary-grade Chinese silk. However, high quality silk textiles, woven in China especially for the Middle Eastern market, continued to achieve high prices in the West, and trade along the Silk Road continued as before. By the sixth century the Persians, too, had mastered the art of silk weaving, developing their own rich patterns and techniques. But it wasn’t until the 13th century that Italy began silk production, with the introduction of 2,000 skilled silk weavers from Constantinople. Eventually, silk production became widespread throughout Europe.",
+      "World silk production has approximately doubled during the last 30 years in spite of man- made fibres replacing certain uses of silk. Before this period, China and Japan were the two main producers, together manufacturing more than 50 per cent of world production each year. After the late 1970s, however, China dramatically increased its silk production, and once again became the world’s leading producer."
+    ],
+    questionBlocks: [
+      {
+        title: "Questions 1-7",
+        instruction: "Complete the notes below. Choose ONE WORD ONLY from the passage for each answer.",
+        type: "input",
+        questions: [
+          { id: 1, text: "Early Uses: emperor wore ... silk indoors" },
+          { id: 2, text: "In industry: silk items included parts of musical instruments, fishing strings and ..." },
+          { id: 3, text: "Currency: silk was used as payment of ... as well as for wages and rewards" },
+          { id: 4, text: "Currency: silk replaced ... as a unit of value" },
+          { id: 5, text: "Currency: silk soon used as payment in ... trade" },
+          { id: 6, text: "Evidence of silk trade: 1070 BC, Egypt: hair of a ... contained silk" },
+          { id: 7, text: "1015 AD, north-west China: silk objects were hidden inside ..." }
+        ]
+      },
+      {
+        title: "Questions 8-13",
+        instruction: "Do the following statements agree with the information given in Reading Passage 1?\nTRUE if the statement agrees with the information\nFALSE if the statement contradicts the information\nNOT GIVEN if there is no information on this",
+        type: "choice",
+        options: ["TRUE", "FALSE", "NOT GIVEN"],
+        questions: [
+          { id: 8, text: "Their first sight of silk created fear among Roman soldiers." },
+          { id: 9, text: "The quality of Chinese silk imported by the early Romans varied widely." },
+          { id: 10, text: "The Byzantine emperor first acquired silkworm eggs from the Chinese emperor." },
+          { id: 11, text: "The price of high-grade Chinese silk fell due to competition from Middle-Eastern producers." },
+          { id: 12, text: "Silk was produced in the Middle East several centuries before it was produced in Europe." },
+          { id: 13, text: "Global silk production has declined in recent years." }
+        ]
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "READING PASSAGE 2",
+    subtitle: "The culture of Chimpanzees",
+    content: [
+      "A. Humankind’s nearest relative is even closer than we thought: chimpanzees display remarkable behaviours that can only be described as social customs passed on from generation to generation. Researchers have studied the similarities between chimpanzees and humans for years, but in the past decade they have determined that these resemblances run much deeper than anyone first thought. For instance, the nut cracking observed in the Tai Forest is far from a simple chimpanzee behaviour; rather it is a singular adaptation found only in that particular part of Africa and a trait that biologists consider to be an expression of chimpanzee culture. Scientists frequently use the term “culture” to describe elementary animal behaviours, but as it turns out, the rich and varied cultural traditions found among chimpanzees are second in complexity only to human traditions.",
+      "B. During the past two years, an unprecedented scientific collaboration, involving every major research group studying chimpanzees, has documented a multitude of distinct cultural patterns extending across Africa, in actions ranging from the animals’ use of tools to their forms of communications and social customs. This emerging picture of chimpanzees not only affects how we think of these amazing creatures but also alters human beings’ conception of our own uniqueness and hints at ancient foundations for extraordinary capacity for culture.",
+      "C. Homo sapiens and Pan troglodytes have coexisted for hundreds of millennia and share more than 98 percent of their genetic material, yet only 40 years ago we still knew next to nothing about chimpanzee behaviour in the wild. That began to change in the 1960s, when Toshisada Nishida of Kyoto University in Japan and Jane Goodall began their studies of wild chimpanzees at two field sites in Tanzania. Goodall’s research station at Gombe—the first of its kind—is more famous.",
+      "D. In these initial studies, as the chimpanzees became accustomed to close observation, the remarkable discoveries began. Researchers witnessed a range of unexpected behaviours, including fashioning and using tools, hunting, meat eating, food sharing and lethal fights between members of neighbouring communities. In the years that followed, other primatologists set up camp elsewhere, and, despite all the financial, political and logistical problems that can beset African fieldwork, several of these out-posts became truly long-term projects. As a result, we live in an unprecedented time, when an intimate and comprehensive scientific record of chimpanzees’ lives at last exists not just for one but for several communities spread across Africa.",
+      "E. As early as 1973, Goodall recorded 13 forms of tool use as well as eight social activities that appeared to differ between the Gombe chimpanzees and chimpanzee populations elsewhere. She ventured that some variations had what she termed a cultural origin. But what exactly did Goodall mean by “culture”? The diversity of human cultures extends from technological variations to marriage rituals, from culinary habits to myths and legends. Animals do not have myths and legends, of course. But they do have the capacity to pass on behavioural traits from generation to generation, not through their genes but by learning. For biologists, this is the fundamental criterion for a cultural trait: it must be something that can be learned by observing the established skills of others and thus passed on to future generations.",
+      "F. What of the implications for chimpanzees themselves? We must highlight the tragic loss of chimpanzees, whose populations are being decimated just when we are at last coming to appreciate these astonishing animals more completely. The bushmeat trade is particularly alarming: logging has driven roadways into the forests that are now used to ship wild-animal meat— including chimpanzee meat—to consumers as far afield as Europe. Such destruction threatens not only the animals themselves but also a host of fascinatingly different ape cultures.",
+      "G. Perhaps the cultural richness of the ape may yet help in its salvation, however. Some conservation efforts have already altered the attitudes of some local people. A few organizations have begun to show videotapes illustrating the cognitive prowess of chimpanzees. One Zairian viewer was heard to exclaim, “Ah, this ape is so like me, I can no longer eat him.”",
+      "H. How an international team of chimpanzee experts conduct the most comprehensive survey of the animals ever attempted? Scientists have been investigating chimpanzee culture for several decades, but too often their studies have contained a crucial flaw. Most attempts to document cultural diversity among chimpanzees have relied solely on officially published accounts of the behaviours recorded at each research site. But this approach probably overlooks a good deal of cultural variation for three reasons.",
+      "I. Firstly, scientists typically don’t publish an extensive list of all the activities they do not see at a particular location. Yet this is exactly what we need to know—which behaviours were and were not observed at each site. Second, many reports describe chimpanzee behaviours without saying how common they are; without this information, we can’t determine whether a particular action was a once-in-a-lifetime aberration or a routine event that should be considered part of the animals’ culture. Finally, researchers’ descriptions of potentially significant chimpanzee behaviour frequently lack sufficient detail, making it difficult for scientists working at other spots to record the presence or absence of the activities.",
+      "J. To remedy these problems, the two of us decided to take a new approach. We asked field researchers at each site for a list of all the behaviours they suspected were local traditions. With this information in hand, we pulled together a comprehensive list of 65 candidates for cultural behaviours.",
+      "K. Then we distributed our list to the team leaders at each site. In consultation with their colleagues, they classified each behaviour in terms of its occurrence or absence in the chimpanzee community studied. The key categories were customary behaviour, habitual, present, absent, and unknown. We should note, however, that certain cultural traits are no doubt passed on by a combination of imitation and simpler kinds of social learning. Either way, learning from elders is crucial to growing up as a competent wild chimpanzee."
+    ],
+    questionBlocks: [
+      {
+        title: "Questions 14-18",
+        instruction: "Reading Passage has eleven paragraphs A-K. Which paragraph contains the following information? Write the correct letter A-K.",
+        type: "input",
+        questions: [
+          { id: 14, text: "A problem of research on chimpanzee culture which is only based on official sources" },
+          { id: 15, text: "A new system designed by two scientists aiming to solve the problem" },
+          { id: 16, text: "Reasons why previous research on ape culture is inadequate" },
+          { id: 17, text: "Classification of data observed or collected" },
+          { id: 18, text: "An example showing cognitive powers of animals leading to indication of change in local people’s attitude toward preservation" }
+        ]
+      },
+      {
+        title: "Questions 19-22",
+        instruction: "Do the following statements agree with the information given in Reading Passage?\nTRUE if the statement agrees with the information\nFALSE if the statement contradicts the information\nNOT GIVEN if there is no information on this",
+        type: "choice",
+        options: ["TRUE", "FALSE", "NOT GIVEN"],
+        questions: [
+          { id: 19, text: "Research found that chimpanzees will possess the same complex culture as humans." },
+          { id: 20, text: "Human and apes ancestors lived together long ago and share most of their genetic substance." },
+          { id: 21, text: "Jane Goodall has observed many surprising features of complex behaviours among chimpanzees." },
+          { id: 22, text: "Chimpanzees, like humans, derive cultural behaviours mostly from genetic inheritance." }
+        ]
+      },
+      {
+        title: "Questions 23-26",
+        instruction: "Answer the questions below. Choose NO MORE THAN THREE WORDS AND / OR A NUMBER from passage for each answer.",
+        type: "input",
+        questions: [
+          { id: 23, text: "When did the unexpected discoveries of chimpanzee behaviour start?" },
+          { id: 24, text: "Which country is the research site of Toshisada Nishida and Jane Goodall?" },
+          { id: 25, text: "What did the chimpanzees have to get used to in the initial study?" },
+          { id: 26, text: "What term did Jane Goodall use in 1973 to explain groups of chimpanzees using tools differently?" }
+        ]
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: "READING PASSAGE 3",
+    subtitle: "History of telegraph in communication",
+    content: [
+      "Jean-Antoine Nollet was a French clergyman and physicist. In 1746 he gathered about two hundred monks into a circle about a mile (1.6 km) in circumference, with pieces iron wire connecting them. He then discharged a battery of Leyden jars through the human chain and observed that each man reacted at substantially the same time to the electric shock, showing that the speed of electricity’s propagation was very high. Given a more humane detection system, this could be a way of signaling over long distances. In 1748, Nollet invented one of the first electrometers, the electroscope, which detected the presence of an electric charge by using electrostatic attraction and repulsion.",
+      "After the introduction of the European semaphore lines in 1792, the world’s desire to further its ability to communicate from a distance only grew. People wanted a way to send and receive news from remote locations so that they could better understand what was happening in the world around them—not just what was going on in their immediate town or city. This type of communication not only appealed to the media industry, but also to private individuals and companies who wished to stay in touch with contacts. In 1840 Charles Wheatstone from Britain, with William Cooke, obtained a new patent for a telegraphic arrangement. The new apparatus required only a single pair of wires, but the telegraph was still too costly for general purposes. In 1845, however, Cooke and Wheatstone succeeded in producing the single needle apparatus, which they patented, and from that time the electric telegraph became a practical instrument, soon adopted on all the railway lines of the country.",
+      "It was the European optical telegraph, or semaphore, that was the predecessor of the electrical recording telegraph that changed the history of communication forever. Building on the success of the optical telegraph, Samuel F. B. Morse completed a working version of the electrical recording telegraph, which only required a single wire to send code of dots and dashes. At first, it was imagined that only a few highly skilled encoders would be able to use it but it soon became clear that many people could become proficient in Morse code. A system of lines strung on telegraph poles began to spread in Europe and America.",
+      "In the 1840s and 1850s several individuals proposed or advocated construction of a telegraph cable across the Atlantic Ocean, including Edward Thornton and Alonzo Jackman. At that time there was no material available for cable insulation and the first breakthrough came with the discovery of a rubber-like latex called gutta percha. Introduced to Britain in 1843, gutta percha is the gum of a tree native to the Malay Peninsula and Malaysia. After the failure of their first cable in 1850, the British brothers John and Jacob Brett laid a successful submarine cable from Dover to Calais in 1851. This used two layers of gutta percha insulation and an armoured outer layer. With thin wire and thick insulation, it floated and had to be weighed down with lead pipe.",
+      "In the case of first submarine-cable telegraphy, there was the limitation of knowledge of how its electrical properties were affected by water. The voltage which may be impressed on the cable was limited to a definite value. Moreover, for certain reasons, the cable had an impedance associated with it at the sending end which could make the voltage on the cable differ from the voltage applied to the sending-end apparatus. In fact, the cable was too big for a single boat, so two had to start in the middle of the Atlantic, join their cables and sail in opposite directions. Amazingly, the first official telegram to pass between two continents was a letter of congratulation from Queen Victoria of the United Kingdom to the President of the United States, James Buchanan, on August 16, 1858. However, signal quality declined rapidly, slowing transmission to an almost unusable speed and the cable was destroyed the following month.",
+      "To complete the link between England and Australia, John Pender formed the BritishAustralian Telegraph Company. The first stage was to lay a 557nm cable from Singapore to Batavia on the island of Java in 1870. It seemed likely that it would come ashore at the northern port of Darwin from where it might connect around the coast to Queensland and New South Wales. It was an undertaking more ambitious than spanning ocean. Flocks of sheep had to be driven with the 400 workers to provide food. They needed horses and bullock carts and, for the parched interior, camels. In the north, tropical rains left the teams flooded. In the centre, it seemed that they would die of thirst. One critical section in the red heart of Australia involved finding a route through the McDonnell mountain range and then finding water on the other side. The water was not only essential for the construction teams. There had to be telegraph repeater stations every few hundred miles to boost the signal and the staff obviously had to have a supply of water.",
+      "On August 22, 1872, the Northern and Southern sections of the Overland Telegraph Line were connected, uniting the Australian continent and within a few months, Australia was at last in direct contact with England via the submarine cable, too. This allowed the Australian Government to receive news from around the world almost instantaneously for the first time. It could cost several pounds to send a message and it might take several hours for it to reach its destination on the other side of the globe, but the world would never be the same again. The telegraph was the first form of communication over a great distance and was a landmark in human history."
+    ],
+    questionBlocks: [
+      {
+        title: "Questions 27-32",
+        instruction: "Do the following statements agree with the information given in Reading Passage?\nYES if the statement agrees with the claims of the writer\nNO if the statement contradicts the claims of the writer\nNOT GIVEN if it is impossible to say what the writer thinks about this",
+        type: "choice",
+        options: ["YES", "NO", "NOT GIVEN"],
+        questions: [
+          { id: 27, text: "In the research of the French scientist, metal lines were used to send messages." },
+          { id: 28, text: "People increasingly hoped to explore ways of long-distance communication in the late eighteenth century." },
+          { id: 29, text: "Using Morse Code to send message needed special personnel to first simplify the message," },
+          { id: 30, text: "Morse was a famous inventor before he invented the code." },
+          { id: 31, text: "Water was significant to early telegraph repeater stations on the continent." },
+          { id: 32, text: "The Australian Government offered funds for the first overland line across the continent." }
+        ]
+      },
+      {
+        title: "Questions 33-40",
+        instruction: "Answer the questions below. Choose NO MORE THAN TWO WORDS from the passage for each answer.",
+        type: "input",
+        questions: [
+          { id: 33, text: "Why did Charles Wheatstone’s telegraph system fail to come into common use in the beginning?" },
+          { id: 34, text: "What material was used for insulating cable across the sea?" },
+          { id: 35, text: "What was used by British pioneers to increase the weight of the cable in the sea?" },
+          { id: 36, text: "What would occur in the submarine cable when the voltage was applied?" },
+          { id: 37, text: "Who was a message first sent to across the Atlantic by the Queen?" },
+          { id: 38, text: "What animals were used to carry the cable through desert?" },
+          { id: 39, text: "What weather condition delayed construction in north Australia?" },
+          { id: 40, text: "How long did it take to send a telegraph message from Australia to England in 1872?" }
+        ]
+      }
+    ]
+  }
+];
+
+export const marchAnswers = {
+  1: "WHITE", 2: "PAPER", 3: "TAXES", 4: "GOLD", 5: "FOREIGN", 6: "MUMMY", 7: "CAVES",
+  8: "TRUE", 9: "NOT GIVEN", 10: "FALSE", 11: "FALSE", 12: "TRUE", 13: "FALSE",
+  14: "H", 15: "J", 16: "I", 17: "K", 18: "G", 19: "NOT GIVEN", 20: "TRUE", 21: "TRUE", 22: "FALSE",
+  23: "1960S", 24: "TANZANIA", 25: "CLOSE OBSERVATION", 26: "CULTURAL ORIGIN",
+  27: "YES", 28: "YES", 29: "NO", 30: "NOT GIVEN", 31: "YES", 32: "NOT GIVEN",
+  33: "COSTLY", 34: "GUTTA PERCHA", 35: "LEAD PIPE", 36: "IMPEDANCE", 37: "JAMES BUCHANAN", 38: "CAMELS", 39: "TROPICAL RAINS", 40: "SEVERAL HOURS"
+};
+
+export const marchExplanations = {
+  1: { passageId: 1, highlights: ["Within the palace, the emperor is believed to have worn a robe of white silk"], explanation: "The text specifies the emperor's indoor attire was a white silk robe.\n\nKeywords/Synonyms: \"indoors\" matches \"Within the palace\"." },
+  2: { passageId: 1, highlights: ["It was used in the production of musical instruments, as string for fishing, and even as the world’s first luxury paper."], explanation: "The passage lists industrial uses including musical instruments, fishing string, and paper.\n\nKeywords/Synonyms: \"items included\" matches \"used in the production of\"." },
+  3: { passageId: 1, highlights: ["Farmers paid their taxes in grain and silk"], explanation: "The passage explicitly notes that silk was utilized by farmers to pay taxes.\n\nKeywords/Synonyms: \"payment of\" matches \"paid their\"." },
+  4: { passageId: 1, highlights: ["Values were calculated in lengths of silk as they had previously been calculated in weight of gold."], explanation: "Silk lengths replaced gold weights as a standard way to calculate value.\n\nKeywords/Synonyms: \"replaced... as a unit of value\" matches \"previously been calculated in weight of\"." },
+  5: { passageId: 1, highlights: ["Before long, silk became a currency used in trade with foreign countries"], explanation: "Silk evolved into a currency specifically utilized for trading with foreign nations.\n\nKeywords/Synonyms: \"payment in... trade\" matches \"currency used in trade\"." },
+  6: { passageId: 1, highlights: ["An Egyptian mummy with a silk thread in her hair"], explanation: "The earliest evidence of the silk trade was found in the hair of an Egyptian mummy.\n\nKeywords/Synonyms: \"hair of a\" matches \"thread in her hair\"." },
+  7: { passageId: 1, highlights: ["had sealed more than ten thousand manuscripts and silk paintings, silk banners and textiles in caves"], explanation: "Silk objects were kept securely hidden by Buddhist monks inside caves.\n\nKeywords/Synonyms: \"hidden inside\" matches \"sealed... in\"." },
+  8: { passageId: 1, highlights: ["the Roman soldiers were so startled by the bright silken banners of the enemy that they fled in panic."], explanation: "The statement is true because the Roman soldiers fled after being startled by the silken banners.\n\nKeywords/Synonyms: \"created fear\" matches \"startled / fled in panic\"." },
+  9: { passageId: 1, highlights: [], explanation: "The text mentions Chinese silks were widely worn in Rome, but there is no information provided about whether the \"quality\" varied widely.\n\nKeywords/Synonyms: No matching information found." },
+  10: { passageId: 1, highlights: ["two monks from Constantinople... appeared at their emperor’s court with silkworm eggs which they had obtained secretly"], explanation: "The statement is false because the eggs were obtained secretly by monks, not officially acquired from the Chinese emperor.\n\nKeywords/Synonyms: \"acquired... from the Chinese emperor\" (Antonym/Contradiction) matches \"obtained secretly\"." },
+  11: { passageId: 1, highlights: ["high quality silk textiles, woven in China especially for the Middle Eastern market, continued to achieve high prices in the West"], explanation: "The price did not fall; high-quality Chinese silk continued to achieve high prices despite competition.\n\nKeywords/Synonyms: \"price... fell\" (Antonym/Contradiction) matches \"continued to achieve high prices\"." },
+  12: { passageId: 1, highlights: ["Around 550 AD silk production reached the Middle East.", "But it wasn’t until the 13th century that Italy began silk production"], explanation: "The text confirms silk reached the Middle East around 550 AD and Europe (Italy) in the 13th century, which is several centuries later.\n\nKeywords/Synonyms: \"several centuries before\" matches the timeline gap between \"550 AD\" and the \"13th century\"." },
+  13: { passageId: 1, highlights: ["World silk production has approximately doubled during the last 30 years"], explanation: "The statement is false as production has doubled, not declined.\n\nKeywords/Synonyms: \"declined\" (Antonym/Contradiction) matches \"approximately doubled\"." },
+  
+  14: { passageId: 2, highlights: ["Most attempts to document cultural diversity among chimpanzees have relied solely on officially published accounts of the behaviours recorded at each research site. But this approach probably overlooks a good deal of cultural variation"], explanation: "Paragraph H details the crucial flaw of relying only on official accounts.\n\nKeywords/Synonyms: \"official sources\" matches \"officially published accounts\"; \"problem\" matches \"overlooks a good deal\"." },
+  15: { passageId: 2, highlights: ["To remedy these problems, the two of us decided to take a new approach."], explanation: "Paragraph J introduces the authors' new approach intended to solve previously mentioned issues.\n\nKeywords/Synonyms: \"new system\" matches \"new approach\"; \"solve the problem\" matches \"remedy these problems\"." },
+  16: { passageId: 2, highlights: ["Firstly, scientists typically don’t publish an extensive list... Second, many reports describe chimpanzee behaviours without saying how common they are... Finally, researchers’ descriptions of potentially significant chimpanzee behaviour frequently lack sufficient detail"], explanation: "Paragraph I outlines three specific reasons why earlier research approaches fell short.\n\nKeywords/Synonyms: \"Reasons\" matches \"Firstly, Second, Finally\"; \"inadequate\" matches \"lack sufficient detail\"." },
+  17: { passageId: 2, highlights: ["they classified each behaviour in terms of its occurrence or absence in the chimpanzee community studied. The key categories were customary behaviour, habitual, present, absent, and unknown."], explanation: "Paragraph K describes the specific categories used to classify the collected behavioral data.\n\nKeywords/Synonyms: \"Classification of data\" matches \"key categories\"." },
+  18: { passageId: 2, highlights: ["A few organizations have begun to show videotapes illustrating the cognitive prowess of chimpanzees. One Zairian viewer was heard to exclaim, “Ah, this ape is so like me, I can no longer eat him.”"], explanation: "Paragraph G gives an example of how illustrating ape intelligence changes local attitudes toward eating them.\n\nKeywords/Synonyms: \"cognitive powers\" matches \"cognitive prowess\"; \"change in... attitude\" matches \"can no longer eat him\"." },
+  19: { passageId: 2, highlights: ["rich and varied cultural traditions found among chimpanzees are second in complexity only to human traditions."], explanation: "The text states their traditions are \"second in complexity only to human traditions\", but it does not claim chimpanzees \"will possess the same\" complex culture as humans.\n\nKeywords/Synonyms: No matching information found." },
+  20: { passageId: 2, highlights: ["Homo sapiens and Pan troglodytes have coexisted for hundreds of millennia and share more than 98 percent of their genetic material"], explanation: "The text confirms humans and chimps coexisted long ago and share most genetic material.\n\nKeywords/Synonyms: \"lived together\" matches \"coexisted\"; \"genetic substance\" matches \"genetic material\"." },
+  21: { passageId: 2, highlights: ["Researchers witnessed a range of unexpected behaviours, including fashioning and using tools"], explanation: "Jane Goodall and her peers indeed observed surprising, complex chimpanzee behaviors.\n\nKeywords/Synonyms: \"surprising features\" matches \"unexpected behaviours\"." },
+  22: { passageId: 2, highlights: ["pass on behavioural traits from generation to generation, not through their genes but by learning."], explanation: "The text directly contradicts the statement by declaring traits are passed on by learning, not genes.\n\nKeywords/Synonyms: \"mostly from genetic inheritance\" (Antonym/Contradiction) matches \"not through their genes but by learning\"." },
+  23: { passageId: 2, highlights: ["That began to change in the 1960s"], explanation: "The turning point for discoveries about wild chimpanzee behavior occurred in this decade.\n\nKeywords/Synonyms: \"start\" matches \"began to change\"." },
+  24: { passageId: 2, highlights: ["studies of wild chimpanzees at two field sites in Tanzania."], explanation: "The passage explicitly names Tanzania as the location of their field sites.\n\nKeywords/Synonyms: \"research site\" matches \"field sites\"." },
+  25: { passageId: 2, highlights: ["as the chimpanzees became accustomed to close observation, the remarkable discoveries began."], explanation: "The animals had to become used to researchers watching them closely before discoveries could be made.\n\nKeywords/Synonyms: \"get used to\" matches \"became accustomed to\"." },
+  26: { passageId: 2, highlights: ["She ventured that some variations had what she termed a cultural origin."], explanation: "Goodall used this phrase to describe why different groups exhibited varied behaviors like tool use.\n\nKeywords/Synonyms: \"explain groups using tools differently\" matches \"variations had what she termed\"." },
+  
+  27: { passageId: 3, highlights: ["with pieces iron wire connecting them."], explanation: "The French scientist used iron wire, which agrees with the statement describing \"metal lines\".\n\nKeywords/Synonyms: \"metal lines\" matches \"iron wire\"." },
+  28: { passageId: 3, highlights: ["After the introduction of the European semaphore lines in 1792, the world’s desire to further its ability to communicate from a distance only grew."], explanation: "The statement accurately reflects the growing desire for long-distance communication in that era.\n\nKeywords/Synonyms: \"late eighteenth century\" matches \"1792\"; \"increasingly hoped\" matches \"desire... only grew\"." },
+  29: { passageId: 3, highlights: ["At first, it was imagined that only a few highly skilled encoders would be able to use it but it soon became clear that many people could become proficient in Morse code."], explanation: "The claim that it required special personnel is contradicted; many ordinary people became proficient.\n\nKeywords/Synonyms: \"needed special personnel\" (Antonym/Contradiction) matches \"many people could become proficient\"." },
+  30: { passageId: 3, highlights: [], explanation: "The passage notes Morse \"completed a working version\", but contains no information on whether he was already a \"famous inventor\" beforehand.\n\nKeywords/Synonyms: No matching information found." },
+  31: { passageId: 3, highlights: ["The water was not only essential for the construction teams. There had to be telegraph repeater stations every few hundred miles to boost the signal and the staff obviously had to have a supply of water."], explanation: "The text confirms that water supplies were critical for the staff at the repeater stations.\n\nKeywords/Synonyms: \"significant\" matches \"essential / had to have a supply\"." },
+  32: { passageId: 3, highlights: ["On August 22, 1872, the Northern and Southern sections of the Overland Telegraph Line were connected"], explanation: "While the passage discusses the connection of the Overland Telegraph Line, there is no detail on who \"offered funds\" for it.\n\nKeywords/Synonyms: No matching information found." },
+  33: { passageId: 3, highlights: ["the telegraph was still too costly for general purposes."], explanation: "Wheatstone's initial system was not adopted universally because of its high expense.\n\nKeywords/Synonyms: \"fail to come into common use\" matches \"too costly for general purposes\"." },
+  34: { passageId: 3, highlights: ["discovery of a rubber-like latex called gutta percha.", "This used two layers of gutta percha insulation"], explanation: "This rubber-like substance was the key material used to insulate underwater cables.\n\nKeywords/Synonyms: \"material used for insulating\" matches \"material available for cable insulation\"." },
+  35: { passageId: 3, highlights: ["it floated and had to be weighed down with lead pipe."], explanation: "Lead pipe was added to ensure the naturally buoyant cable would sink in the sea.\n\nKeywords/Synonyms: \"increase the weight\" matches \"weighed down with\"." },
+  36: { passageId: 3, highlights: ["the cable had an impedance associated with it at the sending end which could make the voltage on the cable differ"], explanation: "Impedance caused issues when voltage was applied, affecting signal transmission.\n\nKeywords/Synonyms: \"occur... when voltage applied\" matches \"could make the voltage... differ\"." },
+  37: { passageId: 3, highlights: ["a letter of congratulation from Queen Victoria of the United Kingdom to the President of the United States, James Buchanan"], explanation: "Queen Victoria's inaugural transatlantic message was delivered to President Buchanan.\n\nKeywords/Synonyms: \"sent to\" matches \"to the President...\"." },
+  38: { passageId: 3, highlights: ["for the parched interior, camels."], explanation: "Camels were essential for transporting materials through the dry, desert sections of Australia.\n\nKeywords/Synonyms: \"desert\" matches \"parched interior\"." },
+  39: { passageId: 3, highlights: ["In the north, tropical rains left the teams flooded."], explanation: "Heavy tropical rains created flooding that hindered the construction process in the northern region.\n\nKeywords/Synonyms: \"weather condition\" matches \"tropical rains\"; \"delayed\" matches \"left the teams flooded\"." },
+  40: { passageId: 3, highlights: ["it might take several hours for it to reach its destination on the other side of the globe"], explanation: "The text indicates that transatlantic messages took a few hours to be delivered to their final destinations.\n\nKeywords/Synonyms: \"How long\" matches \"take several hours\"." }
+};

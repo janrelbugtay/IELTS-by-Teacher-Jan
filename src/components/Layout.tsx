@@ -1,72 +1,282 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, BookOpen, Headphones, PenTool, Mic, Home, GraduationCap, LayoutDashboard } from 'lucide-react';
+import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Courses', path: '/courses' },
+    { name: 'Dashboard', path: '/ielts/dashboard' },
+    { name: 'Classes', path: '/classes', adminOnly: true },
+    { name: 'Resources', path: '/resources' },
+    { name: 'Teachers', path: '/teachers' },
+    { name: 'About', path: '/about' },
+    { name: 'Contact', path: '/contact' },
+  ];
+
+  const visibleLinks = navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-800 flex flex-col">
-      {!location.pathname.startsWith('/classes') && (
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 text-[#1E4DB7] font-bold text-xl tracking-tight">
-              <div className="w-8 h-8 bg-[#1E4DB7] rounded-lg flex items-center justify-center text-white font-bold">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-              IELTS by Teacher Jan
-            </Link>
-            
-            <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-              <Link to="/" className={`text-base font-bold flex items-center gap-2.5 transition-colors ${location.pathname === '/' ? 'text-[#1E4DB7]' : 'text-slate-600 hover:text-[#1E4DB7]'}`}>
-                <Home className="w-6 h-6" /> Home
+    <div className="min-h-screen bg-[#F8FAFC] font-sans text-[#0F172A] flex flex-col selection:bg-[#3B82F6] selection:text-white">
+      {/* Navbar */}
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled ? 'bg-white/90 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-[#E2E8F0]' : 'bg-transparent'
+        }`}
+      >
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            {/* Logo */}
+            <div className="flex-shrink-0 flex items-center">
+              <Link to="/" className="flex items-center gap-3 group">
+                <div className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-[#2563EB] to-[#3B82F6] flex items-center justify-center shadow-[0_8px_16px_rgba(37,99,235,0.2)] group-hover:shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition-all duration-300">
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex flex-col hidden sm:flex">
+                  <span className="font-bold text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
+                  <span className="text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
+                </div>
               </Link>
-              <Link to="/practice-tests" className={`text-base font-bold flex items-center gap-2.5 transition-colors ${location.pathname.includes('/practice-tests') ? 'text-[#1E4DB7]' : 'text-slate-600 hover:text-[#1E4DB7]'}`}>
-                <BookOpen className="w-6 h-6" /> Practice Tests
-              </Link>
-              
-              {user && (
-                <Link to="/dashboard" className={`text-base font-bold flex items-center gap-2.5 transition-colors ${location.pathname === '/dashboard' ? 'text-[#1E4DB7]' : 'text-slate-600 hover:text-[#1E4DB7]'}`}>
-                  <LayoutDashboard className="w-6 h-6" /> Dashboard
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden xl:flex items-center gap-1 flex-1 justify-center">
+              {visibleLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`relative px-4 py-2 text-[15px] font-medium transition-colors rounded-full hover:bg-slate-50 group ${
+                    location.pathname === link.path ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  {link.name}
+                  {location.pathname === link.path && (
+                    <motion.div 
+                      layoutId="nav-indicator"
+                      className="absolute bottom-1 left-4 right-4 h-0.5 bg-[#2563EB] rounded-full"
+                    />
+                  )}
+                  <div className="absolute bottom-1 left-4 right-4 h-0.5 bg-[#2563EB] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out opacity-0 group-hover:opacity-100" />
                 </Link>
-              )}
-              {isAdmin && (
-                <Link to="/classes" className={`text-base font-bold flex items-center gap-2.5 transition-colors ${location.pathname.startsWith('/classes') ? 'text-[#1E4DB7]' : 'text-slate-600 hover:text-[#1E4DB7]'}`}>
-                  <GraduationCap className="w-6 h-6" /> Classes
-                </Link>
-              )}
+              ))}
             </nav>
 
-            <div className="flex items-center gap-4">
+            {/* Right Side */}
+            <div className="hidden xl:flex items-center gap-5">
               {!user ? (
                 <>
-                  <Link to="/login" className="text-sm font-semibold text-slate-600 hover:text-[#1E4DB7] transition-colors hidden sm:block">Login</Link>
-                  <Link to="/login" className="text-sm font-semibold bg-[#1E4DB7] text-white px-4 py-2 rounded-xl hover:bg-blue-800 transition-colors shadow-sm">Register</Link>
+                  <Link to="/login" className="text-[15px] font-medium text-[#64748B] hover:text-[#0F172A] transition-colors">Login</Link>
+                  <Link to="/login" className="text-[15px] font-semibold bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white px-6 py-2.5 rounded-full hover:shadow-[0_8px_16px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 transition-all duration-300">
+                    Get Started
+                  </Link>
                 </>
               ) : (
                 <div className="flex items-center gap-4">
-                  <div className="text-sm font-semibold text-slate-700 hidden sm:block">
-                    {user?.displayName || user?.email}
-                  </div>
-                  <button 
-                    onClick={signOut}
-                    className="text-slate-500 hover:text-red-600 transition-colors bg-slate-100 p-2 rounded-lg"
-                    title="Sign Out"
-                  >
-                    <LogOut className="w-4 h-4" />
+                  <button className="relative p-2 text-[#64748B] hover:text-[#0F172A] transition-colors rounded-full hover:bg-slate-100">
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F59E0B] rounded-full border-2 border-white"></span>
                   </button>
+                  
+                  <div className="relative">
+                    <button 
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="flex items-center gap-3 p-1.5 pr-3 rounded-full hover:bg-slate-50 border border-transparent hover:border-[#E2E8F0] transition-all"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#E2E8F0] overflow-hidden flex items-center justify-center text-[#64748B]">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <span className="text-[14px] font-semibold text-[#0F172A]">
+                        {user?.displayName || user?.email?.split('@')[0]}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-[#64748B]" />
+                    </button>
+
+                    <AnimatePresence>
+                      {userMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.08)] border border-[#E2E8F0] py-2 overflow-hidden"
+                        >
+                          {isAdmin && (
+                            <Link to="/admin" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
+                              <GraduationCap className="w-4 h-4 text-[#64748B]" /> Admin Dashboard
+                            </Link>
+                          )}
+                          <Link to="/ielts/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
+                            <Home className="w-4 h-4 text-[#64748B]" /> My Dashboard
+                          </Link>
+                          <div className="h-px bg-[#E2E8F0] my-1"></div>
+                          <button 
+                            onClick={() => { signOut(); setUserMenuOpen(false); }}
+                            className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                          >
+                            <LogOut className="w-4 h-4" /> Sign Out
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Mobile menu button */}
+            <div className="xl:hidden flex items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-xl text-[#64748B] hover:bg-slate-100 transition-colors"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
-        </header>
-      )}
+        </div>
+
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="xl:hidden bg-white border-b border-[#E2E8F0] overflow-hidden"
+            >
+              <div className="px-4 pt-2 pb-6 flex flex-col gap-1">
+                {visibleLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
+                      location.pathname === link.path ? 'bg-blue-50 text-[#2563EB]' : 'text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A]'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                {!user ? (
+                  <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex flex-col gap-3">
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-center rounded-xl text-[15px] font-medium text-[#64748B] bg-slate-50 hover:bg-slate-100">Login</Link>
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-center rounded-xl text-[15px] font-medium text-white bg-[#2563EB] hover:bg-blue-700">Get Started</Link>
+                  </div>
+                ) : (
+                  <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex flex-col gap-2">
+                    <div className="px-4 py-3 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#E2E8F0] flex items-center justify-center text-[#64748B]">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-[#0F172A]">{user.displayName || 'Student'}</div>
+                        <div className="text-xs text-[#64748B]">{user.email}</div>
+                      </div>
+                    </div>
+                    <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-[#64748B] hover:bg-slate-50 flex items-center gap-3">
+                      <Home className="w-5 h-5" /> Dashboard
+                    </Link>
+                    <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="px-4 py-3 rounded-xl text-[15px] font-medium text-red-600 hover:bg-red-50 text-left flex items-center gap-3">
+                      <LogOut className="w-5 h-5" /> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
       
-      <main className={`flex-1 w-full mx-auto ${location.pathname.startsWith('/classes') ? '' : 'max-w-7xl p-4 sm:p-6 lg:p-8'}`}>
+      {/* Main Content */}
+      <main className={`flex-1 w-full mx-auto mt-20 ${location.pathname === '/' ? '' : 'max-w-[1400px] p-4 sm:p-6 lg:p-8'}`}>
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-[#E2E8F0] pt-16 pb-8 mt-auto relative overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
+            <div className="col-span-1 lg:col-span-1">
+              <Link to="/" className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-[14px] bg-[#2563EB] flex items-center justify-center">
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
+                  <span className="text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
+                </div>
+              </Link>
+              <p className="text-[#64748B] text-sm leading-relaxed mb-6">
+                A premium international English academy dedicated to excellence in Cambridge qualifications from young learners to advanced speakers.
+              </p>
+              <div className="flex gap-4">
+                {/* Social icons placeholders */}
+                {['facebook', 'twitter', 'instagram', 'youtube'].map((social) => (
+                  <a key={social} href="#" className="w-10 h-10 rounded-full bg-slate-50 border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#2563EB] hover:border-[#2563EB] transition-colors">
+                    <span className="sr-only">{social}</span>
+                    <div className="w-4 h-4 bg-current rounded-sm"></div>
+                  </a>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-[#0F172A] mb-6">Courses</h3>
+              <ul className="space-y-4">
+                {['Pre-Starter', 'Starters', 'Movers', 'Flyers', 'KET (A2 Key)', 'PET (B1 Preliminary)', 'IELTS'].map((course) => (
+                  <li key={course}>
+                    <Link to="#" className="text-[#64748B] hover:text-[#2563EB] text-sm transition-colors">{course}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-[#0F172A] mb-6">Resources</h3>
+              <ul className="space-y-4">
+                {['Practice Tests', 'Study Materials', 'Blog & News', 'Student Success', 'FAQ', 'Support'].map((item) => (
+                  <li key={item}>
+                    <Link to="#" className="text-[#64748B] hover:text-[#2563EB] text-sm transition-colors">{item}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-[#0F172A] mb-6">Newsletter</h3>
+              <p className="text-[#64748B] text-sm mb-4">Subscribe to our newsletter for the latest updates and English learning tips.</p>
+              <form className="flex flex-col gap-3">
+                <input type="email" placeholder="Enter your email" className="px-4 py-3 rounded-xl bg-slate-50 border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all text-sm" />
+                <button type="submit" className="px-4 py-3 bg-[#0F172A] text-white rounded-xl text-sm font-semibold hover:bg-[#1E293B] transition-colors">Subscribe</button>
+              </form>
+            </div>
+          </div>
+          
+          <div className="pt-8 border-t border-[#E2E8F0] flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-[#64748B] text-sm">© {new Date().getFullYear()} Kỷ Nguyên Era. All rights reserved.</p>
+            <div className="flex gap-6">
+              <Link to="#" className="text-[#64748B] hover:text-[#0F172A] text-sm transition-colors">Privacy Policy</Link>
+              <Link to="#" className="text-[#64748B] hover:text-[#0F172A] text-sm transition-colors">Terms of Service</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

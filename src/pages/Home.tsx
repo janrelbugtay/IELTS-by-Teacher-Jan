@@ -1,154 +1,504 @@
-import React from 'react';
-import { Link } from 'react-router';
-import { Headphones, Book, Pen, Mic, ArrowRight, Play, Star, CheckCircle2, LayoutDashboard, GraduationCap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
+import { 
+  ArrowRight, CheckCircle2, Star, Users, Trophy, BookOpen, 
+  PlayCircle, Clock, BarChart3, ChevronRight, Check, Award,
+  MapPin, Calendar, MessageSquare, Play, Plus, Minus,
+  Headphones, PenTool, LayoutDashboard
+} from 'lucide-react';
+import { HomeLeaderboardDashboard } from '../components/HomeLeaderboardDashboard';
+
+// Reusable Counter Component
+const AnimatedCounter = ({ end, suffix = "", duration = 2 }: { end: number, suffix?: string, duration?: number }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime: number;
+    let animationFrame: number;
+
+    const animate = (time: number) => {
+      if (!startTime) startTime = time;
+      const progress = (time - startTime) / (duration * 1000);
+      
+      if (progress < 1) {
+        setCount(Math.floor(end * progress));
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        setCount(end);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [end, duration]);
+
+  return <span>{count}{suffix}</span>;
+};
 
 export function Home() {
+  const navigate = useNavigate();
+  const { scrollYProgress } = useScroll();
+  const opacity = useTransform(scrollYProgress, [0, 0.05], [1, 0]);
+  const y = useTransform(scrollYProgress, [0, 0.05], [0, -50]);
+
+  const [activeFaq, setActiveFaq] = useState<number | null>(0);
+
+  const courses = [
+    { id: 'pre-starter', name: 'Pre-Starter', age: 'Ages 4-6', level: 'Beginner', desc: 'First steps into English with fun games and songs.', icon: '🌟', color: 'from-blue-400 to-blue-500' },
+    { id: 'starters', name: 'Starters', age: 'Ages 7-8', level: 'Pre-A1', desc: 'Building basic vocabulary and simple sentences.', icon: '🚀', color: 'from-orange-400 to-orange-500' },
+    { id: 'movers', name: 'Movers', age: 'Ages 8-10', level: 'A1', desc: 'Developing confidence in speaking and writing.', icon: '⛵', color: 'from-green-400 to-green-500' },
+    { id: 'flyers', name: 'Flyers', age: 'Ages 10-12', level: 'A2', desc: 'Advanced everyday communication skills.', icon: '✈️', color: 'from-purple-400 to-purple-500' },
+    { id: 'ket', name: 'KET', age: 'Ages 12-14', level: 'A2 Key', desc: 'Essential English for real-life situations.', icon: '🔑', color: 'from-rose-400 to-rose-500' },
+    { id: 'pet', name: 'PET', age: 'Ages 14-16', level: 'B1 Preliminary', desc: 'Practical English for work, study and travel.', icon: '📖', color: 'from-teal-400 to-teal-500' },
+    { id: 'ielts', name: 'IELTS', age: 'Ages 16+', level: 'B2-C1', desc: 'Academic preparation for university and immigration.', icon: '🎓', color: 'from-indigo-400 to-indigo-500' },
+  ];
+
+  const features = [
+    { title: 'Cambridge Curriculum', desc: 'Official materials and proven methodologies from Cambridge University Press.', icon: <BookOpen className="w-6 h-6" /> },
+    { title: 'Certified Teachers', desc: 'Passionate educators with international TEFL/CELTA qualifications.', icon: <Award className="w-6 h-6" /> },
+    { title: 'Interactive Learning', desc: 'Modern classrooms equipped with interactive smartboards and digital resources.', icon: <PlayCircle className="w-6 h-6" /> },
+    { title: 'Weekly Mock Exams', desc: 'Regular practice tests to track progress and build exam confidence.', icon: <BarChart3 className="w-6 h-6" /> },
+  ];
+
+  const faqs = [
+    { question: 'How do I know which course is right for my child?', answer: 'We offer a free placement test for all new students. Our academic coordinators will evaluate the results and recommend the perfect level based on their current ability and age.' },
+    { question: 'Are the teachers native English speakers?', answer: 'We have a diverse team of both highly qualified native speakers and expert bilingual teachers, all certified to teach Cambridge curriculum.' },
+    { question: 'How large are the class sizes?', answer: 'We keep our classes small, with a maximum of 12-15 students to ensure personalized attention and maximum speaking time for every student.' },
+    { question: 'Do you offer online classes?', answer: 'Yes, our platform supports fully online and hybrid learning models with interactive digital materials and live video sessions.' }
+  ];
+
   return (
-    <div className="space-y-24 pb-16">
+    <div className="bg-[#F8FAFC] min-h-screen pb-20">
+      {/* Abstract Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-100/40 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3"></div>
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-100/40 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/3"></div>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative pt-12 lg:pt-20 pb-16 lg:pb-24 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
-            <div className="text-center lg:text-left lg:w-1/2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-[#1E4DB7] font-semibold text-sm mb-6 border border-blue-100 shadow-sm">
-                <Star className="w-4 h-4 fill-[#F4A340] text-[#F4A340]" />
-                #1 IELTS Preparation Platform
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
-                Achieve Your Target <span className="text-[#1E4DB7]">IELTS Band Score</span>
-              </h1>
-              <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0">
-                Practice Listening, Reading, Writing, and Speaking with real IELTS-style tests. Get instant AI-powered feedback and track your progress to reach your goal faster.
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8">
-                <Link to="/practice-tests" className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 hover:border-[#1E4DB7] hover:shadow-md transition-all group">
-                  <Book className="w-8 h-8 text-[#1E4DB7] mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-slate-800 text-center">Practice Tests</span>
-                </Link>
-                <Link to="/dashboard" className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 hover:border-[#1E4DB7] hover:shadow-md transition-all group">
-                  <LayoutDashboard className="w-8 h-8 text-[#F4A340] mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-slate-800 text-center">Student Dashboard</span>
-                </Link>
-                <Link to="/dashboard?tab=classes" className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 hover:border-[#1E4DB7] hover:shadow-md transition-all group">
-                  <GraduationCap className="w-8 h-8 text-green-500 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-slate-800 text-center">My Classes</span>
-                </Link>
-                <Link to="/dashboard?tab=results" className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 hover:border-[#1E4DB7] hover:shadow-md transition-all group">
-                  <ArrowRight className="w-8 h-8 text-purple-500 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-slate-800 text-center">Previous Results</span>
-                </Link>
-                <Link to="/dashboard?tab=writing" className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 hover:border-[#1E4DB7] hover:shadow-md transition-all group">
-                  <Pen className="w-8 h-8 text-rose-500 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-slate-800 text-center">Writing Portfolio</span>
-                </Link>
-                <Link to="/dashboard?tab=speaking" className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-slate-200 hover:border-[#1E4DB7] hover:shadow-md transition-all group">
-                  <Mic className="w-8 h-8 text-teal-500 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm font-bold text-slate-800 text-center">Speaking Recordings</span>
-                </Link>
-              </div>
-            </div>
+      <section className="pt-12 pb-24 lg:pt-20 lg:pb-32 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-8">
             
-            <div className="lg:w-1/2 relative w-full max-w-lg mx-auto">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#1E4DB7]/20 to-[#F4A340]/20 blur-3xl rounded-full -z-10"></div>
-              <img 
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1000&q=80" 
-                alt="Students studying" 
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://placehold.co/1000x800/1E4DB7/ffffff?text=Students+Studying`;
-                }}
-                className="rounded-3xl shadow-2xl border-4 border-white transform lg:rotate-2 hover:rotate-0 transition-transform duration-500"
-              />
-              {/* Floating badges */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-100">
-                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold text-xl">8.5</div>
+            {/* Left Side */}
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex-1 max-w-2xl text-center lg:text-left z-10"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#2563EB] font-semibold text-sm mb-8 border border-blue-100 shadow-sm">
+                <Star className="w-4 h-4 fill-[#2563EB] text-[#2563EB]" />
+                Cambridge English Learning Platform
+              </div>
+              
+              <h1 className="text-5xl sm:text-6xl lg:text-[64px] font-extrabold text-[#0F172A] leading-[1.1] mb-8 tracking-tight">
+                Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-[#3B82F6]">Cambridge English</span><br />
+                <span className="text-[40px] sm:text-5xl lg:text-6xl text-[#64748B] font-bold mt-2 block">from Pre-Starter to IELTS</span>
+              </h1>
+              
+              <p className="text-xl text-[#64748B] mb-10 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Unlock your potential with premium structured learning paths, interactive lessons, and authentic exam-style practice.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-12">
+                <Link to="/courses" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white rounded-full font-semibold text-[15px] shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:shadow-[0_12px_24px_rgba(37,99,235,0.35)] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 group">
+                  Explore Courses <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link to="/practice-tests" className="w-full sm:w-auto px-8 py-4 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold text-[15px] shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-2 group">
+                  Take Free Practice Test
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm font-medium text-[#64748B]">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#22C55E]" /> Cambridge Certified
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#22C55E]" /> Expert Teachers
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#22C55E]" /> Proven Results
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Side */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+              className="flex-1 w-full relative z-10"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#2563EB]/20 to-transparent blur-3xl rounded-[40px] -z-10 transform rotate-3"></div>
+                
+                <div className="grid grid-cols-12 gap-4">
+                  {/* Main Large Image */}
+                  <div className="col-span-12 sm:col-span-8 h-[400px] rounded-[24px] overflow-hidden shadow-2xl relative group">
+                    <img 
+                      src="https://lh3.googleusercontent.com/d/1bfR_OFAkxKeeHJPmCFETZDo8KKs1m7Qd" 
+                      alt="Learning Center" 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                      <span className="text-white font-semibold">Premium Classrooms</span>
+                    </div>
+                  </div>
+
+                  {/* Grid of Small Images */}
+                  <div className="col-span-12 sm:col-span-4 grid grid-cols-2 gap-4 h-[400px]">
+                    {[
+                      "https://lh3.googleusercontent.com/d/1ZV8IXVDbZad2fAUwaj_YH1tGYiH8Ep1i",
+                      "https://lh3.googleusercontent.com/d/16hvnUkj8M1VkFzowovBccarw6KzVUnDv",
+                      "https://lh3.googleusercontent.com/d/1fbbwBgb3iG0z2ePIttR2upjlecZgvOnx",
+                      "https://lh3.googleusercontent.com/d/1uLEmaMxQQvL7XxF2PluF3IMPSzfs7k3A"
+                    ].map((img, idx) => (
+                      <div key={idx} className="rounded-[20px] overflow-hidden shadow-lg relative group h-full">
+                        <img src={img} alt="Student" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* Courses Section */}
+      <section className="py-24">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div className="max-w-2xl">
+              <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Cambridge English Courses</h2>
+              <p className="text-[#64748B] text-lg">Comprehensive programs designed to develop all four language skills systematically.</p>
+            </div>
+            <Link to="/courses" className="px-6 py-3 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-2">
+              View All Courses <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="flex overflow-x-auto pb-8 -mx-4 px-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:overflow-visible md:pb-0 md:mx-0 md:px-0 hide-scrollbar">
+            {courses.map((course, index) => (
+              <motion.div 
+                key={course.id}
+                onClick={() => navigate(`/courses/${course.id}`)}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -8 }}
+                className="cursor-pointer min-w-[300px] md:min-w-0 snap-start bg-white/60 backdrop-blur-xl rounded-[24px] p-6 border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col h-full"
+              >
+                <div className={`w-14 h-14 rounded-[16px] bg-gradient-to-br ${course.color} flex items-center justify-center text-2xl shadow-inner mb-6`}>
+                  {course.icon}
+                </div>
+                
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1 bg-slate-100 text-[#64748B] text-xs font-bold rounded-full">{course.age}</span>
+                  <span className="px-3 py-1 bg-blue-50 text-[#2563EB] text-xs font-bold rounded-full">{course.level}</span>
+                </div>
+                
+                <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{course.name}</h3>
+                <p className="text-[#64748B] text-[15px] mb-8 leading-relaxed flex-1">{course.desc}</p>
+              </motion.div>
+            ))}
+            
+            {/* Explore More Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="min-w-[300px] md:min-w-0 snap-start bg-gradient-to-br from-[#0F172A] to-[#1E293B] rounded-[24px] p-8 border border-[#334155] shadow-xl flex flex-col items-center justify-center text-center h-full group"
+            >
+              <h3 className="text-2xl font-bold text-white mb-4">Not sure which level?</h3>
+              <p className="text-slate-300 text-[15px] mb-8">Take our free placement test to find your perfect starting point.</p>
+              <Link to="/practice-tests" className="px-6 py-3 bg-white text-[#0F172A] rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform duration-300">
+                Take Placement Test
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="py-24 bg-white border-y border-[#E2E8F0]">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">The Premium Experience</h2>
+            <p className="text-[#64748B] text-lg">We combine world-class curriculum with modern technology to deliver the best language education.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="p-8 rounded-[24px] bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-white hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="w-12 h-12 rounded-[14px] bg-blue-50 text-[#2563EB] flex items-center justify-center mb-6">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-[#0F172A] mb-3">{feature.title}</h3>
+                <p className="text-[#64748B] text-[15px] leading-relaxed">{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Practice Test Highlight */}
+      <section className="py-24 overflow-hidden relative">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="bg-[#0F172A] rounded-[32px] p-8 md:p-16 relative overflow-hidden flex flex-col lg:flex-row items-center gap-16 shadow-[0_32px_64px_rgba(0,0,0,0.15)]">
+            
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/40 via-transparent to-transparent"></div>
+            
+            <div className="flex-1 relative z-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white font-medium text-sm mb-6 border border-white/10">
+                <LayoutDashboard className="w-4 h-4" /> Next-Gen Testing Platform
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
+                Simulate the real exam experience at home.
+              </h2>
+              <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-xl">
+                Our proprietary testing platform mimics the computer-delivered Cambridge and IELTS exams. Get instant scores, AI-powered writing feedback, and detailed analytics.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-10">
+                {[
+                  { icon: <Headphones className="w-5 h-5 text-blue-400" />, text: 'Listening Tests' },
+                  { icon: <BookOpen className="w-5 h-5 text-green-400" />, text: 'Reading Tests' },
+                  { icon: <PenTool className="w-5 h-5 text-purple-400" />, text: 'AI Writing Eval' },
+                  { icon: <Clock className="w-5 h-5 text-orange-400" />, text: 'Strict Timers' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-white/5">{item.icon}</div>
+                    <span className="text-white font-medium">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Link to="/practice-tests" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#0F172A] rounded-full font-bold text-[15px] hover:scale-105 transition-transform duration-300">
+                Start Free Test <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <motion.div 
+              initial={{ opacity: 0, x: 50, rotateY: 20 }}
+              whileInView={{ opacity: 1, x: 0, rotateY: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1 }}
+              className="flex-1 w-full relative z-10 perspective-[1000px]"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.3)] border border-white/10 transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                <img src="https://lh3.googleusercontent.com/d/1w6MDQU0blj1rMVEqaMD7IGvEoPfzYMfL" alt="Testing Platform" className="w-full h-auto object-cover opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent"></div>
+                
+                {/* Mock UI Overlay */}
+                <div className="absolute bottom-6 left-6 right-6 bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-[#22C55E] flex items-center justify-center text-white"><Check className="w-6 h-6" /></div>
+                    <div>
+                      <div className="text-white font-bold text-sm">Task Submitted</div>
+                      <div className="text-slate-300 text-xs">AI Evaluation complete</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-bold text-xl">Band 7.5</div>
+                    <div className="text-slate-300 text-xs">Estimated Score</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials / Statistics */}
+      <section className="py-24 bg-[#0F172A] text-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]"></div>
+        <div className="max-w-[1400px] mx-auto relative z-10 px-4 sm:px-6 lg:px-8">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-[40px] font-bold mb-6 leading-tight">Trusted by hundreds of successful students.</h2>
+              <p className="text-slate-300 text-lg mb-12 max-w-lg">
+                Our results speak for themselves. We've helped students achieve their target scores for university admission, immigration, and personal growth.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <div className="text-sm font-bold text-slate-900">Average Band</div>
-                  <div className="text-xs text-slate-500">From our top students</div>
+                  <div className="text-5xl font-extrabold text-[#3B82F6] mb-2"><AnimatedCounter end={10} suffix="+" /></div>
+                  <div className="text-slate-400 font-medium">Years of Excellence</div>
+                </div>
+                <div>
+                  <div className="text-5xl font-extrabold text-[#3B82F6] mb-2"><AnimatedCounter end={15} suffix="+" /></div>
+                  <div className="text-slate-400 font-medium">Certified Teachers</div>
                 </div>
               </div>
             </div>
+
+            {/* Testimonial Card */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-[32px] p-10 relative shadow-[0_20px_50px_rgba(0,0,0,0.3)]"
+            >
+              <div className="text-[#F59E0B] flex gap-1 mb-8">
+                <Star className="w-6 h-6 fill-current" />
+                <Star className="w-6 h-6 fill-current" />
+                <Star className="w-6 h-6 fill-current" />
+                <Star className="w-6 h-6 fill-current" />
+                <Star className="w-6 h-6 fill-current" />
+              </div>
+              <p className="text-xl md:text-2xl font-medium leading-relaxed mb-10 italic">
+                "The structured IELTS preparation course and the online practice tests were game-changers for me. I achieved a Band 8.0 overall in just 3 months of intense study with my incredible teacher."
+              </p>
+              <div className="flex items-center gap-4">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop" alt="Student" className="w-14 h-14 rounded-full border-2 border-white/20 object-cover" />
+                <div>
+                  <div className="font-bold text-lg">Minh Hoang</div>
+                  <div className="text-slate-400 text-sm">IELTS Band 8.0 Achiever</div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Skill Categories Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Master All Four IELTS Skills</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">Everything you need to succeed in one unified platform. Prepare comprehensively for your test day.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Listening Card */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
-            <div className="w-14 h-14 bg-blue-50 text-[#1E4DB7] rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-              <Headphones className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Listening</h3>
-            <ul className="space-y-3 mb-8 flex-1">
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Audio player</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Note completion</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Multiple choice</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Matching</li>
-            </ul>
-            <Link to="/practice-tests" className="w-full py-3 bg-[#F8FAFC] text-[#1E4DB7] font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 border border-slate-200 group-hover:border-blue-200">
-              Practice Now <ArrowRight className="w-4 h-4" />
-            </Link>
+      {/* Gallery Section */}
+      <section className="py-24 bg-white border-t border-[#E2E8F0]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Life at Kỷ Nguyên Era</h2>
+            <p className="text-[#64748B] text-lg">A vibrant community of learners achieving their dreams together.</p>
           </div>
 
-          {/* Reading Card */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
-            <div className="w-14 h-14 bg-orange-50 text-[#F4A340] rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-              <Book className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Reading</h3>
-            <ul className="space-y-3 mb-8 flex-1">
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Academic passages</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> General Training</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Timed tests</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Highlight & Notes</li>
-            </ul>
-            <Link to="/practice-tests" className="w-full py-3 bg-[#F8FAFC] text-[#1E4DB7] font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 border border-slate-200 group-hover:border-blue-200">
-              Practice Now <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Writing Card */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
-            <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-              <Pen className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Writing</h3>
-            <ul className="space-y-3 mb-8 flex-1">
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Task 1 & Task 2</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> AI feedback</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Band score prediction</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Grammar suggestions</li>
-            </ul>
-            <Link to="/practice-tests" className="w-full py-3 bg-[#F8FAFC] text-[#1E4DB7] font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 border border-slate-200 group-hover:border-blue-200">
-              Practice Now <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Speaking Card */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
-            <div className="w-14 h-14 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-              <Mic className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Speaking</h3>
-            <ul className="space-y-3 mb-8 flex-1">
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Part 1, 2 & 3</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Voice recording</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> AI Evaluation</li>
-              <li className="flex items-center gap-2 text-slate-600"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> Pronunciation check</li>
-            </ul>
-            <Link to="/practice-tests" className="w-full py-3 bg-[#F8FAFC] text-[#1E4DB7] font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 border border-slate-200 group-hover:border-blue-200">
-              Practice Now <ArrowRight className="w-4 h-4" />
-            </Link>
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+            {[
+              "https://lh3.googleusercontent.com/d/1-fCPfoRG-EUkT3DqIXhzFHJxQ-QmTM_7",
+              "https://lh3.googleusercontent.com/d/1VetrKou8pNQKGBd-iGHZMlwqALwlRBGG",
+              "https://lh3.googleusercontent.com/d/1_3lzGwmEDN56unEeW6S_DGe2vddHiWpV",
+              "https://lh3.googleusercontent.com/d/1gucSgi-fzlN-TDFWMI59HGPXFx7uyGaf",
+              "https://lh3.googleusercontent.com/d/1iwvqSUapjg5QL4kLlmTSCgv-70aBZc3v",
+              "https://lh3.googleusercontent.com/d/1s-QjIXsvF695O5rz2HrgMSwhw5H0QEFn",
+              "https://lh3.googleusercontent.com/d/1tOj4WMEFtk634gq18dgylYb5gj_jxK0q",
+              "https://lh3.googleusercontent.com/d/1MCsDCEvuik-2gvgKPMXmxkh-nnCzaMG6",
+              "https://lh3.googleusercontent.com/d/1kefJhlEcA1KG5B8MJt40EsjOFBH2yX1I"
+            ].map((img, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="relative overflow-hidden rounded-[24px] break-inside-avoid group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <img src={img} alt="Gallery" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-[#0F172A]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* Latest News Section */}
+      <section className="py-24 bg-[#F8FAFC] border-t border-[#E2E8F0]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div className="max-w-2xl">
+              <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Latest News</h2>
+              <p className="text-[#64748B] text-lg">Updates, tips, and stories from our educational community.</p>
+            </div>
+            <Link to="#" className="px-6 py-3 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-2">
+              View All Posts <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { title: 'How to prepare for IELTS Speaking Part 3', date: 'March 15, 2026', img: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop' },
+              { title: 'Top 10 Grammar Mistakes to Avoid in PET', date: 'March 10, 2026', img: 'https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?q=80&w=2068&auto=format&fit=crop' },
+              { title: 'Congratulations to our Starters Graduates!', date: 'March 05, 2026', img: 'https://images.unsplash.com/photo-1523580494112-071d16928afb?q=80&w=2070&auto=format&fit=crop' },
+            ].map((post, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="bg-white rounded-[24px] overflow-hidden border border-[#E2E8F0] shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group cursor-pointer flex flex-col"
+              >
+                <div className="h-48 overflow-hidden relative">
+                  <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-xs font-bold text-[#0F172A] shadow-sm">
+                    {post.date}
+                  </div>
+                </div>
+                <div className="p-8 flex flex-col flex-1">
+                  <h3 className="text-xl font-bold text-[#0F172A] mb-4 group-hover:text-[#2563EB] transition-colors">{post.title}</h3>
+                  <p className="text-[#64748B] text-[15px] mb-6 flex-1">Discover effective strategies and practical tips to improve your performance and achieve your target score.</p>
+                  <span className="inline-flex items-center gap-2 text-[#2563EB] font-bold text-[15px] mt-auto">
+                    Read More <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Common Questions</h2>
+          <p className="text-[#64748B] text-lg">Everything you need to know about our platform and courses.</p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div 
+              key={idx} 
+              className={`border rounded-[20px] transition-all duration-300 ${activeFaq === idx ? 'border-[#2563EB] bg-blue-50/30 shadow-sm' : 'border-[#E2E8F0] bg-white hover:border-slate-300'}`}
+            >
+              <button 
+                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                className="w-full text-left px-6 py-5 flex items-center justify-between focus:outline-none"
+              >
+                <span className={`font-bold text-lg ${activeFaq === idx ? 'text-[#0F172A]' : 'text-[#0F172A]'}`}>{faq.question}</span>
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${activeFaq === idx ? 'bg-[#2563EB] text-white' : 'bg-slate-100 text-[#64748B]'}`}>
+                  {activeFaq === idx ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                </span>
+              </button>
+              <AnimatePresence>
+                {activeFaq === idx && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 pt-0 text-[#64748B] leading-relaxed">
+                      {faq.answer}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   );
 }

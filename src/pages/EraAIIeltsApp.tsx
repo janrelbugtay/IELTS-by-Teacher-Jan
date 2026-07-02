@@ -30,6 +30,15 @@ export function EraAIIeltsApp() {
         body: JSON.stringify({ inputText, taskType, userId: user?.uid })
       });
 
+      if (!response.ok) {
+        let errText = await response.text();
+        try {
+            const parsedErr = JSON.parse(errText);
+            if (parsedErr.error) errText = parsedErr.error;
+        } catch(e) {}
+        throw new Error(errText);
+      }
+
       const result = await response.json();
       
       if (response.ok && result.feedback) {

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Assignment, OperationType, Submission } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import { handleFirestoreError } from '../lib/errorHandler';
-import { Plus, Users, FileText, LayoutDashboard, Activity, Clock, Globe } from 'lucide-react';
+import { Plus, Users, FileText, LayoutDashboard, Activity, Clock, Globe, Edit2, X, Camera, Folder, Trophy, Search, Calendar, Star, Flame, BookOpen, Target, TrendingUp, BarChart2, Medal, ChevronRight, UserPlus, Key, Copy, CheckCircle2 } from 'lucide-react';
 import { format, subDays, subMinutes } from 'date-fns';
+
+import { CreateStudentModal } from '../components/CreateStudentModal';
 
 interface UserStats {
   total: number;
@@ -18,6 +20,8 @@ interface UserStats {
 
 export function AdminDashboard() {
   const { user } = useAuth();
+  const [isCreateStudentModalOpen, setIsCreateStudentModalOpen] = useState(false);
+  const [selectedCourseForCreation, setSelectedCourseForCreation] = useState<string | undefined>(undefined);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +32,115 @@ export function AdminDashboard() {
     activeThisWeek: 0,
     newThisMonth: 0
   });
+
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editNickname, setEditNickname] = useState('');
+  const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [editMotto, setEditMotto] = useState('');
+  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+
+  const [generatedCredentials, setGeneratedCredentials] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleGenerateCredentials = async (u: any) => {
+    try {
+      const firstName = u.firstName || u.name?.split(' ')[0] || u.nickname || 'Student';
+      const lastName = u.lastName || u.name?.split(' ').slice(1).join('') || '';
+      const course = u.course || 'IELTS';
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const year = new Date().getFullYear();
+      const prefix = course.substring(0, 3).toUpperCase();
+      
+      const studentId = u.studentId || `${prefix}-${year}-${randomNum}`;
+      
+      const baseUsername = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}${lastName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      const username = u.username || (baseUsername || `student${randomNum}`);
+      
+      const cleanFirstName = firstName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'student';
+      const tempPassword = u.tempPassword || `${cleanFirstName}${randomNum}`;
+
+      const userRef = doc(db, 'users', u.id);
+      await updateDoc(userRef, {
+        studentId,
+        username,
+        tempPassword,
+        password: u.password || tempPassword,
+        authEmail: u.authEmail || u.email || `${username}@student.era.edu`
+      });
+
+      setGeneratedCredentials({
+        name: u.name || u.nickname || u.email || 'Student',
+        studentId,
+        username,
+        tempPassword
+      });
+
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to generate credentials: ' + err.message);
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    if (!generatedCredentials) return;
+    const text = `
+Student Credentials for ${generatedCredentials.name}
+----------------------------------
+Student ID: ${generatedCredentials.studentId}
+Username: ${generatedCredentials.username}
+Password: ${generatedCredentials.tempPassword}
+
+Please log in and change your password immediately.
+    `.trim();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+    try {
+      await setDoc(doc(db, 'users', editingUser.id), {
+        nickname: editNickname,
+        photoURL: editPhotoURL,
+        motto: editMotto,
+      }, { merge: true });
+      
+      setUsersList(prev => prev.map(u => u.id === editingUser.id ? {
+        ...u, 
+        nickname: editNickname, 
+        photoURL: editPhotoURL, 
+        motto: editMotto
+      } : u));
+      
+      setEditingUser(null);
+    } catch (err: any) {
+      console.error("Error updating user", err);
+      alert("Error updating user: " + err.message);
+    }
+  };
+
+  const handleUpdateUserCourse = async (userId: string, newCourse: string) => {
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        course: newCourse
+      }, { merge: true });
+      
+      setUsersList(prev => prev.map(u => u.id === userId ? {
+        ...u,
+        course: newCourse
+      } : u));
+    } catch (err: any) {
+      console.error("Error updating user course", err);
+      alert("Error updating user course: " + err.message);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -71,6 +184,7 @@ export function AdminDashboard() {
       try {
         const usersSnap = await getDocs(collection(db, 'users'));
         let total = 0, onlineNow = 0, activeToday = 0, activeThisWeek = 0, newThisMonth = 0;
+        const fetchedUsers: any[] = [];
         
         const now = new Date();
         const fiveMinsAgo = subMinutes(now, 5);
@@ -81,6 +195,8 @@ export function AdminDashboard() {
         usersSnap.forEach(doc => {
           total++;
           const data = doc.data();
+          fetchedUsers.push({ id: doc.id, ...data });
+          
           const lastActive = data.lastActive?.toDate ? data.lastActive.toDate() : (typeof data.lastActive === 'number' ? new Date(data.lastActive) : null);
           const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'number' ? new Date(data.createdAt) : null);
 
@@ -95,6 +211,7 @@ export function AdminDashboard() {
         });
 
         setUserStats({ total, onlineNow, activeToday, activeThisWeek, newThisMonth });
+        setUsersList(fetchedUsers);
       } catch (err) {
         console.error("Error fetching user stats", err);
       }
@@ -119,6 +236,64 @@ export function AdminDashboard() {
 
   const formatStat = (num: number) => num.toLocaleString();
 
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'users', userToDelete));
+      setUsersList(prev => prev.filter(u => u.id !== userToDelete));
+      setUserToDelete(null);
+    } catch (err) {
+      console.error("Error deleting user", err);
+      // fallback in case of error
+      setUserToDelete(null);
+    }
+  };
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-w-sm w-full border border-slate-100">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-natural-50 rounded-full flex items-center justify-center">
+              <LayoutDashboard className="w-8 h-8 text-natural-900" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-serif text-center text-natural-900 mb-2">Admin Access</h2>
+          <p className="text-center text-natural-600 mb-6 text-sm">Please enter the admin password to continue.</p>
+          
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (passwordInput === '010295') {
+              setIsAuthorized(true);
+              setPasswordError('');
+            } else {
+              setPasswordError('Incorrect password');
+              setPasswordInput('');
+            }
+          }}>
+            <div className="mb-4">
+              <input 
+                type="password" 
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Enter password"
+                className={`w-full px-4 py-3 bg-white border ${passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-natural-900 focus:ring-natural-900'} rounded-xl focus:ring-2 outline-none transition-all font-medium text-natural-900`}
+                autoFocus
+              />
+              {passwordError && <p className="text-red-500 text-sm mt-2">{passwordError}</p>}
+            </div>
+            <button 
+              type="submit"
+              className="w-full py-3 bg-accent-green text-white font-bold rounded-xl hover:bg-accent-green/90 transition-colors shadow-sm"
+            >
+              Unlock Dashboard
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12 pb-16 max-w-7xl mx-auto">
       
@@ -129,6 +304,12 @@ export function AdminDashboard() {
           <h1 className="text-4xl md:text-5xl font-serif leading-tight">Welcome, {firstName}</h1>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
+          <Link 
+            to="/image-generator" 
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-natural-900 font-bold rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap shadow-sm"
+          >
+            <Camera className="w-5 h-5" /> Image Generator
+          </Link>
           <Link 
             to="/classes/create" 
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent-green text-white font-bold rounded-xl hover:bg-accent-green/90 transition-colors whitespace-nowrap shadow-sm"
@@ -266,6 +447,394 @@ export function AdminDashboard() {
         )}
       </section>
 
+      {/* Course Management */}
+      <section>
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-serif text-natural-900">Courses</h2>
+            <p className="text-natural-700 mt-1">Manage Cambridge English courses.</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          {['Pre-Starter', 'Starter', 'Movers', 'Flyers', 'KET', 'PET', 'IELTS'].map((courseName) => {
+            const courseUsers = usersList.filter(u => u.course === courseName);
+            const isExpanded = expandedCourse === courseName;
+            
+            return (
+            <div 
+              key={courseName} 
+              className="bg-white border-t-8 border-t-blue-500 border border-natural-200 rounded-2xl rounded-tl-sm shadow-sm hover:shadow-md transition-shadow flex flex-col relative mb-4"
+            >
+              <div 
+                className="p-5 cursor-pointer"
+                onClick={() => setExpandedCourse(isExpanded ? null : courseName)}
+              >
+                <div className="absolute top-[-10px] left-0 bg-blue-500 h-[10px] w-1/3 rounded-t-lg"></div>
+                <div className="flex items-center justify-between mb-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Folder className="w-6 h-6 text-blue-500" />
+                    <h3 className="text-xl font-bold text-natural-900">{courseName}</h3>
+                  </div>
+                  <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => {
+                        setSelectedCourseForCreation(courseName);
+                        setIsCreateStudentModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E4DB7] hover:bg-blue-800 text-white font-bold text-xs rounded-xl transition-colors shadow-sm cursor-pointer"
+                      title={`Create new student for ${courseName}`}
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      Create Student
+                    </button>
+                    <span className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold">
+                      {courseUsers.length}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-natural-500 font-medium">{courseUsers.length} Student{courseUsers.length !== 1 ? 's' : ''}</p>
+              </div>
+              
+              {isExpanded && (
+                <div className="border-t border-natural-200">
+                  {courseUsers.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-natural-50 text-natural-600 text-[10px] uppercase tracking-wider border-b border-natural-200">
+                            <th className="px-4 py-3 font-bold">Name / Email</th>
+                            <th className="px-4 py-3 font-bold">Joined</th>
+                            <th className="px-4 py-3 font-bold">Last Active</th>
+                            <th className="px-4 py-3 font-bold text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-natural-200">
+                          {courseUsers.map(u => {
+                            const createdStr = u.createdAt?.toDate ? format(u.createdAt.toDate(), 'MMM d, yyyy') : (typeof u.createdAt === 'number' ? format(new Date(u.createdAt), 'MMM d, yyyy') : 'N/A');
+                            const activeStr = u.lastActive?.toDate ? format(u.lastActive.toDate(), 'MMM d, yyyy HH:mm') : (typeof u.lastActive === 'number' ? format(new Date(u.lastActive), 'MMM d, yyyy HH:mm') : 'N/A');
+                            return (
+                              <tr key={u.id} className="hover:bg-natural-50 transition-colors text-sm">
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    {u.photoURL ? (
+                                      <img src={u.photoURL} alt={u.firstName || u.name?.split(' ')[0] || u.nickname || 'User'} className="w-6 h-6 rounded-full object-cover border border-natural-200 shrink-0" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                                    ) : (
+                                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center font-bold text-[10px] border border-blue-200 shadow-sm shrink-0">
+                                        {(u.firstName || u.name?.split(' ')[0] || u.nickname || u.displayName || u.email || 'U')[0].toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="font-bold text-natural-900">
+                                        {u.firstName || u.name?.split(' ')[0] || u.displayName || 'Unknown'}
+                                        {u.nickname && <span className="text-blue-600 ml-1 italic font-normal">"{u.nickname}"</span>}
+                                      </div>
+                                      <div className="text-xs text-natural-500">{u.email || 'No email'}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-natural-600">{createdStr}</td>
+                                <td className="px-4 py-3 text-xs text-natural-600">{activeStr}</td>
+                                <td className="px-4 py-3 text-right">
+                                  <Link 
+                                    to={`/ielts/dashboard?userId=${u.uid || u.id}`}
+                                    className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="View Dashboard"
+                                  >
+                                    <LayoutDashboard className="w-3 h-3" /> View
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-8 flex flex-col items-center justify-center gap-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-natural-400">No Students Yet</span>
+                      <button
+                        onClick={() => {
+                          setSelectedCourseForCreation(courseName);
+                          setIsCreateStudentModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#1E4DB7] hover:bg-blue-800 text-white font-bold text-xs rounded-xl transition-colors shadow-sm cursor-pointer"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Create Student
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )})}
+        </div>
+      </section>
+
+
+
+      {/* User Management */}
+      <section>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4">
+          <div>
+            <h2 className="text-3xl font-serif text-natural-900">User Management</h2>
+            <p className="text-natural-700 mt-1">Manage platform users, view details, and create new student accounts.</p>
+          </div>
+          <button 
+            onClick={() => setIsCreateStudentModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1E4DB7] text-white font-bold rounded-xl shadow-sm hover:bg-blue-800 transition-colors"
+          >
+            <UserPlus className="w-5 h-5" />
+            Create Student
+          </button>
+        </div>
+        
+        <div className="bg-white border border-natural-200 rounded-3xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-natural-50 text-natural-600 text-xs uppercase tracking-wider border-b border-natural-200">
+                  <th className="px-6 py-4 font-bold">Name / Email</th>
+                  <th className="px-6 py-4 font-bold">Course</th>
+                  <th className="px-6 py-4 font-bold">Joined</th>
+                  <th className="px-6 py-4 font-bold">Last Active</th>
+                  <th className="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-natural-200">
+                {usersList.map((u) => {
+                  const createdStr = u.createdAt?.toDate ? format(u.createdAt.toDate(), 'MMM d, yyyy') : (typeof u.createdAt === 'number' ? format(new Date(u.createdAt), 'MMM d, yyyy') : 'N/A');
+                  const activeStr = u.lastActive?.toDate ? format(u.lastActive.toDate(), 'MMM d, yyyy HH:mm') : (typeof u.lastActive === 'number' ? format(new Date(u.lastActive), 'MMM d, yyyy HH:mm') : 'N/A');
+                  return (
+                    <tr key={u.id} className="hover:bg-natural-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-natural-900">
+                          {u.firstName || u.name?.split(' ')[0] || u.displayName || 'Unknown'}
+                          {u.nickname && <span className="text-blue-600 ml-1 italic font-normal">"{u.nickname}"</span>}
+                        </div>
+                        <div className="text-sm text-natural-500">{u.email || 'No email'}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={u.course || ''}
+                          onChange={(e) => handleUpdateUserCourse(u.id, e.target.value)}
+                          className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
+                        >
+                          <option value="">None</option>
+                          <option value="Pre-Starter">Pre-Starter</option>
+                          <option value="Starter">Starter</option>
+                          <option value="Movers">Movers</option>
+                          <option value="Flyers">Flyers</option>
+                          <option value="KET">KET</option>
+                          <option value="PET">PET</option>
+                          <option value="IELTS">IELTS</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-natural-600">{createdStr}</td>
+                      <td className="px-6 py-4 text-sm text-natural-600">{activeStr}</td>
+                      <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                        {(u.username || u.studentId) && u.password && (
+                          <div className="text-[10px] text-left mr-2 flex flex-col gap-1 items-start shrink-0">
+                            <div className="font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Username">U: {u.username || u.studentId}</div>
+                            <div className="font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Password">P: {u.password}</div>
+                          </div>
+                        )}
+                        <button 
+                          onClick={() => {
+                            setEditingUser(u);
+                            setEditNickname(u.name || u.nickname || u.displayName || '');
+                            setEditPhotoURL(u.photoURL || '');
+                            setEditMotto(u.motto || '');
+                          }}
+                          className="text-amber-600 hover:text-amber-800 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-amber-200 hover:bg-amber-50 transition-all flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleGenerateCredentials(u)}
+                          title="Generate Student Credentials"
+                          className="text-blue-600 hover:text-blue-800 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-blue-200 hover:bg-blue-50 transition-all flex items-center gap-1"
+                        >
+                          <Key className="w-3.5 h-3.5" /> Credentials
+                        </button>
+                        <button 
+                          onClick={() => setUserToDelete(u.id)}
+                          className="text-red-500 hover:text-red-700 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-red-200 hover:bg-red-50 transition-all"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            {usersList.length === 0 && (
+              <div className="p-8 text-center text-natural-500">No users found.</div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {editingUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 my-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-slate-900">Edit User Profile</h3>
+              <button onClick={() => setEditingUser(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Nickname</label>
+                <input 
+                  type="text" 
+                  value={editNickname} 
+                  onChange={e => setEditNickname(e.target.value)}
+                  placeholder="e.g. Test Master"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Profile Photo URL</label>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Camera className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <input 
+                      type="text" 
+                      value={editPhotoURL} 
+                      onChange={e => setEditPhotoURL(e.target.value)}
+                      placeholder="https://example.com/photo.jpg"
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900"
+                    />
+                  </div>
+                </div>
+                {editPhotoURL && (
+                  <div className="mt-4 flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-50">
+                      <img src={editPhotoURL} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Motto</label>
+                <textarea 
+                  value={editMotto} 
+                  onChange={e => setEditMotto(e.target.value)}
+                  placeholder="e.g. Track your progress and continue your journey to Band 7.5. You're doing great!"
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900 resize-none"
+                ></textarea>
+              </div>
+              
+              <div className="pt-4 flex gap-4">
+                <button 
+                  onClick={() => setEditingUser(null)} 
+                  className="flex-1 py-3.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveUser} 
+                  className="flex-1 py-3.5 bg-[#1E4DB7] text-white font-bold hover:bg-blue-800 rounded-xl transition-colors shadow-lg shadow-blue-500/30"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCreateStudentModalOpen && (
+        <CreateStudentModal 
+          defaultCourse={selectedCourseForCreation}
+          onClose={() => {
+            setIsCreateStudentModalOpen(false);
+            setSelectedCourseForCreation(undefined);
+          }}
+          onSuccess={() => {
+            // The user will be created and added to the users list in real-time or on next fetch
+            // Let's just close the modal when they click Done in the success state (handled by modal)
+          }}
+        />
+      )}
+
+      {generatedCredentials && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-slate-100">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-green-200">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900">Credentials Generated!</h3>
+              <p className="text-slate-500 mt-2">Student credentials for <strong>{generatedCredentials.name}</strong></p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative mb-6">
+              <button onClick={handleCopyCredentials} className="absolute top-4 right-4 p-2 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 text-xs font-bold">
+                {copied ? <><CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+              </button>
+              
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Credentials</h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <span className="text-sm font-medium text-slate-500">Student ID</span>
+                  <p className="text-lg font-bold text-slate-900 font-mono bg-white px-3 py-1.5 rounded-lg border border-slate-200 inline-block mt-1">{generatedCredentials.studentId}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-slate-500">Username</span>
+                  <p className="text-lg font-bold text-slate-900 font-mono bg-white px-3 py-1.5 rounded-lg border border-slate-200 inline-block mt-1">{generatedCredentials.username}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-slate-500">Temporary Password</span>
+                  <p className="text-lg font-bold text-amber-600 font-mono bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 inline-block mt-1">{generatedCredentials.tempPassword}</p>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setGeneratedCredentials(null)}
+              className="w-full py-3.5 bg-[#1E4DB7] text-white font-bold hover:bg-blue-800 rounded-xl transition-colors shadow-lg shadow-blue-500/30"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {userToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete User</h3>
+            <p className="text-slate-600 mb-6">Are you sure you want to delete this user? This will remove their profile from the database.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 py-2 text-slate-700 font-bold hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteUser}
+                className="flex-1 py-2 bg-red-600 text-white font-bold hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
