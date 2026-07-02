@@ -84,7 +84,12 @@ export function EraAIIeltsApp() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="bg-white p-2 rounded-xl shadow-md">
-              <Award className="h-8 w-8 text-blue-600" />
+              <img 
+                src="/logo.png" 
+                alt="Kỳ Nguyên Era Logo" 
+                className="w-8 h-8 object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight">ERA AI</h1>
@@ -204,7 +209,12 @@ export function EraAIIeltsApp() {
                   <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20">
                     <div className="relative mb-6">
                       <div className="w-20 h-20 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
-                      <Award className="w-8 h-8 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                      <img 
+                        src="/logo.png" 
+                        alt="Kỳ Nguyên Era Logo" 
+                        className="w-8 h-8 object-contain absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
                     <h3 className="text-xl font-bold text-slate-700 mb-2 animate-pulse">Running 10-Step Evaluation...</h3>
                     <p className="font-medium text-slate-500 text-center max-w-sm">ERA AI is strictly checking grammar, upgrading vocabulary, and calculating your official band score.</p>

@@ -712,7 +712,12 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                     <div className="absolute inset-0 z-40 bg-slate-50 flex flex-col items-center auto-fade-in overflow-y-auto">
                         <div className="w-full bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm px-6 py-4 flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                                <Award className="w-8 h-8 text-blue-600" />
+                                <img 
+                                  src="/logo.png" 
+                                  alt="Kỳ Nguyên Era Logo" 
+                                  className="w-8 h-8 object-contain"
+                                  referrerPolicy="no-referrer"
+                                />
                                 <div>
                                     <h2 className="text-xl font-bold text-slate-800">Test Submitted Successfully</h2>
                                     <p className="text-sm text-slate-500">Timestamp: {new Date(state.submitTime).toLocaleString()}</p>

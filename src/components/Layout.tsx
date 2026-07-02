@@ -45,9 +45,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center gap-3 group">
-                <div className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-[#2563EB] to-[#3B82F6] flex items-center justify-center shadow-[0_8px_16px_rgba(37,99,235,0.2)] group-hover:shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition-all duration-300">
-                  <Award className="w-6 h-6 text-white" />
-                </div>
+                <img 
+                  src="/logo.png" 
+                  alt="Kỳ Nguyên Era Logo" 
+                  className="w-10 h-10 object-contain rounded-[14px] shadow-[0_8px_16px_rgba(37,99,235,0.2)] group-hover:shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition-all duration-300"
+                  referrerPolicy="no-referrer"
+                />
                 <div className="flex flex-col hidden sm:flex">
                   <span className="font-bold text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
                   <span className="text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
@@ -214,9 +217,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
             <div className="col-span-1 lg:col-span-1">
               <Link to="/" className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-[14px] bg-[#2563EB] flex items-center justify-center">
-                  <Award className="w-6 h-6 text-white" />
-                </div>
+                <img 
+                  src="/logo.png" 
+                  alt="Kỳ Nguyên Era Logo" 
+                  className="w-10 h-10 object-contain rounded-[14px]"
+                  referrerPolicy="no-referrer"
+                />
                 <div className="flex flex-col">
                   <span className="font-bold text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
                   <span className="text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
