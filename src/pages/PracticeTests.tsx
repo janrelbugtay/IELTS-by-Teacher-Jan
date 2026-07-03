@@ -39,8 +39,11 @@ const generateMockTests = (courseName: string) => {
   // Generate ordered lists for skills so when we filter by all we see a mix, but when filtered by skill they're chronological
   months.forEach((month, mIndex) => {
     skills.forEach(skill => {
+      
+      let testId: any = idCounter;
+      
       tests.push({
-        id: idCounter,
+        id: testId as any,
         title: `${month} ${skill.name} Practice (${courseName})`,
         skill: skill.name,
         month: month,
@@ -215,7 +218,7 @@ export function PracticeTests() {
               </div>
               
               <div className="mt-auto">
-                {[1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 17, 18].includes(test.id) ? (
+                {[1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 17, 18, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
                   <Link 
                     to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                     className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
