@@ -20,8 +20,20 @@ export function Login() {
     return <Navigate to="/ielts/dashboard" replace />;
   }
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    try {
+      await signIn();
+    } catch (err: any) {
+      if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Failed to sign in with Google. If popups are blocked, please open the app in a new tab.");
+      }
+    }
+  };
+
   const handleSchoolLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
     setError('');
     setAuthLoading(true);
 
@@ -114,7 +126,7 @@ export function Login() {
           {/* Option 1: Google */}
           <button 
             type="button"
-            onClick={signIn}
+            onClick={handleGoogleLogin}
             className="w-full py-3.5 px-4 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center gap-3"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6" xmlns="http://www.w0.org/2000/svg">

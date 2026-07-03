@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const docSnap = await getDocFromServer(doc(db, 'users', result.user.uid));
           if (!docSnap.exists()) {
             await firebaseSignOut(auth);
-            alert("Your Google account is not linked to any student account. Please contact your teacher.");
+            throw new Error("Your Google account is not linked to any student account. Please contact your teacher.");
           } else {
             await setDoc(doc(db, 'users', result.user.uid), {
               lastLogin: serverTimestamp(),
@@ -189,10 +189,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (e) {
           console.error('Error handling popup user data:', e);
+          throw e;
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error initiating sign in:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in popup was closed before completing. Please try again.');
+      } else if (error.code === 'auth/unauthorized-domain') {
+        throw new Error('This domain is not authorized for Google Sign-In. Please contact support.');
+      }
+      throw error;
     }
   };
 

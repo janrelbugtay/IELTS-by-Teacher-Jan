@@ -9,6 +9,7 @@ import { EraLogo } from '../components/EraLogo';
 
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
+import { MarchWritingTest } from './MarchWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -372,8 +373,11 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     if (id === '3' && !submissionId) {
         return <JanuaryWritingTest />;
     }
-    if (id === '6' && !submissionId) {
+    if (id === '7' && !submissionId) {
         return <FebruaryWritingTest />;
+    }
+    if (id === '11' && !submissionId) {
+        return <MarchWritingTest />;
     }
 
     const [state, setState] = useState({

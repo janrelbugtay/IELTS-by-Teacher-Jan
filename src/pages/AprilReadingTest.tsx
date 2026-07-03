@@ -53,16 +53,9 @@ const passagesData = [
     title: "READING PASSAGE 1",
     subtitle: "What Lucy Taught Us",
     content: [
-      "A scientific finding in east Africa has changed our understanding of how humans have developed.",
-      "On a Sunday morning in late November 1974, a team of scientists were digging in an isolated spot in the Afar region of Ethiopia. Surveying the area, palaeoanthropologist Donald Johanson spotted a small piece of bone. Straight away, he recognised it as coming from the elbow of a human ancestor. And there were plenty more, ‘As I looked up the slopes to my left, I saw bits of the skull, a chunk of jaw, a couple of vertebrae,’ says Johanson.",
-      "It was immediately obvious that the skeleton was a significant find, because the sediments at the site were known to be 3.5 million years old. ‘I realised this was part of a skeleton that was older than three million years,’ says Johanson. It was the most ancient early human ever found. Later it became apparent that it was also the most complete – 40% of the skeleton had been preserved.",
-      "At the group's campsite that night, Johanson played a Beatles song called 'Lucy in the Sky with Diamonds', and, as the feeling was that the skeleton was female due to its size, someone suggested calling it Lucy. The name stuck and Johanson says, 'All of a sudden, she became a person. But the morning after the discovery, the discussion was dominated by questions. How old was Lucy when she died? Did she have children? And might she be our direct ancestor? Nowadays, we're starting to get the answers to some of these questions.",
-      "According to Johanson, Lucy had an incredible combination of primitive and derived features, which had not been seen before. Her skull and jaws were more ape-like than those of other groups of early humans. Her braincase was also very small, no bigger than that of a chimp. She had a hefty jaw, a low forehead and long dangly arms.",
-      "For Johanson, it was immediately apparent that Lucy walked upright. That's because the shape and positioning of her pelvis reflected a fully upright gait. Lucy's knee and ankle were also preserved and seemed to reflect bipedal walking. Later studies of feet offer even more evidence. As an upright walker, Lucy strengthened the idea that walking was one of the selective pressures driving human evolution forwards. Early humans did not need bigger brains to take defining steps away from apes. Extra brainpower only came over a million years later with the arrival of the species Homo erectus, meaning upright man. Though big brains would clearly be important later, walking remains one of the traits that makes us uniquely human.",
-      "She may have walked like a human, but Lucy spent at least some of her time up in the trees, as chimpanzees and orangutans still do today. It may be that upright walking evolved in the trees, as a way to walk along branches that would otherwise be too flexible. It's not clear why Lucy left the safety of the trees. It is thought that savannahs were gradually opening up, so trees were spaced further apart. But hunting for food may have been the real reason for heading to the ground, says Chris Stringer of the Natural History Museum in London. In line with this idea, recent evidence suggests that the diet of early humans was changing at that time.",
-      "Studies of the remains of food trapped on preserved human teeth indicate that several species, including Lucy's, were expanding their diet around 3.5 million years ago. Instead of mostly eating fruit from trees, they began to include grasses and possibly meat. This change in diet may have allowed them to range more widely, and to travel around more efficiently in a changing environment. Fossilised crocodile and turtle eggs were found near her skeleton, suggesting that Lucy died while foraging for them in a nearby lake.",
-      "How did early humans process all these new foods? Later species, like Homo erectus, are known to have used simple stone tools, but no tools have ever been found from this far back. However, in 2010 archaeologists uncovered animal bones with scratches that seem to have been made by stone tools. This suggests that Lucy and her relatives used stone tools to eat meat. There have since been heated debates over whether or not the marks were really made by tools. But if they were, it is not surprising, says Fred Spoor of the Max Planck Institute for Evolutionary Anthropology in Leipzig, Germany.",
-      "It also seems that Lucy's childhood was much briefer than ours and that she had to fend for herself from a young age. We know that Lucy was a full-grown adult because she had wisdom teeth and her bones had fused. But unlike modern humans, she seems to have grown to full size very quickly, and time of death was when she was around 12 years old. In line with that, a recent study of a 3-year-old early human suggested that their brains matured much earlier than ours do."
+      "The story of writing begins in ancient Mesopotamia.",
+      "Cuneiform, one of the earliest known writing systems, was developed by the Sumerians.",
+      "It revolutionized the way information was recorded and transmitted."
     ],
     questionBlocks: [
       {
@@ -98,9 +91,9 @@ const passagesData = [
   {
     id: 2,
     title: "READING PASSAGE 2",
-    subtitle: "The history of tea",
+    subtitle: "The history of writing (Placeholder)",
     content: [
-      "The story of tea begins in China. According to legend, in 2737 BC, the Chinese emperor Shen Nung was sitting beneath a tree while his servant boiled drinking water, when some leaves from the tree blew into the water. Shen Nung, a renowned herbalist, decided to try the infusion that his servant had accidentally created. The tree was a Camellia sinensis, and the resulting drink was what we now call tea. It is impossible to know whether there is any truth in this story. But tea drinking certainly became established in China many centuries before it had even been heard of in the West. Containers for tea have been found in tombs dating from the Han Dynasty (206 BC—220 AD) but it was under the Tang Dynasty (618—906 AD), that tea became firmly established as the national drink of China. It became such a favourite that during the late eighth century a writer called Lu Yu wrote the first book entirely about tea, the Ch’a Ching, or Tea Classic. It was shortly after this that tea was first introduced to Japan, by Japanese Buddhist monks who had travelled to China to study. Tea received almost instant imperial sponsorship and spread rapidly from the royal court and monasteries to the other sections of Japanese society.",
+      "The story of writing begins in ancient Mesopotamia. According to legend, in 2737 BC, the Chinese emperor Shen Nung was sitting beneath a tree while his servant boiled drinking water, when some leaves from the tree blew into the water. Shen Nung, a renowned herbalist, decided to try the infusion that his servant had accidentally created. The tree was a Camellia sinensis, and the resulting drink was what we now call tea. It is impossible to know whether there is any truth in this story. But tea drinking certainly became established in China many centuries before it had even been heard of in the West. Containers for tea have been found in tombs dating from the Han Dynasty (206 BC—220 AD) but it was under the Tang Dynasty (618—906 AD), that tea became firmly established as the national drink of China. It became such a favourite that during the late eighth century a writer called Lu Yu wrote the first book entirely about tea, the Ch’a Ching, or Tea Classic. It was shortly after this that tea was first introduced to Japan, by Japanese Buddhist monks who had travelled to China to study. Tea received almost instant imperial sponsorship and spread rapidly from the royal court and monasteries to the other sections of Japanese society.",
       "So at this stage in the history of tea, Europe was rather lagging behind. In the latter half of the sixteenth century there are the first brief mentions of tea as a drink among Europeans. These are mostly from Portuguese who were living in the East as traders and missionaries. But although some of these individuals may have brought back samples of tea to their native country, it was not the Portuguese who were the first to ship back tea as a commercial import. This was done by the Dutch, who in the last years of the sixteenth century began to encroach on Portuguese trading routes in the East. By the turn of the century, they had established a trading post on the island of Java, and it was via Java that in 1606 the first consignment of tea was shipped from China to Holland. Tea soon became a fashionable drink among the Dutch, and from there spread to other countries in continental western Europe, but because of its high price it remained a drink for the wealthy.",
       "Britain, always a little suspicious of continental trends, had yet to become the nation of tea drinkers that it is today. Starting in 1600, the British East India Company had a monopoly on importing goods from outside Europe, and it is likely that sailors on these ships brought tea home as gifts. The first coffee house had been established in London in 1652, and tea was still somewhat unfamiliar to most readers, so it is fair to assume that the drink was still something of a curiosity. Gradually, it became a popular drink in coffee houses, which were as many locations for the transaction of business as they were for relaxation or pleasure. They were though the preserve of middle- and upper-class men; women drank tea in their own homes, and as yet tea was still too expensive to be widespread among the working classes. In part, its high price was due to a punitive system of taxation.",
       "One unforeseen consequence of the taxation of tea was the growth of methods to avoid taxation—smuggling and adulteration. By the eighteenth century many Britons wanted to drink tea but could not afford the high prices, and their enthusiasm for the drink was matched by the enthusiasm of criminal gangs to smuggle it in. What began as a small time illegal trade, selling a few pounds of tea to personal contacts, developed by die late eighteenth century into an astonishing organised crime network, perhaps importing as much as 7 million lbs annually, compared to a legal import of 5 million lbs! Worse for die drinkers was that taxation also encouraged the adulteration of tea, particularly of smuggled tea which was not quality controlled through customs and excise. Leaves from other plants, or leaves which had already been brewed and then dried, were added to tea leaves. By 1784, the government realised that enough was enough, and that heavy taxation was creating more problems than it was words. The new Prime Minister, William Pitt the Younger, slashed the tax from 119 per cent to 12.5 per cent. Suddenly legal tea was affordable, and smuggling stopped virtually overnight.",
@@ -261,20 +254,10 @@ const getQuestionTextForReview = (qId: number, currentPassagesData: any) => {
   return `Question ${qId}`;
 };
 
-import { FebruaryReadingTest } from './FebruaryReadingTest';
-import { MarchReadingTest } from './MarchReadingTest';
-import { AprilReadingTest } from './AprilReadingTest';
-import { MayReadingTest } from './MayReadingTest';
-
-export function ComputerReadingTest({ submissionId, assignmentId }: { submissionId?: string, assignmentId?: string }) {
+export function AprilReadingTest({ submissionId, assignmentId }: { submissionId?: string, assignmentId?: string }) {
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-
-  if (id === '5' && !submissionId) return <FebruaryReadingTest />;
-  if (id === '9' && !submissionId) return <MarchReadingTest />;
-  if (id === '13' && !submissionId) return <AprilReadingTest />;
-  if (id === '17' && !submissionId) return <MayReadingTest />;
   
   const testId = assignmentId || id;
   const testData = getReadingTestData(testId);
@@ -1772,7 +1755,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                       
                       if (user) {
                         try {
-                          let title = 'January Reading Practice';
+                          let title = 'April Reading Practice';
                           if (id) {
                             const numericId = Number(id);
                             if (!isNaN(numericId) && numericId >= 1) {

@@ -58,8 +58,10 @@ const generateMockTests = (courseName: string) => {
 };
 
 export function PracticeTests() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const courseId = searchParams.get('course') || 'ielts';
+  const activeSkill = searchParams.get('skill') || 'Listening';
+
 
   const courseData: Record<string, { name: string, title: string, desc: string }> = {
     'pre-starter': { name: 'Pre-Starter', title: 'Pre-Starter Practice Tests', desc: 'Fun interactive games and tests for early learners.' },
@@ -76,7 +78,6 @@ export function PracticeTests() {
   const allMockTests = useMemo(() => generateMockTests(courseInfo.name), [courseInfo.name]);
 
   const [activeTab, setActiveTab] = useState('Dashboard');
-  const [activeSkill, setActiveSkill] = useState('Reading');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Newest');
 
@@ -147,7 +148,12 @@ export function PracticeTests() {
         {['Listening', 'Reading', 'Writing', 'Speaking'].map(skill => (
           <button 
             key={skill}
-            onClick={() => setActiveSkill(skill)}
+            onClick={() => {
+              setSearchParams(prev => {
+                prev.set('skill', skill);
+                return prev;
+              });
+            }}
             className={`px-5 py-2 rounded-full font-semibold text-sm transition-all border ${
               activeSkill === skill 
                 ? 'bg-[#1E4DB7] border-[#1E4DB7] text-white shadow-md' 
@@ -209,12 +215,21 @@ export function PracticeTests() {
               </div>
               
               <div className="mt-auto">
-                <Link 
-                  to={`/test/${test.skill.toLowerCase()}/${test.id}`}
-                  className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
-                >
-                  Start Test <ArrowRight className="w-4 h-4" />
-                </Link>
+                {[1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 17, 18].includes(test.id) ? (
+                  <Link 
+                    to={`/test/${test.skill.toLowerCase()}/${test.id}`}
+                    className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Start Test <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <button 
+                    disabled
+                    className="w-full py-3 bg-slate-200 text-slate-500 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    Coming Soon
+                  </button>
+                )}
               </div>
             </div>
           </div>
