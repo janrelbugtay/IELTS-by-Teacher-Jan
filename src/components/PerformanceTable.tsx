@@ -2,6 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList, Cell } from 'recharts';
 import { format } from 'date-fns';
 
+
+const getFallbackType = (id: any) => {
+  const numId = parseInt(String(id));
+  if (!isNaN(numId)) {
+    if (numId % 4 === 1) return 'reading';
+    if (numId % 4 === 2) return 'listening';
+    if (numId % 4 === 3) return 'writing';
+    if (numId % 4 === 0) return 'speaking';
+  }
+  return 'unknown';
+};
+
 export function PerformanceTable({ submissions, assignments, currentTab }: any) {
   // We can filter by type based on the currentTab, or just show the specific tab
   // If currentTab is overview, we can show "ALL" or just one of them.
@@ -14,12 +26,12 @@ export function PerformanceTable({ submissions, assignments, currentTab }: any) 
   const data = useMemo(() => {
     // Filter and sort submissions
     const filtered = submissions.filter((sub: any) => {
-      const type = sub.assignmentType || assignments.find((a: any) => a.id === sub.assignmentId)?.type || (sub.assignmentId === '3' ? 'writing' : 'reading');
+      const type = sub.assignmentType || assignments.find((a: any) => a.id === sub.assignmentId)?.type || (getFallbackType(sub.assignmentId));
       return type === filterType;
     }).sort((a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
 
     return filtered.map((sub: any, index: number) => {
-      const type = sub.assignmentType || assignments.find((a: any) => a.id === sub.assignmentId)?.type || (sub.assignmentId === '3' ? 'writing' : 'reading');
+      const type = sub.assignmentType || assignments.find((a: any) => a.id === sub.assignmentId)?.type || (getFallbackType(sub.assignmentId));
       return {
         id: sub.id,
         testType: type.charAt(0).toUpperCase() + type.slice(1),

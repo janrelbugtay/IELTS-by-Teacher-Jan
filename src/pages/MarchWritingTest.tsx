@@ -150,7 +150,7 @@ export const MarchWritingTest = ({ submissionId }: { submissionId?: string }) =>
                 await addDoc(collection(db, 'submissions'), {
                     userId: user.uid,
                     studentName: candidateNameRef.current || 'CANDIDATE',
-                    assignmentId: '3',
+                    assignmentId: '11',
                     assignmentTitle: 'March Writing Practice',
                     assignmentType: 'writing',
                     createdAt: serverTimestamp(),

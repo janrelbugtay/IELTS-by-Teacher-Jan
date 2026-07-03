@@ -1,0 +1,250 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { db } from '../lib/firebase';
+import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { useParams, useNavigate } from 'react-router';
+import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
+import { CustomAudioPlayer } from '../components/CustomAudioPlayer';
+import { FebruaryListeningTest } from './FebruaryListeningTest';
+
+const CustomStyles = () => (
+  <style>{`
+    .ielts-input {
+        width: 120px;
+        height: 24px;
+        border: 1px solid #7a7a7a;
+        text-align: center;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+        border-radius: 2px;
+        padding-bottom: 1px;
+        margin: 0 4px;
+    }
+    .ielts-input-short {
+        width: 40px;
+    }
+    .ielts-input:focus {
+        border-color: #6eb0de;
+        box-shadow: 0 0 3px #6eb0de;
+    }
+    .ielts-input.active-state {
+        background-color: #e5f0fb;
+        border-color: #6eb0de;
+        color: #0b70b9;
+        font-weight: bold;
+    }
+    .mcq-label {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        cursor: pointer;
+        padding: 16px;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .mcq-label:hover {
+        background-color: #f9fafb;
+        border-color: #93c5fd;
+    }
+    .mcq-label.selected {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+        color: #1e3a8a;
+    }
+    .mcq-radio {
+        margin-top: 5px;
+        margin-right: 16px;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+    }
+    .nav-btn {
+        width: 22px;
+        height: 22px;
+        background-color: #222;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 2px;
+        cursor: pointer;
+        border: 1px solid #000;
+        transition: all 0.1s;
+        position: relative;
+    }
+    .nav-btn:hover {
+        background-color: #444;
+    }
+    .nav-btn.active {
+        background-color: #7ab3e3;
+        border-radius: 50%;
+        color: white;
+        width: 26px;
+        height: 26px;
+        margin: -2px 0;
+        border: none;
+        box-shadow: inset 0 0 4px rgba(0,0,0,0.2);
+    }
+    .nav-btn.answered::after {
+        content: '';
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 10px;
+        height: 2px;
+        background-color: #fff;
+        border-radius: 1px;
+    }
+    .content-box {
+        border: 1px solid #333;
+        padding: 24px;
+        background-color: #fff;
+        margin-bottom: 24px;
+    }
+  `}</style>
+);
+
+export const LISTENING_ANSWER_KEY: Record<number, string> = {
+    1: 'PENNINGTON', 2: 'GREENFIELD', 3: '66 LAKE', 4: 'RADIO', 5: 'UK765024EG',
+    6: 'FLAT', 7: 'FOREST', 8: 'ORGANIC', 9: 'BIKE', 10: 'DANCE',
+    11: 'G', 12: 'B', 13: 'C', 14: 'F', 15: 'D',
+    16: 'A', 17: 'A', 18: 'C', 19: 'A', 20: 'C',
+    21: 'B', 22: 'C', 23: 'B', 24: 'A', 25: 'B',
+    26: 'C', 27: 'B', 28: 'A', 29: 'B', 30: 'A',
+    31: 'FISHING', 32: 'RESOURCES', 33: 'STREET LIGHTING', 34: 'OVER SUPPLY', 35: 'PARTIES',
+    36: 'B', 37: 'C', 38: 'A', 39: 'B', 40: 'A'
+};
+
+export function MarchListeningTest({ submissionId }: { submissionId?: string }) {
+  const { user } = useAuth();
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  if (id === '6' && !submissionId) {
+      return <FebruaryListeningTest />;
+  }
+
+  const [studentName, setStudentName] = useState(user?.displayName || '');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(40 * 60);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [currentPartIndex, setCurrentPartIndex] = useState(1);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    async function loadSubmission() {
+      if (submissionId) {
+        try {
+          const docRef = doc(db, 'submissions', submissionId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            let parsedAnswers: Record<number, string> = {};
+            if (typeof data.answers === 'string') {
+              try { parsedAnswers = JSON.parse(data.answers); } catch (e) {}
+            } else {
+              parsedAnswers = data.answers || {};
+            }
+            setAnswers(parsedAnswers);
+            setHasStarted(true);
+            setIsSubmitted(true);
+            setTimeLeft(0);
+          }
+        } catch (error) {
+          console.error("Error loading submission:", error);
+        }
+      }
+    }
+    loadSubmission();
+  }, [submissionId]);
+  const [volume, setVolume] = useState(70);
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vol = parseInt(e.target.value, 10);
+    setVolume(vol);
+    if (audioRef.current) {
+        audioRef.current.volume = vol / 100;
+    }
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (hasStarted && timeLeft > 0 && !isSubmitted) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft <= 0 && hasStarted && !isSubmitted) {
+      if (timer) clearInterval(timer);
+      submitTest();
+    }
+    return () => clearInterval(timer);
+  }, [hasStarted, timeLeft, isSubmitted]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const handleStart = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (studentName.trim()) {
+      setHasStarted(true);
+    }
+  };
+
+  const handleAnswerChange = (qNum: number, value: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [qNum]: value
+    }));
+  };
+
+  const submitTest = async () => {
+    setIsSubmitted(true);
+    if (!user) {
+        navigate('/dashboard');
+        return;
+    }
+    
+    try {
+      let title = 'March Listening Practice';
+      
+      const checkAnswer = (qNum: number) => {
+          let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
+          const correctAns = LISTENING_ANSWER_KEY[qNum];
+          if (!correctAns) return false;
+
+          if (userAns === 'T') userAns = 'TRUE';
+          if (userAns === 'F') userAns = 'FALSE';
+          if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
+          if (userAns === 'Y') userAns = 'YES';
+          if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
+
+          const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+          for (let ans of correctAnswers) {
+            ans = ans.trim();
+            if (userAns === ans) return true;
+            if (userAns.startsWith(ans + " ") || userAns.startsWith(ans + ".")) return true;
+            const cleanUser = userAns.replace(/[^A-Z0-9]/g, '');
+            const cleanAns = ans.replace(/[^A-Z0-9]/g, '');
+            if (cleanUser === cleanAns && cleanAns.length > 0) return true;
+          }
+          return false;
+      };
+
+      const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+      let bandScore = 0;
+      if (score >= 39) bandScore = 9.0;
+      else if (score >= 37) bandScore = 8.5;
+      else if (score >= 35) bandScore = 8.0;
+      else if (score >= 32) bandScore = 7.5;
+      else if (score >= 30) bandScore = 7.0;
+      else if (score >= 26) bandScore = 6.5;

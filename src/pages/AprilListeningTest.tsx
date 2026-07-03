@@ -499,24 +499,24 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
                   <div className="mb-6 font-bold text-[15px] uppercase">Write ONE WORD AND/OR A NUMBER for each answer.</div>
 
                   <div className="content-box">
-                      <h2 className="font-bold text-[22px] mb-6 text-center text-black">Eco-Farm</h2>
-                      <p className="mb-6 italic">The farm is a member of the Northern Hotel Group.</p>
+                      <h2 className="font-bold text-[22px] mb-6 text-center text-black">City Museum Tour</h2>
+                      <p className="mb-6 italic">The museum is part of the National Heritage Trust.</p>
                       
-                      <div className="font-bold mb-4 text-[18px]">Personal information</div>
+                      <div className="font-bold mb-4 text-[18px]">Visitor Details</div>
                       <div className="grid grid-cols-[200px_1fr] gap-4 mb-8 items-center">
-                          <div>Name:</div>
-                          <div>Helen <span className="font-bold mx-2">1</span><input type="text" placeholder="1" className={`ielts-input ${answers[1] ? 'active-state' : ''}`} value={answers[1] || ''} onChange={(e) => handleAnswerChange(1, e.target.value)} /></div>
+                          <div>Visitor Name:</div>
+                          <div>Arthur <span className="font-bold mx-2">1</span><input type="text" placeholder="1" className={`ielts-input ${answers[1] ? 'active-state' : ''}`} value={answers[1] || ''} onChange={(e) => handleAnswerChange(1, e.target.value)} /></div>
                           
                           <div>E-mail address (work):</div>
-                          <div>helen123@ <span className="font-bold mx-2">2</span><input type="text" placeholder="2" className={`ielts-input ${answers[2] ? 'active-state' : ''}`} value={answers[2] || ''} onChange={(e) => handleAnswerChange(2, e.target.value)} /> .com</div>
+                          <div>arthur.w@ <span className="font-bold mx-2">2</span><input type="text" placeholder="2" className={`ielts-input ${answers[2] ? 'active-state' : ''}`} value={answers[2] || ''} onChange={(e) => handleAnswerChange(2, e.target.value)} /> .com</div>
                           
-                          <div>Home address:</div>
+                          <div>Delivery address:</div>
                           <div><span className="font-bold mr-2">3</span><input type="text" placeholder="3" className={`ielts-input ${answers[3] ? 'active-state' : ''}`} value={answers[3] || ''} onChange={(e) => handleAnswerChange(3, e.target.value)} /> Road, Sheffield</div>
 
-                          <div>Source of information:</div>
+                          <div>Heard about us from:</div>
                           <div><span className="font-bold mr-2">4</span><input type="text" placeholder="4" className={`ielts-input ${answers[4] ? 'active-state' : ''}`} value={answers[4] || ''} onChange={(e) => handleAnswerChange(4, e.target.value)} /></div>
 
-                          <div>Membership number:</div>
+                          <div>Ticket number:</div>
                           <div><span className="font-bold mr-2">5</span><input type="text" placeholder="5" className={`ielts-input ${answers[5] ? 'active-state' : ''}`} value={answers[5] || ''} onChange={(e) => handleAnswerChange(5, e.target.value)} /></div>
                       </div>
                   </div>
@@ -530,29 +530,29 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
                           <thead>
                               <tr className="bg-gray-100">
                                   <th className="border border-black p-3 font-bold"></th>
-                                  <th className="border border-black p-3 font-bold">Recommendations</th>
-                                  <th className="border border-black p-3 font-bold">Customer preferences</th>
+                                  <th className="border border-black p-3 font-bold">Options</th>
+                                  <th className="border border-black p-3 font-bold">Member choices</th>
                               </tr>
                           </thead>
                           <tbody>
                               <tr>
-                                  <td className="border border-black p-3 font-bold">Accommodation type</td>
-                                  <td className="border border-black p-3">lodges</td>
-                                  <td className="border border-black p-3">a <span className="font-bold mx-2">6</span><input type="text" placeholder="6" className={`ielts-input ${answers[6] ? 'active-state' : ''}`} value={answers[6] || ''} onChange={(e) => handleAnswerChange(6, e.target.value)} /></td>
+                                  <td className="border border-black p-3 font-bold">Membership type</td>
+                                  <td className="border border-black p-3">standard</td>
+                                  <td className="border border-black p-3">premium <span className="font-bold mx-2">6</span><input type="text" placeholder="6" className={`ielts-input ${answers[6] ? 'active-state' : ''}`} value={answers[6] || ''} onChange={(e) => handleAnswerChange(6, e.target.value)} /></td>
                               </tr>
                               <tr>
-                                  <td className="border border-black p-3 font-bold">Accommodation location</td>
-                                  <td className="border border-black p-3">lakeside</td>
-                                  <td className="border border-black p-3">near the farm or in the <span className="font-bold mx-2">7</span><input type="text" placeholder="7" className={`ielts-input ${answers[7] ? 'active-state' : ''}`} value={answers[7] || ''} onChange={(e) => handleAnswerChange(7, e.target.value)} /></td>
+                                  <td className="border border-black p-3 font-bold">Preferred facility</td>
+                                  <td className="border border-black p-3">downtown</td>
+                                  <td className="border border-black p-3">near the office or in the <span className="font-bold mx-2">7</span><input type="text" placeholder="7" className={`ielts-input ${answers[7] ? 'active-state' : ''}`} value={answers[7] || ''} onChange={(e) => handleAnswerChange(7, e.target.value)} /></td>
                               </tr>
                               <tr>
-                                  <td className="border border-black p-3 font-bold">Food</td>
-                                  <td className="border border-black p-3">a wide range of food</td>
-                                  <td className="border border-black p-3">meat, seafood and <span className="font-bold mx-2">8</span><input type="text" placeholder="8" className={`ielts-input ${answers[8] ? 'active-state' : ''}`} value={answers[8] || ''} onChange={(e) => handleAnswerChange(8, e.target.value)} /> food</td>
+                                  <td className="border border-black p-3 font-bold">Classes</td>
+                                  <td className="border border-black p-3">a variety of classes</td>
+                                  <td className="border border-black p-3">yoga, pilates and <span className="font-bold mx-2">8</span><input type="text" placeholder="8" className={`ielts-input ${answers[8] ? 'active-state' : ''}`} value={answers[8] || ''} onChange={(e) => handleAnswerChange(8, e.target.value)} /> food</td>
                               </tr>
                               <tr>
-                                  <td className="border border-black p-3 font-bold">Transport</td>
-                                  <td className="border border-black p-3">train or <span className="font-bold mx-2">9</span><input type="text" placeholder="9" className={`ielts-input ${answers[9] ? 'active-state' : ''}`} value={answers[9] || ''} onChange={(e) => handleAnswerChange(9, e.target.value)} /></td>
+                                  <td className="border border-black p-3 font-bold">Payment method</td>
+                                  <td className="border border-black p-3">credit card or <span className="font-bold mx-2">9</span><input type="text" placeholder="9" className={`ielts-input ${answers[9] ? 'active-state' : ''}`} value={answers[9] || ''} onChange={(e) => handleAnswerChange(9, e.target.value)} /></td>
                                   <td className="border border-black p-3">ferry and van</td>
                               </tr>
                               <tr>
@@ -581,7 +581,7 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
                               <polygon points="0,40 -8,30 8,30" fill="black" />
                           </g>
 
-                          <text x="350" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="22" fill="black">Map of Fitchton Railway Station</text>
+                          <text x="350" y="30" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="22" fill="black">Map of City Botanical Gardens</text>
 
                           <polyline points="50,360 50,60 530,60 530,360" fill="none" stroke="black" strokeWidth="2" />
                           
@@ -686,11 +686,11 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
 
                   <div className="space-y-8 mb-12">
                       {[
-                            { qNum: 21, text: "What happened to the earliest nurses in Australia?", options: { A: "They were less respected.", B: "They received training overseas.", C: "Their pay was very low." } },
-                            { qNum: 22, text: "What was the problem with the nurse training in the 1940s?", options: { A: "Working time was too long.", B: "It took too much time.", C: "Nurses could not finish training." } },
-                            { qNum: 23, text: "What was the challenge for nurses in the 1960s?", options: { A: "Work environment was terrible.", B: "Hospitals had more specialised requirements.", C: "They had limited opportunities." } },
-                            { qNum: 24, text: "Why did nurses need more advanced skills?", options: { A: "Diseases were complex.", B: "Patients complained.", C: "Doctors requested it." } },
-                            { qNum: 25, text: "What is the current situation of nursing department in the hospitals?", options: { A: "The number of nurses is adequate.", B: "Nurses are better trained.", C: "Hospitals can provide satisfying booking service." } }
+                            { qNum: 21, text: "What happened to the earliest teachers in Canada?", options: { A: "They were less respected.", B: "They received training overseas.", C: "Their pay was very low." } },
+                            { qNum: 22, text: "What was the problem with the teacher training in the 1940s?", options: { A: "Working time was too long.", B: "It took too much time.", C: "Nurses could not finish training." } },
+                            { qNum: 23, text: "What was the challenge for teachers in the 1960s?", options: { A: "Work environment was terrible.", B: "Hospitals had more specialised requirements.", C: "They had limited opportunities." } },
+                            { qNum: 24, text: "Why did teachers need more advanced skills?", options: { A: "Curriculums were complex.", B: "Patients complained.", C: "Principals requested it." } },
+                            { qNum: 25, text: "What is the current situation of nursing department in the schools?", options: { A: "The number of teachers is adequate.", B: "Nurses are better trained.", C: "Hospitals can provide satisfying booking service." } }
                       ].map(q => (
                              <div key={q.qNum}>
                                 <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
@@ -737,14 +737,14 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
                   <div className="mb-6 font-bold text-[15px] uppercase">Write NO MORE THAN TWO WORDS for each answer.</div>
 
                   <div className="content-box mb-8">
-                      <h2 className="font-bold text-[22px] mb-6 text-center text-black">Road congestion and market failure</h2>
+                      <h2 className="font-bold text-[22px] mb-6 text-center text-black">Oceanography and Climate</h2>
                       
                       <ul className="list-none space-y-5 mb-6 pl-2">
-                          <li>- Road congestion, carbon emissions, and commercial <span className="font-bold mx-2">31</span><input type="text" placeholder="31" className={`ielts-input ${answers[31] ? 'active-state' : ''}`} value={answers[31] || ''} onChange={(e) => handleAnswerChange(31, e.target.value)} /> are example of market failure.</li>
-                          <li>- The lecturer defines market failure as the inability of the free market to develop or allocate <span className="font-bold mx-2">32</span><input type="text" placeholder="32" className={`ielts-input ${answers[32] ? 'active-state' : ''}`} value={answers[32] || ''} onChange={(e) => handleAnswerChange(32, e.target.value)} /> appropriately.</li>
-                          <li>- The lecturer gives the example of <span className="font-bold mx-2">33</span><input type="text" placeholder="33" className={`ielts-input ${answers[33] ? 'active-state' : ''}`} value={answers[33] || ''} onChange={(e) => handleAnswerChange(33, e.target.value)} /> as a market failure due to not seeking profit within those markets.</li>
-                          <li>- Markets fail partially in many ways, one of which is <span className="font-bold mx-2">34</span><input type="text" placeholder="34" className={`ielts-input ${answers[34] ? 'active-state' : ''}`} value={answers[34] || ''} onChange={(e) => handleAnswerChange(34, e.target.value)} /> when too many goods or services are produced.</li>
-                          <li>- Customers and producers cannot get other <span className="font-bold mx-2">35</span><input type="text" placeholder="35" className={`ielts-input ${answers[35] ? 'active-state' : ''}`} value={answers[35] || ''} onChange={(e) => handleAnswerChange(35, e.target.value)} /> to be responsible for the consequence of their actions.</li>
+                          <li>- Ocean currents, heat distribution, and marine <span className="font-bold mx-2">31</span><input type="text" placeholder="31" className={`ielts-input ${answers[31] ? 'active-state' : ''}`} value={answers[31] || ''} onChange={(e) => handleAnswerChange(31, e.target.value)} /> are example of environmental impacts.</li>
+                          <li>- The researcher defines environmental impacts as the inability of the natural system to balance or distribute <span className="font-bold mx-2">32</span><input type="text" placeholder="32" className={`ielts-input ${answers[32] ? 'active-state' : ''}`} value={answers[32] || ''} onChange={(e) => handleAnswerChange(32, e.target.value)} /> appropriately.</li>
+                          <li>- The lecturer shows the impact of <span className="font-bold mx-2">33</span><input type="text" placeholder="33" className={`ielts-input ${answers[33] ? 'active-state' : ''}`} value={answers[33] || ''} onChange={(e) => handleAnswerChange(33, e.target.value)} /> as a environmental impacts due to unregulated human activities.</li>
+                          <li>- Systems degrade partially in many ways, one of which is <span className="font-bold mx-2">34</span><input type="text" placeholder="34" className={`ielts-input ${answers[34] ? 'active-state' : ''}`} value={answers[34] || ''} onChange={(e) => handleAnswerChange(34, e.target.value)} /> when too much pollution is introduced.</li>
+                          <li>- Governments and industries cannot get other <span className="font-bold mx-2">35</span><input type="text" placeholder="35" className={`ielts-input ${answers[35] ? 'active-state' : ''}`} value={answers[35] || ''} onChange={(e) => handleAnswerChange(35, e.target.value)} /> to be responsible for the consequence of their actions.</li>
                       </ul>
                   </div>
 
@@ -754,11 +754,11 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
 
                       <div className="space-y-8">
                           {[
-                            { qNum: 36, text: "The speaker's story about London traffic in 1916 is", options: { A: "an amusing story.", B: "relevant digression.", C: "an entertaining apology." } },
-                            { qNum: 37, text: "What connection does the lecturer make between public transport and wealth?", options: { A: "like alcohol and vacations, there are fashions in public transport.", B: "as public transport becomes more convenient, more people use it.", C: "use of public transport declines as wealth increases." } },
-                            { qNum: 38, text: "Road traffic was reduced in central London from 2011 to 2014 by more than", options: { A: "10%.", B: "30%.", C: "60%." } },
-                            { qNum: 39, text: "How does the lecturer evaluate new road building and congestion charging?", options: { A: "congestion charging is less effective than road construction.", B: "they are equally ineffective.", C: "road construction is less effective than congestion charging." } },
-                            { qNum: 40, text: "The lecturer thinks most drivers who contribute to congestion are", options: { A: "unconcerned.", B: "unaware.", C: "undecided." } }
+                            { qNum: 36, text: "The speaker's story about ocean temperatures in 1990 is", options: { A: "an amusing story.", B: "relevant digression.", C: "an entertaining apology." } },
+                            { qNum: 37, text: "What connection does the lecturer make between sea levels and coastal cities?", options: { A: "like alcohol and vacations, there are fashions in public transport.", B: "as public transport becomes more convenient, more people use it.", C: "use of public transport declines as wealth increases." } },
+                            { qNum: 38, text: "Carbon dioxide was reduced in the atmosphere from 2011 to 2014 by more than", options: { A: "10%.", B: "30%.", C: "60%." } },
+                            { qNum: 39, text: "How does the lecturer evaluate renewable energy and emission caps?", options: { A: "congestion charging is less effective than road construction.", B: "they are equally ineffective.", C: "road construction is less effective than congestion charging." } },
+                            { qNum: 40, text: "The lecturer thinks most industries that contribute to pollution are", options: { A: "unconcerned.", B: "unaware.", C: "undecided." } }
                           ].map(q => (
                              <div key={q.qNum}>
                                 <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>

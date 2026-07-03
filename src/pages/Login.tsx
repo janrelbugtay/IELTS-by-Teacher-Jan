@@ -33,7 +33,9 @@ export function Login() {
     }
   };
 
+  
   const handleSchoolLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
     setAuthLoading(true);
 
@@ -44,31 +46,47 @@ export function Login() {
     }
 
     try {
+      const cleanLoginId = loginId.trim();
+      const lowerLoginId = cleanLoginId.toLowerCase();
+      const upperLoginId = cleanLoginId.toUpperCase();
+
       // Look up user by username, studentId, or authEmail
       const usersRef = collection(db, 'users');
-      let q = query(usersRef, where('username', '==', loginId), limit(1));
+      
+      // Try lowercase username
+      let q = query(usersRef, where('username', '==', lowerLoginId), limit(1));
       let querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        // Try studentId
-        q = query(usersRef, where('studentId', '==', loginId), limit(1));
+        // Try exact studentId
+        q = query(usersRef, where('studentId', '==', cleanLoginId), limit(1));
         querySnapshot = await getDocs(q);
       }
       
-      if (querySnapshot.empty && loginId.includes('@')) {
-         // Try email
-         q = query(usersRef, where('email', '==', loginId), limit(1));
-         querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
+        // Try uppercase studentId
+        q = query(usersRef, where('studentId', '==', upperLoginId), limit(1));
+        querySnapshot = await getDocs(q);
       }
 
-      if (querySnapshot.empty && loginId.includes('@')) {
-         q = query(usersRef, where('authEmail', '==', loginId), limit(1));
+      if (querySnapshot.empty && cleanLoginId.includes('@')) {
+         // Try lowercase email
+         q = query(usersRef, where('email', '==', lowerLoginId), limit(1));
+         querySnapshot = await getDocs(q);
+      }
+      if (querySnapshot.empty && cleanLoginId.includes('@')) {
+         // Try exact email just in case
+         q = query(usersRef, where('email', '==', cleanLoginId), limit(1));
+         querySnapshot = await getDocs(q);
+      }
+      if (querySnapshot.empty && cleanLoginId.includes('@')) {
+         q = query(usersRef, where('authEmail', '==', lowerLoginId), limit(1));
          querySnapshot = await getDocs(q);
       }
 
       if (querySnapshot.empty) {
-        if (loginId.includes('@')) {
-          await signInWithEmail(loginId, password);
+        if (cleanLoginId.includes('@')) {
+          await signInWithEmail(cleanLoginId, password);
           return;
         }
         throw new Error('User not found. Please check your Student ID or Username.');
@@ -77,14 +95,18 @@ export function Login() {
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
       
+      // If this is a Firebase Auth user (no custom password set), fall back to standard email login
+      if (!userData.password && !userData.tempPassword && cleanLoginId.includes('@')) {
+        await signInWithEmail(cleanLoginId, password);
+        return;
+      }
+      
       // Verify password
       if (userData.password !== password && userData.tempPassword !== password) {
         throw new Error('Invalid password. Please check your credentials.');
       }
 
-      if (!userData.authEmail) {
-        throw new Error('This account is not configured correctly. Please contact your teacher.');
-      }
+      
 
       // Store student ID in local storage to override Firebase Auth UID
       localStorage.setItem('studentUid', userDoc.id);

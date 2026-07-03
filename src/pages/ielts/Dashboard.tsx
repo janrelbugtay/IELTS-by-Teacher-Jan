@@ -12,6 +12,18 @@ import { format } from 'date-fns';
 
 import { linkWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
+
+const getFallbackType = (id) => {
+  const numId = parseInt(String(id));
+  if (!isNaN(numId)) {
+    if (numId % 4 === 1) return 'reading';
+    if (numId % 4 === 2) return 'listening';
+    if (numId % 4 === 3) return 'writing';
+    if (numId % 4 === 0) return 'speaking';
+  }
+  return 'unknown';
+};
+
 export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const { user, isAdmin } = useAuth();
   const location = useLocation();
@@ -278,7 +290,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   };
   
   // Analytics Calculations
-  const getSubmissionsByType = (type: string) => submissions.filter((s) => s.assignmentType === type || (!s.assignmentType && assignments.find(a => a.id === s.assignmentId)?.type === type));
+  const getSubmissionsByType = (type: string) => submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || getFallbackType(s.assignmentId)) === type);
 
   const averageScore = (subs: Submission[]) => {
     const scored = subs.filter(s => s.bandScore !== undefined);
@@ -525,7 +537,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 ) : submissions.slice(0, 5).map((sub) => {
                   const assignment = assignments.find(a => a.id === sub.assignmentId);
                   const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
-                  const type = sub.assignmentType || assignment?.type || (sub.assignmentId === '3' ? 'writing' : 'reading');
+                  const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                   return (
                     <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => {
                       if (sub.fileUrl) {
@@ -664,7 +676,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                      </td>
                   </tr>
                 ) : (() => {
-                    let filtered = filterType === 'all' ? [...submissions] : submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || (s.assignmentId === '3' ? 'writing' : 'unknown')) === filterType);
+                    let filtered = filterType === 'all' ? [...submissions] : submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || getFallbackType(s.assignmentId)) === filterType);
                     if (filterSort === 'asc') filtered.reverse();
                     
                     if (filtered.length === 0) {
@@ -679,7 +691,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     return filtered.map((sub) => {
                   const assignment = assignments.find(a => a.id === sub.assignmentId);
                   const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
-                  const type = sub.assignmentType || assignment?.type || (sub.assignmentId === '3' ? 'writing' : 'reading');
+                  const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                   const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback;
                   
                   return (
@@ -840,7 +852,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(() => {
-                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || (s.assignmentId === '1' ? 'reading' : 'unknown')) === 'reading');
+                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || (getFallbackType(s.assignmentId))) === 'reading');
                     if (filtered.length === 0) {
                         return (
                           <tr>
@@ -970,7 +982,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(() => {
-                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || (s.assignmentId === '2' ? 'listening' : 'unknown')) === 'listening');
+                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || (getFallbackType(s.assignmentId))) === 'listening');
                     if (filtered.length === 0) {
                         return (
                           <tr>
@@ -1101,7 +1113,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(() => {
-                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || (s.assignmentId === '3' ? 'writing' : 'unknown')) === 'writing');
+                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || getFallbackType(s.assignmentId)) === 'writing');
                     if (filtered.length === 0) {
                         return (
                           <tr>
@@ -1270,7 +1282,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(() => {
-                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type) === 'speaking');
+                    const filtered = submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || getFallbackType(s.assignmentId)) === 'speaking');
                     if (filtered.length === 0) {
                         return (
                           <tr>
