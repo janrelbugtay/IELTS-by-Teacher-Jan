@@ -25,7 +25,7 @@ export const getReadingTestData = (id: string | undefined) => {
 
   
   // Explicitly defined future tests that don't have content yet
-  if (id && ['21', '25', '29', '33', '37', '41', '45'].includes(id)) {
+  if (id && ['21', '25', '29', '33', '37', '41'].includes(id)) {
     return {
       passages: [
         {

@@ -7,7 +7,7 @@ import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Link as LinkIcon, Share2 } from 'lucide-react';
+import { FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { linkWithPopup, GoogleAuthProvider } from 'firebase/auth';
@@ -433,13 +433,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {/* Dashboard Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-4 border-b-2 border-slate-100 scrollbar-hide pt-4">
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=overview` : `/ielts/dashboard?tab=overview${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'overview' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Overview</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Previous Results</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : `/ielts/dashboard?tab=reading${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'reading' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Reading Portfolio</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening Portfolio</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing Portfolio</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking Recordings</Link>
-        {!isShared && !targetUserName && <Link to="/classes" className="px-6 py-3 text-[0.95rem] font-bold rounded-2xl bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 whitespace-nowrap transition-all duration-200">My Classes</Link>}
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=overview` : `/ielts/dashboard?tab=overview${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'overview' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Dashboard</Link>
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : `/ielts/dashboard?tab=reading${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'reading' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Reading</Link>
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening</Link>
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
+        {!isShared && !targetUserName && <Link to="/classes" className="px-6 py-3 text-[0.95rem] font-bold rounded-2xl bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 whitespace-nowrap transition-all duration-200">Classes</Link>}
       </div>
 
       {currentTab === 'overview' && (
@@ -508,132 +508,322 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </div>
       </section>
 
-      {/* Recent Activity Section */}
-      <section className="space-y-6">
+      {/* Progress Section */}
+      <section className="space-y-6 mt-12">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900">Recent Activity</h2>
-          <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=results` : '/ielts/dashboard?tab=results')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
-            View History <ArrowRight className="w-4 h-4" />
-          </button>
+          <h2 className="text-2xl font-bold text-slate-900">Progress</h2>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Reading</h3>
+            <div className="flex items-end gap-2 h-32">
+              {getSubmissionsByType('reading').slice(0, 5).reverse().map((sub, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
+                  <div className="w-full bg-blue-100 rounded-t-sm relative transition-all group-hover:bg-blue-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {sub.bandScore?.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {getSubmissionsByType('reading').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No reading data yet</div>}
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Listening</h3>
+            <div className="flex items-end gap-2 h-32">
+              {getSubmissionsByType('listening').slice(0, 5).reverse().map((sub, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
+                  <div className="w-full bg-teal-100 rounded-t-sm relative transition-all group-hover:bg-teal-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {sub.bandScore?.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {getSubmissionsByType('listening').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No listening data yet</div>}
+            </div>
+          </div>
+        
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Writing</h3>
+            <div className="flex items-end gap-2 h-32">
+              {getSubmissionsByType('writing').slice(0, 5).reverse().map((sub, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
+                  <div className="w-full bg-orange-100 rounded-t-sm relative transition-all group-hover:bg-orange-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {sub.bandScore?.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {getSubmissionsByType('writing').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No writing data yet</div>}
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Speaking</h3>
+            <div className="flex items-end gap-2 h-32">
+              {getSubmissionsByType('speaking').slice(0, 5).reverse().map((sub, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
+                  <div className="w-full bg-purple-100 rounded-t-sm relative transition-all group-hover:bg-purple-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {sub.bandScore?.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {getSubmissionsByType('speaking').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Type</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Date</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Score</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {submissions.length === 0 ? (
-                  <tr>
-                     <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No recent activity yet.</td>
+      {/* Independent Sections for Skills */}
+      <div className="space-y-12 mt-12">
+        {/* Speaking Recordings */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Mic className="w-6 h-6 text-purple-600" /> Speaking Recordings
+            </h2>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : '/ielts/dashboard?tab=speaking')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {getSubmissionsByType('speaking').slice(0, 4).map(sub => {
+              const assignment = assignments.find(a => a.id === sub.assignmentId);
+              const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+              return (
+                <div key={sub.id} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md transition-shadow">
+                  <div className="sm:w-[45%] relative bg-slate-900 group">
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <button onClick={() => { if (sub.audioUrl) window.open(sub.audioUrl, '_blank'); else if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all shadow-lg ring-1 ring-white/50">
+                        <PlayCircle className="w-6 h-6" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-5 sm:w-[55%] flex flex-col">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mb-3 mt-1">
+                      {sub.bandScore !== undefined && sub.bandScore !== null ? (
+                        <span className="text-sm font-bold text-slate-900">Band {sub.bandScore.toFixed(1)}</span>
+                      ) : (
+                        <span className="text-sm font-bold text-slate-900">Pending</span>
+                      )}
+                      <span className="text-slate-300">•</span>
+                      <span className="text-sm text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m'}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
+                    </div>
+                    
+                    <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
+                      <button onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
+                        Feedback
+                      </button>
+                      {sub.audioUrl && (
+                        <a href={sub.audioUrl} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
+                          <Upload className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      {isAdmin && (
+                        <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {getSubmissionsByType('speaking').length === 0 && (
+              <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-[1.5rem] border border-slate-200 border-dashed">
+                No speaking recordings yet.
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Reading Activity */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Book className="w-6 h-6 text-[#1E4DB7]" /> Reading Activity
+            </h2>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : '/ielts/dashboard?tab=reading')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Correct</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Time</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
                   </tr>
-                ) : submissions.slice(0, 5).map((sub) => {
-                  const assignment = assignments.find(a => a.id === sub.assignmentId);
-                  const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
-                  const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
-                  return (
-                    <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => {
-                      if (sub.fileUrl) {
-                        window.open(sub.fileUrl, '_blank');
-                      } else if (sub.audioUrl) {
-                        window.open(sub.audioUrl, '_blank');
-                      } else if (!sub.assignmentId.startsWith('offline_')) {
-                        navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
-                      }
-                    }}>
-                      <td className="px-6 py-5">
-                        {isAdmin && editingTitleId === sub.id ? (
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <input type="text" className="w-full px-2 py-1 text-sm font-bold border border-slate-300 rounded" value={editTitleValue} onChange={(e) => setEditTitleValue(e.target.value)} autoFocus />
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditTitle(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-slate-900">{title}</p>
-                            {isAdmin && (
-                              <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${type === 'reading' ? 'bg-blue-50 text-[#1E4DB7]' : type === 'listening' ? 'bg-teal-50 text-teal-600' : type === 'writing' ? 'bg-orange-50 text-[#F4A340]' : 'bg-purple-50 text-purple-600'}`}>
-                          {getIcon(type)} <span className="capitalize">{type}</span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 text-sm text-slate-600 hidden sm:table-cell">
-                        {sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : ''}
-                      </td>
-                      <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right">
-                        {editingScoreId === sub.id ? (
-                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="number"
-                              step="0.5"
-                              min="0"
-                              max="9"
-                              value={editScoreValue}
-                              onChange={(e) => setEditScoreValue(e.target.value)}
-                              className="w-16 px-2 py-1 text-sm border border-slate-300 rounded"
-                              autoFocus
-                            />
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
-                            {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="text-slate-900">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">Pending</span>}
-                            {isAdmin && (
-                              <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {sub.correctedFileUrl && (
-                              <a href={sub.correctedFileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded border border-green-200 uppercase tracking-wider hover:bg-green-100" onClick={(e) => e.stopPropagation()}>Corrected</a>
-                          )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {getSubmissionsByType('reading').length === 0 ? (
+                    <tr>
+                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No reading activity yet.</td>
+                    </tr>
+                  ) : getSubmissionsByType('reading').slice(0, 5).map((sub) => {
+                    const assignment = assignments.find(a => a.id === sub.assignmentId);
+                    const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                    return (
+                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                        <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
+                        <td className="px-6 py-4 font-bold text-[#1E4DB7]">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-500 text-right text-sm">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        <td className="px-6 py-4 text-right">
                           {isAdmin && (
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Performance Section */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900">Performance Table</h2>
-          <button className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
-            Browse Library <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-        
-        <PerformanceTable submissions={submissions} assignments={assignments} currentTab={currentTab} />
-      </section>
-      </>
+        {/* Listening Activity */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Headphones className="w-6 h-6 text-teal-600" /> Listening Activity
+            </h2>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : '/ielts/dashboard?tab=listening')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Correct</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Time</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {getSubmissionsByType('listening').length === 0 ? (
+                    <tr>
+                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No listening activity yet.</td>
+                    </tr>
+                  ) : getSubmissionsByType('listening').slice(0, 5).map((sub) => {
+                    const assignment = assignments.find(a => a.id === sub.assignmentId);
+                    const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                    return (
+                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                        <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
+                        <td className="px-6 py-4 font-bold text-teal-600">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-500 text-right text-sm">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        <td className="px-6 py-4 text-right">
+                          {isAdmin && (
+                            <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* Writing Activity */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <PenTool className="w-6 h-6 text-[#F4A340]" /> Writing Activity
+            </h2>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : '/ielts/dashboard?tab=writing')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {getSubmissionsByType('writing').slice(0, 4).map(sub => {
+              const assignment = assignments.find(a => a.id === sub.assignmentId);
+              const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+              let wordCount = 0;
+              if (typeof sub.answers === 'string') {
+                wordCount = sub.answers.split(/\s+/).filter(w => w.length > 0).length;
+              } else if (sub.answers && sub.answers['task2']) {
+                 wordCount = sub.answers['task2'].split(/\s+/).filter(w => w.length > 0).length;
+              } else if (sub.answers && sub.answers['task1']) {
+                 wordCount = sub.answers['task1'].split(/\s+/).filter(w => w.length > 0).length;
+              }
+              return (
+                <div key={sub.id} className="bg-white p-6 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
+                      <p className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : 'N/A'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mb-6">
+                    <div>
+                       <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Band</div>
+                       <div className="text-lg font-bold text-slate-900">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}</div>
+                    </div>
+                    <div>
+                       <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Words</div>
+                       <div className="text-lg font-bold text-slate-900">{wordCount}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-auto flex gap-2">
+                    <button onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+                      Read Essay
+                    </button>
+                    <button onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+                      Feedback
+                    </button>
+                    {isAdmin && (
+                      <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {getSubmissionsByType('writing').length === 0 && (
+              <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-[1.5rem] border border-slate-200 border-dashed">
+                No writing submissions yet.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+      
+</>
       )}
 
       {currentTab === 'results' && (
@@ -704,8 +894,14 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-bold text-slate-900">{title}</p>
+                          <div className="flex items-center gap-3">
+                                  {type === 'speaking' && (
+                                    <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
+                                      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
+                                      <PlayCircle className="w-4 h-4 text-white/90 z-10" />
+                                    </div>
+                                  )}
+                                  <p className="text-sm font-bold text-slate-900">{title}</p>
                             {isAdmin && (
                               <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -866,7 +1062,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
                       const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
-                      
+                      const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       return (
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
@@ -882,7 +1078,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
+                                  {type === 'speaking' && (
+                                    <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
+                                      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
+                                      <PlayCircle className="w-4 h-4 text-white/90 z-10" />
+                                    </div>
+                                  )}
                                   <p className="text-sm font-bold text-slate-900">{title}</p>
                                   {isAdmin && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
@@ -996,7 +1198,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
                       const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
-                      
+                      const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       return (
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
@@ -1012,7 +1214,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
+                                  {type === 'speaking' && (
+                                    <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
+                                      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
+                                      <PlayCircle className="w-4 h-4 text-white/90 z-10" />
+                                    </div>
+                                  )}
                                   <p className="text-sm font-bold text-slate-900">{title}</p>
                                   {isAdmin && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
@@ -1127,6 +1335,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
                       const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                      const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback || !!sub.fileUrl;
                       
                       return (
@@ -1148,7 +1357,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
+                                  {type === 'speaking' && (
+                                    <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
+                                      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
+                                      <PlayCircle className="w-4 h-4 text-white/90 z-10" />
+                                    </div>
+                                  )}
                                   <p className="text-sm font-bold text-slate-900">{title}</p>
                                   {isAdmin && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
@@ -1296,6 +1511,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
                       const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                      const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback;
                       const hasAudio = !!sub.audioUrl;
                       
@@ -1317,7 +1533,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3">
+                                {type === 'speaking' && (
+                                  <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
+                                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
+                                    <PlayCircle className="w-4 h-4 text-white/90 z-10" />
+                                  </div>
+                                )}
                                 <p className="text-sm font-bold text-slate-900">{title}</p>
                                 {isAdmin && (
                                   <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">

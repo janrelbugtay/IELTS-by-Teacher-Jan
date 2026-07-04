@@ -33,7 +33,8 @@ export function AdminDashboard() {
     newThisMonth: 0
   });
 
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(true);
+  const [showOnlineUsersModal, setShowOnlineUsersModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
@@ -249,50 +250,7 @@ Please log in and change your password immediately.
     }
   };
 
-  if (!isAuthorized) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-w-sm w-full border border-slate-100">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-natural-50 rounded-full flex items-center justify-center">
-              <LayoutDashboard className="w-8 h-8 text-natural-900" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-serif text-center text-natural-900 mb-2">Admin Access</h2>
-          <p className="text-center text-natural-600 mb-6 text-sm">Please enter the admin password to continue.</p>
-          
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (passwordInput === '010295') {
-              setIsAuthorized(true);
-              setPasswordError('');
-            } else {
-              setPasswordError('Incorrect password');
-              setPasswordInput('');
-            }
-          }}>
-            <div className="mb-4">
-              <input 
-                type="password" 
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Enter password"
-                className={`w-full px-4 py-3 bg-white border ${passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-natural-900 focus:ring-natural-900'} rounded-xl focus:ring-2 outline-none transition-all font-medium text-natural-900`}
-                autoFocus
-              />
-              {passwordError && <p className="text-red-500 text-sm mt-2">{passwordError}</p>}
-            </div>
-            <button 
-              type="submit"
-              className="w-full py-3 bg-accent-green text-white font-bold rounded-xl hover:bg-accent-green/90 transition-colors shadow-sm"
-            >
-              Unlock Dashboard
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-12 pb-16 max-w-7xl mx-auto">
@@ -330,7 +288,10 @@ Please log in and change your password immediately.
               <div className="text-3xl font-black text-natural-900">{formatStat(userStats.total)}</div>
               <div className="text-xs font-bold text-natural-500 uppercase tracking-widest mt-1">Total Students</div>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden">
+            <div 
+              className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden cursor-pointer hover:border-green-300 hover:shadow-md transition-all"
+              onClick={() => setShowOnlineUsersModal(true)}
+            >
                <div className="absolute top-0 inset-x-0 h-1 bg-green-500"></div>
               <div className="relative">
                  <span className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -755,6 +716,56 @@ Please log in and change your password immediately.
         </div>
       )}
 
+      {showOnlineUsersModal && (
+        <div className="fixed inset-0 bg-natural-900/50 backdrop-blur-sm z-50 flex justify-center items-center p-4 sm:p-6 opacity-100 transition-opacity">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden scale-100 transition-transform">
+            <div className="p-6 border-b border-natural-100 flex justify-between items-center bg-natural-50/50">
+              <h2 className="text-xl font-bold text-natural-900 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                Online Users
+              </h2>
+              <button 
+                onClick={() => setShowOnlineUsersModal(false)}
+                className="text-natural-400 hover:text-natural-600 p-2 hover:bg-white rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="space-y-4">
+                {usersList.filter(u => {
+                  const lastActive = u.lastActive?.toDate ? u.lastActive.toDate() : (typeof u.lastActive === 'number' ? new Date(u.lastActive) : null);
+                  return lastActive && lastActive >= subMinutes(new Date(), 5);
+                }).length === 0 ? (
+                  <p className="text-center text-natural-500 py-8">No users currently online.</p>
+                ) : (
+                  usersList.filter(u => {
+                    const lastActive = u.lastActive?.toDate ? u.lastActive.toDate() : (typeof u.lastActive === 'number' ? new Date(u.lastActive) : null);
+                    return lastActive && lastActive >= subMinutes(new Date(), 5);
+                  }).map(u => (
+                    <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-natural-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border-2 border-white shadow-sm overflow-hidden text-xl font-bold text-blue-600 uppercase">
+                        {u.photoURL ? <img src={u.photoURL} alt={u.name} className="w-full h-full object-cover" /> : (u.name || u.email || 'U')[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="font-bold text-natural-900 truncate">{u.name || u.nickname || 'Unknown User'}</h4>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">
+                            Online
+                          </span>
+                        </div>
+                        <p className="text-sm text-natural-500 truncate">{u.email}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {isCreateStudentModalOpen && (
         <CreateStudentModal 
           defaultCourse={selectedCourseForCreation}
