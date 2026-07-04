@@ -308,14 +308,14 @@ export function Home() {
                 Simulate the real exam experience at home.
               </h2>
               <p className="text-slate-300 text-lg mb-10 leading-relaxed max-w-xl">
-                Our proprietary testing platform mimics the computer-delivered Cambridge and IELTS exams. Get instant scores, AI-powered writing feedback, and detailed analytics.
+                Our proprietary testing platform mimics the computer-delivered Cambridge and IELTS exams. Get instant scores, experienced teacher feedback, and detailed analytics.
               </p>
               
               <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-10">
                 {[
                   { icon: <Headphones className="w-5 h-5 text-blue-400" />, text: 'Listening Tests' },
                   { icon: <BookOpen className="w-5 h-5 text-green-400" />, text: 'Reading Tests' },
-                  { icon: <PenTool className="w-5 h-5 text-purple-400" />, text: 'AI Writing Eval' },
+                  { icon: <PenTool className="w-5 h-5 text-purple-400" />, text: 'Experienced Teachers' },
                   { icon: <Clock className="w-5 h-5 text-orange-400" />, text: 'Strict Timers' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -347,7 +347,7 @@ export function Home() {
                     <div className="w-10 h-10 rounded-full bg-[#22C55E] flex items-center justify-center text-white"><Check className="w-6 h-6" /></div>
                     <div>
                       <div className="text-white font-bold text-sm">Task Submitted</div>
-                      <div className="text-slate-300 text-xs">AI Evaluation complete</div>
+                      <div className="text-slate-300 text-xs">Evaluation complete</div>
                     </div>
                   </div>
                   <div className="text-right">
