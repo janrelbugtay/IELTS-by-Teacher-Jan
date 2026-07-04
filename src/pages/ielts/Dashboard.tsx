@@ -10,7 +10,7 @@ import { handleFirestoreError } from '../../lib/errorHandler';
 import { FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
-import { linkWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { linkWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 
 
 const getFallbackType = (id) => {
@@ -263,6 +263,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         motto: editMotto,
         photoURL: editPhotoURL
       }, { merge: true });
+      if (user && targetUserId === user.uid && !(user as any).customAuth) {
+        await updateProfile(user as any, { displayName: editNickname || user.displayName, photoURL: editPhotoURL || user.photoURL });
+      }
       setIsEditingProfile(false);
     } catch (error) {
       console.error("Error updating profile", error);

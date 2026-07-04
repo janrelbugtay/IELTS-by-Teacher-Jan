@@ -192,8 +192,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 ) : (
                   <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex flex-col gap-2">
                     <div className="px-4 py-3 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#E2E8F0] flex items-center justify-center text-[#64748B]">
-                        <User className="w-5 h-5" />
+                      <div className="w-10 h-10 rounded-full bg-[#E2E8F0] flex items-center justify-center text-[#64748B] overflow-hidden">
+                        {user.photoURL ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" /> : <User className="w-5 h-5" />}
                       </div>
                       <div>
                         <div className="font-semibold text-[#0F172A]">{user.displayName || 'Student'}</div>

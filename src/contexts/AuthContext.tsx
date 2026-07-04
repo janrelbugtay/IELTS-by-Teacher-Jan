@@ -117,12 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Track the user activity in Firestore
         try {
           const userRef = doc(db, 'users', activeUser.uid);
-          await setDoc(userRef, {
-            name: activeUser.displayName || 'Student',
-            email: activeUser.email || '',
-            photoURL: activeUser.photoURL || '',
+          const updateData: any = {
             lastActive: serverTimestamp(),
-          }, { merge: true });
+          };
+          if (activeUser.displayName) updateData.name = activeUser.displayName;
+          if (activeUser.email) updateData.email = activeUser.email;
+          if (activeUser.photoURL) updateData.photoURL = activeUser.photoURL;
+          
+          await setDoc(userRef, updateData, { merge: true });
         } catch (e) {
           console.warn("Failed to update user activity (likely rules propagating):", e);
         }
