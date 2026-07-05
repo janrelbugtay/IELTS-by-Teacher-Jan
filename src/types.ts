@@ -53,6 +53,7 @@ export interface Submission {
   bandScore?: number; // Automatic or manual score
   percentage?: number; // % correct for reading/listening
   teacherComment?: string;
+  teacherCommentVi?: string;
   aiFeedback?: string;
   timeSpent?: number; // in seconds
   createdAt: any;

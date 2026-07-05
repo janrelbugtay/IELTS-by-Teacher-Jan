@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { Submission, Assignment } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
-import { FileText, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { FileText, ArrowLeft, CheckCircle2, XCircle, Languages } from 'lucide-react';
 import { renderMarkdown } from '../lib/markdown';
 import { ANSWER_KEY } from './ComputerReadingTest';
 import { LISTENING_ANSWER_KEY } from './ComputerListeningTest';
@@ -34,23 +34,31 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [editedComment, setEditedComment] = useState("");
   const [editedBandScore, setEditedBandScore] = useState<number | "">("");
+  const [editedCommentVi, setEditedCommentVi] = useState("");
+  const [showVi, setShowVi] = useState(false);
 
   const handleSaveComment = async () => {
     if (!id || !submission) return;
     try {
-      await updateDoc(doc(db, 'submissions', id), {
-        teacherComment: editedComment,
-        bandScore: editedBandScore === "" ? null : Number(editedBandScore)
-      });
+      const updateData: any = {};
+      updateData.teacherComment = editedComment || "";
+      updateData.teacherCommentVi = editedCommentVi || "";
+      if (editedBandScore === "") {
+          updateData.bandScore = null;
+      } else {
+          updateData.bandScore = Number(editedBandScore);
+      }
+      await updateDoc(doc(db, 'submissions', id), updateData);
       setSubmission({
         ...submission,
         teacherComment: editedComment,
+        teacherCommentVi: editedCommentVi,
         bandScore: editedBandScore === "" ? undefined : Number(editedBandScore)
       });
       setIsEditingComment(false);
     } catch (err) {
       console.error("Error saving comment", err);
-      alert("Failed to save.");
+      alert("Failed to save: " + (err.message || err));
     }
   };
 
@@ -290,11 +298,24 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       {(submission.teacherComment || submission.aiFeedback || isAdmin) && (
           <div className="bg-white p-8 rounded-3xl border border-blue-200 shadow-sm bg-blue-50/30 mb-8">
               <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600"/> Feedback & Comments</h2>
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-600"/> 
+                      Feedback & Comments
+                      {!isEditingComment && submission.teacherCommentVi && (
+                          <button
+                              onClick={() => setShowVi(!showVi)}
+                              className="ml-4 flex items-center gap-1.5 px-3 py-1.5 bg-blue-100/50 hover:bg-blue-100 text-blue-700 text-sm font-bold rounded-lg transition-colors border border-blue-200/50"
+                          >
+                              <Languages className="w-4 h-4" />
+                              {showVi ? 'Show Original' : 'View in Vietnamese'}
+                          </button>
+                      )}
+                  </h2>
                   {isAdmin && !isEditingComment && (
                       <button 
                           onClick={() => {
                               setEditedComment(submission.teacherComment || "");
+                              setEditedCommentVi(submission.teacherCommentVi || "");
                               setEditedBandScore(submission.bandScore ?? "");
                               setIsEditingComment(true);
                           }}
@@ -321,8 +342,15 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                           <textarea 
                               value={editedComment}
                               onChange={e => setEditedComment(e.target.value)}
-                              className="w-full h-32 px-4 py-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full h-32 px-4 py-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 mb-4"
                               placeholder="Write your feedback here..."
+                          />
+                          <label className="block text-sm font-bold text-slate-700 mb-2">Teacher Comment (Vietnamese Translation)</label>
+                          <textarea 
+                              value={editedCommentVi}
+                              onChange={e => setEditedCommentVi(e.target.value)}
+                              className="w-full h-32 px-4 py-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Thêm bản dịch phản hồi tại đây..."
                           />
                       </div>
                       <div className="flex justify-end gap-3 pt-2">
@@ -344,9 +372,9 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                   <>
                       {submission.teacherComment && (
                           <div className="mb-6">
-                              <h3 className="font-bold text-slate-800 mb-2">Teacher Comment</h3>
+                              <h3 className="font-bold text-slate-800 mb-2">Teacher Comment {showVi && submission.teacherCommentVi && "(Vietnamese)"}</h3>
                               <p className="text-slate-700 p-4 bg-white rounded-xl border border-slate-200 whitespace-pre-wrap leading-relaxed">
-                                {submission.teacherComment.replace(/(?<!^)\s*(?=[1-9]\.\s+[A-Z])/g, '\n\n')}
+                                {(showVi && submission.teacherCommentVi) ? submission.teacherCommentVi.replace(/(?<!^)\s*(?=[1-9]\.\s+[A-Z])/g, '\n\n') : submission.teacherComment.replace(/(?<!^)\s*(?=[1-9]\.\s+[A-Z])/g, '\n\n')}
                               </p>
                           </div>
                       )}

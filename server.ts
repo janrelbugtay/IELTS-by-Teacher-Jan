@@ -430,6 +430,30 @@ Please return your response in JSON format.
     }
   });
 
+    app.post("/api/translate-feedback", async (req, res) => {
+    try {
+      const { text, targetLanguage } = req.body;
+      if (!text) {
+        return res.status(400).json({ error: "Text is required" });
+      }
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+      }
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Translate the following IELTS evaluation feedback to ${targetLanguage || 'Vietnamese'}. Keep the tone professional and maintain any structural formatting (like bullet points or numbers). Do not add any extra commentary, just provide the translation:
+
+${text}`
+      });
+      
+      res.json({ translatedText: response.text });
+    } catch (err) {
+      console.error("Translation API Error:", err);
+      res.status(500).json({ error: err?.message || "Failed to translate feedback" });
+    }
+  });
+
   app.post("/api/generate-image", async (req, res) => {
     try {
       const { prompt, size } = req.body;
