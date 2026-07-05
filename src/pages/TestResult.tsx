@@ -24,6 +24,7 @@ import { SpeakingTestResult } from './SpeakingTestResult';
 
 
 function getEmbedUrl(url: string) {
+  if (typeof url !== 'string') return url;
   if (!url) return url;
   if (url.includes('drive.google.com')) {
     return url.replace(/\/view.*$/, '/preview');
@@ -139,27 +140,6 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
           return <FebruaryListeningTest submissionId={id} />;
       }
       return <ComputerListeningTest submissionId={id} />;
-  }
-
-  if (type === 'speaking' && !submission.assignmentId?.startsWith('offline_') && submission.sessionId) {
-      return (
-        <div className="max-w-4xl mx-auto py-10 space-y-8">
-          <button onClick={() => navigate(-1)} className="flex items-center text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-          </button>
-          
-          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-             <div className="flex justify-between items-start">
-                 <div>
-                     <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">SPEAKING</div>
-                     <h1 className="text-3xl font-bold text-slate-900 mb-2">{title}</h1>
-                     <p className="text-slate-600">Completed on {submission.createdAt ? format(submission.createdAt.toDate ? submission.createdAt.toDate() : new Date(submission.createdAt), 'MMMM d, yyyy h:mm a') : 'Unknown Date'}</p>
-                 </div>
-             </div>
-          </div>
-          <SpeakingTestResult submissionId={submission.id} sessionId={submission.sessionId} />
-        </div>
-      );
   }
 
   if (type === 'writing') {
@@ -306,7 +286,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                 Recording / Video
                 <a href={submission.audioUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
               </h2>
-              {submission.audioUrl.includes('drive.google.com') || submission.audioUrl.includes('youtube') || submission.audioUrl.includes('youtu.be') ? (
+              {typeof submission.audioUrl === 'string' && (submission.audioUrl.includes('drive.google.com') || submission.audioUrl.includes('youtube') || submission.audioUrl.includes('youtu.be')) ? (
                   <iframe src={getEmbedUrl(submission.audioUrl)} className="w-full h-[500px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
               ) : submission.audioUrl.match(/\.(mp4|webm|ogg|mov)$/i) ? (
                   <video src={submission.audioUrl} controls className="w-full rounded-xl max-h-[500px]" />
@@ -523,6 +503,9 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                   </div>
               )}
           </div>
+      )}
+      {type === 'speaking' && submission.sessionId && (
+        <SpeakingTestResult submissionId={id || ''} sessionId={submission.sessionId} />
       )}
     </div>
   );
