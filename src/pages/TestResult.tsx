@@ -118,7 +118,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       return <ComputerListeningTest submissionId={id} />;
   }
 
-  if (type === 'speaking') {
+  if (type === 'speaking' && !submission.assignmentId?.startsWith('offline_') && submission.sessionId) {
       return (
         <div className="max-w-4xl mx-auto py-10 space-y-8">
           <button onClick={() => navigate(-1)} className="flex items-center text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">
@@ -277,6 +277,16 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
          </div>
       </div>
 
+      {submission.fileUrl && (
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
+                Submission Document
+                <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
+              </h2>
+              <iframe src={submission.fileUrl} className="w-full h-[600px] border-0 rounded-xl" />
+          </div>
+      )}
+
       {(submission.teacherComment || submission.aiFeedback || isAdmin) && (
           <div className="bg-white p-8 rounded-3xl border border-blue-200 shadow-sm bg-blue-50/30 mb-8">
               <div className="flex justify-between items-center mb-6">
@@ -335,7 +345,9 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                       {submission.teacherComment && (
                           <div className="mb-6">
                               <h3 className="font-bold text-slate-800 mb-2">Teacher Comment</h3>
-                              <p className="text-slate-700 p-4 bg-white rounded-xl border border-slate-200">{submission.teacherComment}</p>
+                              <p className="text-slate-700 p-4 bg-white rounded-xl border border-slate-200 whitespace-pre-wrap leading-relaxed">
+                                {submission.teacherComment.replace(/(?<!^)\s*(?=[1-9]\.\s+[A-Z])/g, '\n\n')}
+                              </p>
                           </div>
                       )}
                       {submission.aiFeedback && (

@@ -602,7 +602,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   <div className="sm:w-[45%] relative bg-slate-900 group">
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center opacity-60 group-hover:opacity-40 transition-opacity"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <button onClick={() => { if (sub.audioUrl) window.open(sub.audioUrl, '_blank'); else if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all shadow-lg ring-1 ring-white/50">
+                      <button onClick={() => { if (sub.audioUrl) window.open(sub.audioUrl, '_blank'); else navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all shadow-lg ring-1 ring-white/50">
                         <PlayCircle className="w-6 h-6" />
                       </button>
                     </div>
@@ -625,7 +625,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     </div>
                     
                     <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
-                      <button onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
+                      <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
                         Feedback
                       </button>
                       {sub.audioUrl && (
@@ -683,7 +683,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
                     return (
-                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
                         <td className="px-6 py-4 font-bold text-[#1E4DB7]">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}</td>
                         <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
@@ -737,7 +737,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
                     return (
-                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
                         <td className="px-6 py-4 font-bold text-teal-600">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}</td>
                         <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
@@ -802,10 +802,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                   
                   <div className="mt-auto flex gap-2">
-                    <button onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+                    <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
                       Read Essay
                     </button>
-                    <button onClick={() => { if (!sub.assignmentId.startsWith('offline_')) navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+                    <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
                       Feedback
                     </button>
                     {isAdmin && (
@@ -888,7 +888,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback;
                   
                   return (
-                    <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => !sub.assignmentId.startsWith('offline_') && navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)}>
+                    <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)}>
                       <td className="px-6 py-4">
                         {isAdmin && editingTitleId === sub.id ? (
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1069,7 +1069,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       return (
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
-                            if (!sub.assignmentId.startsWith('offline_')) {
+                            {
                               navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
                             }
                           }}>
@@ -1205,7 +1205,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       return (
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
-                            if (!sub.assignmentId.startsWith('offline_')) {
+                            {
                               navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
                             }
                           }}>
@@ -1348,7 +1348,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                               window.open(sub.fileUrl, '_blank');
                             } else if (sub.audioUrl) {
                               window.open(sub.audioUrl, '_blank');
-                            } else if (!sub.assignmentId.startsWith('offline_')) {
+                            } else {
                               navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
                             }
                           }}>
@@ -1524,7 +1524,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             window.open(sub.fileUrl, '_blank');
                           } else if (sub.audioUrl) {
                             window.open(sub.audioUrl, '_blank');
-                          } else if (!sub.assignmentId.startsWith('offline_')) {
+                          } else {
                             navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
                           }
                         }}>
