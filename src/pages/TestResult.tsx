@@ -285,6 +285,16 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
          </div>
       </div>
 
+      {submission.audioUrl && (
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
+                Audio Recording
+                <a href={submission.audioUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
+              </h2>
+              <audio src={submission.audioUrl} controls className="w-full h-12" />
+          </div>
+      )}
+      
       {submission.fileUrl && (
           <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
