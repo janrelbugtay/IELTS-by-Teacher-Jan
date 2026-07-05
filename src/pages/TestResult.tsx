@@ -22,6 +22,21 @@ import { MarchWritingTest } from './MarchWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
+
+function getEmbedUrl(url: string) {
+  if (!url) return url;
+  if (url.includes('drive.google.com')) {
+    return url.replace(/\/view.*$/, '/preview');
+  }
+  if (url.includes('youtube.com/watch?v=')) {
+    return url.replace('watch?v=', 'embed/');
+  }
+  if (url.includes('youtu.be/')) {
+    return url.replace('youtu.be/', 'youtube.com/embed/');
+  }
+  return url;
+}
+
 export function TestResult({ isShared = false }: { isShared?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -288,10 +303,16 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       {submission.audioUrl && (
           <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
-                Audio Recording
+                Recording / Video
                 <a href={submission.audioUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
               </h2>
-              <audio src={submission.audioUrl} controls className="w-full h-12" />
+              {submission.audioUrl.includes('drive.google.com') || submission.audioUrl.includes('youtube') || submission.audioUrl.includes('youtu.be') ? (
+                  <iframe src={getEmbedUrl(submission.audioUrl)} className="w-full h-[500px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
+              ) : submission.audioUrl.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                  <video src={submission.audioUrl} controls className="w-full rounded-xl max-h-[500px]" />
+              ) : (
+                  <audio src={submission.audioUrl} controls className="w-full h-12" />
+              )}
           </div>
       )}
       
@@ -301,7 +322,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                 Submission Document
                 <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
               </h2>
-              <iframe src={submission.fileUrl} className="w-full h-[600px] border-0 rounded-xl" />
+              <iframe src={getEmbedUrl(submission.fileUrl)} className="w-full h-[600px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
           </div>
       )}
 
