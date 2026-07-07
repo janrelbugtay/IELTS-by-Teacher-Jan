@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award , Facebook, Instagram, Youtube} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -23,6 +25,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userCourse, setUserCourse] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      getDoc(doc(db, 'users', user.uid)).then((docSnap) => {
+        if (docSnap.exists() && docSnap.data().course) {
+          setUserCourse(docSnap.data().course);
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,16 +46,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
+  const navLinks: any[] = [
     { name: 'Home', path: '/' },
-    { name: 'Courses', path: '/courses' },
     { name: 'Dashboard', path: '/ielts/dashboard' },
-    { name: 'Classes', path: '/classes', adminOnly: true },
-    { name: 'Resources', path: '/resources' },
-    { name: 'Teachers', path: '/teachers' },
-    { name: 'About', path: '/about' },
-    { name: 'Contact', path: '/contact' },
   ];
+  if (user && userCourse) {
+    navLinks.push({ name: 'My Class', path: `/courses/${userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '')}` });
+  }
 
   const visibleLinks = navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
 
@@ -193,7 +204,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex flex-col gap-2">
                     <div className="px-4 py-3 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#E2E8F0] flex items-center justify-center text-[#64748B] overflow-hidden">
-                        {user.photoURL ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" /> : <User className="w-5 h-5" />}
+                        {user.photoURL ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || "User")}&background=e2e8f0&color=64748b`; }} /> : <User className="w-5 h-5" />}
                       </div>
                       <div>
                         <div className="font-semibold text-[#0F172A]">{user.displayName || 'Student'}</div>

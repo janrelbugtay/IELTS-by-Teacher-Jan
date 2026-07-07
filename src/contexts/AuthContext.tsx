@@ -4,6 +4,7 @@ import { auth, db } from '../lib/firebase';
 import { doc, getDocFromServer, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
+  userCourse: string | null;
   user: FirebaseUser | null;
   loading: boolean;
   isAdmin: boolean;
@@ -14,6 +15,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
+  userCourse: null,
   user: null,
   loading: true,
   isAdmin: false,
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userCourse, setUserCourse] = useState<string | null>(null);
 
   useEffect(() => {
     // Validate connection
@@ -115,6 +118,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (activeUser) {
         // Track the user activity in Firestore
+        try {
+          const ud = await getDocFromServer(doc(db, 'users', activeUser.uid));
+          if (ud.exists() && ud.data().course) {
+            setUserCourse(ud.data().course);
+          } else {
+            setUserCourse(null);
+          }
+        } catch(e) {}
+
         try {
           const userRef = doc(db, 'users', activeUser.uid);
           const updateData: any = {
@@ -255,7 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signIn, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, userCourse, loading, isAdmin, signIn, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );

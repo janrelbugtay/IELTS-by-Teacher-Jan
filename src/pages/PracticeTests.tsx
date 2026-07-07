@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useSearchParams, Navigate } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
+import { ArrowLeft } from 'lucide-react';
 import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard } from 'lucide-react';
 
 const generateMockTests = (courseName: string) => {
@@ -62,7 +64,14 @@ const generateMockTests = (courseName: string) => {
 
 export function PracticeTests() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { userCourse, isAdmin } = useAuth();
   const courseId = searchParams.get('course') || 'ielts';
+  
+  let normalizedUserCourse = userCourse ? userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') : null;
+  if (normalizedUserCourse === 'starter') normalizedUserCourse = 'starters';
+  
+  const isRestricted = !isAdmin && normalizedUserCourse && courseId && normalizedUserCourse !== courseId.toLowerCase();
+
   const activeSkill = searchParams.get('skill') || 'Listening';
 
 

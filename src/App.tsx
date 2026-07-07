@@ -9,7 +9,6 @@ import { Dashboard } from './pages/ielts/Dashboard';
 import { CreateAssignment } from './pages/CreateAssignment';
 import { ViewAssignment } from './pages/ViewAssignment';
 import { AdminDashboard } from './pages/AdminDashboard';
-import { TeacherClasses } from './pages/TeacherClasses';
 import { Login } from './pages/Login';
 import { TestResult } from './pages/TestResult';
 import { EraAIIeltsApp } from './pages/EraAIIeltsApp';
@@ -67,7 +66,6 @@ function AppContent() {
               <Route path="/assignment/:id" element={<ProtectedRoute><ViewAssignment /></ProtectedRoute>} />
               
               {/* Teacher routes */}
-              <Route path="/classes" element={<ProtectedRoute adminOnly><TeacherClasses /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
               <Route path="/classes/assignments" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
               <Route path="/classes/create" element={<ProtectedRoute adminOnly><CreateAssignment /></ProtectedRoute>} />

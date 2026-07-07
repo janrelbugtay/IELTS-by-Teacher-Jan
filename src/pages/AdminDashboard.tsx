@@ -497,14 +497,29 @@ Please log in and change your password immediately.
                                 <td className="px-4 py-3 text-xs text-natural-600">{createdStr}</td>
                                 <td className="px-4 py-3 text-xs text-natural-600">{activeStr}</td>
                                 <td className="px-4 py-3 text-right">
-                                  <Link 
-                                    to={`/ielts/dashboard?userId=${u.uid || u.id}`}
-                                    className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1"
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="View Dashboard"
-                                  >
-                                    <LayoutDashboard className="w-3 h-3" /> View
-                                  </Link>
+                                  <div className="flex flex-col xl:flex-row items-end xl:items-center justify-end gap-2">
+
+                                  <div className="flex items-center justify-end gap-2 mt-1 xl:mt-0">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleGenerateCredentials(u);
+                                      }}
+                                      title="Generate Student Credentials"
+                                      className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-sm shrink-0"
+                                    >
+                                      <Key className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Credentials</span><span className="sm:hidden">Creds</span>
+                                    </button>
+                                    <Link 
+                                      to={`/ielts/dashboard?userId=${u.uid || u.id}`}
+                                      className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-sm shrink-0"
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="View Dashboard"
+                                    >
+                                      <LayoutDashboard className="w-3.5 h-3.5 shrink-0" /> View
+                                    </Link>
+                                  </div>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -596,12 +611,6 @@ Please log in and change your password immediately.
                       <td className="px-6 py-4 text-sm text-natural-600">{createdStr}</td>
                       <td className="px-6 py-4 text-sm text-natural-600">{activeStr}</td>
                       <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
-                        {(u.username || u.studentId) && u.password && (
-                          <div className="text-[10px] text-left mr-2 flex flex-col gap-1 items-start shrink-0">
-                            <div className="font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Username">U: {u.username || u.studentId}</div>
-                            <div className="font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Password">P: {u.password}</div>
-                          </div>
-                        )}
                         <button 
                           onClick={() => {
                             setEditingUser(u);
@@ -612,13 +621,6 @@ Please log in and change your password immediately.
                           className="text-amber-600 hover:text-amber-800 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-amber-200 hover:bg-amber-50 transition-all flex items-center gap-1"
                         >
                           <Edit2 className="w-3.5 h-3.5" /> Edit
-                        </button>
-                        <button 
-                          onClick={() => handleGenerateCredentials(u)}
-                          title="Generate Student Credentials"
-                          className="text-blue-600 hover:text-blue-800 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-blue-200 hover:bg-blue-50 transition-all flex items-center gap-1"
-                        >
-                          <Key className="w-3.5 h-3.5" /> Credentials
                         </button>
                         <button 
                           onClick={() => setUserToDelete(u.id)}
@@ -671,7 +673,16 @@ Please log in and change your password immediately.
                     <input 
                       type="text" 
                       value={editPhotoURL} 
-                      onChange={e => setEditPhotoURL(e.target.value)}
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (val.includes('drive.google.com/file/d/')) {
+                          const match = val.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                          if (match && match[1]) {
+                            val = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+                          }
+                        }
+                        setEditPhotoURL(val);
+                      }}
                       placeholder="https://example.com/photo.jpg"
                       className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900"
                     />
@@ -746,7 +757,7 @@ Please log in and change your password immediately.
                   }).map(u => (
                     <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-natural-200 bg-white shadow-sm hover:shadow-md transition-shadow">
                       <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border-2 border-white shadow-sm overflow-hidden text-xl font-bold text-blue-600 uppercase">
-                        {u.photoURL ? <img src={u.photoURL} alt={u.name} className="w-full h-full object-cover" /> : (u.name || u.email || 'U')[0]}
+                        {u.photoURL ? <img src={u.photoURL} alt={u.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email || "U")}&background=f1f5f9&color=475569`; }} /> : (u.name || u.email || 'U')[0]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">

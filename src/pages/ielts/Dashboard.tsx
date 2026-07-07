@@ -401,17 +401,19 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       Link Google
                     </button>
                   )}
-                  <button 
-                    onClick={() => {
-                      setEditNickname(userProfile?.nickname || firstName);
-                      setEditMotto(userProfile?.motto || '');
-                      setEditPhotoURL(userProfile?.photoURL || '');
-                      setIsEditingProfile(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" /> Edit Profile
-                  </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => {
+                        setEditNickname(userProfile?.nickname || firstName);
+                        setEditMotto(userProfile?.motto || '');
+                        setEditPhotoURL(userProfile?.photoURL || '');
+                        setIsEditingProfile(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" /> Edit Profile
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -442,7 +444,6 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
-        {!isShared && !targetUserName && <Link to="/classes" className="px-6 py-3 text-[0.95rem] font-bold rounded-2xl bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 whitespace-nowrap transition-all duration-200">Classes</Link>}
       </div>
 
       {currentTab === 'overview' && (
@@ -1661,7 +1662,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     <input 
                       type="text" 
                       value={editPhotoURL} 
-                      onChange={e => setEditPhotoURL(e.target.value)}
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (val.includes('drive.google.com/file/d/')) {
+                          const match = val.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                          if (match && match[1]) {
+                            val = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+                          }
+                        }
+                        setEditPhotoURL(val);
+                      }}
                       placeholder="https://example.com/photo.jpg"
                       className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900"
                     />

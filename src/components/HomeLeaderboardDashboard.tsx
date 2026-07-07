@@ -242,7 +242,7 @@ export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { de
                               <div className="flex items-center justify-center w-10">
                                 {rankDisplay}
                               </div>
-                              <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-100" />
+                              <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-100" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=f1f5f9&color=475569`; }} />
                               <div className="font-bold text-[#0F172A] whitespace-nowrap">{student.name}</div>
                             </div>
                             

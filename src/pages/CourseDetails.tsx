@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, Navigate } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';
 import { HomeLeaderboardDashboard } from '../components/HomeLeaderboardDashboard';
@@ -9,6 +10,12 @@ import { PETCalculator } from '../components/PETCalculator';
 
 export function CourseDetails() {
   const { id } = useParams();
+  const { userCourse, isAdmin } = useAuth();
+  
+  let normalizedUserCourse = userCourse ? userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') : null;
+  if (normalizedUserCourse === 'starter') normalizedUserCourse = 'starters';
+  const isRestricted = !isAdmin && normalizedUserCourse && id && normalizedUserCourse !== id.toLowerCase();
+
   const [activeTab, setActiveTab] = useState('overview');
 
   const courseData: Record<string, { name: string, image: string, color: string }> = {
@@ -115,6 +122,25 @@ export function CourseDetails() {
       </div>
     );
   };
+
+  if (isRestricted) {
+    return (
+      <div className="bg-[#F8FAFC] min-h-[calc(100vh-80px)] flex flex-col items-center justify-center p-8">
+        <div className="bg-white p-12 rounded-[32px] text-center max-w-lg shadow-xl border border-red-100">
+          <div className="w-24 h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Access Restricted</h2>
+          <p className="text-slate-600 mb-8 text-lg leading-relaxed">You do not have permission to view this course. You are currently enrolled in a different course.</p>
+          <Link to="/" className="inline-flex items-center gap-2 px-8 py-4 bg-[#1E4DB7] text-white rounded-2xl font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-500/30">
+            <ArrowLeft className="w-5 h-5" /> Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#F8FAFC] min-h-[calc(100vh-80px)] py-8 px-4 sm:px-6 lg:px-8">
