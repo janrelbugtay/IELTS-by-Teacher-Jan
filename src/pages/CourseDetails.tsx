@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';
+import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';
 import { HomeLeaderboardDashboard } from '../components/HomeLeaderboardDashboard';
 import { PETCalculator } from '../components/PETCalculator';
 
@@ -33,7 +33,7 @@ export function CourseDetails() {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'lessons', label: 'Lessons' },
-    { id: 'assignments', label: 'Assignments' },
+    { id: 'assignments', label: 'Homework' },
     { id: 'practice', label: 'Practice Tests' },
     { id: 'leaderboard', label: 'Leaderboard' },
     { id: 'announcements', label: 'Announcements' },
@@ -56,7 +56,7 @@ export function CourseDetails() {
       icon: <PenTool className="w-8 h-8 text-[#F59E0B]" />,
       desc: 'Complete assignments and exercises.',
       color: 'bg-orange-50 border-[#F59E0B]/20 hover:border-[#F59E0B]',
-      link: `/ielts/dashboard?course=${id || 'ielts'}`
+      action: () => setActiveTab('assignments')
     },
     {
       title: 'Activities',
@@ -83,6 +83,64 @@ export function CourseDetails() {
       action: () => setActiveTab('calculator')
     });
   }
+
+  
+  const renderHomework = () => {
+    const homeworkFolders = [
+      {
+        title: 'Reading Homework',
+        icon: <BookOpen className="w-8 h-8 text-[#1E4DB7]" />,
+        desc: 'Complete reading homework.',
+        color: 'bg-blue-50 border-[#1E4DB7]/20 hover:border-[#1E4DB7]',
+        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=reading`
+      },
+      {
+        title: 'Listening Homework',
+        icon: <Headphones className="w-8 h-8 text-teal-600" />,
+        desc: 'Listen to audio and answer questions.',
+        color: 'bg-teal-50 border-teal-600/20 hover:border-teal-600',
+        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=listening`
+      },
+      {
+        title: 'Writing Homework',
+        icon: <PenTool className="w-8 h-8 text-[#F4A340]" />,
+        desc: 'Submit your writing homework.',
+        color: 'bg-orange-50 border-[#F4A340]/20 hover:border-[#F4A340]',
+        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=writing`
+      },
+      {
+        title: 'Speaking Homework',
+        icon: <Mic className="w-8 h-8 text-purple-600" />,
+        desc: 'Submit your speaking homework.',
+        color: 'bg-purple-50 border-purple-600/20 hover:border-purple-600',
+        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=speaking`
+      }
+    ];
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {homeworkFolders.map((folder, idx) => (
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.1 }}
+          >
+            <Link 
+              to={folder.link}
+              className={`block h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1`}
+            >
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${folder.color}`}>
+                {folder.icon}
+              </div>
+              <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
+              <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    );
+  };
 
   const renderOverview = () => {
     return (
@@ -182,6 +240,7 @@ export function CourseDetails() {
         {/* Tab Content */}
         <div className="min-h-[400px]">
           {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'assignments' && renderHomework()}
           {activeTab === 'leaderboard' && (
             <HomeLeaderboardDashboard 
               defaultCourse={course.name}
@@ -191,7 +250,7 @@ export function CourseDetails() {
           {activeTab === 'calculator' && (
             <PETCalculator />
           )}
-          {activeTab !== 'overview' && activeTab !== 'leaderboard' && activeTab !== 'calculator' && (
+          {activeTab !== 'overview' && activeTab !== 'assignments' && activeTab !== 'leaderboard' && activeTab !== 'calculator' && (
             <div className="bg-white rounded-[24px] p-12 text-center border border-slate-200">
               <div className="w-20 h-20 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-6">
                 <BookOpen className="w-8 h-8" />
