@@ -249,7 +249,7 @@ export function PracticeTests() {
             <div className="relative h-48 overflow-hidden">
               <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-transparent transition-colors z-10"></div>
               <img 
-                src={test.image} 
+                src={test.image || undefined} 
                 alt={test.title} 
                 referrerPolicy="no-referrer" 
                 onError={(e) => {

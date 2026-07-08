@@ -231,12 +231,11 @@ export function Home() {
                 <div className="w-full h-52 sm:h-60 overflow-hidden flex-shrink-0 bg-slate-100 relative">
                   <div className={`absolute inset-0 bg-gradient-to-t ${course.color} mix-blend-multiply opacity-0 group-hover:opacity-40 transition-opacity duration-500 z-10`}></div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
-                  <img src={course.image} alt={course.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                  <img src={course.image || undefined} alt={course.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                 </div>
                 
                 <div className="p-6 md:p-8 flex flex-col flex-1 relative z-20">
                   <div className="flex items-center gap-3 mb-5">
-                    <span className={`px-4 py-1.5 text-white text-[13px] font-bold rounded-full tracking-wide shadow-md bg-gradient-to-r ${course.color}`}>{course.age}</span>
                     <span className="px-3.5 py-1.5 bg-slate-100 text-[#64748B] text-[13px] font-bold rounded-full tracking-wide">{course.level}</span>
                   </div>
                   

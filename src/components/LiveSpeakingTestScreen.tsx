@@ -328,7 +328,7 @@ export const LiveSpeakingTestScreen = ({ onComplete }: any) => {
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
-              src={examinerImage}
+              src={examinerImage || undefined}
               alt="Examiner"
               className="w-full h-full object-contain opacity-90"
             />

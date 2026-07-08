@@ -72,11 +72,11 @@
             title: "PART 1",
             subtitle: "Short Texts & Notices",
             content: [
-              "1. Notice: Do not lean out of the train window or open the door while the train is moving.",
-              "2. Notice: Smoking is only allowed in the smoking areas.",
-              "3. Message to Mark from Ben: The tennis match will be cancelled if it's raining, and we'll go to the cinema instead. We'll know for sure in a couple of hours.",
-              "4. Notice: Do not open the door until the red light has gone off and the green light comes on.",
-              "5. Email to Anne from Julie: Anne, your doctor's appointment is at two o'clock on Monday instead of three o'clock on Tuesday. Please do not forget."
+              { type: 'notice-stripe', text: "Do not lean out of the train window or open the door while the train is moving." },
+              { type: 'notice-blue', text: "Smoking is only allowed in the smoking areas." },
+              { type: 'phone', sender: 'Ben', recipient: 'Mark', text: "The tennis match will be cancelled if it's raining, and we'll go to the cinema instead.\n\nWe'll know for sure in a couple of hours." },
+              { type: 'notice-black', text: "Do not open the door until the red light has gone off and the green light comes on." },
+              { type: 'email', from: 'Julie', to: 'Anne', text: "Anne, your doctor's appointment is at two o'clock on Monday instead of three o'clock on Tuesday.\n\nPlease do not forget." }
             ],
             questionBlocks: [
               {
@@ -1516,11 +1516,79 @@
                     </div>
                     
                     <div className="space-y-6 leading-relaxed pb-32">
-                      {passage.content.map((paragraph, idx) => (
-                        <p key={idx} data-paragraph-idx={idx} className={`text-justify relative text-[1em] ${theme.text}`}>
-                          {renderParagraphWithHighlights(paragraph, idx, passage.id)}
-                        </p>
-                      ))}
+                      {passage.content.map((paragraph, idx) => {
+                        if (typeof paragraph === 'object') {
+                          return (
+                            <div key={idx} data-paragraph-idx={idx} className="mb-12 relative flex flex-col md:flex-row items-center md:items-start gap-4">
+                              <span className="text-2xl font-bold text-blue-600 shrink-0 md:mt-4">{idx + 1}</span>
+                              <div className="flex-1 w-full">
+                                {paragraph.type === 'notice-stripe' && (
+                                  <div className="p-2 bg-[repeating-linear-gradient(45deg,#000,#000_10px,#fff_10px,#fff_20px)] w-full max-w-sm mx-auto shadow-md">
+                                    <div className="bg-white p-6 text-center font-bold text-blue-600 text-xl border-4 border-white leading-snug">
+                                      {renderParagraphWithHighlights(paragraph.text, idx, passage.id)}
+                                    </div>
+                                  </div>
+                                )}
+                                {paragraph.type === 'notice-blue' && (
+                                  <div className="p-6 w-full max-w-sm mx-auto bg-white border-[6px] border-blue-400 rounded-3xl text-center font-bold text-black italic text-[1.3rem] shadow-sm leading-snug">
+                                    {renderParagraphWithHighlights(paragraph.text, idx, passage.id)}
+                                  </div>
+                                )}
+                                {paragraph.type === 'phone' && (
+                                  <div className="w-full max-w-[260px] mx-auto bg-gray-900 rounded-[2.5rem] p-3 shadow-xl border-[6px] border-gray-800 relative">
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-900 rounded-b-xl z-10"></div>
+                                    <div className="bg-white h-full rounded-3xl overflow-hidden pb-4 relative pt-6">
+                                      <div className="bg-gray-100 px-4 py-2 text-[0.65rem] flex justify-between border-b text-gray-500 font-medium tracking-wide">
+                                        <span>1 Unread Message</span>
+                                        <span>9:47 AM</span>
+                                      </div>
+                                      <div className="px-5 py-4">
+                                        <div className="font-bold mb-3 text-lg">{paragraph.sender}</div>
+                                        <div className="text-gray-800 text-[1.05rem] leading-snug whitespace-pre-wrap">
+                                          {renderParagraphWithHighlights(paragraph.text, idx, passage.id)}
+                                        </div>
+                                        <div className="font-bold mt-4 text-lg">{paragraph.recipient}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                {paragraph.type === 'notice-black' && (
+                                  <div className="w-full max-w-sm mx-auto p-1.5 bg-black rounded-[2rem] shadow-md">
+                                    <div className="bg-white rounded-[1.5rem] p-8 text-center font-bold text-[1.35rem] border-4 border-gray-300 leading-snug">
+                                      {renderParagraphWithHighlights(paragraph.text, idx, passage.id)}
+                                    </div>
+                                  </div>
+                                )}
+                                {paragraph.type === 'email' && (
+                                  <div className="w-full max-w-sm mx-auto bg-white border border-gray-300 shadow-md rounded-xl overflow-hidden font-sans">
+                                    <div className="bg-[#4285f4] text-white px-4 py-2 text-sm font-semibold flex items-center shadow-sm">
+                                      <span className="mr-2 text-lg">✉</span> New message
+                                    </div>
+                                    <div className="border-b border-gray-200 bg-gray-50/50">
+                                      <div className="flex px-4 py-2 border-b border-gray-200 items-center">
+                                        <span className="bg-gray-700 text-white px-2 py-0.5 text-xs font-bold w-12 text-center rounded">To:</span>
+                                        <span className="ml-3 text-[1.1em] text-gray-800 font-medium">{paragraph.to}</span>
+                                      </div>
+                                      <div className="flex px-4 py-2 items-center">
+                                        <span className="bg-gray-700 text-white px-2 py-0.5 text-xs font-bold w-12 text-center rounded">From:</span>
+                                        <span className="ml-3 text-[1.1em] text-gray-800 font-medium">{paragraph.from}</span>
+                                      </div>
+                                    </div>
+                                    <div className="p-5 text-[1.1em] italic whitespace-pre-wrap text-gray-800 leading-relaxed bg-white">
+                                      {renderParagraphWithHighlights(paragraph.text, idx, passage.id)}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <p key={idx} data-paragraph-idx={idx} className={`text-justify relative text-[1em] ${theme.text}`}>
+                            {renderParagraphWithHighlights(paragraph, idx, passage.id)}
+                          </p>
+                        );
+                      })}
                     </div>
                   </div>
                   

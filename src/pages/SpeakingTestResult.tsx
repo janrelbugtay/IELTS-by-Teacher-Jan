@@ -92,7 +92,7 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
             </div>
 
             <div className="bg-slate-50 rounded-xl p-4 mb-4 flex items-center gap-4">
-              <audio src={rec.audioData} controls className="w-full h-10" />
+              <audio src={rec.audioData || undefined} controls className="w-full h-10" />
             </div>
 
             {rec.aiFeedback ? (

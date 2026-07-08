@@ -96,7 +96,7 @@ export function EmbedTest() {
         <div className="w-20"></div>
       </div>
       <iframe 
-        src={src} 
+        src={src || undefined} 
         className="w-full flex-1 border-0"
         title="Practice Test"
         allow="microphone; camera"

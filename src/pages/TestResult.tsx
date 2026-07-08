@@ -287,11 +287,11 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                 <a href={submission.audioUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
               </h2>
               {typeof submission.audioUrl === 'string' && (submission.audioUrl.includes('drive.google.com') || submission.audioUrl.includes('youtube') || submission.audioUrl.includes('youtu.be')) ? (
-                  <iframe src={getEmbedUrl(submission.audioUrl)} className="w-full h-[500px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
+                  <iframe src={getEmbedUrl(submission.audioUrl) || undefined} className="w-full h-[500px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
               ) : submission.audioUrl.match(/\.(mp4|webm|ogg|mov)$/i) ? (
-                  <video src={submission.audioUrl} controls className="w-full rounded-xl max-h-[500px]" />
+                  <video src={submission.audioUrl || undefined} controls className="w-full rounded-xl max-h-[500px]" />
               ) : (
-                  <audio src={submission.audioUrl} controls className="w-full h-12" />
+                  <audio src={submission.audioUrl || undefined} controls className="w-full h-12" />
               )}
           </div>
       )}
@@ -302,7 +302,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
                 Submission Document
                 <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[#1E4DB7] hover:underline">Open in new tab</a>
               </h2>
-              <iframe src={getEmbedUrl(submission.fileUrl)} className="w-full h-[600px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
+              <iframe src={getEmbedUrl(submission.fileUrl) || undefined} className="w-full h-[600px] border-0 rounded-xl" allow="autoplay" allowFullScreen />
           </div>
       )}
 

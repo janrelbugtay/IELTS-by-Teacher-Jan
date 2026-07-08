@@ -479,7 +479,7 @@ Please log in and change your password immediately.
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2">
                                     {u.photoURL ? (
-                                      <img src={u.photoURL} alt={u.firstName || u.name?.split(' ')[0] || u.nickname || 'User'} className="w-6 h-6 rounded-full object-cover border border-natural-200 shrink-0" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                                      <img src={u.photoURL || undefined} alt={u.firstName || u.name?.split(' ')[0] || u.nickname || 'User'} className="w-6 h-6 rounded-full object-cover border border-natural-200 shrink-0" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
                                     ) : (
                                       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center font-bold text-[10px] border border-blue-200 shadow-sm shrink-0">
                                         {(u.firstName || u.name?.split(' ')[0] || u.nickname || u.displayName || u.email || 'U')[0].toUpperCase()}
@@ -691,7 +691,7 @@ Please log in and change your password immediately.
                 {editPhotoURL && (
                   <div className="mt-4 flex items-center justify-center">
                     <div className="w-20 h-20 rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-50">
-                      <img src={editPhotoURL} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                      <img src={editPhotoURL || undefined} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
                     </div>
                   </div>
                 )}
@@ -757,7 +757,7 @@ Please log in and change your password immediately.
                   }).map(u => (
                     <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-natural-200 bg-white shadow-sm hover:shadow-md transition-shadow">
                       <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border-2 border-white shadow-sm overflow-hidden text-xl font-bold text-blue-600 uppercase">
-                        {u.photoURL ? <img src={u.photoURL} alt={u.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email || "U")}&background=f1f5f9&color=475569`; }} /> : (u.name || u.email || 'U')[0]}
+                        {u.photoURL ? <img src={u.photoURL || undefined} alt={u.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email || "U")}&background=f1f5f9&color=475569`; }} /> : (u.name || u.email || 'U')[0]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">

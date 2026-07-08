@@ -81,7 +81,7 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
 
   return (
     <div className="flex items-center gap-4 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-200">
-      <audio ref={setRefs} src={src} />
+      <audio ref={setRefs} src={src || undefined} />
       
       <button 
         onClick={togglePlayPause}

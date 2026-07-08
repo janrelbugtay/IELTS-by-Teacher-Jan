@@ -106,7 +106,7 @@ export function CourseDetails() {
         icon: <PenTool className="w-8 h-8 text-[#F4A340]" />,
         desc: 'Submit your writing homework.',
         color: 'bg-orange-50 border-[#F4A340]/20 hover:border-[#F4A340]',
-        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=writing`
+        link: `/courses/${id || 'ielts'}/homework/writing`
       },
       {
         title: 'Speaking Homework',
@@ -210,7 +210,7 @@ export function CourseDetails() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-[#E2E8F0] flex-1">
               <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-sm border border-slate-100">
-                <img src={course.image} alt={course.name} className="w-full h-full object-cover" />
+                <img src={course.image || undefined} alt={course.name} className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-[#0F172A] leading-tight tracking-tight">{course.name}</h1>

@@ -7,7 +7,7 @@ import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2 } from 'lucide-react';
+import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { linkWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
@@ -25,7 +25,7 @@ const getFallbackType = (id) => {
 };
 
 export function Dashboard({ isShared = false }: { isShared?: boolean }) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, userCourse } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -365,7 +365,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <div className="relative z-10 flex items-center gap-6 md:gap-8">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 border-4 border-white/20 shadow-2xl overflow-hidden flex items-center justify-center shrink-0">
             {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL} alt="Profile" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+              <img src={userProfile.photoURL || undefined} alt="Profile" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
             ) : (
               <span className="text-4xl md:text-5xl font-bold text-white">{firstName.charAt(0)}</span>
             )}
@@ -445,7 +445,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening</Link>
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
+        <Link to={`/courses/${userCourse || 'ielts'}?tab=assignments`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 flex items-center gap-2`}><BookOpen className="w-4 h-4" /> Homework</Link>
       </div>
 
       {currentTab === 'overview' && (
@@ -1714,7 +1714,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 {editPhotoURL && (
                   <div className="mt-4 flex items-center justify-center">
                     <div className="w-20 h-20 rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-50">
-                      <img src={editPhotoURL} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                      <img src={editPhotoURL || undefined} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
                     </div>
                   </div>
                 )}

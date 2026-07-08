@@ -138,14 +138,11 @@ export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { de
                     <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#2563EB]"></div>
                   )}
                   <div className="w-10 h-10 rounded-full flex overflow-hidden items-center justify-center text-lg shadow-sm">
-                    <img src={course.image} alt={course.name} className="w-full h-full object-cover" />
+                    <img src={course.image || undefined} alt={course.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="text-left">
-                    <div className={`font-bold leading-none mb-1 ${isActive ? 'text-[#2563EB]' : 'text-[#0F172A]'}`}>
+                    <div className={`font-bold leading-none ${isActive ? 'text-[#2563EB]' : 'text-[#0F172A]'}`}>
                       {course.name}
-                    </div>
-                    <div className="text-xs font-medium text-[#64748B]">
-                      {course.age}
                     </div>
                   </div>
                 </motion.button>
@@ -242,7 +239,7 @@ export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { de
                               <div className="flex items-center justify-center w-10">
                                 {rankDisplay}
                               </div>
-                              <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-100" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=f1f5f9&color=475569`; }} />
+                              <img src={student.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=f1f5f9&color=475569`} alt={student.name} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-100" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=f1f5f9&color=475569`; }} />
                               <div className="font-bold text-[#0F172A] whitespace-nowrap">{student.name}</div>
                             </div>
                             

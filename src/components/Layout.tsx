@@ -143,9 +143,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
                               <GraduationCap className="w-4 h-4 text-[#64748B]" /> Admin Dashboard
                             </Link>
                           )}
-                          <Link to="/ielts/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
-                            <Home className="w-4 h-4 text-[#64748B]" /> My Dashboard
-                          </Link>
+                          {!isAdmin ? (
+                            <Link to="/ielts/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
+                              <Home className="w-4 h-4 text-[#64748B]" /> My Dashboard
+                            </Link>
+                          ) : (
+                            <>
+                              <div className="px-4 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50 border-y border-slate-100 flex items-center gap-2">
+                                <BookOpen className="w-3.5 h-3.5" /> Courses Dashboard
+                              </div>
+                              <div className="max-h-[250px] overflow-y-auto py-1">
+                                <Link to="/pre-starter/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Pre-starter</Link>
+                                <Link to="/starters/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Starters</Link>
+                                <Link to="/movers/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Movers</Link>
+                                <Link to="/flyers/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Flyers</Link>
+                                <Link to="/ket/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">KET</Link>
+                                <Link to="/pet/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">PET</Link>
+                                <Link to="/ielts/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">IELTS</Link>
+                              </div>
+                            </>
+                          )}
                           <div className="h-px bg-[#E2E8F0] my-1"></div>
                           <button 
                             onClick={() => { signOut(); setUserMenuOpen(false); }}
@@ -204,16 +221,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex flex-col gap-2">
                     <div className="px-4 py-3 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#E2E8F0] flex items-center justify-center text-[#64748B] overflow-hidden">
-                        {user.photoURL ? <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || "User")}&background=e2e8f0&color=64748b`; }} /> : <User className="w-5 h-5" />}
+                        {user.photoURL ? <img src={user.photoURL || undefined} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || "User")}&background=e2e8f0&color=64748b`; }} /> : <User className="w-5 h-5" />}
                       </div>
                       <div>
                         <div className="font-semibold text-[#0F172A]">{user.displayName || 'Student'}</div>
                         <div className="text-xs text-[#64748B]">{user.email}</div>
                       </div>
                     </div>
-                    <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-[#64748B] hover:bg-slate-50 flex items-center gap-3">
-                      <Home className="w-5 h-5" /> Dashboard
-                    </Link>
+                    {!isAdmin ? (
+                      <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-[#64748B] hover:bg-slate-50 flex items-center gap-3">
+                        <Home className="w-5 h-5" /> Dashboard
+                      </Link>
+                    ) : (
+                      <div className="flex flex-col">
+                        <div className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50 flex items-center gap-2 rounded-lg mb-1">
+                          <BookOpen className="w-4 h-4" /> Courses Dashboard
+                        </div>
+                        <Link to="/pre-starter/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Pre-starter</Link>
+                        <Link to="/starters/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Starters</Link>
+                        <Link to="/movers/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Movers</Link>
+                        <Link to="/flyers/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Flyers</Link>
+                        <Link to="/ket/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">KET</Link>
+                        <Link to="/pet/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">PET</Link>
+                        <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">IELTS</Link>
+                      </div>
+                    )}
                     <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="px-4 py-3 rounded-xl text-[15px] font-medium text-red-600 hover:bg-red-50 text-left flex items-center gap-3">
                       <LogOut className="w-5 h-5" /> Sign Out
                     </button>

@@ -149,7 +149,7 @@ export function ImageGenerator() {
                 className="w-full h-full p-4 flex flex-col items-center"
               >
                 <img 
-                  src={generatedImage} 
+                  src={generatedImage || undefined} 
                   alt="Generated" 
                   className="max-w-full max-h-[600px] object-contain rounded-xl shadow-lg"
                 />
