@@ -1004,6 +1004,39 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
       )}
 
       {currentTab === 'reading' && (
+        <div className="space-y-6">
+          {(userProfile?.course === 'PET' || searchParams.get('course') === 'pet' || searchParams.get('course') === 'PET') && (
+            <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+              <div className="p-6 border-b border-slate-200 bg-slate-50">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <BookOpen className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">Available Practice Tests</h2>
+                    <p className="text-sm text-slate-500">Take a practice test to improve your score</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a 
+                  href="/PET_Reading/test_1/index.html" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer"
+                >
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">Test 1</h3>
+                    <p className="text-sm text-slate-500">B1 Preliminary Reading</p>
+                  </div>
+                </a>
+              </div>
+            </section>
+          )}
+
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -1137,6 +1170,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </table>
           </div>
         </section>
+        </div>
       )}
 
       {currentTab === 'listening' && (
