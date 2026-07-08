@@ -5,6 +5,59 @@ import { ArrowLeft } from 'lucide-react';
 import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard } from 'lucide-react';
 
 const generateMockTests = (courseName: string) => {
+  if (courseName === 'PET') {
+    return [
+      {
+        id: 'PET-READING-001',
+        title: 'B1 Preliminary Reading - Test 1',
+        skill: 'Reading',
+        month: 'January',
+        attempts: 2450,
+        difficulty: 'Medium',
+        duration: '45 mins',
+        image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+        createdAt: new Date(2026, 0, 1).getTime(),
+        externalLink: '/PET_Reading/test_1/index.html'
+      },
+      {
+        id: 'PET-LISTENING-001',
+        title: 'B1 Preliminary Listening - Test 1',
+        skill: 'Listening',
+        month: 'January',
+        attempts: 1820,
+        difficulty: 'Medium',
+        duration: '30 mins',
+        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
+        createdAt: new Date(2026, 0, 1).getTime(),
+        externalLink: '#'
+      },
+      {
+        id: 'PET-WRITING-001',
+        title: 'B1 Preliminary Writing - Test 1',
+        skill: 'Writing',
+        month: 'January',
+        attempts: 1200,
+        difficulty: 'Medium',
+        duration: '45 mins',
+        image: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=600&q=80',
+        createdAt: new Date(2026, 0, 1).getTime(),
+        externalLink: '#'
+      },
+      {
+        id: 'PET-SPEAKING-001',
+        title: 'B1 Preliminary Speaking - Test 1',
+        skill: 'Speaking',
+        month: 'January',
+        attempts: 950,
+        difficulty: 'Medium',
+        duration: '15 mins',
+        image: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=600&q=80',
+        createdAt: new Date(2026, 0, 1).getTime(),
+        externalLink: '#'
+      }
+    ];
+  }
+
   if (courseName !== 'IELTS') {
     return [];
   }
@@ -234,6 +287,13 @@ export function PracticeTests() {
                   >
                     Start Test <ArrowRight className="w-4 h-4" />
                   </Link>
+                ) : test.externalLink && test.externalLink !== '#' ? (
+                  <Link 
+                    to={`/test/embed?src=${encodeURIComponent(test.externalLink)}`}
+                    className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Start Test <ArrowRight className="w-4 h-4" />
+                  </Link>
                 ) : (
                   <button 
                     disabled
@@ -253,7 +313,7 @@ export function PracticeTests() {
           <Book className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-slate-900 mb-2">No tests available</h3>
           <p className="text-slate-600">
-            {courseId !== 'ielts' ? 'Practice tests are currently only available for the IELTS course.' : 'Try adjusting your search criteria or filters.'}
+            {courseId !== 'ielts' && courseId !== 'pet' ? 'Practice tests are currently only available for IELTS and PET courses.' : 'Try adjusting your search criteria or filters.'}
           </p>
         </div>
       )}

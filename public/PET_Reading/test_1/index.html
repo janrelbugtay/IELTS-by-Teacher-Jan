@@ -543,6 +543,22 @@
             return () => clearInterval(timer);
           }, [hasStarted, isSubmitted, testMode, isPaused, endTime]);
 
+          useEffect(() => {
+            if (isSubmitted && !reviewMode) {
+              const maxScore = Object.keys(ANSWER_KEY).length;
+              const score = Array.from({ length: maxScore }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+              window.parent.postMessage({
+                type: 'PET_TEST_SUBMITTED',
+                payload: {
+                  testId: 'PET-READING-001',
+                  score: score,
+                  maxScore: maxScore,
+                  studentName: studentName
+                }
+              }, '*');
+            }
+          }, [isSubmitted, reviewMode]);
+
           const formatTime = (seconds) => {
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');

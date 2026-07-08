@@ -431,7 +431,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <div className="text-sm font-bold text-blue-200 uppercase tracking-widest mb-2 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-blue-300" /> {userProfile?.course === 'PET' ? 'Overall Grade' : 'Overall Band'}
             </div>
-            <div className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-md">{overallBand().toFixed(1)}</div>
+            <div className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-md">
+              {userProfile?.course === 'PET' ? Math.round(overallBand()) : overallBand().toFixed(1)}
+            </div>
           </div>
         </div>
       </section>
@@ -465,10 +467,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
           <div className="flex justify-between items-center mb-8 relative z-10">
             <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-[#1E4DB7] bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">Reading</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{rScore > 0 ? rScore.toFixed(1) : '-'}</span>
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{rScore > 0 ? (userProfile?.course === 'PET' ? Math.round(rScore) : rScore.toFixed(1)) : '-'}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(rScore/9)*100}%` }}></div>
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(rScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
           </div>
         </div>
         
@@ -478,10 +480,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
           <div className="flex justify-between items-center mb-8 relative z-10">
             <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-teal-600 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100">Listening</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{lScore > 0 ? lScore.toFixed(1) : '-'}</span>
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{lScore > 0 ? (userProfile?.course === 'PET' ? Math.round(lScore) : lScore.toFixed(1)) : '-'}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-teal-500 to-emerald-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(lScore/9)*100}%` }}></div>
+            <div className="bg-gradient-to-r from-teal-500 to-emerald-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(lScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
           </div>
         </div>
         
@@ -491,10 +493,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
           <div className="flex justify-between items-center mb-8 relative z-10">
             <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-[#F4A340] bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100">Writing</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{wScore > 0 ? wScore.toFixed(1) : '-'}</span>
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{wScore > 0 ? (userProfile?.course === 'PET' ? Math.round(wScore) : wScore.toFixed(1)) : '-'}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-orange-400 to-amber-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(wScore/9)*100}%` }}></div>
+            <div className="bg-gradient-to-r from-orange-400 to-amber-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(wScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
           </div>
         </div>
 
@@ -504,10 +506,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
           <div className="flex justify-between items-center mb-8 relative z-10">
             <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">Speaking</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{sScore > 0 ? sScore.toFixed(1) : '-'}</span>
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{sScore > 0 ? (userProfile?.course === 'PET' ? Math.round(sScore) : sScore.toFixed(1)) : '-'}</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-purple-500 to-fuchsia-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(sScore/9)*100}%` }}></div>
+            <div className="bg-gradient-to-r from-purple-500 to-fuchsia-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(sScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
           </div>
         </div>
       </section>
@@ -1019,10 +1021,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 </div>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a 
-                  href="/PET_Reading/test_1/index.html" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                <Link 
+                  to="/test/embed?src=%2FPET_Reading%2Ftest_1%2Findex.html" 
                   className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer"
                 >
                   <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -1032,7 +1032,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">Test 1</h3>
                     <p className="text-sm text-slate-500">B1 Preliminary Reading</p>
                   </div>
-                </a>
+                </Link>
               </div>
             </section>
           )}

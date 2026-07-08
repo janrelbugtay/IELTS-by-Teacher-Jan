@@ -17,6 +17,7 @@ import { ComputerSpeakingTest } from './pages/ComputerSpeakingTest';
 import { ComputerReadingTest } from './pages/ComputerReadingTest';
 import { ComputerListeningTest } from './pages/ComputerListeningTest';
 import { ImageGenerator } from './pages/ImageGenerator';
+import { EmbedTest } from './pages/EmbedTest';
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, loading, isAdmin } = useAuth();
@@ -50,6 +51,7 @@ function AppContent() {
         <Route path="/test/speaking/:id" element={<ProtectedRoute><ComputerSpeakingTest /></ProtectedRoute>} />
         <Route path="/test/reading/:id" element={<ProtectedRoute><ComputerReadingTest /></ProtectedRoute>} />
         <Route path="/test/listening/:id" element={<ProtectedRoute><ComputerListeningTest /></ProtectedRoute>} />
+        <Route path="/test/embed" element={<ProtectedRoute><EmbedTest /></ProtectedRoute>} />
         
         <Route path="*" element={
           <Layout>
