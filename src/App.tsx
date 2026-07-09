@@ -13,7 +13,6 @@ import { Login } from './pages/Login';
 import { TestResult } from './pages/TestResult';
 import { EraAIIeltsApp } from './pages/EraAIIeltsApp';
 import { ComputerWritingTest } from './pages/ComputerWritingTest';
-import { WritingHomework } from './pages/WritingHomework';
 import { ComputerSpeakingTest } from './pages/ComputerSpeakingTest';
 import { ComputerReadingTest } from './pages/ComputerReadingTest';
 import { ComputerListeningTest } from './pages/ComputerListeningTest';
@@ -49,7 +48,6 @@ function AppContent() {
     <BrowserRouter>
       <Routes>
         <Route path="/test/writing/:id" element={<ProtectedRoute><ComputerWritingTest /></ProtectedRoute>} />
-        <Route path="/courses/:id/homework/writing" element={<ProtectedRoute><WritingHomework /></ProtectedRoute>} />
         <Route path="/test/speaking/:id" element={<ProtectedRoute><ComputerSpeakingTest /></ProtectedRoute>} />
         <Route path="/test/reading/:id" element={<ProtectedRoute><ComputerReadingTest /></ProtectedRoute>} />
         <Route path="/test/listening/:id" element={<ProtectedRoute><ComputerListeningTest /></ProtectedRoute>} />

@@ -25,7 +25,7 @@ const getFallbackType = (id) => {
 };
 
 export function Dashboard({ isShared = false }: { isShared?: boolean }) {
-  const { user, isAdmin, userCourse } = useAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -445,22 +445,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening</Link>
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
         <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
-        <Link to={`/courses/${userCourse || 'ielts'}?tab=assignments`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 flex items-center gap-2`}><BookOpen className="w-4 h-4" /> Homework</Link>
+        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
       </div>
 
       {currentTab === 'overview' && (
       <>
         {/* Statistics Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8">
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[2rem] border border-slate-700 shadow-xl flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 text-white relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
-            <CheckCircle2 className="w-24 h-24" />
-          </div>
-          <div className="relative z-10 font-bold uppercase tracking-widest text-slate-400 text-sm mb-2">Total Practice</div>
-          <div className="relative z-10 text-5xl font-extrabold mb-4 mt-2 tracking-tighter">{submissions.length}</div>
-          <div className="relative z-10 mt-auto text-sm text-slate-400 font-medium bg-white/5 rounded-lg py-2 px-3 inline-block w-max border border-white/10 backdrop-blur-sm">Completed Tests</div>
-        </div>
-
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
         <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-lg flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-[#1E4DB7] group-hover:opacity-[0.06] transition-opacity transform group-hover:-rotate-12 duration-500">
             <Book className="w-24 h-24" />

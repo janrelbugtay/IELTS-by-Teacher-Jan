@@ -51,7 +51,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Dashboard', path: '/ielts/dashboard' },
   ];
   if (user && userCourse) {
-    navLinks.push({ name: 'My Class', path: `/courses/${userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '')}` });
+    const classPath = `/courses/${userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '')}`;
+    navLinks.push({ name: 'My Class', path: classPath });
+    navLinks.push({ name: 'Homework', path: `${classPath}?tab=assignments` });
   }
 
   const visibleLinks = navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
@@ -79,16 +81,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation */}
             <nav className="hidden xl:flex items-center gap-1 flex-1 justify-center">
-              {visibleLinks.map((link) => (
+              {visibleLinks.map((link) => {
+                const isLinkActive = link.path.includes('?') 
+                  ? location.pathname + location.search === link.path
+                  : location.pathname === link.path && !(link.name === 'My Class' && location.search.includes('tab=assignments'));
+                
+                return (
                 <Link
                   key={link.path}
                   to={link.path}
                   className={`relative px-4 py-2 text-[15px] font-medium transition-colors rounded-full hover:bg-slate-50 group ${
-                    location.pathname === link.path ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'
+                    isLinkActive ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'
                   }`}
                 >
                   {link.name}
-                  {location.pathname === link.path && (
+                  {isLinkActive && (
                     <motion.div 
                       layoutId="nav-indicator"
                       className="absolute bottom-1 left-4 right-4 h-0.5 bg-[#2563EB] rounded-full"
@@ -96,7 +103,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                   <div className="absolute bottom-1 left-4 right-4 h-0.5 bg-[#2563EB] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out opacity-0 group-hover:opacity-100" />
                 </Link>
-              ))}
+              )})}
             </nav>
 
             {/* Right Side */}
@@ -200,18 +207,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className="xl:hidden bg-white border-b border-[#E2E8F0] overflow-hidden"
             >
               <div className="px-4 pt-2 pb-6 flex flex-col gap-1">
-                {visibleLinks.map((link) => (
+                {visibleLinks.map((link) => {
+                  const isLinkActive = link.path.includes('?') 
+                    ? location.pathname + location.search === link.path
+                    : location.pathname === link.path && !(link.name === 'My Class' && location.search.includes('tab=assignments'));
+                  
+                  return (
                   <Link
                     key={link.path}
                     to={link.path}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`block px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
-                      location.pathname === link.path ? 'bg-blue-50 text-[#2563EB]' : 'text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A]'
+                      isLinkActive ? 'bg-blue-50 text-[#2563EB]' : 'text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A]'
                     }`}
                   >
                     {link.name}
                   </Link>
-                ))}
+                )})}
                 {!user ? (
                   <div className="mt-4 pt-4 border-t border-[#E2E8F0] flex flex-col gap-3">
                     <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-center rounded-xl text-[15px] font-medium text-[#64748B] bg-slate-50 hover:bg-slate-100">Login</Link>

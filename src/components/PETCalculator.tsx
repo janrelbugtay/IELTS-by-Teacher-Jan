@@ -454,8 +454,7 @@ export function PETCalculator() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
           {Object.entries(scores.speaking).map(([key, score]) => {
-            const numScore = score as number;
-            const isPassing = numScore >= 3;
+            const isPassing = (score as number) >= 3;
             const currentFeedback = isVietnamese ? SPEAKING_FEEDBACK_VI : SPEAKING_FEEDBACK;
             
             return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router';
+import { useParams, Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';
@@ -16,7 +16,23 @@ export function CourseDetails() {
   if (normalizedUserCourse === 'starter') normalizedUserCourse = 'starters';
   const isRestricted = !isAdmin && normalizedUserCourse && id && normalizedUserCourse !== id.toLowerCase();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
+  const initialTab = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab') || 'overview';
+    if (currentTab !== activeTab) {
+      setActiveTab(currentTab);
+    }
+  }, [location.search]);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    navigate(`?tab=${tabId}`, { replace: true });
+  };
 
   const courseData: Record<string, { name: string, image: string, color: string }> = {
     'pre-starter': { name: 'Pre-Starter', image: 'https://drive.google.com/thumbnail?id=1h_In0NTl7lPBaZwLl1vKFz-O4dAs8m0E&sz=w1000', color: 'from-blue-400 to-blue-500' },
@@ -56,7 +72,7 @@ export function CourseDetails() {
       icon: <PenTool className="w-8 h-8 text-[#F59E0B]" />,
       desc: 'Complete assignments and exercises.',
       color: 'bg-orange-50 border-[#F59E0B]/20 hover:border-[#F59E0B]',
-      action: () => setActiveTab('assignments')
+      action: () => handleTabChange('assignments')
     },
     {
       title: 'Activities',
@@ -70,7 +86,7 @@ export function CourseDetails() {
       icon: <Trophy className="w-8 h-8 text-rose-500" />,
       desc: 'See top students for this class.',
       color: 'bg-rose-50 border-rose-500/20 hover:border-rose-500',
-      action: () => setActiveTab('leaderboard')
+      action: () => handleTabChange('leaderboard')
     }
   ];
 
@@ -80,42 +96,47 @@ export function CourseDetails() {
       icon: <Activity className="w-8 h-8 text-[#0EA5E9]" />,
       desc: 'Calculate your Cambridge English B1 Preliminary exam scores.',
       color: 'bg-sky-50 border-sky-500/20 hover:border-sky-500',
-      action: () => setActiveTab('calculator')
+      action: () => handleTabChange('calculator')
     });
   }
 
   
   const renderHomework = () => {
-    const homeworkFolders = [
+    const homeworkFolders: any[] = [
       {
         title: 'Reading Homework',
         icon: <BookOpen className="w-8 h-8 text-[#1E4DB7]" />,
         desc: 'Complete reading homework.',
         color: 'bg-blue-50 border-[#1E4DB7]/20 hover:border-[#1E4DB7]',
-        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=reading`
       },
       {
         title: 'Listening Homework',
         icon: <Headphones className="w-8 h-8 text-teal-600" />,
         desc: 'Listen to audio and answer questions.',
         color: 'bg-teal-50 border-teal-600/20 hover:border-teal-600',
-        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=listening`
       },
       {
         title: 'Writing Homework',
         icon: <PenTool className="w-8 h-8 text-[#F4A340]" />,
         desc: 'Submit your writing homework.',
         color: 'bg-orange-50 border-[#F4A340]/20 hover:border-[#F4A340]',
-        link: `/courses/${id || 'ielts'}/homework/writing`
       },
       {
         title: 'Speaking Homework',
         icon: <Mic className="w-8 h-8 text-purple-600" />,
         desc: 'Submit your speaking homework.',
         color: 'bg-purple-50 border-purple-600/20 hover:border-purple-600',
-        link: `/ielts/dashboard?course=${id || 'ielts'}&tab=speaking`
       }
     ];
+
+    if (id === 'ielts') {
+      homeworkFolders.push({
+        title: 'April Listening Practice',
+        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the April CD-IELTS listening test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600'
+      });
+    }
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -126,16 +147,30 @@ export function CourseDetails() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
           >
-            <Link 
-              to={folder.link}
-              className={`block h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1`}
-            >
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${folder.color}`}>
-                {folder.icon}
+            {folder.externalLink ? (
+              <a 
+                href={folder.externalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`block h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1 cursor-pointer`}
+              >
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${folder.color}`}>
+                  {folder.icon}
+                </div>
+                <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
+                <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
+              </a>
+            ) : (
+              <div 
+                className={`block h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1 cursor-pointer`}
+              >
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${folder.color}`}>
+                  {folder.icon}
+                </div>
+                <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
+                <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
               </div>
-              <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
-              <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
-            </Link>
+            )}
           </motion.div>
         ))}
       </div>
@@ -225,7 +260,7 @@ export function CourseDetails() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-[#1E4DB7] text-white shadow-sm'
