@@ -511,7 +511,7 @@ Please log in and change your password immediately.
                                       <Key className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Credentials</span><span className="sm:hidden">Creds</span>
                                     </button>
                                     <Link 
-                                      to={`/ielts/dashboard?userId=${u.uid || u.id}`}
+                                      to={u.course === 'PET' ? `/pet/dashboard?userId=${u.uid || u.id}` : `/ielts/dashboard?userId=${u.uid || u.id}`}
                                       className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-sm shrink-0"
                                       onClick={(e) => e.stopPropagation()}
                                       title="View Dashboard"

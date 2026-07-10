@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';
 import { HomeLeaderboardDashboard } from '../components/HomeLeaderboardDashboard';
-import { PETCalculator } from '../components/PETCalculator';
 
 // Removed duplicate mock data
 
@@ -55,9 +54,6 @@ export function CourseDetails() {
     { id: 'announcements', label: 'Announcements' },
   ];
 
-  if (id === 'pet') {
-    tabs.push({ id: 'calculator', label: 'Calculator' });
-  }
 
   const folders = [
     {
@@ -90,15 +86,7 @@ export function CourseDetails() {
     }
   ];
 
-  if (id === 'pet') {
-    folders.push({
-      title: 'PET Calculator',
-      icon: <Activity className="w-8 h-8 text-[#0EA5E9]" />,
-      desc: 'Calculate your Cambridge English B1 Preliminary exam scores.',
-      color: 'bg-sky-50 border-sky-500/20 hover:border-sky-500',
-      action: () => handleTabChange('calculator')
-    });
-  }
+
 
   
   const renderHomework = () => {
@@ -294,10 +282,8 @@ export function CourseDetails() {
               hideCourseTabs={true}
             />
           )}
-          {activeTab === 'calculator' && (
-            <PETCalculator />
-          )}
-          {activeTab !== 'overview' && activeTab !== 'assignments' && activeTab !== 'leaderboard' && activeTab !== 'calculator' && (
+
+          {activeTab !== 'overview' && activeTab !== 'assignments' && activeTab !== 'leaderboard' && (
             <div className="bg-white rounded-[24px] p-12 text-center border border-slate-200">
               <div className="w-20 h-20 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-6">
                 <BookOpen className="w-8 h-8" />

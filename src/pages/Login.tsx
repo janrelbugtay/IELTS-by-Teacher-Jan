@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export function Login() {
-  const { user, loading, signIn, signInWithEmail } = useAuth();
+  const { user, userCourse, loading, signIn, signInWithEmail } = useAuth();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,6 +17,9 @@ export function Login() {
   }
 
   if (user) {
+    if (userCourse?.toLowerCase() === 'pet') {
+      return <Navigate to="/pet/dashboard" replace />;
+    }
     return <Navigate to="/ielts/dashboard" replace />;
   }
 

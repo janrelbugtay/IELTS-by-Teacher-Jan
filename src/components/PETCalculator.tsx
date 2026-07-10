@@ -269,7 +269,7 @@ const ScoreSummary = ({ title, points, maxPoints, minPoints, scaleScore, theme }
   );
 };
 
-export function PETCalculator() {
+export function PETCalculator({ initialTab = 'reading', hideTabs = false, hideHeader = false, onScaleScoreChange = null }: any = {}) {
   const initialScores = {
     reading: { p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, p6: 0 },
     writing: {
@@ -282,7 +282,7 @@ export function PETCalculator() {
 
   const initialTouched = { reading: false, writing: false, listening: false, speaking: false };
 
-  const [activeTab, setActiveTab] = useState('reading');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [scores, setScores] = useState(initialScores);
   const [touched, setTouched] = useState(initialTouched);
   const [isVietnamese, setIsVietnamese] = useState(false);
@@ -344,6 +344,17 @@ export function PETCalculator() {
     listening: touched.listening ? getScaleScore(totals.listening, 'listening') : null,
     speaking: touched.speaking ? getScaleScore(totals.speaking, 'speaking') : null,
   }), [totals, touched]);
+
+  
+  useEffect(() => {
+    if (onScaleScoreChange && touched[activeTab]) {
+      const score = scaleScores[activeTab];
+      const raw = totals[activeTab];
+      if (score !== null) {
+        onScaleScoreChange(score, raw);
+      }
+    }
+  }, [scaleScores, activeTab, touched, onScaleScoreChange]);
 
   const activeScaleScores = Object.values(scaleScores).filter((s): s is number => s !== null);
   const globalAverage = activeScaleScores.length > 0
@@ -623,16 +634,7 @@ export function PETCalculator() {
           )}
         </div>
 
-        {/* Export Button */}
-        <div className="print:hidden pb-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <button
-            onClick={() => window.print()}
-            className="w-full group bg-gray-900 hover:bg-gray-800 text-white font-extrabold text-lg py-5 rounded-[2rem] shadow-xl shadow-gray-900/20 hover:shadow-2xl hover:shadow-gray-900/40 transition-all duration-300 flex justify-center items-center gap-3 transform active:scale-[0.98]"
-          >
-            <span className="group-hover:-translate-y-1 transition-transform duration-300"><DownloadIcon /></span>
-            Generate Official Results Report (PDF)
-          </button>
-        </div>
+
 
       </div>
     </div>

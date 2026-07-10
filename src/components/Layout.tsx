@@ -20,22 +20,13 @@ const TiktokIcon = ({ className }: { className?: string }) => (
 );
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, userCourse, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [userCourse, setUserCourse] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      getDoc(doc(db, 'users', user.uid)).then((docSnap) => {
-        if (docSnap.exists() && docSnap.data().course) {
-          setUserCourse(docSnap.data().course);
-        }
-      }).catch(() => {});
-    }
-  }, [user]);
+
 
 
   useEffect(() => {
@@ -48,8 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navLinks: any[] = [
     { name: 'Home', path: '/' },
-    { name: 'Dashboard', path: '/ielts/dashboard' },
   ];
+  
+  const dashboardPath = userCourse?.toLowerCase() === 'pet' ? '/pet/dashboard' : '/ielts/dashboard';
+  navLinks.push({ name: 'Dashboard', path: dashboardPath });
   if (user && userCourse) {
     const classPath = `/courses/${userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '')}`;
     navLinks.push({ name: 'My Class', path: classPath });
@@ -151,7 +144,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             </Link>
                           )}
                           {!isAdmin ? (
-                            <Link to="/ielts/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
+                            <Link to={dashboardPath} onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
                               <Home className="w-4 h-4 text-[#64748B]" /> My Dashboard
                             </Link>
                           ) : (
@@ -241,7 +234,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     </div>
                     {!isAdmin ? (
-                      <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-[#64748B] hover:bg-slate-50 flex items-center gap-3">
+                      <Link to={dashboardPath} onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl text-[15px] font-medium text-[#64748B] hover:bg-slate-50 flex items-center gap-3">
                         <Home className="w-5 h-5" /> Dashboard
                       </Link>
                     ) : (
