@@ -166,6 +166,8 @@ export function Login() {
             <span className="flex-shrink-0 mx-4 text-slate-400 text-sm font-medium">or login with student ID</span>
             <div className="flex-grow border-t border-slate-200"></div>
           </div>
+          
+          {/* Option 2: School Account */}
           <form onSubmit={handleSchoolLogin} className="space-y-4">
             <div>
               <input
