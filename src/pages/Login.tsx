@@ -152,7 +152,20 @@ export function Login() {
             </div>
           )}
 
-          {/* Option 2: School Account */}
+                    <button 
+            onClick={handleGoogleLogin} 
+            disabled={authLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+            Sign in with Google
+          </button>
+          
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink-0 mx-4 text-slate-400 text-sm font-medium">or login with student ID</span>
+            <div className="flex-grow border-t border-slate-200"></div>
+          </div>
           <form onSubmit={handleSchoolLogin} className="space-y-4">
             <div>
               <input
