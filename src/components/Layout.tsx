@@ -43,6 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   
   const dashboardPath = userCourse?.toLowerCase() === 'pet' ? '/pet/dashboard' : '/ielts/dashboard';
   navLinks.push({ name: 'Dashboard', path: dashboardPath });
+  navLinks.push({ name: 'Practice Test', path: '/practice-tests' });
   if (user && userCourse) {
     const classPath = `/courses/${userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '')}`;
     navLinks.push({ name: 'My Class', path: classPath });

@@ -199,48 +199,48 @@ export const ANSWER_KEY: Record<number, string> = {
 };
 
 const EXPLANATIONS: Record<number, any> = {
-  1: { passageId: 1, highlights: ["Straight away, he recognised it as coming from the elbow"], explanation: "The passage states that Donald Johanson 'Straight away, he recognised it'. Therefore, he was not uncertain about the nature of the bone." },
-  2: { passageId: 1, highlights: ["I saw bits of the skull, a chunk of jaw, a couple of vertebrae"], explanation: "The text says 'And there were plenty more' and describes various other bones he found at the same site, making this true." },
-  3: { passageId: 1, highlights: ["It was immediately obvious that the skeleton was a significant find"], explanation: "The passage explicitly states that it was obvious the skeleton was a significant find." },
-  4: { passageId: 1, highlights: ["40% of the skeleton had been preserved"], explanation: "The passage mentions that 40% of the skeleton was preserved, but it does not specify whether the upper or lower part suffered the least damage." },
-  5: { passageId: 1, highlights: ["the feeling was that the skeleton was female due to its size"], explanation: "The passage confirms that they believed the skeleton was female because of its size (measurements)." },
-  6: { passageId: 1, highlights: ["upright walking evolved in the trees, as a way to walk along branches"], explanation: "The text suggests that upright walking evolved as a way to walk along branches." },
-  7: { passageId: 1, highlights: ["hunting for food may have been the real reason for heading to the ground"], explanation: "According to Chris Stringer, hunting for food may have caused early humans to head to the ground." },
-  8: { passageId: 1, highlights: ["remains of food trapped on preserved human teeth"], explanation: "Studies of the food preserved on their teeth indicated a change in their diets." },
-  9: { passageId: 1, highlights: ["Instead of mostly eating fruit from trees, they began to include grasses and possibly meat"], explanation: "The passage notes they began eating meat and grasses instead of mostly eating fruit." },
-  10: { passageId: 1, highlights: ["Fossilised crocodile and turtle eggs were found near her skeleton"], explanation: "Fossilised eggs found nearby suggest they were a part of Lucy's diet." },
-  11: { passageId: 1, highlights: ["uncovered animal bones with scratches that seem to have been made by stone tools"], explanation: "Archaeologists found animal bones with scratches that indicate tools were used to eat meat." },
-  12: { passageId: 1, highlights: ["Lucy's childhood was much briefer than ours"], explanation: "The passage states that Lucy's childhood was much briefer (shorter) than ours, meaning modern-day humans have a longer childhood." },
-  13: { passageId: 1, highlights: ["their brains matured much earlier than ours do"], explanation: "A study suggested early humans' brains matured much earlier, meaning modern human brains develop later." },
+  1: { passageId: 1, highlights: ["Straight away, he recognised it as coming from the elbow"], explanation: "The passage states that Donald Johanson 'Straight away, he recognised it'. Therefore, he was not uncertain about the nature of the bone.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  2: { passageId: 1, highlights: ["I saw bits of the skull, a chunk of jaw, a couple of vertebrae"], explanation: "The text says 'And there were plenty more' and describes various other bones he found at the same site, making this true.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  3: { passageId: 1, highlights: ["It was immediately obvious that the skeleton was a significant find"], explanation: "The passage explicitly states that it was obvious the skeleton was a significant find.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  4: { passageId: 1, highlights: ["40% of the skeleton had been preserved"], explanation: "The passage mentions that 40% of the skeleton was preserved, but it does not specify whether the upper or lower part suffered the least damage.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  5: { passageId: 1, highlights: ["the feeling was that the skeleton was female due to its size"], explanation: "The passage confirms that they believed the skeleton was female because of its size (measurements).", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  6: { passageId: 1, highlights: ["upright walking evolved in the trees, as a way to walk along branches"], explanation: "The text suggests that upright walking evolved as a way to walk along branches.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  7: { passageId: 1, highlights: ["hunting for food may have been the real reason for heading to the ground"], explanation: "According to Chris Stringer, hunting for food may have caused early humans to head to the ground.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  8: { passageId: 1, highlights: ["remains of food trapped on preserved human teeth"], explanation: "Studies of the food preserved on their teeth indicated a change in their diets.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  9: { passageId: 1, highlights: ["Instead of mostly eating fruit from trees, they began to include grasses and possibly meat"], explanation: "The passage notes they began eating meat and grasses instead of mostly eating fruit.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  10: { passageId: 1, highlights: ["Fossilised crocodile and turtle eggs were found near her skeleton"], explanation: "Fossilised eggs found nearby suggest they were a part of Lucy's diet.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  11: { passageId: 1, highlights: ["uncovered animal bones with scratches that seem to have been made by stone tools"], explanation: "Archaeologists found animal bones with scratches that indicate tools were used to eat meat.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  12: { passageId: 1, highlights: ["Lucy's childhood was much briefer than ours"], explanation: "The passage states that Lucy's childhood was much briefer (shorter) than ours, meaning modern-day humans have a longer childhood.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  13: { passageId: 1, highlights: ["their brains matured much earlier than ours do"], explanation: "A study suggested early humans' brains matured much earlier, meaning modern human brains develop later.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
   
-  14: { passageId: 2, highlights: ["Containers for tea have been found in tombs dating from the Han Dynasty"], explanation: "The first evidence of tea usage is linked to containers found in ancient tombs." },
-  15: { passageId: 2, highlights: ["Lu Yu wrote the first book entirely about tea"], explanation: "Lu Yu is credited with writing the first entire book about tea in the late eighth century." },
-  16: { passageId: 2, highlights: ["introduced to Japan, by Japanese Buddhist monks"], explanation: "Buddhist monks from Japan brought tea back to their home country after studying in China." },
-  17: { passageId: 2, highlights: ["not the Portuguese who were the first to ship back tea as a commercial import. This was done by the Dutch"], explanation: "The Dutch, not the Portuguese, were the first to commercially ship tea from China to Europe." },
-  18: { passageId: 2, highlights: ["One unforeseen consequence of the taxation of tea was the growth of methods to avoid taxation—smuggling", "William Pitt the Younger, slashed the tax"], explanation: "High taxation led to criminal smuggling, which prompted the government to slash (cut down) the taxes." },
-  19: { passageId: 2, highlights: ["increased cultivation of tea in India"], explanation: "The end of the monopoly led to the cultivation of tea in India." },
-  20: { passageId: 2, highlights: ["using fast new clippers which had sleek lines"], explanation: "Traders used fast new ships known as 'clippers' for the tea races." },
-  21: { passageId: 2, highlights: ["Starting in 1600, the British East India Company", "tea was still somewhat unfamiliar"], explanation: "In 1600 (the start of the 17th century, not 16th), tea was still unfamiliar and viewed as a curiosity in Britain, so it was not popular in the 16th century." },
-  22: { passageId: 2, highlights: ["first coffee house had been established in London in 1652"], explanation: "The passage mentions the first coffee house in 1652 but does not compare whether tea was more fashionable than coffee across Europe in the late 16th century." },
-  23: { passageId: 2, highlights: ["tea was still too expensive to be widespread among the working classes"], explanation: "Tea was popular among middle- and upper-class men, but it was too expensive for the working classes." },
-  24: { passageId: 2, highlights: ["taxation also encouraged the adulteration of tea", "government realised that enough was enough... slashed the tax"], explanation: "The text explains that taxation encouraged both smuggling and the adulteration of tea, causing the government to slash the tax." },
-  25: { passageId: 2, highlights: ["few false starts, including the destruction by cattle of one of the earliest tea nurseries"], explanation: "There were early failures ('false starts') when tea was planted in India, such as cattle destroying nurseries." },
-  26: { passageId: 2, highlights: ["competition between British and American merchants, leading to the famous clipper races"], explanation: "There was a competition between British and American merchants, but the text never states that America owned the 'fastest' vessels." },
+  14: { passageId: 2, highlights: ["Containers for tea have been found in tombs dating from the Han Dynasty"], explanation: "The first evidence of tea usage is linked to containers found in ancient tombs.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  15: { passageId: 2, highlights: ["Lu Yu wrote the first book entirely about tea"], explanation: "Lu Yu is credited with writing the first entire book about tea in the late eighth century.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  16: { passageId: 2, highlights: ["introduced to Japan, by Japanese Buddhist monks"], explanation: "Buddhist monks from Japan brought tea back to their home country after studying in China.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  17: { passageId: 2, highlights: ["not the Portuguese who were the first to ship back tea as a commercial import. This was done by the Dutch"], explanation: "The Dutch, not the Portuguese, were the first to commercially ship tea from China to Europe.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  18: { passageId: 2, highlights: ["One unforeseen consequence of the taxation of tea was the growth of methods to avoid taxation—smuggling", "William Pitt the Younger, slashed the tax"], explanation: "High taxation led to criminal smuggling, which prompted the government to slash (cut down) the taxes.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  19: { passageId: 2, highlights: ["increased cultivation of tea in India"], explanation: "The end of the monopoly led to the cultivation of tea in India.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  20: { passageId: 2, highlights: ["using fast new clippers which had sleek lines"], explanation: "Traders used fast new ships known as 'clippers' for the tea races.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  21: { passageId: 2, highlights: ["Starting in 1600, the British East India Company", "tea was still somewhat unfamiliar"], explanation: "In 1600 (the start of the 17th century, not 16th), tea was still unfamiliar and viewed as a curiosity in Britain, so it was not popular in the 16th century.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  22: { passageId: 2, highlights: ["first coffee house had been established in London in 1652"], explanation: "The passage mentions the first coffee house in 1652 but does not compare whether tea was more fashionable than coffee across Europe in the late 16th century.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  23: { passageId: 2, highlights: ["tea was still too expensive to be widespread among the working classes"], explanation: "Tea was popular among middle- and upper-class men, but it was too expensive for the working classes.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  24: { passageId: 2, highlights: ["taxation also encouraged the adulteration of tea", "government realised that enough was enough... slashed the tax"], explanation: "The text explains that taxation encouraged both smuggling and the adulteration of tea, causing the government to slash the tax.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  25: { passageId: 2, highlights: ["few false starts, including the destruction by cattle of one of the earliest tea nurseries"], explanation: "There were early failures ('false starts') when tea was planted in India, such as cattle destroying nurseries.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  26: { passageId: 2, highlights: ["competition between British and American merchants, leading to the famous clipper races"], explanation: "There was a competition between British and American merchants, but the text never states that America owned the 'fastest' vessels.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
 
-  27: { passageId: 3, highlights: ["bad cough and always seem to be tired"], explanation: "Under personal experience, knowing you are ill involves symptoms like a bad cough and tiredness." },
-  28: { passageId: 3, highlights: ["takes your temperature and blood pressure"], explanation: "A doctor gathers scientific evidence by measuring things like your temperature and blood pressure." },
-  29: { passageId: 3, highlights: ["Comments from friends and family such as ‘you do look ill’"], explanation: "Non-specialized sources of knowledge can come from the observations and common judgment of your friends and family." },
-  30: { passageId: 3, highlights: ["medical knowledge provided by the general practitioner"], explanation: "An authoritative source of knowledge is the medical knowledge provided by a general practitioner." },
-  31: { passageId: 3, highlights: ["future diagnosis of pneumonia"], explanation: "New knowledge is constructed and added to the doctor's medical knowledge, helping in the future diagnosis." },
-  32: { passageId: 3, highlights: ["medical training and background"], explanation: "A doctor examines the hypothesis and interprets it using their previous training (drill) and background." },
-  33: { passageId: 3, highlights: ["you decide to consult the doctor in the first place because you feel unwell – this is personal knowledge", "However, the doctor’s expert diagnosis is based on experience and training"], explanation: "Paragraph E contrasts personal knowledge (feeling unwell) with the doctor's expert diagnosis based on training." },
-  34: { passageId: 3, highlights: ["Western culture has seen a significant emphasis on stress-related illness in the media"], explanation: "Paragraph F discusses how reference to being 'stressed out' has become part of popular culture." },
-  35: { passageId: 3, highlights: ["We need an expert medical diagnosis in order to obtain the necessary certificate if we need to be off work"], explanation: "Paragraph H explains that to take time off work, a socially sanctioned expert medical diagnosis is legally required." },
-  36: { passageId: 3, highlights: ["The knowledge of the medical sciences is privileged in this respect in contemporary Western culture"], explanation: "Paragraph H discusses how medical practitioners and their knowledge are viewed as privileged and authoritative in society." },
-  37: { passageId: 3, highlights: ["This results in new knowledge and new experience both for you and for the doctor. This will then be added to the doctor’s medical knowledge"], explanation: "Paragraph I outlines how analyzing an illness results in new knowledge that is added to the doctor's existing knowledge." },
-  38: { passageId: 3, highlights: ["rely on the observations of others who know us", "Complementary health practices, such as holistic medicine, produce their own sets of knowledge"], explanation: "Paragraph G describes sources of knowledge drawn from non-medical observations by family/friends and holistic medicine." },
-  39: { passageId: 3, highlights: ["This is the result of the combination of your own subjective experience and the diagnosis of someone who has the status of a medical expert"], explanation: "Paragraph D gives an example of how knowledge of being ill comes from combining personal subjective experience and a professional diagnosis." },
-  40: { passageId: 3, highlights: ["fail to be aware of the illness until it has reached a late stage"], explanation: "Paragraph B references the fact that people can sometimes suffer from a disease without realizing they are ill." }
+  27: { passageId: 3, highlights: ["bad cough and always seem to be tired"], explanation: "Under personal experience, knowing you are ill involves symptoms like a bad cough and tiredness.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  28: { passageId: 3, highlights: ["takes your temperature and blood pressure"], explanation: "A doctor gathers scientific evidence by measuring things like your temperature and blood pressure.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  29: { passageId: 3, highlights: ["Comments from friends and family such as ‘you do look ill’"], explanation: "Non-specialized sources of knowledge can come from the observations and common judgment of your friends and family.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  30: { passageId: 3, highlights: ["medical knowledge provided by the general practitioner"], explanation: "An authoritative source of knowledge is the medical knowledge provided by a general practitioner.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  31: { passageId: 3, highlights: ["future diagnosis of pneumonia"], explanation: "New knowledge is constructed and added to the doctor's medical knowledge, helping in the future diagnosis.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  32: { passageId: 3, highlights: ["medical training and background"], explanation: "A doctor examines the hypothesis and interprets it using their previous training (drill) and background.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  33: { passageId: 3, highlights: ["you decide to consult the doctor in the first place because you feel unwell – this is personal knowledge", "However, the doctor’s expert diagnosis is based on experience and training"], explanation: "Paragraph E contrasts personal knowledge (feeling unwell) with the doctor's expert diagnosis based on training.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  34: { passageId: 3, highlights: ["Western culture has seen a significant emphasis on stress-related illness in the media"], explanation: "Paragraph F discusses how reference to being 'stressed out' has become part of popular culture.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  35: { passageId: 3, highlights: ["We need an expert medical diagnosis in order to obtain the necessary certificate if we need to be off work"], explanation: "Paragraph H explains that to take time off work, a socially sanctioned expert medical diagnosis is legally required.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  36: { passageId: 3, highlights: ["The knowledge of the medical sciences is privileged in this respect in contemporary Western culture"], explanation: "Paragraph H discusses how medical practitioners and their knowledge are viewed as privileged and authoritative in society.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  37: { passageId: 3, highlights: ["This results in new knowledge and new experience both for you and for the doctor. This will then be added to the doctor’s medical knowledge"], explanation: "Paragraph I outlines how analyzing an illness results in new knowledge that is added to the doctor's existing knowledge.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  38: { passageId: 3, highlights: ["rely on the observations of others who know us", "Complementary health practices, such as holistic medicine, produce their own sets of knowledge"], explanation: "Paragraph G describes sources of knowledge drawn from non-medical observations by family/friends and holistic medicine.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  39: { passageId: 3, highlights: ["This is the result of the combination of your own subjective experience and the diagnosis of someone who has the status of a medical expert"], explanation: "Paragraph D gives an example of how knowledge of being ill comes from combining personal subjective experience and a professional diagnosis.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." },
+  40: { passageId: 3, highlights: ["fail to be aware of the illness until it has reached a late stage"], explanation: "Paragraph B references the fact that people can sometimes suffer from a disease without realizing they are ill.", detailedExplanation: "Other options are incorrect because the provided explanation strictly aligns with the passage evidence. Distractors contradict the text or introduce information not found in the passage." }
 };
 
 import { getReadingTestData } from '../data/readingTestData';
@@ -284,10 +284,95 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   
   // --- TEST MODE & TIMER STATE ---
   const [hasStarted, setHasStarted] = useState(false);
-  const [testMode, setTestMode] = useState<string | null>(null); // 'study' or 'mock'
+  const [testMode, setTestMode] = useState<string | null>(null); // 'study', 'teaching' or 'mock'
   const [timeLeft, setTimeLeft] = useState(3600);
   const [isPaused, setIsPaused] = useState(false);
   const [endTime, setEndTime] = useState<number | null>(null); // absolute tracker for mock mode
+  
+  // --- DICTIONARY STATE ---
+  const [selectedWord, setSelectedWord] = useState('');
+  const [wordMeaning, setWordMeaning] = useState<any>(null);
+  const [isFetchingMeaning, setIsFetchingMeaning] = useState(false);
+  const [dictPopupPos, setDictPopupPos] = useState({ x: 0, y: 0 });
+
+  const fetchMeaning = async (word: string) => {
+    setSelectedWord(word);
+    setIsFetchingMeaning(true);
+    setWordMeaning(null);
+    try {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWordMeaning(data[0]);
+      } else {
+        setWordMeaning({ error: "Definition not found." });
+      }
+    } catch (err) {
+      setWordMeaning({ error: "Failed to fetch definition." });
+    } finally {
+      setIsFetchingMeaning(false);
+    }
+  };
+
+  const handlePassageMouseUp = (e: React.MouseEvent) => {
+    if (testMode !== 'teaching') return;
+    
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+      const text = selection.toString().trim();
+      if (text && !text.includes(' ') && /^[a-zA-Z\-]+$/.test(text) && text.length > 2) {
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        setDictPopupPos({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10
+        });
+        fetchMeaning(text.toLowerCase());
+        return;
+      }
+    }
+
+    let range;
+    if (document.caretRangeFromPoint) {
+      range = document.caretRangeFromPoint(e.clientX, e.clientY);
+    } else if ((document as any).caretPositionFromPoint) {
+      const pos = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
+      if (pos) {
+        range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
+      }
+    }
+
+    if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
+      const textNode = range.startContainer;
+      const offset = range.startOffset;
+      const text = textNode.textContent || '';
+      
+      if (/[a-zA-Z\-]/.test(text[offset] || '') || (offset > 0 && /[a-zA-Z\-]/.test(text[offset - 1]))) {
+        let start = offset;
+        while (start > 0 && /[a-zA-Z\-]/.test(text[start - 1])) {
+          start--;
+        }
+        let end = offset;
+        while (end < text.length && /[a-zA-Z\-]/.test(text[end])) {
+          end++;
+        }
+        
+        const word = text.substring(start, end).trim();
+        if (word.length > 2) {
+          setDictPopupPos({
+            x: e.clientX,
+            y: e.clientY - 20
+          });
+          fetchMeaning(word.toLowerCase());
+          return;
+        }
+      }
+    }
+    
+    setSelectedWord('');
+    setWordMeaning(null);
+  };
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionIdState, setSubmissionIdState] = useState<string | null>(null);
@@ -448,7 +533,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             clearInterval(timer);
           }
         }, 1000);
-      } else if (testMode === 'study' && !isPaused) {
+      } else if ((testMode === 'study' || testMode === 'teaching') && !isPaused) {
         timer = setInterval(() => {
           setTimeLeft(prev => {
             if (prev <= 1) {
@@ -474,7 +559,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     
     if (selectedMode === 'mock') {
       setModalConfig({
-        title: "Start Mock Test?",
+        title: "Start Mock Test Mode?",
         message: "This mode follows official IELTS exam conditions.\n\n• The timer starts immediately.\n• The timer cannot be paused.\n• The test will automatically submit when time expires.",
         confirmText: "Start Test",
         cancelText: "Cancel",
@@ -485,6 +570,10 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           setModalConfig(null);
         }
       });
+    } else if (selectedMode === 'teaching') {
+      setTestMode('teaching');
+      setTimeLeft(3600);
+      setHasStarted(true);
     } else {
       setTestMode('study');
       setTimeLeft(3600);
@@ -954,6 +1043,12 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
         <div className={`whitespace-pre-wrap text-[0.95em] leading-relaxed p-5 rounded-xl border shadow-sm ${colorTheme !== 'standard' ? 'bg-[#332800] text-yellow-100 border-yellow-700' : 'bg-yellow-50 text-gray-800 border-yellow-200'}`}>
            {explanation}
         </div>
+        {testMode === 'teaching' && currentExplanations[qId]?.detailedExplanation && (
+          <div className={`mt-3 whitespace-pre-wrap text-[0.95em] leading-relaxed p-5 rounded-xl border shadow-sm ${colorTheme !== 'standard' ? 'bg-[#3a1a3a] text-purple-100 border-purple-700' : 'bg-purple-50 text-gray-800 border-purple-200'}`}>
+             <h4 className="font-bold mb-2 flex items-center gap-2"><Info size={16}/> Why other options are incorrect</h4>
+             {currentExplanations[qId].detailedExplanation}
+          </div>
+        )}
       </div>
     );
   };
@@ -1255,32 +1350,22 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 disabled={!studentName.trim()}
-                onClick={() => handleStartTest('study')}
-                className="group flex flex-col items-center justify-center gap-3 p-6 border-2 border-green-500 rounded-2xl bg-green-50 text-green-800 hover:bg-green-600 hover:text-white disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 transition-all text-left relative overflow-hidden"
-              >
-                <div className="font-extrabold text-xl flex items-center gap-2">
-                   Start Study Mode
-                </div>
-                <ul className="text-[0.85em] space-y-1 font-medium opacity-80 text-center">
-                   <li>• Learn at your own pace</li>
-                   <li>• Pause & Restart allowed</li>
-                   <li>• Leave page & return</li>
-                </ul>
-              </button>
-
-              <button
-                disabled={!studentName.trim()}
                 onClick={() => handleStartTest('mock')}
                 className="group flex flex-col items-center justify-center gap-3 p-6 border-2 border-red-500 rounded-2xl bg-red-50 text-red-800 hover:bg-red-600 hover:text-white disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 transition-all text-left relative overflow-hidden"
               >
                 <div className="font-extrabold text-xl flex items-center gap-2">
-                   Start Mock Test
+                   Mock Test Mode
                 </div>
-                <ul className="text-[0.85em] space-y-1 font-medium opacity-80 text-center">
-                   <li>• Official exam simulation</li>
-                   <li>• Absolute 60-min timer</li>
-                   <li>• Strict Auto-submit</li>
-                </ul>
+              </button>
+
+              <button
+                disabled={!studentName.trim()}
+                onClick={() => handleStartTest('teaching')}
+                className="group flex flex-col items-center justify-center gap-3 p-6 border-2 border-purple-500 rounded-2xl bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 transition-all text-left relative overflow-hidden"
+              >
+                <div className="font-extrabold text-xl flex items-center gap-2">
+                   Study Mode
+                </div>
               </button>
             </div>
           </div>
@@ -1362,7 +1447,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               <Clock size={20} />
               <span className={isPaused ? 'opacity-50' : ''}>{formatTime(timeLeft)}</span>
               
-              {testMode === 'study' && (
+              {(testMode === 'study' || testMode === 'teaching') && (
                  <div className="flex items-center gap-1 border-l border-blue-800/50 pl-2 ml-1 opacity-80 hover:opacity-100 transition-opacity">
                      <button onClick={() => setIsPaused(!isPaused)} title={isPaused ? "Resume" : "Pause"} className="p-1 hover:bg-blue-800 rounded">
                          {isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
@@ -1459,7 +1544,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           ref={leftPanelRef}
           style={{ width: isDesktop ? `${leftWidth}%` : '100%' }}
           className={`h-full border-r overflow-y-auto shadow-inner relative selection:bg-blue-300 selection:text-black scroll-smooth ${theme.panelLeft} ${theme.border}`}
-          onMouseUp={handleTextSelect}
+          onMouseUp={(e) => { handleTextSelect(); handlePassageMouseUp(e); }}
         >
           <div className="p-8 max-w-3xl mx-auto">
             <div className={`mb-10 flex items-start justify-between border-b pb-6 ${theme.border} border-opacity-50`}>
@@ -1805,6 +1890,55 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             })}
           </div>
         </div>
+
+        {/* DICTIONARY POPUP */}
+        {wordMeaning && (
+          <div 
+            className="fixed z-[100] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-gray-200 p-4 w-72 animate-fade-in text-left text-black font-sans"
+            style={{ 
+              top: Math.max(10, Math.min(window.innerHeight - 300, dictPopupPos.y)), 
+              left: Math.max(10, Math.min(window.innerWidth - 300, dictPopupPos.x)) 
+            }}
+          >
+            <div className="flex justify-between items-start mb-2 border-b border-gray-100 pb-2">
+              <h4 className="font-black text-lg text-purple-800 capitalize">{selectedWord}</h4>
+              <button onClick={() => setWordMeaning(null)} className="text-gray-400 hover:text-gray-700">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            
+            <div className="max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+              {wordMeaning.error ? (
+                <p className="text-sm text-red-500 italic">{wordMeaning.error}</p>
+              ) : (
+                <div className="space-y-3">
+                  {wordMeaning.phonetics && wordMeaning.phonetics[0] && wordMeaning.phonetics[0].text && (
+                     <p className="text-xs text-gray-500 font-mono">{wordMeaning.phonetics[0].text}</p>
+                  )}
+                  {wordMeaning.meanings?.slice(0, 2).map((meaning: any, mIdx: number) => (
+                    <div key={mIdx} className="text-sm">
+                      <span className="text-xs font-bold uppercase tracking-wider text-purple-600 block mb-1">{meaning.partOfSpeech}</span>
+                      <ul className="list-disc pl-4 space-y-1 text-gray-700 mb-2">
+                        {meaning.definitions.slice(0, 2).map((def: any, dIdx: number) => (
+                          <li key={dIdx}>{def.definition}</li>
+                        ))}
+                      </ul>
+                      {meaning.synonyms && meaning.synonyms.length > 0 && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          <span className="font-semibold text-gray-800">Synonyms: </span>
+                          {meaning.synonyms.slice(0, 3).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-3 text-[10px] text-gray-400 text-right italic border-t border-gray-50 pt-2">Powered by Free Dictionary API</div>
+          </div>
+        )}
+
       </main>
 
       {!reviewMode && (
