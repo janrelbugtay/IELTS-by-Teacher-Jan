@@ -122,8 +122,10 @@ export const LISTENING_ANSWER_KEY: Record<number, string> = {
 };
 
 import { MarchListeningTest } from './MarchListeningTest';
+import { AprilListeningTest } from './AprilListeningTest';
 
 export function ComputerListeningTest({ submissionId }: { submissionId?: string }) {
+
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -132,9 +134,35 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
       return <FebruaryListeningTest />;
   }
   if (id === '10' && !submissionId) return <MarchListeningTest />;
+  if (id === '14' && !submissionId) return <AprilListeningTest />;
+  if (id === '2' && !submissionId) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-12 bg-white rounded-3xl shadow-xl border border-gray-100 max-w-lg w-full">
+          <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 mb-4 tracking-tight">Coming Soon</h1>
+          <p className="text-gray-500 mb-8 leading-relaxed">The January Listening Practice content is currently being updated and will be available shortly.</p>
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:translate-y-0 hover:-translate-y-0.5"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
+  useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);
+
   const [hasStarted, setHasStarted] = useState(false);
+  const [testMode, setTestMode] = useState<'practice' | 'mock'>('practice');
+  const [isTimePaused, setIsTimePaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(40 * 60);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -179,7 +207,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (hasStarted && timeLeft > 0 && !isSubmitted) {
+    if (hasStarted && timeLeft > 0 && !isSubmitted && !isTimePaused) {
       timer = setInterval(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
@@ -188,7 +216,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
       submitTest();
     }
     return () => clearInterval(timer);
-  }, [hasStarted, timeLeft, isSubmitted]);
+  }, [hasStarted, timeLeft, isSubmitted, isTimePaused]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -431,24 +459,65 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
 
   if (!hasStarted) {
     return (
-      <div className="fixed inset-0 bg-[#e1e5eb] z-50 flex flex-col items-center justify-center">
-        <div className="bg-white p-10 rounded shadow-lg w-[450px] border border-gray-300">
-            <h1 className="text-2xl font-bold mb-2 text-center text-black">IELTS Listening Test</h1>
-            <p className="text-sm text-gray-600 text-center mb-8">Please enter your details to begin the test.</p>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
+        <div className="bg-white p-10 rounded-2xl shadow-2xl w-[560px] border border-gray-100 relative overflow-hidden">
+            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">IELTS Listening Test</h1>
+            <p className="text-[15px] text-gray-500 text-center mb-10">Configure your session and enter your details to begin.</p>
             
-            <form onSubmit={handleStart} className="mb-6">
-                <label className="block text-sm font-bold mb-2 text-gray-800">Full Name</label>
-                <input 
-                    type="text" 
-                    required
-                    className="w-full border border-gray-400 p-2.5 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                    placeholder="e.g. John Doe" 
-                    value={studentName}
-                    onChange={(e) => setStudentName(e.target.value)}
-                />
+            <form onSubmit={handleStart} className="flex flex-col gap-6">
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-gray-800">Full Name</label>
+                  <input 
+                      type="text" 
+                      required
+                      className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all bg-gray-50 focus:bg-white" 
+                      placeholder="Enter your full name" 
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                  />
+                </div>
                 
-                <button type="submit" disabled={!studentName.trim()} className="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-sm text-lg disabled:opacity-50">
-                    Start Test
+                <div>
+                  <label className="block text-sm font-bold mb-3 text-gray-800">Select Test Mode</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      type="button"
+                      onClick={() => setTestMode('practice')}
+                      className={`p-4 border rounded-xl text-left transition-all relative overflow-hidden ${testMode === 'practice' ? 'border-blue-600 bg-blue-50/50 shadow-[0_0_0_2px_rgba(37,99,235,0.2)]' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50/50 bg-white'}`}
+                    >
+                      {testMode === 'practice' && <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className={`font-bold text-[15px] ${testMode === 'practice' ? 'text-blue-700' : 'text-gray-800'}`}>Practice Mode</div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'practice' ? 'border-blue-600' : 'border-gray-300'}`}>
+                            {testMode === 'practice' && <div className="w-2 h-2 rounded-full bg-blue-600"></div>}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 leading-relaxed pr-2">
+                        Control your pace. Ideal for learning and reviewing.
+                      </div>
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={() => setTestMode('mock')}
+                      className={`p-4 border rounded-xl text-left transition-all relative overflow-hidden ${testMode === 'mock' ? 'border-blue-600 bg-blue-50/50 shadow-[0_0_0_2px_rgba(37,99,235,0.2)]' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50/50 bg-white'}`}
+                    >
+                      {testMode === 'mock' && <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className={`font-bold text-[15px] ${testMode === 'mock' ? 'text-blue-700' : 'text-gray-800'}`}>Mock Test Mode</div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'mock' ? 'border-blue-600' : 'border-gray-300'}`}>
+                            {testMode === 'mock' && <div className="w-2 h-2 rounded-full bg-blue-600"></div>}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 leading-relaxed pr-2">
+                        Strict timed conditions. Audio cannot be paused. Simulates real exam.
+                      </div>
+                    </button>
+                  </div>
+                </div>
+                
+                <button type="submit" disabled={!studentName.trim()} className="mt-4 w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all text-[15px] disabled:opacity-50 disabled:hover:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed">
+                    Start Test Now
                 </button>
             </form>
         </div>
@@ -467,6 +536,14 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
               </svg>
               <span>{formatTime(timeLeft)}</span>
+              {testMode === 'practice' && (
+                <button 
+                  onClick={() => setIsTimePaused(!isTimePaused)} 
+                  className="ml-2 px-2 py-0.5 text-xs font-normal bg-white border border-gray-400 rounded hover:bg-gray-100"
+                >
+                  {isTimePaused ? 'Resume' : 'Pause'}
+                </button>
+              )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -668,12 +745,12 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                             { qNum: 20, text: "Who is the statue in the train station modeled after?", options: { A: "a poet", B: "an engineer", C: "a politician" } }
                           ].map(q => (
                              <div key={q.qNum}>
-                                <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
-                                <div className="pl-8 space-y-1">
+                                <div className="font-bold mb-4 flex text-[16px]"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
+                                <div className="pl-8 space-y-3">
                                     {['A', 'B', 'C'].map(opt => (
-                                        <label key={opt} className={`mcq-label ${answers[q.qNum] === opt ? "selected" : ""}`}>
-                                            <input type="radio" name={`q${q.qNum}`} value={opt} className="mcq-radio" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
-                                            <span className="font-bold font-sans mr-3 shrink-0">{opt}.</span> <span className="font-serif">{q.options[opt as keyof typeof q.options]}</span>
+                                        <label key={opt} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${answers[q.qNum] === opt ? "border-[#1E4DB7] bg-blue-50" : "border-gray-300 hover:bg-gray-50"}`}>
+                                            <input type="radio" name={`q${q.qNum}`} value={opt} className="w-5 h-5 mr-4 text-[#1E4DB7] focus:ring-[#1E4DB7]" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
+                                            <span className="font-bold mr-3">{opt}</span> <span>{q.options[opt as keyof typeof q.options]}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -696,12 +773,12 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                             { qNum: 25, text: "What is the current situation of nursing department in the hospitals?", options: { A: "The number of nurses is adequate.", B: "Nurses are better trained.", C: "Hospitals can provide satisfying booking service." } }
                       ].map(q => (
                              <div key={q.qNum}>
-                                <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
-                                <div className="pl-8 space-y-1">
+                                <div className="font-bold mb-4 flex text-[16px]"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
+                                <div className="pl-8 space-y-3">
                                     {['A', 'B', 'C'].map(opt => (
-                                        <label key={opt} className={`mcq-label ${answers[q.qNum] === opt ? "selected" : ""}`}>
-                                            <input type="radio" name={`q${q.qNum}`} value={opt} className="mcq-radio" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
-                                            <span className="font-bold font-sans mr-3 shrink-0">{opt}.</span> <span className="font-serif">{q.options[opt as keyof typeof q.options]}</span>
+                                        <label key={opt} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${answers[q.qNum] === opt ? "border-[#1E4DB7] bg-blue-50" : "border-gray-300 hover:bg-gray-50"}`}>
+                                            <input type="radio" name={`q${q.qNum}`} value={opt} className="w-5 h-5 mr-4 text-[#1E4DB7] focus:ring-[#1E4DB7]" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
+                                            <span className="font-bold mr-3">{opt}</span> <span>{q.options[opt as keyof typeof q.options]}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -764,12 +841,12 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
                             { qNum: 40, text: "The lecturer thinks most drivers who contribute to congestion are", options: { A: "unconcerned.", B: "unaware.", C: "undecided." } }
                           ].map(q => (
                              <div key={q.qNum}>
-                                <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
-                                <div className="pl-8 space-y-1">
+                                <div className="font-bold mb-4 flex text-[16px]"><span className="w-8 shrink-0">{q.qNum}</span><span>{q.text}</span></div>
+                                <div className="pl-8 space-y-3">
                                     {['A', 'B', 'C'].map(opt => (
-                                        <label key={opt} className={`mcq-label ${answers[q.qNum] === opt ? "selected" : ""}`}>
-                                            <input type="radio" name={`q${q.qNum}`} value={opt} className="mcq-radio" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
-                                            <span className="font-bold font-sans mr-3 shrink-0">{opt}.</span> <span className="font-serif">{q.options[opt as keyof typeof q.options]}</span>
+                                        <label key={opt} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${answers[q.qNum] === opt ? "border-[#1E4DB7] bg-blue-50" : "border-gray-300 hover:bg-gray-50"}`}>
+                                            <input type="radio" name={`q${q.qNum}`} value={opt} className="w-5 h-5 mr-4 text-[#1E4DB7] focus:ring-[#1E4DB7]" checked={answers[q.qNum] === opt} onChange={() => handleAnswerChange(q.qNum, opt)} /> 
+                                            <span className="font-bold mr-3">{opt}</span> <span>{q.options[opt as keyof typeof q.options]}</span>
                                         </label>
                                     ))}
                                 </div>

@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result?.user) {
         try {
           // Admins can log in freely
-          if (result.user.email === 'janrelbugtay03@gmail.com') {
+          if (result.user.email === 'janrelbugtay03@gmail.com' || result.user.email === 'khaisangschool.edu.vn@gmail.com') {
             await setDoc(doc(db, 'users', result.user.uid), {
               name: result.user.displayName || 'Admin',
               email: result.user.email,
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUser(activeUser);
-      if (activeUser?.email === 'janrelbugtay03@gmail.com' || (currentUser && currentUser.email === 'janrelbugtay03@gmail.com')) {
+      if (['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(activeUser?.email || '') || (currentUser && ['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(currentUser.email || ''))) {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (result?.user) {
         try {
-          if (result.user.email === 'janrelbugtay03@gmail.com') {
+          if (result.user.email === 'janrelbugtay03@gmail.com' || result.user.email === 'khaisangschool.edu.vn@gmail.com') {
             await setDoc(doc(db, 'users', result.user.uid), {
               name: result.user.displayName || 'Admin',
               email: result.user.email,

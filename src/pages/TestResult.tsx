@@ -13,6 +13,7 @@ import { ComputerReadingTest } from './ComputerReadingTest';
 import { ComputerListeningTest } from './ComputerListeningTest';
 import { FebruaryListeningTest } from './FebruaryListeningTest';
 import { MarchListeningTest } from './MarchListeningTest';
+import { AprilListeningTest } from './AprilListeningTest';
 import { ComputerWritingTest } from './ComputerWritingTest';
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
@@ -138,7 +139,13 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
           return <FebruaryListeningTest submissionId={id} />;
       }
       if (submission.assignmentTitle?.toLowerCase().includes('march')) {
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
+          return <AprilListeningTest submissionId={id} />;
+      }
           return <MarchListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
+          return <AprilListeningTest submissionId={id} />;
+      }
       }
       return <ComputerListeningTest submissionId={id} />;
   }
@@ -151,7 +158,13 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
           return <FebruaryWritingTest submissionId={id} />;
       }
       if (submission.assignmentTitle?.toLowerCase().includes('march')) {
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
+          return <AprilListeningTest submissionId={id} />;
+      }
           return <MarchWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
+          return <AprilListeningTest submissionId={id} />;
+      }
       }
       return <ComputerWritingTest submissionId={id} />;
   }

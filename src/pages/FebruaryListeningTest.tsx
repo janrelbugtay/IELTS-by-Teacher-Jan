@@ -121,12 +121,17 @@ export const LISTENING_ANSWER_KEY: Record<number, string> = {
 };
 
 export function FebruaryListeningTest({ submissionId }: { submissionId?: string }) {
+
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
+  useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);
+
   const [hasStarted, setHasStarted] = useState(false);
+  const [testMode, setTestMode] = useState<'practice' | 'mock'>('practice');
+  const [isTimePaused, setIsTimePaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(40 * 60);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -171,7 +176,7 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (hasStarted && timeLeft > 0 && !isSubmitted) {
+    if (hasStarted && timeLeft > 0 && !isSubmitted && !isTimePaused) {
       timer = setInterval(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
@@ -180,7 +185,7 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
       submitTest();
     }
     return () => clearInterval(timer);
-  }, [hasStarted, timeLeft, isSubmitted]);
+  }, [hasStarted, timeLeft, isSubmitted, isTimePaused]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -423,24 +428,65 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
 
   if (!hasStarted) {
     return (
-      <div className="fixed inset-0 bg-[#e1e5eb] z-50 flex flex-col items-center justify-center">
-        <div className="bg-white p-10 rounded shadow-lg w-[450px] border border-gray-300">
-            <h1 className="text-2xl font-bold mb-2 text-center text-black">IELTS Listening Test</h1>
-            <p className="text-sm text-gray-600 text-center mb-8">Please enter your details to begin the test.</p>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
+        <div className="bg-white p-10 rounded-2xl shadow-2xl w-[560px] border border-gray-100 relative overflow-hidden">
+            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">IELTS Listening Test</h1>
+            <p className="text-[15px] text-gray-500 text-center mb-10">Configure your session and enter your details to begin.</p>
             
-            <form onSubmit={handleStart} className="mb-6">
-                <label className="block text-sm font-bold mb-2 text-gray-800">Full Name</label>
-                <input 
-                    type="text" 
-                    required
-                    className="w-full border border-gray-400 p-2.5 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                    placeholder="e.g. John Doe" 
-                    value={studentName}
-                    onChange={(e) => setStudentName(e.target.value)}
-                />
+            <form onSubmit={handleStart} className="flex flex-col gap-6">
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-gray-800">Full Name</label>
+                  <input 
+                      type="text" 
+                      required
+                      className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all bg-gray-50 focus:bg-white" 
+                      placeholder="Enter your full name" 
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                  />
+                </div>
                 
-                <button type="submit" disabled={!studentName.trim()} className="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-sm text-lg disabled:opacity-50">
-                    Start Test
+                <div>
+                  <label className="block text-sm font-bold mb-3 text-gray-800">Select Test Mode</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      type="button"
+                      onClick={() => setTestMode('practice')}
+                      className={`p-4 border rounded-xl text-left transition-all relative overflow-hidden ${testMode === 'practice' ? 'border-blue-600 bg-blue-50/50 shadow-[0_0_0_2px_rgba(37,99,235,0.2)]' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50/50 bg-white'}`}
+                    >
+                      {testMode === 'practice' && <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className={`font-bold text-[15px] ${testMode === 'practice' ? 'text-blue-700' : 'text-gray-800'}`}>Practice Mode</div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'practice' ? 'border-blue-600' : 'border-gray-300'}`}>
+                            {testMode === 'practice' && <div className="w-2 h-2 rounded-full bg-blue-600"></div>}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 leading-relaxed pr-2">
+                        Control your pace. Ideal for learning and reviewing.
+                      </div>
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={() => setTestMode('mock')}
+                      className={`p-4 border rounded-xl text-left transition-all relative overflow-hidden ${testMode === 'mock' ? 'border-blue-600 bg-blue-50/50 shadow-[0_0_0_2px_rgba(37,99,235,0.2)]' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50/50 bg-white'}`}
+                    >
+                      {testMode === 'mock' && <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className={`font-bold text-[15px] ${testMode === 'mock' ? 'text-blue-700' : 'text-gray-800'}`}>Mock Test Mode</div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'mock' ? 'border-blue-600' : 'border-gray-300'}`}>
+                            {testMode === 'mock' && <div className="w-2 h-2 rounded-full bg-blue-600"></div>}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 leading-relaxed pr-2">
+                        Strict timed conditions. Audio cannot be paused. Simulates real exam.
+                      </div>
+                    </button>
+                  </div>
+                </div>
+                
+                <button type="submit" disabled={!studentName.trim()} className="mt-4 w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all text-[15px] disabled:opacity-50 disabled:hover:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed">
+                    Start Test Now
                 </button>
             </form>
         </div>
@@ -459,6 +505,14 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
               </svg>
               <span>{formatTime(timeLeft)}</span>
+              {testMode === 'practice' && (
+                <button 
+                  onClick={() => setIsTimePaused(!isTimePaused)} 
+                  className="ml-2 px-2 py-0.5 text-xs font-normal bg-white border border-gray-400 rounded hover:bg-gray-100"
+                >
+                  {isTimePaused ? 'Resume' : 'Pause'}
+                </button>
+              )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -481,7 +535,7 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
               <p className="text-[13px] text-gray-700">Listen and answer questions <span className="font-bold">{navQuestionRange}</span>.</p>
           </div>
           <div>
-              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1I6JggwdPrDoYsFdD24l7iNda1nWizFcV" />
+              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1I6JggwdPrDoYsFdD24l7iNda1nWizFcV"  isMockMode={testMode === 'mock'} />
           </div>
       </div>
 
@@ -581,10 +635,10 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
                           { q: 20, text: "To find out about other cycle paths in the region, you can", options: { A: "look in the local newspaper.", B: "check the radio station website.", C: "ring up the national cycle network." } }
                         ].map((item) => (
                           <div key={item.q}>
-                            <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{item.q}</span><span>{item.text}</span></div>
-                            <div className="pl-8 space-y-1">
+                            <div className="font-bold mb-4 flex text-[16px]"><span className="w-8 shrink-0">{item.q}</span><span>{item.text}</span></div>
+                            <div className="pl-8 space-y-3">
                                 {Object.entries(item.options).map(([val, label]) => (
-                                  <label key={val} className={`mcq-label ${answers[item.q] === val ? "selected" : ""}`}><input type="radio" name={`q${item.q}`} value={val} checked={answers[item.q] === val} onChange={(e) => handleAnswerChange(item.q, e.target.value)} className="mcq-radio mt-1 mr-3" /> <span className="font-bold font-sans mr-3 shrink-0">{val}.</span> <span className="font-serif">{label}</span></label>
+                                  <label key={val} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${answers[item.q] === val ? "border-[#1E4DB7] bg-blue-50" : "border-gray-300 hover:bg-gray-50"}`}><input type="radio" name={`q${item.q}`} value={val} checked={answers[item.q] === val} onChange={(e) => handleAnswerChange(item.q, e.target.value)} className="w-5 h-5 mr-4 text-[#1E4DB7] focus:ring-[#1E4DB7]" /> <span className="font-bold mr-3">{val}</span> <span>{label}</span></label>
                                 ))}
                             </div>
                           </div>
@@ -634,10 +688,10 @@ export function FebruaryListeningTest({ submissionId }: { submissionId?: string 
                           { q: 30, text: "The students both agree that volcanoes", options: { A: "haven't caused disastrous outcomes.", B: "cannot help to reshape the landscape.", C: "are not fully recognised for their values." } }
                         ].map((item) => (
                           <div key={item.q}>
-                            <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">{item.q}</span><span>{item.text}</span></div>
-                            <div className="pl-8 space-y-1">
+                            <div className="font-bold mb-4 flex text-[16px]"><span className="w-8 shrink-0">{item.q}</span><span>{item.text}</span></div>
+                            <div className="pl-8 space-y-3">
                                 {Object.entries(item.options).map(([val, label]) => (
-                                  <label key={val} className={`mcq-label ${answers[item.q] === val ? "selected" : ""}`}><input type="radio" name={`q${item.q}`} value={val} checked={answers[item.q] === val} onChange={(e) => handleAnswerChange(item.q, e.target.value)} className="mcq-radio mt-1 mr-3" /> <span className="font-bold font-sans mr-3 shrink-0">{val}.</span> <span className="font-serif">{label}</span></label>
+                                  <label key={val} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${answers[item.q] === val ? "border-[#1E4DB7] bg-blue-50" : "border-gray-300 hover:bg-gray-50"}`}><input type="radio" name={`q${item.q}`} value={val} checked={answers[item.q] === val} onChange={(e) => handleAnswerChange(item.q, e.target.value)} className="w-5 h-5 mr-4 text-[#1E4DB7] focus:ring-[#1E4DB7]" /> <span className="font-bold mr-3">{val}</span> <span>{label}</span></label>
                                 ))}
                             </div>
                           </div>

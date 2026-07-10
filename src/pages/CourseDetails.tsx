@@ -134,7 +134,8 @@ export function CourseDetails() {
         title: 'April Listening Practice',
         icon: <Headphones className="w-8 h-8 text-indigo-600" />,
         desc: 'Take the April CD-IELTS listening test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600'
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/listening/14'
       });
     }
 
@@ -147,7 +148,18 @@ export function CourseDetails() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
           >
-            {folder.externalLink ? (
+            {folder.link ? (
+              <Link 
+                to={folder.link}
+                className={`block h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1 cursor-pointer`}
+              >
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${folder.color}`}>
+                  {folder.icon}
+                </div>
+                <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
+                <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
+              </Link>
+            ) : folder.externalLink ? (
               <a 
                 href={folder.externalLink}
                 target="_blank"

@@ -2,10 +2,11 @@ import React, { useState, useEffect, forwardRef, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 interface CustomAudioPlayerProps {
+  isMockMode?: boolean;
   src: string;
 }
 
-export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerProps>(({ src }, ref) => {
+export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerProps>(({ src, isMockMode }, ref) => {
   const innerAudioRef = useRef<HTMLAudioElement | null>(null);
   
   const setRefs = (node: HTMLAudioElement | null) => {
@@ -50,6 +51,7 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
     if (!audio) return;
     
     if (isPlaying) {
+      if (isMockMode) return; // Cannot pause in mock mode
       audio.pause();
     } else {
       audio.play();
@@ -85,7 +87,8 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
       
       <button 
         onClick={togglePlayPause}
-        className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors shrink-0 shadow-md"
+        disabled={isMockMode && isPlaying}
+        className={`w-12 h-12 flex items-center justify-center text-white rounded-full transition-colors shrink-0 shadow-md ${isMockMode && isPlaying ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
       >
         {isPlaying ? <Pause className="w-6 h-6" fill="currentColor" /> : <Play className="w-6 h-6 ml-1" fill="currentColor" />}
       </button>
@@ -101,7 +104,8 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
           max={duration || 100}
           value={currentTime}
           onChange={handleProgressChange}
-          className="flex-1 h-2.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+          disabled={isMockMode}
+          className={`flex-1 h-2.5 bg-gray-200 rounded-lg appearance-none accent-blue-600 ${isMockMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
         />
         
         <span className="text-sm font-medium font-mono text-gray-700 w-12">
