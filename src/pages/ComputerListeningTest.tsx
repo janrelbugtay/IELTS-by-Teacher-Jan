@@ -124,6 +124,7 @@ export const LISTENING_ANSWER_KEY: Record<number, string> = {
 
 import { MarchListeningTest } from './MarchListeningTest';
 import { AprilListeningTest } from './AprilListeningTest';
+import { MayListeningTest } from './MayListeningTest';
 
 export function ComputerListeningTest({ submissionId }: { submissionId?: string }) {
 
@@ -136,8 +137,8 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
   }
   if (id === '10' && !submissionId) return <MarchListeningTest />;
   if (id === '14' && !submissionId) return <AprilListeningTest />;
-  if (id === '15' && !submissionId) return <JanuaryListeningTest />;
-  if (id === '2' && !submissionId) return <JanuaryListeningTest />;
+  if (id === '18' && !submissionId) return <MayListeningTest />;
+    if (id === '2' && !submissionId) return <JanuaryListeningTest />;
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
   useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);

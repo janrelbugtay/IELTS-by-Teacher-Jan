@@ -15,10 +15,12 @@ import { FebruaryListeningTest } from './FebruaryListeningTest';
 import { JanuaryListeningTest } from './JanuaryListeningTest';
 import { MarchListeningTest } from './MarchListeningTest';
 import { AprilListeningTest } from './AprilListeningTest';
+import { MayListeningTest } from './MayListeningTest';
 import { ComputerWritingTest } from './ComputerWritingTest';
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
 import { MarchWritingTest } from './MarchWritingTest';
+import { AprilWritingTest } from './AprilWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -143,17 +145,16 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
           return <FebruaryListeningTest submissionId={id} />;
       }
       if (submission.assignmentTitle?.toLowerCase().includes('march')) {
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
-          return <AprilListeningTest submissionId={id} />;
-      }
           return <MarchListeningTest submissionId={id} />;
+      }
       if (submission.assignmentTitle?.toLowerCase().includes('april')) {
           return <AprilListeningTest submissionId={id} />;
       }
+      if (submission.assignmentTitle?.toLowerCase().includes('may')) {
+          return <MayListeningTest submissionId={id} />;
       }
       return <ComputerListeningTest submissionId={id} />;
   }
-
   if (type === 'writing') {
       if (submission.assignmentTitle?.toLowerCase().includes('january')) {
           return <JanuaryWritingTest submissionId={id} />;
@@ -162,17 +163,13 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
           return <FebruaryWritingTest submissionId={id} />;
       }
       if (submission.assignmentTitle?.toLowerCase().includes('march')) {
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
-          return <AprilListeningTest submissionId={id} />;
-      }
           return <MarchWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
-          return <AprilListeningTest submissionId={id} />;
       }
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
+          return <AprilWritingTest submissionId={id} />;
       }
       return <ComputerWritingTest submissionId={id} />;
   }
-
   if (type === 'speaking') {
       return <SpeakingTestResult submissionId={id} />;
   }

@@ -10,6 +10,7 @@ import { EraLogo } from '../components/EraLogo';
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
 import { MarchWritingTest } from './MarchWritingTest';
+import { AprilWritingTest } from './AprilWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';

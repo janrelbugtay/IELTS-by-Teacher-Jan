@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD-IELTS Listening Interface - Full Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;700&display=swap');
+        
+        body { 
+            font-family: Arial, Helvetica, sans-serif; 
+            background-color: #e1e5eb;
+        }
+
+        .top-bar {
+            background: linear-gradient(to bottom, #4a4a4a, #1a1a1a);
+        }
+        
+        .ielts-input {
+            width: 120px;
+            height: 24px;
+            border: 1px solid #7a7a7a;
+            text-align: center;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            border-radius: 2px;
+            padding-bottom: 1px;
+            margin: 0 4px;
+        }
+
+        .ielts-input-short {
+            width: 40px;
+            text-transform: uppercase;
+        }
+
+        .ielts-input:focus {
+            border-color: #6eb0de;
+            box-shadow: 0 0 3px #6eb0de;
+        }
+
+        .ielts-input::placeholder {
+            color: #333;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .ielts-input.filled, .ielts-input.active-state {
+            background-color: #e5f0fb;
+            border-color: #6eb0de;
+            color: #0b70b9;
+            font-weight: bold;
+        }
+
+        .mcq-label {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        
+        .mcq-label:hover {
+            background-color: #f3f4f6;
+        }
+
+        .mcq-radio, .mcq-checkbox {
+            margin-top: 4px;
+            margin-right: 12px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .nav-btn {
+            width: 22px;
+            height: 22px;
+            background-color: #222;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 1px solid #000;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background-color: #444;
+        }
+
+        .nav-btn.active {
+            background-color: #7ab3e3;
+            border-radius: 50%;
+            color: white;
+            width: 26px;
+            height: 26px;
+            margin: -2px 0;
+            border: none;
+            box-shadow: inset 0 0 4px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn.answered::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 2px;
+            background-color: #fff;
+            border-radius: 1px;
+        }
+
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-left: 1px solid #ccc; }
+        ::-webkit-scrollbar-thumb { background: #d1d1d1; border: 1px solid #bbb; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        .part-section { display: none; }
+        .part-section.active { display: block; }
+        
+        .content-box {
+            border: 1px solid #333;
+            padding: 24px;
+            background-color: #fff;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-[#333]">
+
+    <div id="intro-screen" class="fixed inset-0 bg-[#e1e5eb] z-50 flex flex-col items-center justify-center">
+        <div class="bg-white p-10 rounded shadow-lg w-[450px] border border-gray-300">
+            <h1 class="text-2xl font-bold mb-2 text-center text-black">IELTS Listening Test</h1>
+            <p class="text-sm text-gray-600 text-center mb-8">Please enter your details to begin the test.</p>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-bold mb-2 text-gray-800">Full Name</label>
+                <input type="text" id="candidate-name-input" class="w-full border border-gray-400 p-2.5 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="e.g. John Doe" onkeydown="if(event.key === 'Enter') startTest()">
+                <p id="name-error" class="text-red-500 text-xs font-bold mt-2 hidden">Please enter your full name.</p>
+            </div>
+            
+            <button onclick="startTest()" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition shadow-sm text-lg">Start Test</button>
+        </div>
+    </div>
+
+    <div class="top-bar text-white flex justify-between items-center px-4 py-1.5 text-sm shadow-md z-20 shrink-0">
+        <div class="text-xs text-gray-300 font-bold tracking-wide">CANDIDATE NAME - <span id="display-candidate-name"></span></div>
+        
+        <div class="flex items-center gap-2 font-bold text-base tracking-wide absolute left-1/2 transform -translate-x-1/2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+            <span id="timer-display">40:00</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button class="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Settings</button>
+            <button class="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Help <span class="text-blue-700 font-bold ml-0.5">?</span></button>
+            <button class="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Hide</button>
+            
+            <div class="flex items-center ml-2">
+                <button id="play-pause-btn" onclick="toggleAudio()" class="bg-blue-600 text-white px-3 py-0.5 rounded text-xs font-bold shadow-sm hover:bg-blue-700 flex items-center gap-1 transition-colors">
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span id="play-text">Play</span>
+                </button>
+                <span id="audio-error" class="text-red-400 text-[10px] font-bold ml-2 hidden">Error loading audio</span>
+            </div>
+
+            <div class="flex items-center gap-2 ml-2 bg-gradient-to-b from-gray-100 to-gray-300 px-2 py-0.5 rounded border border-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" />
+                </svg>
+                <input type="range" id="volume-slider" class="w-16 h-1 bg-gray-400 rounded-lg appearance-none cursor-pointer" value="70">
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white px-8 py-3 shadow-sm border-b border-gray-300 z-10 shrink-0">
+        <h1 id="header-part" class="text-[22px] font-bold text-black mb-0.5">Part 1</h1>
+        <p class="text-[13px] text-gray-700">Listen and answer questions <span id="header-questions" class="font-bold">1 - 10</span>.</p>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-[#e6eaf2] p-6 flex justify-center items-start shadow-inner relative" id="test-scroll-area">
+        <div class="w-full max-w-[1000px] min-h-full">
+            
+            <div id="part-1" class="part-section active bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8]">
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 1-10</div>
+                <div class="mb-4 italic text-[15px] text-gray-700">Complete the table below.</div>
+                <div class="mb-6 font-bold text-[15px] uppercase">Write ONE WORD AND/OR A NUMBER for each answer.</div>
+
+                <div class="content-box overflow-x-auto">
+                    <h2 class="font-bold text-[22px] mb-6 text-center text-black">One-day classes at Steynford College</h2>
+                    
+                    <table class="w-full border-collapse border border-gray-400 text-left mb-8">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-400 p-3">Course</th>
+                                <th class="border border-gray-400 p-3">Date</th>
+                                <th class="border border-gray-400 p-3">Cost</th>
+                                <th class="border border-gray-400 p-3">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border border-gray-400 p-3 align-top">Vietnamese food</td>
+                                <td class="border border-gray-400 p-3 align-top"><span class="font-bold mx-1">1</span><input type="text" placeholder="1" class="ielts-input answer-field" id="q1" data-q="1"></td>
+                                <td class="border border-gray-400 p-3 align-top">£59</td>
+                                <td class="border border-gray-400 p-3 align-top">It provides information on the use of herbs.<br>There are no places at present.</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-400 p-3 align-top">Bread making</td>
+                                <td class="border border-gray-400 p-3 align-top">20 March</td>
+                                <td class="border border-gray-400 p-3 align-top">£<span class="font-bold mx-1">2</span><input type="text" placeholder="2" class="ielts-input answer-field" id="q2" data-q="2"></td>
+                                <td class="border border-gray-400 p-3 align-top">There is also an extra charge for ingredients.<br>Participants make white bread, sourdough and <span class="font-bold mx-1">3</span><input type="text" placeholder="3" class="ielts-input answer-field" id="q3" data-q="3"> .</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-400 p-3 align-top">Face massage</td>
+                                <td class="border border-gray-400 p-3 align-top">23 February</td>
+                                <td class="border border-gray-400 p-3 align-top">£35</td>
+                                <td class="border border-gray-400 p-3 align-top">The teacher trained in <span class="font-bold mx-1">4</span><input type="text" placeholder="4" class="ielts-input answer-field" id="q4" data-q="4"> .<br>Bring a <span class="font-bold mx-1">5</span><input type="text" placeholder="5" class="ielts-input answer-field" id="q5" data-q="5"> .</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-400 p-3 align-top">Candle making</td>
+                                <td class="border border-gray-400 p-3 align-top"><span class="font-bold mx-1">6</span><input type="text" placeholder="6" class="ielts-input answer-field" id="q6" data-q="6"></td>
+                                <td class="border border-gray-400 p-3 align-top">£52</td>
+                                <td class="border border-gray-400 p-3 align-top">Only <span class="font-bold mx-1">7</span><input type="text" placeholder="7" class="ielts-input answer-field" id="q7" data-q="7"> ingredients are used.<br>The candles can be used as presents.</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-400 p-3 align-top">Silk painting</td>
+                                <td class="border border-gray-400 p-3 align-top">18 May</td>
+                                <td class="border border-gray-400 p-3 align-top">£<span class="font-bold mx-1">8</span><input type="text" placeholder="8" class="ielts-input answer-field" id="q8" data-q="8"></td>
+                                <td class="border border-gray-400 p-3 align-top">Bring an apron or old <span class="font-bold mx-1">9</span><input type="text" placeholder="9" class="ielts-input answer-field" id="q9" data-q="9"> .</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-400 p-3 align-top">DIY for beginners</td>
+                                <td class="border border-gray-400 p-3 align-top">24 February</td>
+                                <td class="border border-gray-400 p-3 align-top">£125</td>
+                                <td class="border border-gray-400 p-3 align-top">Learn how to<br>• use a drill, saw and <span class="font-bold mx-1">10</span><input type="text" placeholder="10" class="ielts-input answer-field" id="q10" data-q="10"> .<br>• put up a shelf.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="part-2" class="part-section bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8]">
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 11 and 12</div>
+                <div class="mb-6 italic text-[15px] text-gray-700">Choose <span class="font-bold">TWO</span> letters, A-E.</div>
+
+                <div class="content-box mb-8">
+                    <div class="space-y-4">
+                        <div class="font-bold mb-3 flex"><span class="w-12 shrink-0">11-12</span><span>Which TWO pieces of advice are given about the Marsden Coastal Walk?</span></div>
+                        <div class="pl-12 space-y-1 pb-4">
+                            <label class="mcq-label"><input type="checkbox" name="q11_12" value="A" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">A</span> Stop for lunch in an ancient town.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q11_12" value="B" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">B</span> Don't miss the ruins of a certain building.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q11_12" value="C" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">C</span> Catch a boat to the start of this walk.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q11_12" value="D" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">D</span> Be careful of the steep and rocky paths.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q11_12" value="E" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">E</span> Don't worry about getting lost.</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 13 and 14</div>
+                <div class="mb-6 italic text-[15px] text-gray-700">Choose <span class="font-bold">TWO</span> letters, A-E.</div>
+
+                <div class="content-box mb-8">
+                    <div class="space-y-4">
+                        <div class="font-bold mb-3 flex"><span class="w-12 shrink-0">13-14</span><span>Which TWO things are said about the Melby Heritage Walk?</span></div>
+                        <div class="pl-12 space-y-1 pb-4">
+                            <label class="mcq-label"><input type="checkbox" name="q13_14" value="A" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">A</span> This walk is mostly downhill.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q13_14" value="B" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">B</span> The paths can get busy during the day.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q13_14" value="C" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">C</span> This is a circular walk.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q13_14" value="D" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">D</span> A tower stands on the site of an older structure.</label>
+                            <label class="mcq-label"><input type="checkbox" name="q13_14" value="E" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">E</span> There are far-reaching views the whole way.</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-300 pt-8">
+                    <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 15-20</div>
+                    <div class="mb-4 italic text-[15px] text-gray-700">Label the map below.</div>
+                    <div class="mb-6 font-bold text-[15px] uppercase">Write the correct letter, A-I, next to Questions 15-20.</div>
+
+                    <div class="content-box">
+                        <h3 class="text-center font-bold text-xl mb-4 text-black">Melby Coal Mine</h3>
+                        
+                        <div class="w-full max-w-[500px] h-[300px] border-2 border-dashed border-gray-400 mx-auto flex items-center justify-center bg-gray-50 mb-8 rounded relative">
+                            <span class="text-gray-500 font-bold text-center px-4">Map placeholder (image_392157.png) <br><br> Features A-I</span>
+                        </div>
+
+                        <div class="space-y-4 max-w-[450px] mx-auto">
+                            <div class="flex items-center justify-between"><span class="font-bold w-8">15</span><span class="flex-1">Exhibition</span> <input type="text" placeholder="15" class="ielts-input ielts-input-short uppercase answer-field" maxlength="1" id="q15" data-q="15"></div>
+                            <div class="flex items-center justify-between"><span class="font-bold w-8">16</span><span class="flex-1">Baths</span> <input type="text" placeholder="16" class="ielts-input ielts-input-short uppercase answer-field" maxlength="1" id="q16" data-q="16"></div>
+                            <div class="flex items-center justify-between"><span class="font-bold w-8">17</span><span class="flex-1">Tools</span> <input type="text" placeholder="17" class="ielts-input ielts-input-short uppercase answer-field" maxlength="1" id="q17" data-q="17"></div>
+                            <div class="flex items-center justify-between"><span class="font-bold w-8">18</span><span class="flex-1">Vehicles</span> <input type="text" placeholder="18" class="ielts-input ielts-input-short uppercase answer-field" maxlength="1" id="q18" data-q="18"></div>
+                            <div class="flex items-center justify-between"><span class="font-bold w-8">19</span><span class="flex-1">Ponies</span> <input type="text" placeholder="19" class="ielts-input ielts-input-short uppercase answer-field" maxlength="1" id="q19" data-q="19"></div>
+                            <div class="flex items-center justify-between"><span class="font-bold w-8">20</span><span class="flex-1">Education centre</span> <input type="text" placeholder="20" class="ielts-input ielts-input-short uppercase answer-field" maxlength="1" id="q20" data-q="20"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="part-3" class="part-section bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8]">
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 21 and 22</div>
+                <div class="mb-6 italic text-[15px] text-gray-700">Choose <span class="font-bold">TWO</span> letters, A-E.</div>
+
+                <div class="content-box mb-8">
+                    <div class="space-y-4">
+                        <div class="font-bold mb-3 flex"><span class="w-12 shrink-0">21-22</span><span>Which TWO facts in the sessions on food safety were new information for Nadia and Fergus?</span></div>
+                        <div class="pl-12 space-y-1 pb-4">
+                            <label class="mcq-label"><input type="checkbox" name="q21_22" value="A" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">A</span> the amount of plastic in the ocean</label>
+                            <label class="mcq-label"><input type="checkbox" name="q21_22" value="B" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">B</span> the number of diseases caused by contaminated food</label>
+                            <label class="mcq-label"><input type="checkbox" name="q21_22" value="C" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">C</span> the amount of food that is wasted</label>
+                            <label class="mcq-label"><input type="checkbox" name="q21_22" value="D" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">D</span> the number of people who are obese</label>
+                            <label class="mcq-label"><input type="checkbox" name="q21_22" value="E" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">E</span> the result of treating animals with antibiotics</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 23 and 24</div>
+                <div class="mb-6 italic text-[15px] text-gray-700">Choose <span class="font-bold">TWO</span> letters, A-E.</div>
+
+                <div class="content-box mb-8">
+                    <div class="space-y-4">
+                        <div class="font-bold mb-3 flex"><span class="w-12 shrink-0">23-24</span><span>Which TWO features of a project aiming to prevent food fraud impressed Fergus?</span></div>
+                        <div class="pl-12 space-y-1 pb-4">
+                            <label class="mcq-label"><input type="checkbox" name="q23_24" value="A" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">A</span> the new technology it used</label>
+                            <label class="mcq-label"><input type="checkbox" name="q23_24" value="B" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">B</span> the publicity it received</label>
+                            <label class="mcq-label"><input type="checkbox" name="q23_24" value="C" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">C</span> the use of multiple tests on food items</label>
+                            <label class="mcq-label"><input type="checkbox" name="q23_24" value="D" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">D</span> the variety of dietary requirements included</label>
+                            <label class="mcq-label"><input type="checkbox" name="q23_24" value="E" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">E</span> the way information was made widely accessible</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 25 and 26</div>
+                <div class="mb-6 italic text-[15px] text-gray-700">Choose <span class="font-bold">TWO</span> letters, A-E.</div>
+
+                <div class="content-box mb-8">
+                    <div class="space-y-4">
+                        <div class="font-bold mb-3 flex"><span class="w-12 shrink-0">25-26</span><span>Which TWO topics do both students recommend should be included in the course?</span></div>
+                        <div class="pl-12 space-y-1 pb-4">
+                            <label class="mcq-label"><input type="checkbox" name="q25_26" value="A" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">A</span> sustainable fishing</label>
+                            <label class="mcq-label"><input type="checkbox" name="q25_26" value="B" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">B</span> targeted nutrition</label>
+                            <label class="mcq-label"><input type="checkbox" name="q25_26" value="C" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">C</span> global differences in consumption</label>
+                            <label class="mcq-label"><input type="checkbox" name="q25_26" value="D" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">D</span> sustainable agriculture</label>
+                            <label class="mcq-label"><input type="checkbox" name="q25_26" value="E" class="mcq-checkbox answer-field"> <span class="font-bold mr-3">E</span> digital technology and food</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-300 pt-8">
+                    <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 27-30</div>
+                    <div class="mb-4 italic text-[15px] text-gray-700">Complete the flow-chart below.</div>
+                    <div class="mb-6 font-bold text-[15px] uppercase">Choose FOUR answers from the box and write the correct letter, A-F, next to Questions 27-30.</div>
+
+                    <div class="content-box">
+                        <div class="bg-gray-100 p-6 border border-gray-300 mb-8 max-w-[600px] mx-auto">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 pl-4">
+                                <div><span class="font-bold mr-3">A</span> This was challenging but enjoyable.</div>
+                                <div><span class="font-bold mr-3">B</span> This led to some disagreement.</div>
+                                <div><span class="font-bold mr-3">C</span> This was easy to decide on.</div>
+                                <div><span class="font-bold mr-3">D</span> This was helped by the guidelines provided.</div>
+                                <div><span class="font-bold mr-3">E</span> This seemed like an unnecessary stage.</div>
+                                <div><span class="font-bold mr-3">F</span> This involved selecting a new ingredient.</div>
+                            </div>
+                        </div>
+
+                        <div class="font-bold mb-4 text-[18px] border-b pb-2 text-center">Student project: developing a new food product</div>
+                        
+                        <div class="flex flex-col items-center space-y-4 my-8">
+                            <div class="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Initial aim <span class="font-bold mx-2">27</span> <input type="text" placeholder="27" class="ielts-input ielts-input-short uppercase answer-field ml-auto" maxlength="1" id="q27" data-q="27">
+                            </div>
+                            <div class="text-2xl text-gray-400">&darr;</div>
+                            <div class="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Literature review <span class="font-bold mx-2">28</span> <input type="text" placeholder="28" class="ielts-input ielts-input-short uppercase answer-field ml-auto" maxlength="1" id="q28" data-q="28">
+                            </div>
+                            <div class="text-2xl text-gray-400">&darr;</div>
+                            <div class="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Product development <span class="font-bold mx-2">29</span> <input type="text" placeholder="29" class="ielts-input ielts-input-short uppercase answer-field ml-auto" maxlength="1" id="q29" data-q="29">
+                            </div>
+                            <div class="text-2xl text-gray-400">&darr;</div>
+                            <div class="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Product production <span class="font-bold mx-2">30</span> <input type="text" placeholder="30" class="ielts-input ielts-input-short uppercase answer-field ml-auto" maxlength="1" id="q30" data-q="30">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="part-4" class="part-section bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8]">
+                <div class="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 31-40</div>
+                <div class="mb-4 italic text-[15px] text-gray-700">Complete the notes below.</div>
+                <div class="mb-6 font-bold text-[15px] uppercase">Write ONE WORD ONLY for each answer.</div>
+
+                <div class="content-box mb-8">
+                    <h2 class="font-bold text-[22px] mb-6 text-center text-black tracking-wide">Challenges facing the cruise ship industry</h2>
+                    
+                    <div class="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2 mt-4">Problems with overtourism</div>
+                    <ul class="list-none space-y-4 mb-8 pl-4">
+                        <li>&bull; <span class="font-bold mx-2">31</span><input type="text" placeholder="31" class="ielts-input answer-field" id="q31" data-q="31"> is one of the worst problems.</li>
+                        <li>&bull; A tourist <span class="font-bold mx-2">32</span><input type="text" placeholder="32" class="ielts-input answer-field" id="q32" data-q="32"> is being introduced in some cities to reduce numbers, e.g. Barcelona.</li>
+                        <li>&bull; Bruges: action was taken to limit day trips from the nearby port because the city was becoming a 'theme park' (e.g. many shops were only stocking <span class="font-bold mx-2">33</span><input type="text" placeholder="33" class="ielts-input answer-field" id="q33" data-q="33"> and souvenirs).</li>
+                        <li>&bull; Dubrovnik: limits the number of tourists by managing the <span class="font-bold mx-2">34</span><input type="text" placeholder="34" class="ielts-input answer-field" id="q34" data-q="34"> of cruise ship arrivals.</li>
+                    </ul>
+
+                    <div class="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">Problems of perception</div>
+                    <ul class="list-none space-y-4 mb-8 pl-4">
+                        <li>&bull; Cruises are generally associated with the elderly.</li>
+                        <li>&bull; There is an assumption about the <span class="font-bold mx-2">35</span><input type="text" placeholder="35" class="ielts-input answer-field" id="q35" data-q="35"> of cruises.</li>
+                        <li>&bull; People think there may be too many <span class="font-bold mx-2">36</span><input type="text" placeholder="36" class="ielts-input answer-field" id="q36" data-q="36"> .</li>
+                    </ul>
+
+                    <div class="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">Solutions</div>
+                    <p class="mb-4 pl-4">Cruise lines are attracting younger customers by:</p>
+                    <ul class="list-none space-y-4 pl-8">
+                        <li>&bull; becoming more sustainable e.g. using hybrid engines.</li>
+                        <li>&bull; having a wide range of activities e.g. boxing, <span class="font-bold mx-2">37</span><input type="text" placeholder="37" class="ielts-input answer-field" id="q37" data-q="37"> and well-being programmes.</li>
+                        <li>&bull; offering a diverse selection of food including <span class="font-bold mx-2">38</span><input type="text" placeholder="38" class="ielts-input answer-field" id="q38" data-q="38"> options.</li>
+                        <li>&bull; providing reliable <span class="font-bold mx-2">39</span><input type="text" placeholder="39" class="ielts-input answer-field" id="q39" data-q="39"> .</li>
+                        <li>&bull; improving marketing on social media with high quality <span class="font-bold mx-2">40</span><input type="text" placeholder="40" class="ielts-input answer-field" id="q40" data-q="40"> .</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
