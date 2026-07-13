@@ -1,0 +1,105 @@
+--- src/pages/SpeakingTestResult.tsx
++++ src/pages/SpeakingTestResult.tsx
+@@ -1,7 +1,7 @@
+ import React, { useEffect, useState } from 'react';
+ import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+ import { db } from '../lib/firebase';
+-import { ArrowLeft, Play, Pause, FileText, CheckCircle, Video, Edit2, Check } from 'lucide-react';
++import { ArrowLeft, Play, Pause, FileText, CheckCircle, Video, Edit2, Check, Languages } from 'lucide-react';
+ import { format } from 'date-fns';
+ import { renderMarkdown } from '../lib/markdown';
+ import { useAuth } from '../contexts/AuthContext';
+@@ -25,18 +25,21 @@
+   const { isAdmin } = useAuth();
+   
+   const [isEditingComment, setIsEditingComment] = useState(false);
+   const [editedComment, setEditedComment] = useState("");
++  const [editedCommentVi, setEditedCommentVi] = useState("");
++  const [showVi, setShowVi] = useState(false);
+   const [savingComment, setSavingComment] = useState(false);
+ 
+   const handleSaveComment = async () => {
+       if (!submissionId) return;
+       try {
+           setSavingComment(true);
+           await updateDoc(doc(db, 'submissions', submissionId), {
+-              teacherComment: editedComment
++              teacherComment: editedComment,
++              teacherCommentVi: editedCommentVi
+           });
+-          setSubmissionData((prev: any) => ({ ...prev, teacherComment: editedComment }));
++          setSubmissionData((prev: any) => ({ ...prev, teacherComment: editedComment, teacherCommentVi: editedCommentVi }));
+           setIsEditingComment(false);
+       } catch (err) {
+           console.error("Error saving comment", err);
+@@ -141,7 +144,7 @@
+         </div>
+       )}
+ 
+-      {submissionData && (submissionData.teacherComment || submissionData.aiFeedback || isAdmin) && (
++      {submissionData && (submissionData.teacherComment || submissionData.teacherCommentVi || submissionData.aiFeedback || isAdmin) && (
+         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+             <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                 <h2 className="text-xl font-bold text-slate-900">Overall Feedback</h2>
+-                {isAdmin && !isEditingComment && (
+-                    <button onClick={() => { setIsEditingComment(true); setEditedComment(submissionData.teacherComment || ""); }} className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
++                <div className="flex items-center gap-4">
++                    {(submissionData.teacherCommentVi || isEditingComment) && (
++                        <button onClick={() => setShowVi(!showVi)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showVi ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
++                            <Languages className="w-4 h-4" /> {showVi ? 'Tiếng Việt' : 'English'}
++                        </button>
++                    )}
++                    {isAdmin && !isEditingComment && (
++                        <button onClick={() => { setIsEditingComment(true); setEditedComment(submissionData.teacherComment || ""); setEditedCommentVi(submissionData.teacherCommentVi || ""); }} className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                             <Edit2 className="w-4 h-4" /> Edit Feedback
+                         </button>
++                    )}
++                </div>
+             </div>
+             
+             {isEditingComment ? (
+                 <div className="mb-6 space-y-4">
+-                    <h3 className="font-bold text-[#1E4DB7] flex items-center gap-2"><FileText size={18}/> Teacher's Comment</h3>
+-                    <textarea
+-                        value={editedComment}
+-                        onChange={(e) => setEditedComment(e.target.value)}
+-                        className="w-full h-32 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+-                        placeholder="Write feedback here... (Markdown supported)"
+-                    />
++                    {showVi ? (
++                        <>
++                            <h3 className="font-bold text-[#1E4DB7] flex items-center gap-2"><FileText size={18}/> Teacher's Comment (Tiếng Việt)</h3>
++                            <textarea
++                                value={editedCommentVi}
++                                onChange={(e) => setEditedCommentVi(e.target.value)}
++                                className="w-full h-32 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
++                                placeholder="Viết nhận xét bằng tiếng Việt... (Hỗ trợ Markdown)"
++                            />
++                        </>
++                    ) : (
++                        <>
++                            <h3 className="font-bold text-[#1E4DB7] flex items-center gap-2"><FileText size={18}/> Teacher's Comment (English)</h3>
++                            <textarea
++                                value={editedComment}
++                                onChange={(e) => setEditedComment(e.target.value)}
++                                className="w-full h-32 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
++                                placeholder="Write feedback here... (Markdown supported)"
++                            />
++                        </>
++                    )}
+                     <div className="flex gap-2 justify-end">
+                         <button onClick={() => setIsEditingComment(false)} disabled={savingComment} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
+                         <button onClick={handleSaveComment} disabled={savingComment} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
+@@ -167,9 +178,9 @@
+                     </div>
+                 </div>
+-            ) : submissionData.teacherComment ? (
++            ) : (submissionData.teacherComment || submissionData.teacherCommentVi) ? (
+                 <div className="mb-6">
+-                    <h3 className="font-bold text-[#1E4DB7] mb-2 flex items-center gap-2"><FileText size={18}/> Teacher's Comment</h3>
+-                    <div className="bg-blue-50 p-4 rounded-xl text-slate-700 border border-blue-100 leading-relaxed prose prose-slate max-w-none prose-sm" dangerouslySetInnerHTML={renderMarkdown(submissionData.teacherComment)} />
++                    <h3 className="font-bold text-[#1E4DB7] mb-2 flex items-center gap-2"><FileText size={18}/> Teacher's Comment {showVi ? '(Tiếng Việt)' : ''}</h3>
++                    <div className="bg-blue-50 p-4 rounded-xl text-slate-700 border border-blue-100 leading-relaxed prose prose-slate max-w-none prose-sm" dangerouslySetInnerHTML={renderMarkdown(showVi ? (submissionData.teacherCommentVi || submissionData.teacherComment) : submissionData.teacherComment)} />
+                 </div>
+             ) : null}
+             

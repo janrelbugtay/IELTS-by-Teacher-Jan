@@ -6,6 +6,7 @@ import { useParams, useNavigate } from 'react-router';
 import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
 import { CustomAudioPlayer } from '../components/CustomAudioPlayer';
 import { FebruaryListeningTest } from './FebruaryListeningTest';
+import { JanuaryListeningTest } from './JanuaryListeningTest';
 
 const CustomStyles = () => (
   <style>{`
@@ -135,27 +136,8 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
   }
   if (id === '10' && !submissionId) return <MarchListeningTest />;
   if (id === '14' && !submissionId) return <AprilListeningTest />;
-  if (id === '2' && !submissionId) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-12 bg-white rounded-3xl shadow-xl border border-gray-100 max-w-lg w-full">
-          <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-4 tracking-tight">Coming Soon</h1>
-          <p className="text-gray-500 mb-8 leading-relaxed">The January Listening Practice content is currently being updated and will be available shortly.</p>
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:translate-y-0 hover:-translate-y-0.5"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (id === '15' && !submissionId) return <JanuaryListeningTest />;
+  if (id === '2' && !submissionId) return <JanuaryListeningTest />;
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
   useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);

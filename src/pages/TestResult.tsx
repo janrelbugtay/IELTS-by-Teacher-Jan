@@ -12,6 +12,7 @@ import { LISTENING_ANSWER_KEY } from './ComputerListeningTest';
 import { ComputerReadingTest } from './ComputerReadingTest';
 import { ComputerListeningTest } from './ComputerListeningTest';
 import { FebruaryListeningTest } from './FebruaryListeningTest';
+import { JanuaryListeningTest } from './JanuaryListeningTest';
 import { MarchListeningTest } from './MarchListeningTest';
 import { AprilListeningTest } from './AprilListeningTest';
 import { ComputerWritingTest } from './ComputerWritingTest';
@@ -135,6 +136,9 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
   }
 
   if (type === 'listening') {
+      if (submission.assignmentTitle?.toLowerCase().includes('january')) {
+          return <JanuaryListeningTest submissionId={id} />;
+      }
       if (submission.assignmentTitle?.toLowerCase().includes('february')) {
           return <FebruaryListeningTest submissionId={id} />;
       }
@@ -210,7 +214,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
           
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-slate-900 border-b border-slate-200 pb-2">Submission Details</h2>
-            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: renderMarkdown(typeof submission.answers === 'string' ? submission.answers : JSON.stringify(submission.answers)) }} />
+            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={renderMarkdown(typeof submission.answers === 'string' ? submission.answers : JSON.stringify(submission.answers))} />
           </div>
         </div>
       </div>

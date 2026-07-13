@@ -1,0 +1,84 @@
+--- src/pages/SpeakingTestResult.tsx
++++ src/pages/SpeakingTestResult.tsx
+@@ -1,7 +1,8 @@
+ import React, { useEffect, useState } from 'react';
+-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
++import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+ import { db } from '../lib/firebase';
+-import { ArrowLeft, Play, Pause, FileText, CheckCircle, Video } from 'lucide-react';
++import { ArrowLeft, Play, Pause, FileText, CheckCircle, Video, Edit2, Check, X } from 'lucide-react';
+ import { format } from 'date-fns';
+ import { renderMarkdown } from '../lib/markdown';
++import { useAuth } from '../contexts/AuthContext';
+ 
+@@ -21,6 +22,11 @@
+   const [recordings, setRecordings] = useState<any[]>([]);
+   const [submissionData, setSubmissionData] = useState<any>(null);
+   const [loading, setLoading] = useState(true);
++  
++  const { isAdmin } = useAuth();
++  const [isEditingComment, setIsEditingComment] = useState(false);
++  const [editedComment, setEditedComment] = useState("");
++  const [savingComment, setSavingComment] = useState(false);
+ 
+   useEffect(() => {
+@@ -51,2 +57,17 @@
+   }, [sessionId, submissionId]);
++  
++  const handleSaveComment = async () => {
++      if (!submissionId) return;
++      try {
++          setSavingComment(true);
++          await updateDoc(doc(db, 'submissions', submissionId), {
++              teacherComment: editedComment
++          });
++          setSubmissionData((prev: any) => ({ ...prev, teacherComment: editedComment }));
++          setIsEditingComment(false);
++      } catch (err) {
++          console.error("Error saving comment", err);
++          alert("Failed to save feedback");
++      } finally {
++          setSavingComment(false);
++      }
++  };
+ 
+@@ -118,17 +139,40 @@
+ 
+-      {submissionData && (submissionData.teacherComment || submissionData.aiFeedback) && (
++      {submissionData && (submissionData.teacherComment || submissionData.aiFeedback || isAdmin) && (
+         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+-            <h2 className="text-xl font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3">Overall Feedback</h2>
++            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
++                <h2 className="text-xl font-bold text-slate-900">Overall Feedback</h2>
++                {isAdmin && !isEditingComment && (
++                    <button onClick={() => { setIsEditingComment(true); setEditedComment(submissionData.teacherComment || ""); }} className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
++                        <Edit2 className="w-4 h-4" /> Edit Feedback
++                    </button>
++                )}
++            </div>
+             
+-            {submissionData.teacherComment && (
++            {isEditingComment ? (
++                <div className="mb-6 space-y-4">
++                    <h3 className="font-bold text-[#1E4DB7] flex items-center gap-2"><FileText size={18}/> Teacher's Comment</h3>
++                    <textarea
++                        value={editedComment}
++                        onChange={(e) => setEditedComment(e.target.value)}
++                        className="w-full h-32 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
++                        placeholder="Write feedback here... (Markdown supported)"
++                    />
++                    <div className="flex gap-2 justify-end">
++                        <button onClick={() => setIsEditingComment(false)} disabled={savingComment} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
++                        <button onClick={handleSaveComment} disabled={savingComment} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
++                            <Check className="w-4 h-4" /> {savingComment ? "Saving..." : "Save Feedback"}
++                        </button>
++                    </div>
++                </div>
++            ) : submissionData.teacherComment ? (
+                 <div className="mb-6">
+                     <h3 className="font-bold text-[#1E4DB7] mb-2 flex items-center gap-2"><FileText size={18}/> Teacher's Comment</h3>
+                     <div className="bg-blue-50 p-4 rounded-xl text-slate-700 border border-blue-100 leading-relaxed prose prose-slate max-w-none prose-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(submissionData.teacherComment) }} />
+                 </div>
+-            )}
++            ) : null}
+             

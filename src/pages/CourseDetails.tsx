@@ -119,6 +119,13 @@ export function CourseDetails() {
 
     if (id === 'ielts') {
       homeworkFolders.push({
+        title: 'January Listening Practice',
+        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the January CD-IELTS listening test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/listening/2'
+      });
+      homeworkFolders.push({
         title: 'April Listening Practice',
         icon: <Headphones className="w-8 h-8 text-indigo-600" />,
         desc: 'Take the April CD-IELTS listening test.',
