@@ -1,56 +1,75 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/pages/MarchWritingTest.tsx', 'utf8');
+let code = fs.readFileSync('src/pages/AprilWritingTest.tsx', 'utf8');
 
-// Name and Title
-code = code.replace(/MarchWritingTest/g, 'AprilWritingTest');
-code = code.replace(/March Writing Practice/g, 'April Writing Practice');
+const target1 = `                                <div className="space-y-4">
+                                    <h2 className="text-[#d35400] text-xl font-bold mt-2">WRITING TASK 1</h2>
+                                    <p className="italic text-gray-600 text-sm">You should spend about 20 minutes on this task.</p>
+                                    
+                                    <div className="font-bold bg-[#f9f9f9] p-4 border-l-4 border-[#3498db] text-sm text-gray-800">
+                                        The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020.<br/><br/>
+                                        Summarise the information by selecting and reporting the main features, and make comparisons where relevant.
+                                    </div>
+                                    
+                                    <div className="w-full h-[300px] bg-[#e0e0e0] border-2 border-dashed border-[#999] flex flex-col items-center justify-center text-[#666] my-6 p-4">
+                                        <iframe src="https://drive.google.com/file/d/1u7gMnjbJyrGKJOEXf86e-BfSUTTgh6K_/preview" className="w-full h-full border-0" allow="autoplay"></iframe>
+                                    </div>
 
-// Update Raw prompts
-code = code.replace(
-    'const prompt1Raw = "The table below presents the food consumption per a person weekly in European country in 1992, 2002 and 2012. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.";',
-    'const prompt1Raw = "The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.";'
-);
+                                    <p className="font-bold text-sm text-gray-900">Write at least 150 words.</p>
+                                </div>`;
 
-code = code.replace(
-    'const prompt2Raw = "Some people think that hosting an international sports event is good for the country, while some people think it is bad. Discuss both views and give your opinion.";',
-    'const prompt2Raw = "The best way to provide enough homes in large cities is to build tall apartment blocks. To what extent do you agree or disagree with this statement?";'
-);
-
-// Update JSX prompts
-const task1JSXSearch = `<span className="font-bold">Task 1:</span> The graph below shows a typical American and a Japanese office. Summarise the information by selecting and reporting the main features and comparison where relevant. Write at least 150 words.
+const replacement1 = `                                <div style={{ fontFamily: 'Arial, sans-serif', lineHeight: 1.6, color: '#333' }}>
+                                    <h2 style={{ color: '#d35400', marginTop: '30px', fontSize: '1.4em', fontWeight: 'bold' }}>WRITING TASK 1</h2>
+                                    <p style={{ fontStyle: 'italic', color: '#555', marginBottom: '15px' }}>You should spend about 20 minutes on this task.</p>
+                                    
+                                    <p style={{ fontWeight: 'bold', background: '#f9f9f9', padding: '15px', borderLeft: '4px solid #3498db', margin: '20px 0' }}>
+                                        The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020.<br/><br/>
+                                        Summarise the information by selecting and reporting the main features, and make comparisons where relevant.
                                     </p>
-                                    <div className="mt-8 flex flex-col items-center">
-    <div className="w-full max-w-lg aspect-video bg-gray-100 flex items-center justify-center text-gray-500 font-medium rounded-lg overflow-hidden">
-        <img src="https://lh3.googleusercontent.com/d/18bxiQiZ0BTNx1xnv3S8RvMbA1v-16PwS" alt="American and Japanese office layout" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-    </div>
-</div>`;
-
-const task1JSXReplace = `<span className="font-bold">Task 1:</span> The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.
-                                    </p>
-                                    <p className="text-sm font-bold text-gray-900 mt-4 text-center">Number of jobs in four sectors of the economy in the US, 1960-2020</p>
-                                    <div className="mt-4 flex flex-col items-center">
-                                        <div className="w-full max-w-lg aspect-video bg-gray-100 flex items-center justify-center text-gray-400 font-medium rounded-lg border-2 border-dashed border-gray-300">
-                                            [Graph placeholder]
+                                    
+                                    <div style={{ width: '100%', minHeight: '350px', backgroundColor: '#e0e0e0', border: '2px dashed #999', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#666', margin: '20px 0', textAlign: 'center', padding: '20px', boxSizing: 'border-box' }}>
+                                        <div style={{ width: '100%', height: '300px' }}>
+                                            <iframe src="https://drive.google.com/file/d/1u7gMnjbJyrGKJOEXf86e-BfSUTTgh6K_/preview" style={{ width: '100%', height: '100%', border: '0' }} allow="autoplay"></iframe>
                                         </div>
-                                    </div>`;
+                                        <br/>
+                                        Number of jobs in four sectors of the economy in the US, 1960-2020
+                                    </div>
 
-code = code.replace(task1JSXSearch, task1JSXReplace);
+                                    <p style={{ fontWeight: 'bold', marginTop: '15px' }}>Write at least 150 words.</p>
+                                </div>`;
 
-const task2JSXSearch = `<p className="text-sm font-bold text-gray-900 mb-4">
-                                        Some people think that hosting an international sports event is good for the country, while some people think it is bad.
-                                    </p>
-                                    <p className="text-sm font-bold text-gray-900 mb-6">
-                                        Discuss both views and give your opinion.
-                                    </p>`;
-
-const task2JSXReplace = `<p className="text-sm font-bold text-gray-900 mb-6">
-                                        The best way to provide enough homes in large cities is to build tall apartment blocks.
-                                    </p>
-                                    <p className="text-sm font-bold text-gray-900 mb-6">
+const target2 = `                                <div className="space-y-4">
+                                    <h2 className="text-[#d35400] text-xl font-bold mt-2">WRITING TASK 2</h2>
+                                    <p className="italic text-gray-600 text-sm">You should spend about 40 minutes on this task.</p>
+                                    
+                                    <p className="text-sm text-gray-800">Write about the following topic:</p>
+                                    
+                                    <div className="font-bold bg-[#f9f9f9] p-4 border-l-4 border-[#3498db] text-sm text-gray-800">
+                                        The best way to provide enough homes in large cities is to build tall apartment blocks.<br/><br/>
                                         To what extent do you agree or disagree with this statement?
-                                    </p>`;
+                                    </div>
+                                    
+                                    <p className="text-sm text-gray-800">Give reasons for your answer and include any relevant examples from your own knowledge or experience.</p>
+                                    
+                                    <p className="font-bold text-sm text-gray-900 mt-4">Write at least 250 words.</p>
+                                </div>`;
 
-code = code.replace(task2JSXSearch, task2JSXReplace);
+const replacement2 = `                                <div style={{ fontFamily: 'Arial, sans-serif', lineHeight: 1.6, color: '#333' }}>
+                                    <h2 style={{ color: '#d35400', marginTop: '30px', fontSize: '1.4em', fontWeight: 'bold' }}>WRITING TASK 2</h2>
+                                    <p style={{ fontStyle: 'italic', color: '#555', marginBottom: '15px' }}>You should spend about 40 minutes on this task.</p>
+                                    
+                                    <p>Write about the following topic:</p>
+                                    
+                                    <p style={{ fontWeight: 'bold', background: '#f9f9f9', padding: '15px', borderLeft: '4px solid #3498db', margin: '20px 0' }}>
+                                        The best way to provide enough homes in large cities is to build tall apartment blocks.<br/><br/>
+                                        To what extent do you agree or disagree with this statement?
+                                    </p>
+                                    
+                                    <p>Give reasons for your answer and include any relevant examples from your own knowledge or experience.</p>
+                                    
+                                    <p style={{ fontWeight: 'bold', marginTop: '15px' }}>Write at least 250 words.</p>
+                                </div>`;
 
+code = code.replace(target1, replacement1);
+code = code.replace(target2, replacement2);
 fs.writeFileSync('src/pages/AprilWritingTest.tsx', code);
-console.log("April regenerated.");
+console.log("Updated!");

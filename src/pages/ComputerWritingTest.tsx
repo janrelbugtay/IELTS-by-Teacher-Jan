@@ -708,7 +708,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
                             </div>
                             <h3 className="text-2xl font-bold text-slate-800 mb-3">AI is Evaluating</h3>
-                            <p className="text-slate-600 mb-2">ERA AI is analyzing your writing...</p>
+                            <p className="text-slate-600 mb-2">Analyzing your writing...</p>
                             <p className="text-sm text-slate-400">This generally takes 15-30 seconds.</p>
                         </div>
                     </div>
@@ -743,9 +743,10 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                             </div>
                         </div>
 
+                        {isAdmin ? (
                         <div className="w-full max-w-4xl p-6 md:p-10 my-6 bg-white rounded-2xl shadow-md border border-slate-200">
                             <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-                                <h3 className="text-2xl font-bold text-slate-800">ERA AI Examiner Report</h3>
+                                <h3 className="text-2xl font-bold text-slate-800">Teacher Jan will check your writing. Please wait!</h3>
                                 <div className="flex items-center gap-3">
                                     {isAdmin && state.aiFeedback && !state.aiFeedback.includes('pending') && !isEditingReport && (
                                         <button
@@ -812,7 +813,6 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                                     <div className="text-center p-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                                         <CheckCircle2 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                                         <p className="text-slate-600 mb-2 font-medium">Your essay has been saved successfully.</p>
-                                        <p className="text-slate-500 text-sm mb-6">Detailed feedback is currently unavailable. Please check the dashboard later.</p>
                                         
                                         {isAdmin && (
                                             <button 
@@ -832,6 +832,13 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                                 )}
                             </div>
                         </div>
+                        ) : (
+                            <div className="w-full max-w-4xl p-6 md:p-10 my-6 bg-white rounded-2xl shadow-md border border-slate-200 text-center">
+                                <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                <h3 className="text-2xl font-bold text-slate-800 mb-2">Test Submitted Successfully</h3>
+                                <p className="text-slate-600 font-medium">Your essay has been saved. The teacher will review your writing soon.</p>
+                            </div>
+                        )}
                     </div>
                 )}
 

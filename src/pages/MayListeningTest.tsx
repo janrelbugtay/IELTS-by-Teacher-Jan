@@ -110,7 +110,7 @@ const CustomStyles = () => (
 );
 
 export const LISTENING_ANSWER_KEY: Record<number, string> = {
-    1: '13 JANUARY', 2: '48', 3: 'PIZZA', 4: 'INDIA', 5: 'MIRROR',
+    1: '13 JANUARY', 2: '48', 3: 'PIZZA', 4: 'INDIA', 5: 'MIRROR/A MIRROR/MIRRORS',
     6: '6 APRIL', 7: 'NATURAL', 8: '67.50', 9: 'SHIRT', 10: 'HAMMER',
     11: 'B/E', 12: 'B/E', 13: 'C/D', 14: 'C/D', 15: 'F',
     16: 'B', 17: 'D', 18: 'A', 19: 'H', 20: 'E',

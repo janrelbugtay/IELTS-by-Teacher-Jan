@@ -493,7 +493,7 @@ export const AprilWritingTest = ({ submissionId }: { submissionId?: string }) =>
                     </div>
                 )}
 
-                {report && renderReport(taskNum, report)}
+                {isAdmin && report && renderReport(taskNum, report)}
             </div>
         );
     };
@@ -546,7 +546,7 @@ export const AprilWritingTest = ({ submissionId }: { submissionId?: string }) =>
                     <div className="print-hidden max-w-5xl mx-auto w-full flex justify-between items-center mb-6 sticky top-0 bg-white/90 backdrop-blur py-3 px-6 rounded shadow z-10 border border-gray-300">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800">Your Answer Sheets</h2>
-                            <p className="text-sm text-gray-600">Test submitted successfully. Get detailed AI feedback below.</p>
+                            <p className="text-sm text-gray-600">Test submitted successfully. Your teacher will review your writing soon.</p>
                         </div>
                         <div className="space-x-4 flex">
                             <button onClick={() => navigate('/ielts/dashboard')} className="bg-gray-600 text-white px-5 py-2 rounded font-bold shadow hover:bg-gray-700 flex items-center space-x-2 cursor-pointer">
@@ -597,29 +597,40 @@ export const AprilWritingTest = ({ submissionId }: { submissionId?: string }) =>
                     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                         <div className="flex-1 p-6 overflow-y-auto md:border-r border-b md:border-b-0 border-gray-200">
                             {currentPart === 1 ? (
-                                <div>
-                                    <p className="text-sm text-gray-900 mb-6 leading-relaxed">
-                                        <span className="font-bold">Task 1:</span> The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.
+                                <div style={{ fontFamily: 'Arial, sans-serif', lineHeight: 1.6, color: '#333' }}>
+                                    <h2 style={{ color: '#d35400', marginTop: '30px', fontSize: '1.4em', fontWeight: 'bold' }}>WRITING TASK 1</h2>
+                                    <p style={{ fontStyle: 'italic', color: '#555', marginBottom: '15px' }}>You should spend about 20 minutes on this task.</p>
+                                    
+                                    <p style={{ fontWeight: 'bold', background: '#f9f9f9', padding: '15px', borderLeft: '4px solid #3498db', margin: '20px 0' }}>
+                                        The graph below gives information about the number of jobs in four sectors of the economy in the US between 1960 and 2020.<br/><br/>
+                                        Summarise the information by selecting and reporting the main features, and make comparisons where relevant.
                                     </p>
-                                    <p className="text-sm font-bold text-gray-900 mt-4 text-center">Number of jobs in four sectors of the economy in the US, 1960-2020</p>
-                                    <div className="mt-4 flex flex-col items-center">
-                                        <div className="w-full max-w-lg aspect-video bg-gray-100 flex items-center justify-center text-gray-400 font-medium rounded-lg overflow-hidden">
-                                            <img src="https://lh3.googleusercontent.com/d/1u7gMnjbJyrGKJOEXf86e-BfSUTTgh6K_" alt="Number of jobs in four sectors of the economy in the US, 1960-2020" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                                    
+                                    <div style={{ width: '100%', minHeight: '350px', backgroundColor: '#e0e0e0', border: '2px dashed #999', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#666', margin: '20px 0', textAlign: 'center', padding: '20px', boxSizing: 'border-box' }}>
+                                        <div style={{ width: '100%', height: '300px' }}>
+                                            <iframe src="https://drive.google.com/file/d/1u7gMnjbJyrGKJOEXf86e-BfSUTTgh6K_/preview" style={{ width: '100%', height: '100%', border: '0' }} allow="autoplay"></iframe>
                                         </div>
+                                        <br/>
+                                        Number of jobs in four sectors of the economy in the US, 1960-2020
                                     </div>
+
+                                    <p style={{ fontWeight: 'bold', marginTop: '15px' }}>Write at least 150 words.</p>
                                 </div>
                             ) : (
-                                <div>
-                                    <p className="text-sm text-gray-700 mb-4">Write about the following topic:</p>
-                                    <p className="text-sm font-bold text-gray-900 mb-6">
-                                        The best way to provide enough homes in large cities is to build tall apartment blocks.
-                                    </p>
-                                    <p className="text-sm font-bold text-gray-900 mb-6">
+                                <div style={{ fontFamily: 'Arial, sans-serif', lineHeight: 1.6, color: '#333' }}>
+                                    <h2 style={{ color: '#d35400', marginTop: '30px', fontSize: '1.4em', fontWeight: 'bold' }}>WRITING TASK 2</h2>
+                                    <p style={{ fontStyle: 'italic', color: '#555', marginBottom: '15px' }}>You should spend about 40 minutes on this task.</p>
+                                    
+                                    <p>Write about the following topic:</p>
+                                    
+                                    <p style={{ fontWeight: 'bold', background: '#f9f9f9', padding: '15px', borderLeft: '4px solid #3498db', margin: '20px 0' }}>
+                                        The best way to provide enough homes in large cities is to build tall apartment blocks.<br/><br/>
                                         To what extent do you agree or disagree with this statement?
                                     </p>
-                                    <p className="text-sm text-gray-700">
-                                        Give reasons for your answer and include any relevant examples from your own knowledge or experience.
-                                    </p>
+                                    
+                                    <p>Give reasons for your answer and include any relevant examples from your own knowledge or experience.</p>
+                                    
+                                    <p style={{ fontWeight: 'bold', marginTop: '15px' }}>Write at least 250 words.</p>
                                 </div>
                             )}
                         </div>

@@ -493,7 +493,7 @@ export const FebruaryWritingTest = ({ submissionId }: { submissionId?: string })
                     </div>
                 )}
 
-                {report && renderReport(taskNum, report)}
+                {isAdmin && report && renderReport(taskNum, report)}
             </div>
         );
     };
@@ -546,7 +546,7 @@ export const FebruaryWritingTest = ({ submissionId }: { submissionId?: string })
                     <div className="print-hidden max-w-5xl mx-auto w-full flex justify-between items-center mb-6 sticky top-0 bg-white/90 backdrop-blur py-3 px-6 rounded shadow z-10 border border-gray-300">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800">Your Answer Sheets</h2>
-                            <p className="text-sm text-gray-600">Test submitted successfully. Get detailed AI feedback below.</p>
+                            <p className="text-sm text-gray-600">Test submitted successfully. Your teacher will review your writing soon.</p>
                         </div>
                         <div className="space-x-4 flex">
                             <button onClick={() => navigate('/ielts/dashboard')} className="bg-gray-600 text-white px-5 py-2 rounded font-bold shadow hover:bg-gray-700 flex items-center space-x-2 cursor-pointer">
