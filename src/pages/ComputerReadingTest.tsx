@@ -1056,7 +1056,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   const renderSummaryText = (text: string, type: string, options: any = null) => {
     const parts = text.split(/(\{\d+\})/g);
     return (
-      <p className="leading-loose text-gray-700 whitespace-pre-wrap">
+      <p className={`leading-loose whitespace-pre-wrap ${theme.text}`}>
         {parts.map((part, i) => {
           const match = part.match(/\{(\d+)\}/);
           if (match) {
@@ -1131,7 +1131,22 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               </span>
             );
           }
-          return <span key={i} className={theme.text}>{part}</span>;
+          
+          const boldParts = part.split(/(\*\*.*?\*\*)/g);
+          return (
+            <span key={i} className={theme.text}>
+              {boldParts.map((bp, j) => {
+                if (bp.startsWith('**') && bp.endsWith('**')) {
+                  const content = bp.slice(2, -2);
+                  if (content === 'Gwendoline and Margaret Davies') {
+                     return <strong key={j} className="block text-center text-xl font-bold mt-2 mb-4">{content}</strong>;
+                  }
+                  return <strong key={j} className="font-bold text-lg mt-2 mb-1 block">{content}</strong>;
+                }
+                return <span key={j}>{bp}</span>;
+              })}
+            </span>
+          );
         })}
       </p>
     );
@@ -1706,6 +1721,16 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   <div className={`p-5 border-b ${theme.boxHeader}`}>
                     <h4 className={`font-bold text-[1.125em] ${theme.boxTitle}`}>{block.title}</h4>
                     <p className={`mt-2 whitespace-pre-wrap italic text-[0.875em] ${theme.boxSub}`}>{block.instruction}</p>
+                    {block.list && (
+                      <div className={`mt-4 p-4 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
+                        {block.listTitle && <h5 className={`font-bold mb-3 ${theme.text}`}>{block.listTitle}</h5>}
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2`}>
+                          {block.list.map((item: string, i: number) => (
+                            <div key={i} className={`px-4 py-2 border rounded shadow-sm font-medium ${theme.optionBg} ${theme.border} ${theme.text}`}>{item}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="p-6">

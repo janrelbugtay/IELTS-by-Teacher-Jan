@@ -4,6 +4,8 @@ import { aprilPassages, aprilAnswers, aprilExplanations } from './aprilReadingDa
 import { mayPassages, mayAnswers, mayExplanations } from './mayReadingData';
 import { junePassages, juneAnswers, juneExplanations } from './juneReadingData';
 
+import { julyPassages, julyAnswers, julyExplanations } from './julyReadingData';
+
 export const getReadingTestData = (id: string | undefined) => {
   // Return null for January (id === '1') or any unknown ID (e.g. old submissions)
   // so it falls back to the original passagesData.
@@ -29,8 +31,12 @@ export const getReadingTestData = (id: string | undefined) => {
   }
 
   
+  if (id === '25') {
+    return { passages: julyPassages, answers: julyAnswers, explanations: julyExplanations };
+  }
+
   // Explicitly defined future tests that don't have content yet
-  if (id && ['25', '29', '33', '37', '41'].includes(id)) {
+  if (id && ['29', '33', '37', '41'].includes(id)) {
     return {
       passages: [
         {
