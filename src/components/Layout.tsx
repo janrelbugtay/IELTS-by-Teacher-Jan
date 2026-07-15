@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award , Facebook, Instagram, Youtube} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EraLogo } from './EraLogo';
-
+import { ChatBox } from './ChatBox';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -267,6 +267,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className={`flex-1 w-full mx-auto mt-20 ${location.pathname === '/' ? '' : 'max-w-[1400px] p-4 sm:p-6 lg:p-8'}`}>
         {children}
       </main>
+
+      <ChatBox />
 
       {/* Footer */}
       <footer className="bg-white border-t border-[#E2E8F0] pt-16 pb-8 mt-auto relative overflow-hidden">

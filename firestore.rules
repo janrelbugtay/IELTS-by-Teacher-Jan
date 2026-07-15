@@ -109,6 +109,9 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /chats/{chatId} {
+      allow read, write: if true;
+    }
     match /users/{userId} {
       allow read: if true;
       allow write: if true;

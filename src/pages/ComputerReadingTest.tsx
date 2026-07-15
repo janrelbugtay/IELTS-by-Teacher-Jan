@@ -330,45 +330,6 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
         return;
       }
     }
-
-    let range;
-    if (document.caretRangeFromPoint) {
-      range = document.caretRangeFromPoint(e.clientX, e.clientY);
-    } else if ((document as any).caretPositionFromPoint) {
-      const pos = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
-      if (pos) {
-        range = document.createRange();
-        range.setStart(pos.offsetNode, pos.offset);
-        range.collapse(true);
-      }
-    }
-
-    if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-      const textNode = range.startContainer;
-      const offset = range.startOffset;
-      const text = textNode.textContent || '';
-      
-      if (/[a-zA-Z\-]/.test(text[offset] || '') || (offset > 0 && /[a-zA-Z\-]/.test(text[offset - 1]))) {
-        let start = offset;
-        while (start > 0 && /[a-zA-Z\-]/.test(text[start - 1])) {
-          start--;
-        }
-        let end = offset;
-        while (end < text.length && /[a-zA-Z\-]/.test(text[end])) {
-          end++;
-        }
-        
-        const word = text.substring(start, end).trim();
-        if (word.length > 2) {
-          setDictPopupPos({
-            x: e.clientX,
-            y: e.clientY - 20
-          });
-          fetchMeaning(word.toLowerCase());
-          return;
-        }
-      }
-    }
     
     setSelectedWord('');
     setWordMeaning(null);
@@ -1056,7 +1017,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   const renderSummaryText = (text: string, type: string, options: any = null) => {
     const parts = text.split(/(\{\d+\})/g);
     return (
-      <p className={`leading-loose whitespace-pre-wrap ${theme.text}`}>
+      <div className={`leading-loose whitespace-pre-wrap ${theme.text}`}>
         {parts.map((part, i) => {
           const match = part.match(/\{(\d+)\}/);
           if (match) {
@@ -1072,9 +1033,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             }
 
             return (
+              <React.Fragment key={i}>
               <span 
-                key={i} 
-                id={`question-${qId}`} 
+                 id={`question-${qId}`} 
                 className={spanClass}
                 onClick={(e) => {
                   if (reviewMode) {
@@ -1090,8 +1051,8 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     className={`border-b-2 focus:outline-none focus:border-blue-500 py-1 px-2 pr-6 rounded shadow-sm ${
                        reviewMode 
                          ? (isCorrect 
-                             ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-400 border-green-700 font-bold' : 'bg-green-100 text-green-900 border-green-500 font-bold') 
-                             : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] text-red-400 border-red-700 font-bold' : 'bg-red-100 text-red-900 border-red-500 font-bold')) 
+                             ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-400 border-green-700 font-bold pointer-events-none' : 'bg-green-100 text-green-900 border-green-500 font-bold pointer-events-none') 
+                             : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] text-red-400 border-red-700 font-bold pointer-events-none' : 'bg-red-100 text-red-900 border-red-500 font-bold pointer-events-none')) 
                          : theme.input
                     }`}
                     value={reviewMode && !answers[qId] ? "No Answer" : answers[qId] || ''}
@@ -1110,8 +1071,8 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     className={`border-b-2 focus:outline-none focus:border-blue-500 py-1 px-2 w-32 text-center rounded shadow-sm disabled:opacity-100 ${
                        reviewMode 
                          ? (isCorrect 
-                             ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-700 text-green-400 font-bold' : 'bg-green-100 border-green-400 text-green-900 font-bold')
-                             : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-700 text-red-400 font-bold' : 'bg-red-50 border-red-400 text-red-700 font-bold placeholder-red-700'))
+                             ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-700 text-green-400 font-bold pointer-events-none' : 'bg-green-100 border-green-400 text-green-900 font-bold pointer-events-none')
+                             : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-700 text-red-400 font-bold pointer-events-none' : 'bg-red-50 border-red-400 text-red-700 font-bold placeholder-red-700 pointer-events-none'))
                          : theme.input
                     }`}
                     value={reviewMode ? (answers[qId] || "No Answer") : (answers[qId] || '')}
@@ -1129,6 +1090,12 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   </button>
                 )}
               </span>
+              {reviewMode && isActiveReview && (
+                <div className="block w-full my-4 cursor-default whitespace-normal leading-normal" onClick={(e) => e.stopPropagation()}>
+                  {renderExplanationBox(qId)}
+                </div>
+              )}
+              </React.Fragment>
             );
           }
           
@@ -1148,7 +1115,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             </span>
           );
         })}
-      </p>
+      </div>
     );
   };
 
@@ -1744,11 +1711,6 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                           </div>
                         )}
                         {renderSummaryText(block.text, block.type, block.options)}
-                        {reviewMode && activeReviewQuestion && summaryIds.includes(activeReviewQuestion) && (
-                          <div className="mt-6 border-t pt-4 border-gray-200">
-                            {renderExplanationBox(activeReviewQuestion)}
-                          </div>
-                        )}
                       </div>
                     )}
 
@@ -1892,8 +1854,8 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                    className={`w-full border-2 rounded-lg p-4 focus:outline-none transition-all shadow-inner font-medium text-[1em] disabled:opacity-100 ${
                                      reviewMode 
                                        ? (isCorrect 
-                                           ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800 text-green-400 cursor-pointer' : 'bg-green-50 border-green-300 text-green-900 cursor-pointer')
-                                           : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-800 text-red-400 cursor-pointer' : 'bg-red-50 border-red-400 text-red-700 cursor-pointer font-bold placeholder-red-700')) 
+                                           ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800 text-green-400 cursor-pointer pointer-events-none' : 'bg-green-50 border-green-300 text-green-900 cursor-pointer pointer-events-none')
+                                           : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-800 text-red-400 cursor-pointer pointer-events-none' : 'bg-red-50 border-red-400 text-red-700 cursor-pointer font-bold placeholder-red-700 pointer-events-none')) 
                                        : `focus:border-blue-500 ${theme.input} ${theme.border}`
                                    }`}
                                    placeholder={reviewMode ? (answers[q.id] || "No Answer") : "Type your answer here..."}
