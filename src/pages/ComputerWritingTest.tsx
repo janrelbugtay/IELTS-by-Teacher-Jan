@@ -788,10 +788,11 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                             </div>
                         </div>
 
-                        {isAdmin ? (
                         <div className="w-full max-w-4xl p-6 md:p-10 my-6 bg-white rounded-2xl shadow-md border border-slate-200">
                             <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-                                <h3 className="text-2xl font-bold text-slate-800">Teacher Jan will check your writing. Please wait!</h3>
+                                <h3 className="text-2xl font-bold text-slate-800">
+                                    {(state.aiFeedback && !state.aiFeedback.includes('pending')) ? "Official Examiner Report" : "Teacher Jan will check your writing. Please wait!"}
+                                </h3>
                                 <div className="flex items-center gap-3">
                                     {isAdmin && state.aiFeedback && !state.aiFeedback.includes('pending') && !isEditingReport && (
                                         <button
@@ -877,13 +878,6 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                                 )}
                             </div>
                         </div>
-                        ) : (
-                            <div className="w-full max-w-4xl p-6 md:p-10 my-6 bg-white rounded-2xl shadow-md border border-slate-200 text-center">
-                                <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                                <h3 className="text-2xl font-bold text-slate-800 mb-2">Test Submitted Successfully</h3>
-                                <p className="text-slate-600 font-medium">Your essay has been saved. The teacher will review your writing soon.</p>
-                            </div>
-                        )}
                     </div>
                 )}
 

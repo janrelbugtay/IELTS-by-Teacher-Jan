@@ -495,7 +495,7 @@ export const AprilWritingTest = ({ submissionId }: { submissionId?: string }) =>
                     </div>
                 )}
 
-                {isAdmin && report && renderReport(taskNum, report)}
+                {report && renderReport(taskNum, report)}
             </div>
         );
     };
