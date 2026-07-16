@@ -79,10 +79,11 @@ export function ChatBox() {
             
             if (!isAdmin) {
                 // Students only see admin and classmates
-                allUsers = allUsers.filter(u => (u.course === userCourse || u.role === 'admin') && u.id !== user.uid);
+                allUsers = allUsers.filter(u => (u.course === userCourse || u.role === 'admin' || ['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(u.email || '')) && u.id !== user.uid);
             } else {
                 allUsers = allUsers.filter(u => u.id !== user.uid);
             }
+            allUsers = allUsers.map(u => (['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(u.email || '')) ? { ...u, role: 'admin' } : u);
             setAvailableUsers(allUsers);
         } catch(e) {}
     }
@@ -148,6 +149,7 @@ export function ChatBox() {
   if (!user) return null;
 
   const filteredUsers = availableUsers.filter(u => 
+    (u.role === 'admin' && 'teacher jan'.includes(searchQuery.toLowerCase())) ||
     (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.firstName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.lastName || '').toLowerCase().includes(searchQuery.toLowerCase())

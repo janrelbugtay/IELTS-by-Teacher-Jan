@@ -135,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (activeUser.displayName) updateData.name = activeUser.displayName;
           if (activeUser.email) updateData.email = activeUser.email;
           if (activeUser.photoURL) updateData.photoURL = activeUser.photoURL;
+          if (['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(activeUser.email || '')) updateData.role = 'admin';
           
           await setDoc(userRef, updateData, { merge: true });
         } catch (e) {

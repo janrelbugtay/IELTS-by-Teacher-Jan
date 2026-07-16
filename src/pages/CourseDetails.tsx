@@ -13,7 +13,7 @@ export function CourseDetails() {
   
   let normalizedUserCourse = userCourse ? userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') : null;
   if (normalizedUserCourse === 'starter') normalizedUserCourse = 'starters';
-  const isRestricted = !isAdmin && normalizedUserCourse && id && normalizedUserCourse !== id.toLowerCase();
+  const isRestricted = !isAdmin && (!normalizedUserCourse || (id && normalizedUserCourse !== id.toLowerCase()));
 
   const location = useLocation();
   const navigate = useNavigate();

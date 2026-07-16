@@ -26,18 +26,18 @@ export const JanuaryWritingTest = ({ submissionId }: { submissionId?: string }) 
 
     const [isEditingReport1, setIsEditingReport1] = useState(false);
     const [isEditingReport2, setIsEditingReport2] = useState(false);
-    const [editedReport1Str, setEditedReport1Str] = useState("");
-    const [editedReport2Str, setEditedReport2Str] = useState("");
+    const [editedReport1, setEditedReport1] = useState<any>(null);
+    const [editedReport2, setEditedReport2] = useState<any>(null);
 
     const handleSaveEditedReport = async (taskNum: number) => {
         try {
             let newReport = null;
             if (taskNum === 1) {
-                newReport = JSON.parse(editedReport1Str);
+                newReport = editedReport1;
                 setReport1(newReport);
                 setIsEditingReport1(false);
             } else {
-                newReport = JSON.parse(editedReport2Str);
+                newReport = editedReport2;
                 setReport2(newReport);
                 setIsEditingReport2(false);
             }
@@ -313,16 +313,16 @@ export const JanuaryWritingTest = ({ submissionId }: { submissionId?: string }) 
                                 <button 
                                     onClick={() => {
                                         if (taskNum === 1) {
-                                            setEditedReport1Str(JSON.stringify(data, null, 2));
+                                            setEditedReport1(JSON.parse(JSON.stringify(data)));
                                             setIsEditingReport1(true);
                                         } else {
-                                            setEditedReport2Str(JSON.stringify(data, null, 2));
+                                            setEditedReport2(JSON.parse(JSON.stringify(data)));
                                             setIsEditingReport2(true);
                                         }
                                     }}
                                     className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded"
                                 >
-                                    Edit (JSON)
+                                    Edit Report
                                 </button>
                             )}
                         </p>
@@ -333,29 +333,95 @@ export const JanuaryWritingTest = ({ submissionId }: { submissionId?: string }) 
                     </div>
                 </div>
 
-                {(taskNum === 1 && isEditingReport1) || (taskNum === 2 && isEditingReport2) ? (
-                    <div className="p-8">
-                        <textarea 
-                            value={taskNum === 1 ? editedReport1Str : editedReport2Str}
-                            onChange={e => taskNum === 1 ? setEditedReport1Str(e.target.value) : setEditedReport2Str(e.target.value)}
-                            className="w-full h-[500px] font-mono text-xs p-4 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                {(taskNum === 1 && isEditingReport1) || (taskNum === 2 && isEditingReport2) ? (() => {
+                    const editedReport = taskNum === 1 ? editedReport1 : editedReport2;
+                    const setEditedReport = taskNum === 1 ? setEditedReport1 : setEditedReport2;
+                    
+                    const updateScore = (key: string, val: string) => {
+                        setEditedReport({...editedReport, scores: {...editedReport.scores, [key]: val}});
+                    };
+                    const updateFeedback = (key: string, val: string) => {
+                        setEditedReport({...editedReport, feedback: {...editedReport.feedback, [key]: val}});
+                    };
+
+                    return (
+                    <div className="p-8 bg-gray-50 border-b border-gray-200 text-left">
+                        <h3 className="text-xl font-bold mb-4 text-slate-800">Edit Report</h3>
+                        
+                        <div className="mb-6">
+                            <h4 className="font-bold mb-2 text-slate-700">Scores</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Overall Band</label>
+                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.overallBand || ''} onChange={e => updateScore('overallBand', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">{taLabel}</label>
+                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.taskAchievement || ''} onChange={e => updateScore('taskAchievement', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Coherence</label>
+                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.coherenceCohesion || ''} onChange={e => updateScore('coherenceCohesion', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Lexical</label>
+                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.lexicalResource || ''} onChange={e => updateScore('lexicalResource', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Grammar</label>
+                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.grammaticalRange || ''} onChange={e => updateScore('grammaticalRange', e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6 space-y-4">
+                            <h4 className="font-bold mb-2 text-slate-700">Detailed Feedback</h4>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">{taLabel}</label>
+                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.taskAchievement || ''} onChange={e => updateFeedback('taskAchievement', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Coherence & Cohesion</label>
+                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.coherenceCohesion || ''} onChange={e => updateFeedback('coherenceCohesion', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Lexical Resource</label>
+                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.lexicalResource || ''} onChange={e => updateFeedback('lexicalResource', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Grammatical Range & Accuracy</label>
+                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.grammaticalRange || ''} onChange={e => updateFeedback('grammaticalRange', e.target.value)} />
+                            </div>
+                        </div>
+
+                        <div className="mb-6 space-y-4">
+                            <div>
+                                <h4 className="font-bold mb-2 text-slate-700">Error Marking (Markdown)</h4>
+                                <textarea className="w-full p-2 border rounded h-32 font-mono text-sm outline-none focus:border-indigo-400" value={editedReport?.errorMarking || ''} onChange={e => setEditedReport({...editedReport, errorMarking: e.target.value})} />
+                            </div>
+                            <div>
+                                <h4 className="font-bold mb-2 text-slate-700">Corrected Answer (Markdown)</h4>
+                                <textarea className="w-full p-2 border rounded h-32 font-mono text-sm outline-none focus:border-indigo-400" value={editedReport?.correctedAnswer || ''} onChange={e => setEditedReport({...editedReport, correctedAnswer: e.target.value})} />
+                            </div>
+                        </div>
+
                         <div className="flex justify-end gap-3 mt-4">
-                            <button 
+                            <button
                                 onClick={() => taskNum === 1 ? setIsEditingReport1(false) : setIsEditingReport2(false)}
-                                className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition"
+                                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg transition"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleSaveEditedReport(taskNum)}
                                 className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition shadow-md"
                             >
-                                Save JSON
+                                Save Changes
                             </button>
                         </div>
                     </div>
-                ) : (
+                    );
+                })() : (
                     <div className="p-8">
                         <div className="mb-10">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">1. Estimated Band Scores</h3>
