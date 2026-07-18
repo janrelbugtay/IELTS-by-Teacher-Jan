@@ -126,11 +126,39 @@ export function CourseDetails() {
         link: '/test/listening/2'
       });
       homeworkFolders.push({
+        title: 'February Listening Practice',
+        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the February CD-IELTS listening test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/listening/6'
+      });
+      homeworkFolders.push({
+        title: 'March Listening Practice',
+        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the March CD-IELTS listening test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/listening/10'
+      });
+      homeworkFolders.push({
         title: 'April Listening Practice',
         icon: <Headphones className="w-8 h-8 text-indigo-600" />,
         desc: 'Take the April CD-IELTS listening test.',
         color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
         link: '/test/listening/14'
+      });
+      homeworkFolders.push({
+        title: 'May Listening Practice',
+        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the May CD-IELTS listening test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/listening/18'
+      });
+      homeworkFolders.push({
+        title: 'June Listening Practice',
+        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the June CD-IELTS listening test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/listening/22'
       });
     }
 

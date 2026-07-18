@@ -252,7 +252,7 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
           if (userAns === 'Y') userAns = 'YES';
           if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
-          const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+          const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
           for (let ans of correctAnswers) {
             ans = ans.trim();
             if (userAns === ans) return true;
@@ -321,7 +321,7 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
         if (userAns === 'Y') userAns = 'YES';
         if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
-        const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+        const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
         for (let ans of correctAnswers) {
           ans = ans.trim();
           if (userAns === ans) return true;

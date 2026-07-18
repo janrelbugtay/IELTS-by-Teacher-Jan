@@ -24,9 +24,9 @@ export function ChatBox() {
   // Room ID Logic
   let roomId = '';
   if (activeTab === 'group') {
-    roomId = `course_${currentCourse.toLowerCase()}`;
+    roomId = `course_${currentCourse.toLowerCase().trim()}`;
   } else if (activeTab === 'dm' && selectedUser) {
-    const ids = [user?.uid, selectedUser.id].sort();
+    const ids = [user?.uid || "", selectedUser.id || ""].sort((a, b) => a.localeCompare(b));
     roomId = `dm_${ids[0]}_${ids[1]}`;
   }
 
@@ -109,8 +109,9 @@ export function ChatBox() {
       }));
       
       msgs.sort((a: any, b: any) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        const now = Date.now();
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (typeof a.createdAt === 'number' ? a.createdAt : now));
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (typeof b.createdAt === 'number' ? b.createdAt : now));
         return timeA - timeB;
       });
       
@@ -120,6 +121,8 @@ export function ChatBox() {
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    }, (error) => {
+      console.error("Chat onSnapshot error:", error);
     });
 
     return () => unsubscribe();
@@ -150,6 +153,7 @@ export function ChatBox() {
 
   const filteredUsers = availableUsers.filter(u => 
     (u.role === 'admin' && 'teacher jan'.includes(searchQuery.toLowerCase())) ||
+    (u.nickname || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.firstName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.lastName || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -197,7 +201,7 @@ export function ChatBox() {
                 )}
                 <div>
                   <h3 className="font-bold text-[15px] leading-tight tracking-wide">
-                    {activeTab === 'dm' && selectedUser ? (selectedUser.role === 'admin' ? 'Teacher Jan' : selectedUser.username) : 'ERA Chat'}
+                    {activeTab === 'dm' && selectedUser ? (selectedUser.role === 'admin' ? 'Teacher Jan' : (selectedUser.nickname || selectedUser.firstName || selectedUser.name || selectedUser.username)) : 'ERA Chat'}
                   </h3>
                   <p className="text-[11px] text-slate-300 font-medium">
                     {activeTab === 'dm' && selectedUser ? (selectedUser.role === 'admin' ? 'Admin / Teacher' : selectedUser.course) : (isAdmin ? 'Admin View' : 'Connect with peers & admin')}
@@ -242,7 +246,7 @@ export function ChatBox() {
                   className="bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 font-medium text-sm text-slate-700 transition-all cursor-pointer"
                 >
                   <option value="Pre-starter">Pre-starter</option>
-                  <option value="Starters">Starters</option>
+                  <option value="Starter">Starter</option>
                   <option value="Movers">Movers</option>
                   <option value="Flyers">Flyers</option>
                   <option value="KET">KET</option>
@@ -282,10 +286,10 @@ export function ChatBox() {
                         className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-50 transition-colors"
                       >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm ${u.role === 'admin' ? 'bg-gradient-to-br from-purple-500 to-indigo-500' : 'bg-gradient-to-br from-blue-400 to-cyan-500'}`}>
-                          {u.role === 'admin' ? '👨‍🏫' : (u.username?.[0]?.toUpperCase() || 'U')}
+                          {u.role === 'admin' ? '👨‍🏫' : ((u.nickname || u.firstName || u.name || u.username || 'U')[0]?.toUpperCase())}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-800 text-sm">{u.role === 'admin' ? 'Teacher Jan' : (u.username || 'User')}</p>
+                          <p className="font-semibold text-slate-800 text-sm">{u.role === 'admin' ? 'Teacher Jan' : (u.nickname || u.firstName || u.name || u.username || 'User')}</p>
                           <p className="text-xs text-slate-500">{u.role === 'admin' ? 'Admin' : u.course}</p>
                         </div>
                       </div>
@@ -323,7 +327,7 @@ export function ChatBox() {
                         >
                           {showName && (
                             <span className={`text-[11px] font-semibold mb-1 ml-1 tracking-wide ${isTeacher ? 'text-indigo-600' : 'text-slate-500'}`}>
-                              {isTeacher ? '👨‍🏫 Teacher Jan' : msg.senderName}
+                              {isTeacher ? '👨‍🏫 Teacher Jan' : (availableUsers.find(u => u.id === msg.senderId)?.nickname || availableUsers.find(u => u.id === msg.senderId)?.firstName || availableUsers.find(u => u.id === msg.senderId)?.name || msg.senderName)}
                             </span>
                           )}
                           <div className="flex items-end gap-1">

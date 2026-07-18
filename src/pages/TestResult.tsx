@@ -16,6 +16,7 @@ import { JanuaryListeningTest } from './JanuaryListeningTest';
 import { MarchListeningTest } from './MarchListeningTest';
 import { AprilListeningTest } from './AprilListeningTest';
 import { MayListeningTest } from './MayListeningTest';
+import { JuneListeningTest } from './JuneListeningTest';
 import { ComputerWritingTest } from './ComputerWritingTest';
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
@@ -152,6 +153,9 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       }
       if (submission.assignmentTitle?.toLowerCase().includes('may')) {
           return <MayListeningTest submissionId={id} />;
+      }
+      if (submission.assignmentTitle?.toLowerCase().includes('june')) {
+          return <JuneListeningTest submissionId={id} />;
       }
       return <ComputerListeningTest submissionId={id} />;
   }

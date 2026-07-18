@@ -220,7 +220,7 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
     }
     
     try {
-      let title = 'March Listening Practice';
+      let title = 'April Listening Practice';
       
       const checkAnswer = (qNum: number) => {
           let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
@@ -233,7 +233,7 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
           if (userAns === 'Y') userAns = 'YES';
           if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
-          const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+          const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
           for (let ans of correctAnswers) {
             ans = ans.trim();
             if (userAns === ans) return true;
@@ -302,7 +302,7 @@ export function AprilListeningTest({ submissionId }: { submissionId?: string }) 
         if (userAns === 'Y') userAns = 'YES';
         if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
-        const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+        const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
         for (let ans of correctAnswers) {
           ans = ans.trim();
           if (userAns === ans) return true;

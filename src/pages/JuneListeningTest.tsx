@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
 import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
 import { CustomAudioPlayer } from '../components/CustomAudioPlayer';
+import { FebruaryListeningTest } from './FebruaryListeningTest';
 
 const CustomStyles = () => (
   <style>{`
@@ -110,21 +111,25 @@ const CustomStyles = () => (
 );
 
 export const LISTENING_ANSWER_KEY: Record<number, string> = {
-    1: '13 JANUARY', 2: '48', 3: 'PIZZA', 4: 'INDIA', 5: 'MIRROR/A MIRROR/MIRRORS',
-    6: '6 APRIL', 7: 'NATURAL', 8: '67.50', 9: 'SHIRT', 10: 'HAMMER',
-    11: 'B/E', 12: 'B/E', 13: 'C/D', 14: 'C/D', 15: 'F',
-    16: 'B', 17: 'D', 18: 'A', 19: 'H', 20: 'E',
-    21: 'B/E', 22: 'B/E', 23: 'C/D', 24: 'C/D', 25: 'A/C',
-    26: 'A/C', 27: 'C', 28: 'D', 29: 'F', 30: 'A',
-    31: 'POLLUTION', 32: 'TAX', 33: 'CHOCOLATE', 34: 'TIMING', 35: 'COST',
-    36: 'RULES', 37: 'DIVING', 38: 'VEGAN', 39: 'WIFI', 40: 'VIDEOS'
+    1: 'NORTHERN', 2: 'WEEK', 3: '250 / TWO HUNDRED AND FIFTY', 4: 'VOUCHER', 5: 'WINDOW',
+    6: 'BOOKS', 7: 'BLANKET', 8: 'DOLPHINS', 9: 'DRUM', 10: 'ITALIAN',
+    11: 'C / E', 12: 'E / C', 13: 'B / E', 14: 'E / B', 15: 'B',
+    16: 'C', 17: 'F', 18: 'A', 19: 'B', 20: 'D',
+    21: 'B / D', 22: 'D / B', 23: 'D / E', 24: 'E / D', 25: 'G',
+    26: 'B', 27: 'F', 28: 'A', 29: 'H', 30: 'D',
+    31: 'DISEASE', 32: 'ECOSYSTEM', 33: 'HOLIDAY / HOLIDAYS', 34: 'PETS', 35: 'SUGAR',
+    36: 'LIGHT', 37: 'VIRUS', 38: 'BEHAVIOUR / BEHAVIOR', 39: 'DATABASE', 40: 'PHOTOGRAPH'
 };
 
-export function MayListeningTest({ submissionId }: { submissionId?: string }) {
+export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
 
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+
+  if (id === '6' && !submissionId) {
+      return <FebruaryListeningTest />;
+  }
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
   useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);
@@ -200,7 +205,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
     }
   };
 
-  const handleMultiSelect = (q1: number, q2: number, value: string, isChecked: boolean) => {
+  const handleMultiAnswerChange = (q1: number, q2: number, value: string, isChecked: boolean) => {
     setAnswers(prev => {
         const newAnswers = { ...prev };
         if (isChecked) {
@@ -211,19 +216,18 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
             }
         } else {
             if (newAnswers[q1] === value) {
-                newAnswers[q1] = '';
+                newAnswers[q1] = "";
                 if (newAnswers[q2]) {
                     newAnswers[q1] = newAnswers[q2];
-                    newAnswers[q2] = '';
+                    newAnswers[q2] = "";
                 }
             } else if (newAnswers[q2] === value) {
-                newAnswers[q2] = '';
+                newAnswers[q2] = "";
             }
         }
         return newAnswers;
     });
   };
-
   const handleAnswerChange = (qNum: number, value: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -239,7 +243,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
     }
     
     try {
-      let title = 'May Listening Practice';
+      let title = 'June Listening Practice';
       
       const checkAnswer = (qNum: number) => {
           let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
@@ -559,87 +563,61 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
               <p className="text-[13px] text-gray-700">Listen and answer questions <span className="font-bold">{navQuestionRange}</span>.</p>
           </div>
           <div>
-              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1eYWQZIbPTbooFfQWEq6tfi1FAyjt-r9I"  isMockMode={testMode === 'mock'} />
+              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1OuGcq0z6bZ28Uv0nKogXeu40tEZTD5Jl" isMockMode={testMode === 'mock'} />
           </div>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-[#e6eaf2] p-6 flex justify-center items-start shadow-inner relative">
           <div className="w-full max-w-[1000px] min-h-full">
-{/* Part 1 */}
+              
+              
               <div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 1 ? 'block' : 'hidden'}`}>
                 <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 1-10</div>
-                <div className="mb-4 italic text-[15px] text-gray-700">Complete the table below.</div>
+                <div className="mb-4 italic text-[15px] text-gray-700">Complete the notes below.</div>
                 <div className="mb-6 font-bold text-[15px] uppercase">Write ONE WORD AND/OR A NUMBER for each answer.</div>
 
-                <div className="content-box overflow-x-auto">
-                    <h2 className="font-bold text-[22px] mb-6 text-center text-black">One-day classes at Steynford College</h2>
+                <div className="content-box">
+                    <h2 className="font-bold text-[22px] mb-6 text-black border-b border-gray-300 pb-2">Ferry to Shetland Islands</h2>
                     
-                    <table className="w-full border-collapse border border-gray-400 text-left mb-8">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="border border-gray-400 p-3">Course</th>
-                                <th className="border border-gray-400 p-3">Date</th>
-                                <th className="border border-gray-400 p-3">Cost</th>
-                                <th className="border border-gray-400 p-3">Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td className="border border-gray-400 p-3 align-top">Vietnamese food</td>
-                                <td className="border border-gray-400 p-3 align-top"><span className="font-bold mx-1">1</span><input type="text" placeholder="1" className="ielts-input" value={answers[1] || ''} onChange={(e) => handleAnswerChange(1, e.target.value)} /></td>
-                                <td className="border border-gray-400 p-3 align-top">£59</td>
-                                <td className="border border-gray-400 p-3 align-top">It provides information on the use of herbs.<br/>There are no places at present.</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-400 p-3 align-top">Bread making</td>
-                                <td className="border border-gray-400 p-3 align-top">20 March</td>
-                                <td className="border border-gray-400 p-3 align-top">£<span className="font-bold mx-1">2</span><input type="text" placeholder="2" className="ielts-input" value={answers[2] || ''} onChange={(e) => handleAnswerChange(2, e.target.value)} /></td>
-                                <td className="border border-gray-400 p-3 align-top">There is also an extra charge for ingredients.<br/>Participants make white bread, sourdough and <span className="font-bold mx-1">3</span><input type="text" placeholder="3" className="ielts-input" value={answers[3] || ''} onChange={(e) => handleAnswerChange(3, e.target.value)} /> .</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-400 p-3 align-top">Face massage</td>
-                                <td className="border border-gray-400 p-3 align-top">23 February</td>
-                                <td className="border border-gray-400 p-3 align-top">£35</td>
-                                <td className="border border-gray-400 p-3 align-top">The teacher trained in <span className="font-bold mx-1">4</span><input type="text" placeholder="4" className="ielts-input" value={answers[4] || ''} onChange={(e) => handleAnswerChange(4, e.target.value)} /> .<br/>Bring a <span className="font-bold mx-1">5</span><input type="text" placeholder="5" className="ielts-input" value={answers[5] || ''} onChange={(e) => handleAnswerChange(5, e.target.value)} /> .</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-400 p-3 align-top">Candle making</td>
-                                <td className="border border-gray-400 p-3 align-top"><span className="font-bold mx-1">6</span><input type="text" placeholder="6" className="ielts-input" value={answers[6] || ''} onChange={(e) => handleAnswerChange(6, e.target.value)} /></td>
-                                <td className="border border-gray-400 p-3 align-top">£52</td>
-                                <td className="border border-gray-400 p-3 align-top">Only <span className="font-bold mx-1">7</span><input type="text" placeholder="7" className="ielts-input" value={answers[7] || ''} onChange={(e) => handleAnswerChange(7, e.target.value)} /> ingredients are used.<br/>The candles can be used as presents.</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-400 p-3 align-top">Silk painting</td>
-                                <td className="border border-gray-400 p-3 align-top">18 May</td>
-                                <td className="border border-gray-400 p-3 align-top">£<span className="font-bold mx-1">8</span><input type="text" placeholder="8" className="ielts-input" value={answers[8] || ''} onChange={(e) => handleAnswerChange(8, e.target.value)} /></td>
-                                <td className="border border-gray-400 p-3 align-top">Bring an apron or old <span className="font-bold mx-1">9</span><input type="text" placeholder="9" className="ielts-input" value={answers[9] || ''} onChange={(e) => handleAnswerChange(9, e.target.value)} /> .</td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-400 p-3 align-top">DIY for beginners</td>
-                                <td className="border border-gray-400 p-3 align-top">24 February</td>
-                                <td className="border border-gray-400 p-3 align-top">£125</td>
-                                <td className="border border-gray-400 p-3 align-top">Learn how to<br/>• use a drill, saw and <span className="font-bold mx-1">10</span><input type="text" placeholder="10" className="ielts-input" value={answers[10] || ''} onChange={(e) => handleAnswerChange(10, e.target.value)} /> .<br/>• put up a shelf.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                    <ul className="list-none space-y-4 mb-8 pl-4">
+                        <li className="flex items-center">&bull; <span className="w-64 ml-4">Name of ferry company:</span> <span className="font-bold mr-2">1</span><input type="text" placeholder="1" className={`ielts-input ${answers[1] ? 'active-state' : ''}`} value={answers[1] || ''} onChange={(e) => handleAnswerChange(1, e.target.value)} disabled={isSubmitted} /> Ferries</li>
+                        <li className="flex items-center">&bull; <span className="w-64 ml-4">Ferries depart seven times per</span> <span className="font-bold mr-2">2</span><input type="text" placeholder="2" className={`ielts-input ${answers[2] ? 'active-state' : ''}`} value={answers[2] || ''} onChange={(e) => handleAnswerChange(2, e.target.value)} disabled={isSubmitted} /> in summer</li>
+                        <li className="flex items-center">&bull; <span className="w-64 ml-4">Cost for four people with car:</span> a little less than <span className="font-bold mx-2">3</span> £<input type="text" placeholder="3" className={`ielts-input ml-1 ${answers[3] ? 'active-state' : ''}`} value={answers[3] || ''} onChange={(e) => handleAnswerChange(3, e.target.value)} disabled={isSubmitted} /></li>
+                        <li className="flex items-start">&bull; <span className="w-64 ml-4 mt-1">Cancellation policy:</span> <div className="flex-1">receive a <span className="font-bold mx-2">4</span><input type="text" placeholder="4" className={`ielts-input ${answers[4] ? 'active-state' : ''}`} value={answers[4] || ''} onChange={(e) => handleAnswerChange(4, e.target.value)} disabled={isSubmitted} /><br/><span className="text-gray-600 text-sm">(if cancelled a month in advance)</span></div></li>
+                    </ul>
 
-            
-{/* Part 2 */}
+                    <h2 className="font-bold text-[22px] mb-4 text-black border-b border-gray-300 pb-2">Advice</h2>
+                    
+                    <ul className="list-none space-y-4 mb-8 pl-4">
+                        <li>&bull; <span className="ml-4">Cabins:</span>
+                            <ul className="list-none space-y-2 mt-2 pl-12">
+                                <li className="flex items-center">&ndash; <span className="ml-2">book one with a</span> <span className="font-bold mx-2">5</span><input type="text" placeholder="5" className={`ielts-input ${answers[5] ? 'active-state' : ''}`} value={answers[5] || ''} onChange={(e) => handleAnswerChange(5, e.target.value)} disabled={isSubmitted} /></li>
+                                <li className="flex items-center">&ndash; <span className="ml-2">luxury cabins have a TV</span></li>
+                            </ul>
+                        </li>
+                        <li className="flex items-center">&bull; <span className="ml-4">Bring snacks and</span> <span className="font-bold mx-2">6</span><input type="text" placeholder="6" className={`ielts-input ${answers[6] ? 'active-state' : ''}`} value={answers[6] || ''} onChange={(e) => handleAnswerChange(6, e.target.value)} disabled={isSubmitted} /> for the children</li>
+                        <li className="flex items-center">&bull; <span className="ml-4">A</span> <span className="font-bold mx-2">7</span><input type="text" placeholder="7" className={`ielts-input ${answers[7] ? 'active-state' : ''}`} value={answers[7] || ''} onChange={(e) => handleAnswerChange(7, e.target.value)} disabled={isSubmitted} /> is required for the dog kennels</li>
+                        <li className="flex items-center">&bull; <span className="ml-4">Try to see</span> <span className="font-bold mx-2">8</span><input type="text" placeholder="8" className={`ielts-input ${answers[8] ? 'active-state' : ''}`} value={answers[8] || ''} onChange={(e) => handleAnswerChange(8, e.target.value)} disabled={isSubmitted} /> in the morning</li>
+                        <li className="flex items-center">&bull; <span className="ml-4">If time, visit</span> <span className="font-bold mx-2">9</span><input type="text" placeholder="9" className={`ielts-input ${answers[9] ? 'active-state' : ''}`} value={answers[9] || ''} onChange={(e) => handleAnswerChange(9, e.target.value)} disabled={isSubmitted} /> Castle</li>
+                        <li className="flex items-center">&bull; <span className="ml-4">The</span> <span className="font-bold mx-2">10</span><input type="text" placeholder="10" className={`ielts-input ${answers[10] ? 'active-state' : ''}`} value={answers[10] || ''} onChange={(e) => handleAnswerChange(10, e.target.value)} disabled={isSubmitted} /> restaurant in a nearby village is recommended</li>
+                    </ul>
+                </div>
+              </div>
+              
               <div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 2 ? 'block' : 'hidden'}`}>
                 <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 11 and 12</div>
                 <div className="mb-6 italic text-[15px] text-gray-700">Choose <span className="font-bold">TWO</span> letters, A-E.</div>
 
                 <div className="content-box mb-8">
                     <div className="space-y-4">
-                        <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">11-12</span><span>Which TWO pieces of advice are given about the Marsden Coastal Walk?</span></div>
-                        <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="A" className="mcq-checkbox" checked={answers[11] === 'A' || answers[12] === 'A'} onChange={(e) => handleMultiSelect(11, 12, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> Stop for lunch in an ancient town.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="B" className="mcq-checkbox" checked={answers[11] === 'B' || answers[12] === 'B'} onChange={(e) => handleMultiSelect(11, 12, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> Don't miss the ruins of a certain building.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="C" className="mcq-checkbox" checked={answers[11] === 'C' || answers[12] === 'C'} onChange={(e) => handleMultiSelect(11, 12, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> Catch a boat to the start of this walk.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="D" className="mcq-checkbox" checked={answers[11] === 'D' || answers[12] === 'D'} onChange={(e) => handleMultiSelect(11, 12, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> Be careful of the steep and rocky paths.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="E" className="mcq-checkbox" checked={answers[11] === 'E' || answers[12] === 'E'} onChange={(e) => handleMultiSelect(11, 12, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> Don't worry about getting lost.</label>
+                        <div className="font-bold mb-3 flex"><span>Which TWO explanations for the popularity of street food are given?</span></div>
+                        <div className="pl-4 space-y-1 pb-4">
+                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                <label key={'11_12_'+opt} className="mcq-label">
+                                    <input type="checkbox" name="q11_12" value={opt} className="mcq-checkbox" checked={answers[11] === opt || answers[12] === opt} onChange={(e) => handleMultiAnswerChange(11, 12, opt, e.target.checked)} disabled={isSubmitted} /> 
+                                    <span className="font-bold mr-3">{opt}</span> {opt === 'A' ? 'low price' : opt === 'B' ? 'locally sourced' : opt === 'C' ? 'freshly made' : opt === 'D' ? 'convenience' : 'unusual food'}
+                                </label>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -649,56 +627,92 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
 
                 <div className="content-box mb-8">
                     <div className="space-y-4">
-                        <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">13-14</span><span>Which TWO things are said about the Melby Heritage Walk?</span></div>
-                        <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="A" className="mcq-checkbox" checked={answers[13] === 'A' || answers[14] === 'A'} onChange={(e) => handleMultiSelect(13, 14, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> This walk is mostly downhill.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="B" className="mcq-checkbox" checked={answers[13] === 'B' || answers[14] === 'B'} onChange={(e) => handleMultiSelect(13, 14, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> The paths can get busy during the day.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="C" className="mcq-checkbox" checked={answers[13] === 'C' || answers[14] === 'C'} onChange={(e) => handleMultiSelect(13, 14, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> This is a circular walk.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="D" className="mcq-checkbox" checked={answers[13] === 'D' || answers[14] === 'D'} onChange={(e) => handleMultiSelect(13, 14, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> A tower stands on the site of an older structure.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="E" className="mcq-checkbox" checked={answers[13] === 'E' || answers[14] === 'E'} onChange={(e) => handleMultiSelect(13, 14, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> There are far-reaching views the whole way.</label>
+                        <div className="font-bold mb-3 flex"><span>Which TWO places are recommended for new street food businesses?</span></div>
+                        <div className="pl-4 space-y-1 pb-4">
+                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                <label key={'13_14_'+opt} className="mcq-label">
+                                    <input type="checkbox" name="q13_14" value={opt} className="mcq-checkbox" checked={answers[13] === opt || answers[14] === opt} onChange={(e) => handleMultiAnswerChange(13, 14, opt, e.target.checked)} disabled={isSubmitted} /> 
+                                    <span className="font-bold mr-3">{opt}</span> {opt === 'A' ? 'music festivals' : opt === 'B' ? 'food markets' : opt === 'C' ? 'weddings' : opt === 'D' ? 'parties' : 'parks'}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 15 and 16</div>
+                <div className="mb-6 italic text-[15px] text-gray-700">Choose the correct letter, <span className="font-bold">A, B</span> or <span className="font-bold">C</span>.</div>
+
+                <div className="content-box mb-8">
+                    <div className="space-y-8">
+                        <div>
+                            <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">15</span><span>What does the speaker say about getting equipment for a street food business?</span></div>
+                            <div className="pl-8 space-y-1">
+                                {['A', 'B', 'C'].map(opt => (
+                                    <label key={'15_'+opt} className="mcq-label">
+                                        <input type="radio" name="q15" value={opt} className="mcq-radio" checked={answers[15] === opt} onChange={(e) => handleAnswerChange(15, e.target.value)} disabled={isSubmitted} /> 
+                                        <span className="font-bold mr-3">{opt}</span> {opt === 'A' ? 'High quality equipment is a good investment.' : opt === 'B' ? "It's best to buy second-hand equipment." : 'Renting equipment can be cheap.'}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="font-bold mb-3 flex"><span className="w-8 shrink-0">16</span><span>What advice is given about creating a product for a street food business?</span></div>
+                            <div className="pl-8 space-y-1">
+                                {['A', 'B', 'C'].map(opt => (
+                                    <label key={'16_'+opt} className="mcq-label">
+                                        <input type="radio" name="q16" value={opt} className="mcq-radio" checked={answers[16] === opt} onChange={(e) => handleAnswerChange(16, e.target.value)} disabled={isSubmitted} /> 
+                                        <span className="font-bold mr-3">{opt}</span> {opt === 'A' ? 'Provide information about the ingredients.' : opt === 'B' ? 'It is important to have an original product.' : 'The presentation is an important factor.'}
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="border-t border-gray-300 pt-8">
-                    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 15-20</div>
-                    <div className="mb-4 italic text-[15px] text-gray-700">Label the map below.</div>
-                    <div className="mb-6 font-bold text-[15px] uppercase">Write the correct letter, A-I, next to Questions 15-20.</div>
+                    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 17-20</div>
+                    <div className="mb-4 italic text-[15px] text-gray-700">What problem did the owners of each of the following street food businesses experience?</div>
+                    <div className="mb-6 font-bold text-[15px] uppercase">Choose FOUR answers from the box and write the correct letter, A-F, next to Questions 17-20.</div>
 
                     <div className="content-box">
-                        <h3 className="text-center font-bold text-xl mb-4 text-black">Melby Coal Mine</h3>
-                        
-                        <div className="w-full max-w-[500px] h-[300px] border-2 border-dashed border-gray-400 mx-auto flex items-center justify-center bg-gray-50 mb-8 rounded relative">
-                            <span className="text-gray-500 font-bold text-center px-4">Map placeholder (image_392157.png) <br/><br/> Features A-I</span>
+                        <div className="bg-gray-100 p-6 border border-gray-300 mb-8 max-w-[600px] mx-auto">
+                            <div className="font-bold mb-4 text-center border-b border-gray-300 pb-2 text-[18px]">Problems</div>
+                            <div className="flex flex-col gap-y-3 pl-4">
+                                <div><span className="font-bold mr-3">A</span> Some ingredients were too expensive.</div>
+                                <div><span className="font-bold mr-3">B</span> The meals took a long time to prepare.</div>
+                                <div><span className="font-bold mr-3">C</span> They had no money for marketing.</div>
+                                <div><span className="font-bold mr-3">D</span> It was difficult to get a permit to sell food.</div>
+                                <div><span className="font-bold mr-3">E</span> A competitor was selling similar food in their area.</div>
+                                <div><span className="font-bold mr-3">F</span> They worked very long hours.</div>
+                            </div>
                         </div>
 
-                        <div className="space-y-4 max-w-[450px] mx-auto">
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">15</span><span className="flex-1">Exhibition</span> <input type="text" placeholder="15" className="ielts-input" value={answers[15] || ''} onChange={(e) => handleAnswerChange(15, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">16</span><span className="flex-1">Baths</span> <input type="text" placeholder="16" className="ielts-input" value={answers[16] || ''} onChange={(e) => handleAnswerChange(16, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">17</span><span className="flex-1">Tools</span> <input type="text" placeholder="17" className="ielts-input" value={answers[17] || ''} onChange={(e) => handleAnswerChange(17, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">18</span><span className="flex-1">Vehicles</span> <input type="text" placeholder="18" className="ielts-input" value={answers[18] || ''} onChange={(e) => handleAnswerChange(18, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">19</span><span className="flex-1">Ponies</span> <input type="text" placeholder="19" className="ielts-input" value={answers[19] || ''} onChange={(e) => handleAnswerChange(19, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">20</span><span className="flex-1">Education centre</span> <input type="text" placeholder="20" className="ielts-input" value={answers[20] || ''} onChange={(e) => handleAnswerChange(20, e.target.value)} /></div>
+                        <div className="font-bold mb-4 text-[18px] border-b pb-2">Street food businesses</div>
+                        <div className="space-y-4 max-w-[450px]">
+                            <div className="flex items-center"><span className="font-bold w-8">17</span><span className="w-40">Thai Basil</span> <input type="text" placeholder="17" className={`ielts-input ielts-input-short uppercase ${answers[17] ? 'active-state' : ''}`} maxLength={1} value={answers[17] || ''} onChange={(e) => handleAnswerChange(17, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">18</span><span className="w-40">Basque</span> <input type="text" placeholder="18" className={`ielts-input ielts-input-short uppercase ${answers[18] ? 'active-state' : ''}`} maxLength={1} value={answers[18] || ''} onChange={(e) => handleAnswerChange(18, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">19</span><span className="w-40">Lou's kitchen</span> <input type="text" placeholder="19" className={`ielts-input ielts-input-short uppercase ${answers[19] ? 'active-state' : ''}`} maxLength={1} value={answers[19] || ''} onChange={(e) => handleAnswerChange(19, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">20</span><span className="w-40">Chip Chop</span> <input type="text" placeholder="20" className={`ielts-input ielts-input-short uppercase ${answers[20] ? 'active-state' : ''}`} maxLength={1} value={answers[20] || ''} onChange={(e) => handleAnswerChange(20, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            
-{/* Part 3 */}
+              </div>
+              
               <div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 3 ? 'block' : 'hidden'}`}>
                 <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 21 and 22</div>
                 <div className="mb-6 italic text-[15px] text-gray-700">Choose <span className="font-bold">TWO</span> letters, A-E.</div>
 
                 <div className="content-box mb-8">
                     <div className="space-y-4">
-                        <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">21-22</span><span>Which TWO facts in the sessions on food safety were new information for Nadia and Fergus?</span></div>
-                        <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="A" className="mcq-checkbox" checked={answers[21] === 'A' || answers[22] === 'A'} onChange={(e) => handleMultiSelect(21, 22, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> the amount of plastic in the ocean</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="B" className="mcq-checkbox" checked={answers[21] === 'B' || answers[22] === 'B'} onChange={(e) => handleMultiSelect(21, 22, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> the number of diseases caused by contaminated food</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="C" className="mcq-checkbox" checked={answers[21] === 'C' || answers[22] === 'C'} onChange={(e) => handleMultiSelect(21, 22, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> the amount of food that is wasted</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="D" className="mcq-checkbox" checked={answers[21] === 'D' || answers[22] === 'D'} onChange={(e) => handleMultiSelect(21, 22, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> the number of people who are obese</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="E" className="mcq-checkbox" checked={answers[21] === 'E' || answers[22] === 'E'} onChange={(e) => handleMultiSelect(21, 22, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> the result of treating animals with antibiotics</label>
+                        <div className="font-bold mb-3 flex"><span>Which TWO points do the speakers make about the terms 'ethical' and 'sustainable' fashion?</span></div>
+                        <div className="pl-4 space-y-1 pb-4">
+                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                <label key={'21_22_'+opt} className="mcq-label">
+                                    <input type="checkbox" name="q21_22" value={opt} className="mcq-checkbox" checked={answers[21] === opt || answers[22] === opt} onChange={(e) => handleMultiAnswerChange(21, 22, opt, e.target.checked)} disabled={isSubmitted} /> 
+                                    <span className="font-bold mr-3">{opt}</span> {opt === 'A' ? 'Their definitions keep changing.' : opt === 'B' ? 'People think they mean the same thing.' : opt === 'C' ? "The term 'eco-friendly' is preferable." : opt === 'D' ? 'They are often used imprecisely.' : 'Companies should avoid using them on clothing labels.'}
+                                </label>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -708,114 +722,101 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
 
                 <div className="content-box mb-8">
                     <div className="space-y-4">
-                        <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">23-24</span><span>Which TWO features of a project aiming to prevent food fraud impressed Fergus?</span></div>
-                        <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="A" className="mcq-checkbox" checked={answers[23] === 'A' || answers[24] === 'A'} onChange={(e) => handleMultiSelect(23, 24, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> the new technology it used</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="B" className="mcq-checkbox" checked={answers[23] === 'B' || answers[24] === 'B'} onChange={(e) => handleMultiSelect(23, 24, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> the publicity it received</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="C" className="mcq-checkbox" checked={answers[23] === 'C' || answers[24] === 'C'} onChange={(e) => handleMultiSelect(23, 24, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> the use of multiple tests on food items</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="D" className="mcq-checkbox" checked={answers[23] === 'D' || answers[24] === 'D'} onChange={(e) => handleMultiSelect(23, 24, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> the variety of dietary requirements included</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="E" className="mcq-checkbox" checked={answers[23] === 'E' || answers[24] === 'E'} onChange={(e) => handleMultiSelect(23, 24, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> the way information was made widely accessible</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 25 and 26</div>
-                <div className="mb-6 italic text-[15px] text-gray-700">Choose <span className="font-bold">TWO</span> letters, A-E.</div>
-
-                <div className="content-box mb-8">
-                    <div className="space-y-4">
-                        <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">25-26</span><span>Which TWO topics do both students recommend should be included in the course?</span></div>
-                        <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="A" className="mcq-checkbox" checked={answers[25] === 'A' || answers[26] === 'A'} onChange={(e) => handleMultiSelect(25, 26, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> sustainable fishing</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="B" className="mcq-checkbox" checked={answers[25] === 'B' || answers[26] === 'B'} onChange={(e) => handleMultiSelect(25, 26, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> targeted nutrition</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="C" className="mcq-checkbox" checked={answers[25] === 'C' || answers[26] === 'C'} onChange={(e) => handleMultiSelect(25, 26, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> global differences in consumption</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="D" className="mcq-checkbox" checked={answers[25] === 'D' || answers[26] === 'D'} onChange={(e) => handleMultiSelect(25, 26, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> sustainable agriculture</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="E" className="mcq-checkbox" checked={answers[25] === 'E' || answers[26] === 'E'} onChange={(e) => handleMultiSelect(25, 26, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> digital technology and food</label>
+                        <div className="font-bold mb-3 flex"><span>Which TWO claims about wool production do the speakers disagree with?</span></div>
+                        <div className="pl-4 space-y-1 pb-4">
+                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                <label key={'23_24_'+opt} className="mcq-label">
+                                    <input type="checkbox" name="q23_24" value={opt} className="mcq-checkbox" checked={answers[23] === opt || answers[24] === opt} onChange={(e) => handleMultiAnswerChange(23, 24, opt, e.target.checked)} disabled={isSubmitted} /> 
+                                    <span className="font-bold mr-3">{opt}</span> {opt === 'A' ? 'Sheep are generally well-treated.' : opt === 'B' ? 'Wool is easy to recycle.' : opt === 'C' ? 'Wool is a long-lasting fabric.' : opt === 'D' ? 'Wool production involves few chemicals.' : 'Sheep do less environmental damage than other livestock.'}
+                                </label>
+                            ))}
                         </div>
                     </div>
                 </div>
 
                 <div className="border-t border-gray-300 pt-8">
-                    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 27-30</div>
-                    <div className="mb-4 italic text-[15px] text-gray-700">Complete the flow-chart below.</div>
-                    <div className="mb-6 font-bold text-[15px] uppercase">Choose FOUR answers from the box and write the correct letter, A-F, next to Questions 27-30.</div>
+                    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 25-30</div>
+                    <div className="mb-4 italic text-[15px] text-gray-700">What comment do the speakers make about each of the following semi-synthetic fabrics?</div>
+                    <div className="mb-6 font-bold text-[15px] uppercase">Choose SIX answers from the box and write the correct letter, A-H, next to Questions 25-30.</div>
 
                     <div className="content-box">
-                        <div className="bg-gray-100 p-6 border border-gray-300 mb-8 max-w-[600px] mx-auto">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 pl-4">
-                                <div><span className="font-bold mr-3">A</span> This was challenging but enjoyable.</div>
-                                <div><span className="font-bold mr-3">B</span> This led to some disagreement.</div>
-                                <div><span className="font-bold mr-3">C</span> This was easy to decide on.</div>
-                                <div><span className="font-bold mr-3">D</span> This was helped by the guidelines provided.</div>
-                                <div><span className="font-bold mr-3">E</span> This seemed like an unnecessary stage.</div>
-                                <div><span className="font-bold mr-3">F</span> This involved selecting a new ingredient.</div>
+                        <div className="bg-gray-100 p-6 border border-gray-300 mb-8 max-w-[700px] mx-auto">
+                            <div className="font-bold mb-4 text-center border-b border-gray-300 pb-2 text-[18px]">Comments</div>
+                            <div className="flex flex-col gap-y-3 pl-4">
+                                <div><span className="font-bold mr-3">A</span> The production process is fuel efficient.</div>
+                                <div><span className="font-bold mr-3">B</span> It is the least sustainable of alternative fabrics.</div>
+                                <div><span className="font-bold mr-3">C</span> Production costs are high.</div>
+                                <div><span className="font-bold mr-3">D</span> It provides additional health benefits.</div>
+                                <div><span className="font-bold mr-3">E</span> It is not durable in the long-term.</div>
+                                <div><span className="font-bold mr-3">F</span> It needs to be produced in a certain way to be sustainable.</div>
+                                <div><span className="font-bold mr-3">G</span> Chemicals required for production can be reused.</div>
+                                <div><span className="font-bold mr-3">H</span> This is from a wholly sustainable source.</div>
                             </div>
                         </div>
 
-                        <div className="font-bold mb-4 text-[18px] border-b pb-2 text-center">Student project: developing a new food product</div>
-                        
-                        <div className="flex flex-col items-center space-y-4 my-8">
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Initial aim <span className="font-bold mx-2">27</span> <input type="text" placeholder="27" className="ielts-input" value={answers[27] || ''} onChange={(e) => handleAnswerChange(27, e.target.value)} />
-                            </div>
-                            <div className="text-2xl text-gray-400">&darr;</div>
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Literature review <span className="font-bold mx-2">28</span> <input type="text" placeholder="28" className="ielts-input" value={answers[28] || ''} onChange={(e) => handleAnswerChange(28, e.target.value)} />
-                            </div>
-                            <div className="text-2xl text-gray-400">&darr;</div>
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Product development <span className="font-bold mx-2">29</span> <input type="text" placeholder="29" className="ielts-input" value={answers[29] || ''} onChange={(e) => handleAnswerChange(29, e.target.value)} />
-                            </div>
-                            <div className="text-2xl text-gray-400">&darr;</div>
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Product production <span className="font-bold mx-2">30</span> <input type="text" placeholder="30" className="ielts-input" value={answers[30] || ''} onChange={(e) => handleAnswerChange(30, e.target.value)} />
-                            </div>
+                        <div className="font-bold mb-4 text-[18px] border-b pb-2">Semi-synthetic fabrics</div>
+                        <div className="space-y-4 max-w-[450px]">
+                            <div className="flex items-center"><span className="font-bold w-8">25</span><span className="w-32">Lyocell</span> <input type="text" placeholder="25" className={`ielts-input ielts-input-short uppercase ${answers[25] ? 'active-state' : ''}`} maxLength={1} value={answers[25] || ''} onChange={(e) => handleAnswerChange(25, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">26</span><span className="w-32">Cupro</span> <input type="text" placeholder="26" className={`ielts-input ielts-input-short uppercase ${answers[26] ? 'active-state' : ''}`} maxLength={1} value={answers[26] || ''} onChange={(e) => handleAnswerChange(26, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">27</span><span className="w-32">Bamboo</span> <input type="text" placeholder="27" className={`ielts-input ielts-input-short uppercase ${answers[27] ? 'active-state' : ''}`} maxLength={1} value={answers[27] || ''} onChange={(e) => handleAnswerChange(27, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">28</span><span className="w-32">EcoVero</span> <input type="text" placeholder="28" className={`ielts-input ielts-input-short uppercase ${answers[28] ? 'active-state' : ''}`} maxLength={1} value={answers[28] || ''} onChange={(e) => handleAnswerChange(28, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">29</span><span className="w-32">Cork</span> <input type="text" placeholder="29" className={`ielts-input ielts-input-short uppercase ${answers[29] ? 'active-state' : ''}`} maxLength={1} value={answers[29] || ''} onChange={(e) => handleAnswerChange(29, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
+                            <div className="flex items-center"><span className="font-bold w-8">30</span><span className="w-32">Hemp</span> <input type="text" placeholder="30" className={`ielts-input ielts-input-short uppercase ${answers[30] ? 'active-state' : ''}`} maxLength={1} value={answers[30] || ''} onChange={(e) => handleAnswerChange(30, e.target.value.toUpperCase())} disabled={isSubmitted} /></div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            
-{/* Part 4 */}
+              </div>
+              
               <div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 4 ? 'block' : 'hidden'}`}>
                 <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 31-40</div>
                 <div className="mb-4 italic text-[15px] text-gray-700">Complete the notes below.</div>
                 <div className="mb-6 font-bold text-[15px] uppercase">Write ONE WORD ONLY for each answer.</div>
 
                 <div className="content-box mb-8">
-                    <h2 className="font-bold text-[22px] mb-6 text-center text-black tracking-wide">Challenges facing the cruise ship industry</h2>
+                    <h2 className="font-bold text-[22px] mb-2 text-black tracking-wide">Invasive species</h2>
+                    <p className="mb-6"><span className="font-bold">Definition:</span> an animal or plant that causes harm to an environment after being introduced by humans</p>
                     
-                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2 mt-4">Problems with overtourism</div>
+                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2 mt-4">An invasive species can be a problem when it:</div>
                     <ul className="list-none space-y-4 mb-8 pl-4">
-                        <li>&bull; <span className="font-bold mx-2">31</span><input type="text" placeholder="31" className="ielts-input" value={answers[31] || ''} onChange={(e) => handleAnswerChange(31, e.target.value)} /> is one of the worst problems.</li>
-                        <li>&bull; A tourist <span className="font-bold mx-2">32</span><input type="text" placeholder="32" className="ielts-input" value={answers[32] || ''} onChange={(e) => handleAnswerChange(32, e.target.value)} /> is being introduced in some cities to reduce numbers, e.g. Barcelona.</li>
-                        <li>&bull; Bruges: action was taken to limit day trips from the nearby port because the city was becoming a 'theme park' (e.g. many shops were only stocking <span className="font-bold mx-2">33</span><input type="text" placeholder="33" className="ielts-input" value={answers[33] || ''} onChange={(e) => handleAnswerChange(33, e.target.value)} /> and souvenirs).</li>
-                        <li>&bull; Dubrovnik: limits the number of tourists by managing the <span className="font-bold mx-2">34</span><input type="text" placeholder="34" className="ielts-input" value={answers[34] || ''} onChange={(e) => handleAnswerChange(34, e.target.value)} /> of cruise ship arrivals.</li>
+                        <li>&bull; eats native species.</li>
+                        <li>&bull; introduces a new <span className="font-bold mx-2">31</span><input type="text" placeholder="31" className={`ielts-input ${answers[31] ? 'active-state' : ''}`} value={answers[31] || ''} onChange={(e) => handleAnswerChange(31, e.target.value)} disabled={isSubmitted} /> .</li>
+                        <li>&bull; takes food from native species.</li>
+                        <li>&bull; threatens an entire <span className="font-bold mx-2">32</span><input type="text" placeholder="32" className={`ielts-input ${answers[32] ? 'active-state' : ''}`} value={answers[32] || ''} onChange={(e) => handleAnswerChange(32, e.target.value)} disabled={isSubmitted} /> .</li>
                     </ul>
 
-                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">Problems of perception</div>
+                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">How invasive species spread</div>
                     <ul className="list-none space-y-4 mb-8 pl-4">
-                        <li>&bull; Cruises are generally associated with the elderly.</li>
-                        <li>&bull; There is an assumption about the <span className="font-bold mx-2">35</span><input type="text" placeholder="35" className="ielts-input" value={answers[35] || ''} onChange={(e) => handleAnswerChange(35, e.target.value)} /> of cruises.</li>
-                        <li>&bull; People think there may be too many <span className="font-bold mx-2">36</span><input type="text" placeholder="36" className="ielts-input" value={answers[36] || ''} onChange={(e) => handleAnswerChange(36, e.target.value)} /> .</li>
+                        <li>&bull; accidentally e.g. via people returning from their <span className="font-bold mx-2">33</span><input type="text" placeholder="33" className={`ielts-input ${answers[33] ? 'active-state' : ''}`} value={answers[33] || ''} onChange={(e) => handleAnswerChange(33, e.target.value)} disabled={isSubmitted} /> or on cargo ships</li>
+                        <li>&bull; intentionally e.g. for pest control, or as <span className="font-bold mx-2">34</span><input type="text" placeholder="34" className={`ielts-input ${answers[34] ? 'active-state' : ''}`} value={answers[34] || ''} onChange={(e) => handleAnswerChange(34, e.target.value)} disabled={isSubmitted} /></li>
                     </ul>
 
-                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">Solutions</div>
-                    <p className="mb-4 pl-4">Cruise lines are attracting younger customers by:</p>
-                    <ul className="list-none space-y-4 pl-8">
-                        <li>&bull; becoming more sustainable e.g. using hybrid engines.</li>
-                        <li>&bull; having a wide range of activities e.g. boxing, <span className="font-bold mx-2">37</span><input type="text" placeholder="37" className="ielts-input" value={answers[37] || ''} onChange={(e) => handleAnswerChange(37, e.target.value)} /> and well-being programmes.</li>
-                        <li>&bull; offering a diverse selection of food including <span className="font-bold mx-2">38</span><input type="text" placeholder="38" className="ielts-input" value={answers[38] || ''} onChange={(e) => handleAnswerChange(38, e.target.value)} /> options.</li>
-                        <li>&bull; providing reliable <span className="font-bold mx-2">39</span><input type="text" placeholder="39" className="ielts-input" value={answers[39] || ''} onChange={(e) => handleAnswerChange(39, e.target.value)} /> .</li>
-                        <li>&bull; improving marketing on social media with high quality <span className="font-bold mx-2">40</span><input type="text" placeholder="40" className="ielts-input" value={answers[40] || ''} onChange={(e) => handleAnswerChange(40, e.target.value)} /> .</li>
+                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">Examples of invasive species</div>
+                    <ul className="list-none space-y-4 mb-8 pl-4">
+                        <li>&bull; <span className="italic">Rhinella marina</span> (toads)
+                            <ul className="list-none space-y-2 mt-2 pl-8">
+                                <li className="flex items-start">&ndash; <span className="ml-2 flex-1">were introduced to Australia from Hawaii in 1935 to eat a type of insect that was damaging the <span className="font-bold mx-2">35</span><input type="text" placeholder="35" className={`ielts-input ${answers[35] ? 'active-state' : ''}`} value={answers[35] || ''} onChange={(e) => handleAnswerChange(35, e.target.value)} disabled={isSubmitted} /> plantations.</span></li>
+                                <li className="flex items-start">&ndash; <span className="ml-2 flex-1">failed to solve the problem and became widespread in the north of Australia.</span></li>
+                                <li className="flex items-start">&ndash; <span className="ml-2 flex-1">are poisonous for any species that eats them and reduce the food available for native frogs.</span></li>
+                            </ul>
+                        </li>
+                        <li>&bull; Japanese knotweed plants were popular among 19th-century gardeners in the UK.</li>
+                        <li>&bull; Rhododendron plants prevent <span className="font-bold mx-2">36</span><input type="text" placeholder="36" className={`ielts-input ${answers[36] ? 'active-state' : ''}`} value={answers[36] || ''} onChange={(e) => handleAnswerChange(36, e.target.value)} disabled={isSubmitted} /> from reaching native plants.</li>
+                        <li>&bull; Grey squirrels from N. America reduce sources of food for the UK's native red squirrels and spread a <span className="font-bold mx-2">37</span><input type="text" placeholder="37" className={`ielts-input ${answers[37] ? 'active-state' : ''}`} value={answers[37] || ''} onChange={(e) => handleAnswerChange(37, e.target.value)} disabled={isSubmitted} /> that kills red squirrels.</li>
+                    </ul>
+
+                    <div className="font-bold mb-2 text-[18px] text-blue-900 border-b border-gray-300 pb-2">Tackling invasive species</div>
+                    <ul className="list-none space-y-4 pl-4">
+                        <li>&bull; Monitoring helps us to understand the <span className="font-bold mx-2">38</span><input type="text" placeholder="38" className={`ielts-input ${answers[38] ? 'active-state' : ''}`} value={answers[38] || ''} onChange={(e) => handleAnswerChange(38, e.target.value)} disabled={isSubmitted} /> of invasive species and the impact they have.</li>
+                        <li>&bull; Setting up a national <span className="font-bold mx-2">39</span><input type="text" placeholder="39" className={`ielts-input ${answers[39] ? 'active-state' : ''}`} value={answers[39] || ''} onChange={(e) => handleAnswerChange(39, e.target.value)} disabled={isSubmitted} /> makes it easier to track them.</li>
+                        <li>&bull; Asking the public to <span className="font-bold mx-2">40</span><input type="text" placeholder="40" className={`ielts-input ${answers[40] ? 'active-state' : ''}`} value={answers[40] || ''} onChange={(e) => handleAnswerChange(40, e.target.value)} disabled={isSubmitted} /> and report them helps with monitoring.</li>
                     </ul>
                 </div>
-            </div>
-
-
               </div>
+
+          </div>
       </div>
-<div className="bg-[#e1e5eb] border-t border-gray-300 p-2 flex justify-between items-center shrink-0 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] z-20 overflow-x-auto">
+
+      <div className="bg-[#e1e5eb] border-t border-gray-300 p-2 flex justify-between items-center shrink-0 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] z-20 overflow-x-auto">
           <div className="flex items-center text-[12px] font-bold text-gray-800 ml-4 cursor-pointer shrink-0">
                <input type="checkbox" className="mr-2 w-4 h-4 cursor-pointer" id="review-checkbox" /> <label htmlFor="review-checkbox" className="cursor-pointer">Review</label>
           </div>

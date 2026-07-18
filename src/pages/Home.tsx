@@ -377,10 +377,6 @@ export function Home() {
                   <div className="text-5xl font-extrabold text-[#3B82F6] mb-2"><AnimatedCounter end={10} suffix="+" /></div>
                   <div className="text-slate-400 font-medium">Years of Excellence</div>
                 </div>
-                <div>
-                  <div className="text-5xl font-extrabold text-[#3B82F6] mb-2"><AnimatedCounter end={15} suffix="+" /></div>
-                  <div className="text-slate-400 font-medium">Certified Teachers</div>
-                </div>
               </div>
             </div>
 
@@ -444,6 +440,30 @@ export function Home() {
                 <div className="absolute inset-0 bg-[#0F172A]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </motion.div>
             ))}
+          </div>
+
+          <div className="mt-24">
+            <div className="text-center mb-12">
+              <h3 className="text-[32px] font-bold text-[#0F172A] mb-4 tracking-tight">Videos</h3>
+              <p className="text-[#64748B] text-lg">Watch highlights and stories from our campus.</p>
+            </div>
+            <div className="flex justify-center">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="w-full max-w-4xl aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
+              >
+                <iframe 
+                  src="https://drive.google.com/file/d/1m3tRXayFhFQGk7P4TgtK0Vc1kwNvk6-V/preview" 
+                  width="100%" 
+                  height="100%" 
+                  allow="autoplay" 
+                  title="Life at Ky Nguyen Era Video"
+                  className="border-0"
+                ></iframe>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>

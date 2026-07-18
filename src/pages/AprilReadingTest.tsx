@@ -358,7 +358,7 @@ export function AprilReadingTest({ submissionId, assignmentId }: { submissionId?
     if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
     // Convert to string and handle possible 'OR' / '/' cases if the answer key has them
-    const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+    const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
     
     for (let ans of correctAnswers) {
       ans = ans.trim();

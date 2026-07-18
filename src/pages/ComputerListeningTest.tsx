@@ -125,6 +125,7 @@ export const LISTENING_ANSWER_KEY: Record<number, string> = {
 import { MarchListeningTest } from './MarchListeningTest';
 import { AprilListeningTest } from './AprilListeningTest';
 import { MayListeningTest } from './MayListeningTest';
+import { JuneListeningTest } from './JuneListeningTest';
 
 export function ComputerListeningTest({ submissionId }: { submissionId?: string }) {
 
@@ -138,6 +139,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
   if (id === '10' && !submissionId) return <MarchListeningTest />;
   if (id === '14' && !submissionId) return <AprilListeningTest />;
   if (id === '18' && !submissionId) return <MayListeningTest />;
+  if (id === '22' && !submissionId) return <JuneListeningTest />;
     if (id === '2' && !submissionId) return <JanuaryListeningTest />;
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
@@ -242,7 +244,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
           if (userAns === 'Y') userAns = 'YES';
           if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
-          const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+          const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
           for (let ans of correctAnswers) {
             ans = ans.trim();
             if (userAns === ans) return true;
@@ -311,7 +313,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
         if (userAns === 'Y') userAns = 'YES';
         if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
-        const correctAnswers = String(correctAns).toUpperCase().split(/\s*OR\s*|\s*\/\s*/);
+        const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
         for (let ans of correctAnswers) {
           ans = ans.trim();
           if (userAns === ans) return true;
