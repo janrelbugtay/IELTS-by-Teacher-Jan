@@ -447,19 +447,54 @@ export function Home() {
               <h3 className="text-[32px] font-bold text-[#0F172A] mb-4 tracking-tight">Videos</h3>
               <p className="text-[#64748B] text-lg">Watch highlights and stories from our campus.</p>
             </div>
-            <div className="flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="w-full max-w-4xl aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
+                className="w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
               >
                 <iframe 
                   src="https://drive.google.com/file/d/1m3tRXayFhFQGk7P4TgtK0Vc1kwNvk6-V/preview" 
                   width="100%" 
                   height="100%" 
-                  allow="autoplay" 
-                  title="Life at Ky Nguyen Era Video"
+                  allow="autoplay; fullscreen" 
+                  allowFullScreen
+                  title="Life at Ky Nguyen Era Video 1"
+                  className="border-0"
+                ></iframe>
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
+              >
+                <iframe 
+                  src="https://drive.google.com/file/d/1ec3Ee5VTwWkep1L4-strCnOx3evHoE0e/preview" 
+                  width="100%" 
+                  height="100%" 
+                  allow="autoplay; fullscreen" 
+                  allowFullScreen
+                  title="Life at Ky Nguyen Era Video 2"
+                  className="border-0"
+                ></iframe>
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
+              >
+                <iframe 
+                  src="https://drive.google.com/file/d/1G39tMBVChShT-bU52uwjHqZV7NYwduhr/preview" 
+                  width="100%" 
+                  height="100%" 
+                  allow="autoplay; fullscreen" 
+                  allowFullScreen
+                  title="Life at Ky Nguyen Era Video 3"
                   className="border-0"
                 ></iframe>
               </motion.div>
