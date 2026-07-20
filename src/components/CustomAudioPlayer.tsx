@@ -4,9 +4,10 @@ import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 interface CustomAudioPlayerProps {
   isMockMode?: boolean;
   src: string;
+  onPlayClick?: () => boolean | void;
 }
 
-export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerProps>(({ src, isMockMode }, ref) => {
+export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerProps>(({ src, isMockMode, onPlayClick }, ref) => {
   const innerAudioRef = useRef<HTMLAudioElement | null>(null);
   
   const setRefs = (node: HTMLAudioElement | null) => {
@@ -49,6 +50,11 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
   const togglePlayPause = () => {
     const audio = innerAudioRef.current;
     if (!audio) return;
+    
+    if (!isPlaying && onPlayClick) {
+      const preventDefault = onPlayClick();
+      if (preventDefault) return;
+    }
     
     if (isPlaying) {
       if (isMockMode) return; // Cannot pause in mock mode
