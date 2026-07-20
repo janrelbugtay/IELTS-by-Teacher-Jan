@@ -1688,6 +1688,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   <div className={`p-5 border-b ${theme.boxHeader}`}>
                     <h4 className={`font-bold text-[1.125em] ${theme.boxTitle}`}>{block.title}</h4>
                     <p className={`mt-2 whitespace-pre-wrap italic text-[0.875em] ${theme.boxSub}`}>{block.instruction}</p>
+                    {block.description && (
+                      <div className={`mt-4 whitespace-pre-wrap font-medium text-[1.125em] ${theme.text}`}>{block.description}</div>
+                    )}
                     {block.list && (
                       <div className={`mt-4 p-4 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
                         {block.listTitle && <h5 className={`font-bold mb-3 ${theme.text}`}>{block.listTitle}</h5>}
@@ -1711,6 +1714,34 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                           </div>
                         )}
                         {renderSummaryText(block.text, block.type, block.options)}
+                      </div>
+                    )}
+
+                    {block.type === 'table' && block.table && (
+                      <div className={`overflow-x-auto mb-8 p-6 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
+                        <table className={`w-full border-collapse border ${theme.border}`}>
+                          {block.table.caption && (
+                            <caption className={`text-xl font-bold py-2 border border-b-0 ${theme.border} ${theme.optionBg} ${theme.text}`}>{block.table.caption}</caption>
+                          )}
+                          <thead>
+                            <tr>
+                              {block.table.headers.map((h: string, i: number) => (
+                                <th key={i} className={`border p-3 font-bold text-left ${theme.border} ${theme.optionBg} ${theme.text}`}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {block.table.rows.map((row: string[], rIdx: number) => (
+                              <tr key={rIdx}>
+                                {row.map((cell: string, cIdx: number) => (
+                                  <td key={cIdx} className={`border p-3 align-top ${theme.border} ${theme.text}`}>
+                                    {renderSummaryText(cell, 'summary-input')}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
 
