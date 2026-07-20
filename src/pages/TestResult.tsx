@@ -22,6 +22,7 @@ import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
 import { MarchWritingTest } from './MarchWritingTest';
 import { AprilWritingTest } from './AprilWritingTest';
+import { MayWritingTest } from './MayWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -171,6 +172,9 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       }
       if (submission.assignmentTitle?.toLowerCase().includes('april')) {
           return <AprilWritingTest submissionId={id} />;
+      }
+      if (submission.assignmentTitle?.toLowerCase().includes('may')) {
+          return <MayWritingTest submissionId={id} />;
       }
       return <ComputerWritingTest submissionId={id} />;
   }
