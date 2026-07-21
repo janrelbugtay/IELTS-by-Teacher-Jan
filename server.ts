@@ -58,7 +58,7 @@ async function startServer() {
   });
 
   app.post("/api/evaluate-writing", async (req, res) => {
-    const { inputText, taskType } = req.body;
+    const { inputText, taskType, rawPrompt } = req.body;
 
     if (!inputText) {
       return res.status(400).json({ error: "Input text is required" });
@@ -68,6 +68,7 @@ async function startServer() {
 Your primary role is to analyze a student's essay, identify every mistake, visually cross out incorrect words or phrases, provide corrections, explain the errors, estimate an IELTS band score, and rewrite the essay using natural academic English based STRICTLY on the rules from "Writing and speaking checklist.docx".
 
 IMPORTANT RULES:
+- CRITICAL INSTRUCTION: You MUST carefully read the provided IELTS Writing Task Question. Evaluate the student's response SPECIFICALLY against this prompt. If the student's response is off-topic, memorized, or fails to address the specific topic and requirements of the prompt, you MUST severely penalize the Task Achievement / Task Response score (Band 5.0 or lower).
 - Never simply say "incorrect."
 - Always provide a correction.
 - Always explain why it is incorrect.
@@ -224,6 +225,7 @@ Your goal is to function as a professional IELTS examiner, grammar checker, writ
     const systemPrompt = `You are a certified IELTS examiner with extensive experience assessing IELTS Academic Writing Task 1 and Task 2 responses.
 Your goal is to evaluate the student's writing strictly according to the official IELTS Writing Task Band Descriptors provided below.
 Be strict and realistic. Do not inflate scores.
+CRITICAL INSTRUCTION: You MUST carefully read the provided IELTS Writing Task Question. Evaluate the student's response SPECIFICALLY against this prompt. If the student's response is off-topic, memorized, or fails to address the specific topic and requirements of the prompt, you MUST severely penalize the Task Achievement / Task Response score (Band 5.0 or lower).
 
 Perform ONLY the following tasks based strictly on the JSON schema provided:
 1. Estimated Band Score (round to nearest 0.5). Output scores as short strings like '7.0' or '6.5'.

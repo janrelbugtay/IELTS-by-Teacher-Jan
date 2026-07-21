@@ -460,7 +460,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
             const response = await fetch('/api/evaluate-writing', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ inputText: textToEvaluate, taskType: state.textPart2.trim() ? 'task2' : 'task1' })
+                body: JSON.stringify({ inputText: textToEvaluate, taskType: state.textPart2.trim() ? 'task2' : 'task1', rawPrompt: state.textPart2.trim() ? "Some people think that universities should provide graduates with the knowledge and skills needed in the workplace. Others think that the true function of a university should be to give access to knowledge for its own sake, regardless of whether the course is useful to an employer. Discuss both these views and give your own opinion." : "The chart below gives information about global energy consumption by source from 2000 to 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. (Assume the chart shows global energy consumption increasing from 2000 to 2020, with Oil being the highest but relatively stable, Coal rising sharply until 2010 then plateauing, Natural Gas rising steadily, and Renewables starting low but growing rapidly)." })
             });
             if (!response.ok) {
                 let errText = await response.text();
@@ -800,16 +800,24 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                                 </h3>
                                 <div className="flex items-center gap-3">
                                     {isAdmin && state.aiFeedback && !state.aiFeedback.includes('pending') && !isEditingReport && (
-                                        <button
-                                            onClick={() => {
-                                                setEditedFeedback(state.aiFeedback);
-                                                setEditedBandScore(state.aiBandScore);
-                                                setIsEditingReport(true);
-                                            }}
-                                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition border border-slate-200"
-                                        >
-                                            Edit Report
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={() => {
+                                                    setEditedFeedback(state.aiFeedback);
+                                                    setEditedBandScore(state.aiBandScore);
+                                                    setIsEditingReport(true);
+                                                }}
+                                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition border border-slate-200"
+                                            >
+                                                Edit Report
+                                            </button>
+                                            <button
+                                                onClick={handleGenerateReport}
+                                                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold rounded-xl transition border border-blue-200 flex items-center justify-center cursor-pointer"
+                                            >
+                                                Re-evaluate
+                                            </button>
+                                        </>
                                     )}
                                     {state.aiBandScore > 0 && !isEditingReport && (
                                         <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2 rounded-xl flex items-center gap-2">
