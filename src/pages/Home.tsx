@@ -36,7 +36,19 @@ const AnimatedCounter = ({ end, suffix = "", duration = 2 }: { end: number, suff
   return <span>{count}{suffix}</span>;
 };
 
+
+const VIDEOS = [
+  { id: '1m3tRXayFhFQGk7P4TgtK0Vc1kwNvk6-V', title: 'Life at Ky Nguyen Era Video 1' },
+  { id: '1ec3Ee5VTwWkep1L4-strCnOx3evHoE0e', title: 'Life at Ky Nguyen Era Video 2' },
+  { id: '1G39tMBVChShT-bU52uwjHqZV7NYwduhr', title: 'Life at Ky Nguyen Era Video 3' },
+  { id: '1jmkstraxzjwScvee4npqHGiRJOHp1DzA', title: 'Life at Ky Nguyen Era Video 4' },
+  { id: '1UV_enof7q1KvsshgHkSE1ly5qOZKSLBc', title: 'Life at Ky Nguyen Era Video 5' },
+  { id: '1nlYKmV4DLV3xIqRTSYM_AOvvj9ig_qBJ', title: 'Life at Ky Nguyen Era Video 6' },
+];
+
 export function Home() {
+  const [activeVideo, setActiveVideo] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.05], [1, 0]);
@@ -78,7 +90,7 @@ export function Home() {
 
       {/* Hero Section */}
       <section className="pt-12 pb-24 lg:pt-20 lg:pb-32 overflow-hidden">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-8">
             
             {/* Left Side */}
@@ -88,25 +100,25 @@ export function Home() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="flex-1 max-w-2xl text-center lg:text-left z-10"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#2563EB] font-semibold text-sm mb-8 border border-blue-100 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-blue-50 text-[#2563EB] font-semibold text-xs sm:text-sm mb-6 sm:mb-8 border border-blue-100 shadow-sm text-center">
                 <Star className="w-4 h-4 fill-[#2563EB] text-[#2563EB]" />
                 Cambridge English Learning Platform
               </div>
               
-              <h1 className="text-5xl sm:text-6xl lg:text-[64px] font-extrabold text-[#0F172A] leading-[1.1] mb-8 tracking-tight">
-                Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-[#3B82F6]">Cambridge English</span><br />
-                <span className="text-[40px] sm:text-5xl lg:text-6xl text-[#64748B] font-bold mt-2 block">from Pre-Starter to IELTS</span>
+              <h1 className="text-3xl sm:text-5xl lg:text-[64px] font-extrabold text-[#0F172A] leading-tight sm:leading-[1.1] mb-4 sm:mb-8 tracking-tight">
+                Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-[#3B82F6]">Cambridge English</span>
+                <span className="text-xl sm:text-4xl lg:text-5xl xl:text-6xl text-[#64748B] font-bold mt-2 block">from Pre-Starter to IELTS</span>
               </h1>
               
-              <p className="text-xl text-[#64748B] mb-10 leading-relaxed max-w-xl mx-auto lg:mx-0">
+              <p className="text-lg sm:text-xl text-[#64748B] mb-8 sm:mb-10 leading-relaxed max-w-xl mx-auto lg:mx-0">
                 Unlock your potential with premium structured learning paths, interactive lessons, and authentic exam-style practice.
               </p>
               
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-12">
-                <Link to="/courses" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white rounded-full font-semibold text-[15px] shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:shadow-[0_12px_24px_rgba(37,99,235,0.35)] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 group">
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-10 sm:mb-12">
+                <Link to="/courses" className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white rounded-full font-semibold text-[15px] shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:shadow-[0_12px_24px_rgba(37,99,235,0.35)] hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 group">
                   Explore Courses <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link to="/practice-tests" className="w-full sm:w-auto px-8 py-4 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold text-[15px] shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-2 group">
+                <Link to="/practice-tests" className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold text-[15px] shadow-sm hover:shadow-md hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-2 group">
                   Take Free Practice Test
                 </Link>
               </div>
@@ -205,10 +217,10 @@ export function Home() {
 
       {/* Courses Section */}
       <section className="py-24">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Cambridge English Courses</h2>
+              <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Cambridge English Courses</h2>
               <p className="text-[#64748B] text-lg">Comprehensive programs designed to develop all four language skills systematically.</p>
             </div>
             <Link to="/courses" className="px-6 py-3 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-2">
@@ -257,9 +269,9 @@ export function Home() {
 
       {/* Why Choose Us */}
       <section className="py-24 bg-white border-y border-[#E2E8F0]">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 max-w-3xl mx-auto">
-            <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">The Premium Experience</h2>
+            <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">The Premium Experience</h2>
             <p className="text-[#64748B] text-lg">We combine world-class curriculum with modern technology to deliver the best language education.</p>
           </div>
 
@@ -293,7 +305,7 @@ export function Home() {
 
       {/* Practice Test Highlight */}
       <section className="py-24 overflow-hidden relative">
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-[#0F172A] rounded-[32px] p-8 md:p-16 relative overflow-hidden flex flex-col lg:flex-row items-center gap-16 shadow-[0_32px_64px_rgba(0,0,0,0.15)]">
             
             {/* Background elements */}
@@ -367,7 +379,7 @@ export function Home() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-[40px] font-bold mb-6 leading-tight">Trusted by hundreds of successful students.</h2>
+              <h2 className="text-3xl sm:text-[40px] font-bold mb-6 leading-tight">Trusted by hundreds of successful students.</h2>
               <p className="text-slate-300 text-lg mb-12 max-w-lg">
                 Our results speak for themselves. We've helped students achieve their target scores for university admission, immigration, and personal growth.
               </p>
@@ -412,7 +424,7 @@ export function Home() {
       <section className="py-24 bg-white border-t border-[#E2E8F0]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Life at Kỷ Nguyên Era</h2>
+            <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Life at Kỷ Nguyên Era</h2>
             <p className="text-[#64748B] text-lg">A vibrant community of learners achieving their dreams together.</p>
           </div>
 
@@ -444,60 +456,55 @@ export function Home() {
 
           <div className="mt-24">
             <div className="text-center mb-12">
-              <h3 className="text-[32px] font-bold text-[#0F172A] mb-4 tracking-tight">Videos</h3>
+              <h3 className="text-2xl sm:text-[32px] font-bold text-[#0F172A] mb-4 tracking-tight">Videos</h3>
               <p className="text-[#64748B] text-lg">Watch highlights and stories from our campus.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
-              >
-                <iframe 
-                  src="https://drive.google.com/file/d/1m3tRXayFhFQGk7P4TgtK0Vc1kwNvk6-V/preview" 
-                  width="100%" 
-                  height="100%" 
-                  allow="autoplay; fullscreen" 
-                  allowFullScreen
-                  title="Life at Ky Nguyen Era Video 1"
-                  className="border-0"
-                ></iframe>
-              </motion.div>
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
-              >
-                <iframe 
-                  src="https://drive.google.com/file/d/1ec3Ee5VTwWkep1L4-strCnOx3evHoE0e/preview" 
-                  width="100%" 
-                  height="100%" 
-                  allow="autoplay; fullscreen" 
-                  allowFullScreen
-                  title="Life at Ky Nguyen Era Video 2"
-                  className="border-0"
-                ></iframe>
-              </motion.div>
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0]"
-              >
-                <iframe 
-                  src="https://drive.google.com/file/d/1G39tMBVChShT-bU52uwjHqZV7NYwduhr/preview" 
-                  width="100%" 
-                  height="100%" 
-                  allow="autoplay; fullscreen" 
-                  allowFullScreen
-                  title="Life at Ky Nguyen Era Video 3"
-                  className="border-0"
-                ></iframe>
-              </motion.div>
+              {VIDEOS.map((video, index) => (
+                <motion.div 
+                  key={video.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-lg border border-[#E2E8F0] bg-black"
+                >
+                  {activeVideo !== video.id ? (
+                    <div className="absolute inset-0 cursor-pointer group" onClick={() => setActiveVideo(video.id)}>
+                      <img src={`https://drive.google.com/thumbnail?id=${video.id}&sz=w1000`} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={video.title} referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center group-hover:bg-[#1E4DB7] transition-colors">
+                          <Play className="w-8 h-8 text-white ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 bg-black">
+                      <div 
+                        className="absolute top-0 right-0 w-[60px] h-[60px] z-20 cursor-pointer bg-transparent flex items-center justify-center"
+                        onClick={(e) => {
+                          const container = e.currentTarget.parentElement?.parentElement;
+                          if (document.fullscreenElement) {
+                            document.exitFullscreen();
+                          } else if (container?.requestFullscreen) {
+                            container.requestFullscreen();
+                          }
+                        }}
+                        title="Toggle Fullscreen"
+                      ></div>
+                      <iframe 
+                        src={`https://drive.google.com/file/d/${video.id}/preview?autoplay=1&vq=hd1080`}
+                        width="100%" 
+                        height="100%" 
+                        allow="autoplay; fullscreen" 
+                        allowFullScreen
+                        title={video.title}
+                        className="border-0"
+                      ></iframe>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
             </div>
           </div>
         </div>
@@ -508,7 +515,7 @@ export function Home() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Latest News</h2>
+              <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Latest News</h2>
               <p className="text-[#64748B] text-lg">Updates, tips, and stories from our educational community.</p>
             </div>
             <Link to="#" className="px-6 py-3 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-2">
@@ -552,7 +559,7 @@ export function Home() {
       {/* FAQ Section */}
       <section className="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Common Questions</h2>
+          <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Common Questions</h2>
           <p className="text-[#64748B] text-lg">Everything you need to know about our platform and courses.</p>
         </div>
 
