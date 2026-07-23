@@ -1015,9 +1015,10 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   };
 
   const renderSummaryText = (text: string, type: string, options: any = null) => {
+    if (!text) return null;
     const parts = text.split(/(\{\d+\})/g);
     return (
-      <div className={`leading-loose whitespace-pre-wrap ${theme.text}`}>
+      <span className={`leading-loose whitespace-pre-wrap ${theme.text}`}>
         {parts.map((part, i) => {
           const match = part.match(/\{(\d+)\}/);
           if (match) {
@@ -1115,7 +1116,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             </span>
           );
         })}
-      </div>
+      </span>
     );
   };
 
@@ -1716,6 +1717,52 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                         {renderSummaryText(block.text, block.type, block.options)}
                       </div>
                     )}
+                    
+                    {block.type === 'flowchart-september' && (
+                      <div className={`p-8 rounded-lg border shadow-sm flex flex-col items-center ${theme.panelRight} ${theme.border}`}>
+                        {/* Node 1 */}
+                        <div className={`border-2 rounded-xl p-4 text-center min-w-[250px] shadow-sm ${theme.border} ${theme.box}`}>
+                          <div className="font-bold text-lg mb-2">Gigartina</div>
+                          <div className="text-sm">(also called as {renderSummaryText('{7}', 'summary-input')})</div>
+                        </div>
+                        
+                        {/* Arrow Down */}
+                        <div className="h-12 w-0.5 bg-gray-400 relative">
+                           <div className="absolute top-1/2 left-4 text-sm font-semibold -translate-y-1/2 whitespace-nowrap">made into</div>
+                           <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-r-2 border-b-2 border-gray-400 rotate-45"></div>
+                        </div>
+                        
+                        {/* Node 2 */}
+                        <div className={`border-2 rounded-xl p-4 text-center min-w-[200px] shadow-sm ${theme.border} ${theme.box}`}>
+                          {renderSummaryText('{8}', 'summary-input')}
+                        </div>
+                        
+                        {/* Split Arrows */}
+                        <div className="w-[300px] h-12 border-t-2 border-l-2 border-r-2 border-gray-400 relative rounded-t-xl mt-6">
+                           {/* Left Arrow */}
+                           <div className="absolute -bottom-1 -left-1.5 w-2.5 h-2.5 border-r-2 border-b-2 border-gray-400 rotate-45"></div>
+                           {/* Right Arrow */}
+                           <div className="absolute -bottom-1 -right-1.5 w-2.5 h-2.5 border-r-2 border-b-2 border-gray-400 rotate-45"></div>
+                        </div>
+                        
+                        {/* Bottom Nodes Container */}
+                        <div className="flex w-full max-w-[500px] justify-between px-10">
+                           {/* Node 3 */}
+                           <div className={`border-2 rounded-xl p-4 text-center w-[200px] shadow-sm ${theme.border} ${theme.box}`}>
+                             <div className="mb-3">{renderSummaryText('{9}', 'summary-input')}</div>
+                             <div className="text-sm font-medium">canned or bottled food</div>
+                           </div>
+                           
+                           {/* Node 4 */}
+                           <div className={`border-2 rounded-xl p-4 text-center w-[200px] shadow-sm ${theme.border} ${theme.box}`}>
+                             <div className="font-medium mb-3">medicine</div>
+                             <div className="text-sm mb-2">(e.g. {renderSummaryText('{10}', 'summary-input')})</div>
+                             <div className="text-sm font-medium mb-1">toothpaste</div>
+                             <div className="text-sm font-medium">others</div>
+                           </div>
+                        </div>
+                      </div>
+                    )}
 
                     {block.type === 'table' && block.table && (
                       <div className={`overflow-x-auto mb-8 p-6 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
@@ -1805,7 +1852,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                               {(block.type === 'mcq' || block.type === 'matching') && (
                                 <div className="space-y-3">
                                   {(q.options || block.options).map((opt: string, optIdx: number) => {
-                                    const optionLetter = opt.charAt(0);
+                                    const optionLetter = opt.split(/[\s.]+/)[0];
                                     const isSelected = answers[q.id] === optionLetter;
                                     const isThisOptionCorrect = block.type === 'mcq' || block.type === 'matching' ? ((currentAnswerKey as any)[q.id] === optionLetter) : ((currentAnswerKey as any)[q.id] === opt);
                                     

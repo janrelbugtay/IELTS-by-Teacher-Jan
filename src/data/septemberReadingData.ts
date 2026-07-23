@@ -39,26 +39,7 @@ export const septemberPassages = [
       {
         title: "Questions 7-10",
         instruction: "Complete the flowchart below. Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer.",
-        type: "summary-input",
-        text: `                                Gigartina
-                        (also called as {7})
-                                    |
-                                    | made into
-                                    v
-                                  {8}
-                                 /   \\
-                                /     \\
-                               v       v
-                            {9}       medicine
-         canned or bottled food       (e.g. {10})
-                                      toothpaste
-                                      others`,
-        questions: [
-          { id: 7, text: "7" },
-          { id: 8, text: "8" },
-          { id: 9, text: "9" },
-          { id: 10, text: "10" }
-        ]
+        type: "flowchart-september"
       },
       {
         title: "Questions 11-13",
@@ -95,7 +76,7 @@ export const septemberPassages = [
       {
         title: "Questions 14-18",
         instruction: "Choose the correct letter, A, B, C, or D.",
-        type: "multiple-choice",
+        type: "mcq",
         questions: [
           {
             id: 14,
@@ -126,8 +107,10 @@ export const septemberPassages = [
       },
       {
         title: "Questions 19-23",
-        instruction: "Complete the summary using the list of words, A–I, below.\n\n**The television series is based on Ekman's work**\nA new TV series based on Ekman's work features a hero named Lightman, who detects lies. Initially, Ekman was unenthusiastic about the TV project because he feared the possibility of encouraging viewers' {19}. For example, he was worried that one day the program could result in {20} not being carried out. Ultimately though, he has given the show his blessing because he is not aware of any other comparable program based on a single person's {21}. The {22} of the show's producer has been another pleasant surprise and, considering the genre of the program, Ekman is happy with the show's overall {23}.",
-        type: "summary-completion",
+        instruction: "Complete the summary using the list of words, A–I, below.",
+        text: "**The television series is based on Ekman's work**\n\nA new TV series based on Ekman's work features a hero named Lightman, who detects lies. Initially, Ekman was unenthusiastic about the TV project because he feared the possibility of encouraging viewers' {19}. For example, he was worried that one day the program could result in {20} not being carried out. Ultimately though, he has given the show his blessing because he is not aware of any other comparable program based on a single person's {21}. The {22} of the show's producer has been another pleasant surprise and, considering the genre of the program, Ekman is happy with the show's overall {23}.",
+
+        type: "summary-options",
         options: ["A. consequences", "B. crimes", "C. false beliefs", "D. motives", "E. justice", "F. accuracy", "G. acting", "H. research", "I. ratings"]
       },
       {
@@ -176,7 +159,7 @@ export const septemberPassages = [
       {
         title: "Questions 33-37",
         instruction: "Choose the correct letter, A, B, C, or D.",
-        type: "multiple-choice",
+        type: "mcq",
         questions: [
           {
             id: 33,
@@ -228,6 +211,47 @@ export const septemberPassages = [
   }
 ];
 
-export const septemberAnswers: Record<number, string> = {};
+export const septemberAnswers: Record<number, string> = {
+  "1": "ii",
+  "2": "viii",
+  "3": "v",
+  "4": "i",
+  "5": "iii",
+  "6": "ix",
+  "7": "Irish moss",
+  "8": "agar",
+  "9": "seameal",
+  "10": "cough mixtures",
+  "11": "B",
+  "12": "C",
+  "13": "A",
+  "14": "A",
+  "15": "B",
+  "16": "C",
+  "17": "D",
+  "18": "E",
+  "19": "F",
+  "20": "G",
+  "21": "A",
+  "22": "B",
+  "23": "C",
+  "24": "NOT GIVEN",
+  "25": "NOT GIVEN",
+  "26": "FALSE",
+  "27": "YES",
+  "28": "NO",
+  "29": "NOT GIVEN",
+  "30": "YES",
+  "31": "NO",
+  "32": "NOT GIVEN",
+  "33": "A",
+  "34": "B",
+  "35": "C",
+  "36": "D",
+  "37": "A",
+  "38": "B",
+  "39": "C",
+  "40": "D"
+};
 
 export const septemberExplanations: Record<number, any> = {};
