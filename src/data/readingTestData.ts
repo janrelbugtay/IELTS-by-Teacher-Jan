@@ -3,9 +3,9 @@ import { marchPassages, marchAnswers, marchExplanations } from './marchReadingDa
 import { aprilPassages, aprilAnswers, aprilExplanations } from './aprilReadingData';
 import { mayPassages, mayAnswers, mayExplanations } from './mayReadingData';
 import { junePassages, juneAnswers, juneExplanations } from './juneReadingData';
-
 import { julyPassages, julyAnswers, julyExplanations } from './julyReadingData';
 import { augustPassages, augustAnswers, augustExplanations } from './augustReadingData';
+import { septemberPassages, septemberAnswers, septemberExplanations } from './septemberReadingData';
 
 export const getReadingTestData = (id: string | undefined) => {
   // Return null for January (id === '1') or any unknown ID (e.g. old submissions)
@@ -18,7 +18,6 @@ export const getReadingTestData = (id: string | undefined) => {
   if (id === '9') {
     return { passages: marchPassages, answers: marchAnswers, explanations: marchExplanations };
   }
-
   if (id === '13') {
     return { passages: aprilPassages, answers: aprilAnswers, explanations: aprilExplanations };
   }
@@ -30,7 +29,6 @@ export const getReadingTestData = (id: string | undefined) => {
   if (id === '21') {
     return { passages: junePassages, answers: juneAnswers, explanations: juneExplanations };
   }
-
   
   if (id === '25') {
     return { passages: julyPassages, answers: julyAnswers, explanations: julyExplanations };
@@ -40,8 +38,12 @@ export const getReadingTestData = (id: string | undefined) => {
     return { passages: augustPassages, answers: augustAnswers, explanations: augustExplanations };
   }
 
+  if (id === '33') {
+    return { passages: septemberPassages, answers: septemberAnswers, explanations: septemberExplanations };
+  }
+
   // Explicitly defined future tests that don't have content yet
-  if (id && ['33', '37', '41'].includes(id)) {
+  if (id && ['37', '41'].includes(id)) {
     return {
       passages: [
         {
