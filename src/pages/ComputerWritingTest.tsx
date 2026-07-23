@@ -12,6 +12,7 @@ import { FebruaryWritingTest } from './FebruaryWritingTest';
 import { MarchWritingTest } from './MarchWritingTest';
 import { AprilWritingTest } from './AprilWritingTest';
 import { MayWritingTest } from './MayWritingTest';
+import { JuneWritingTest } from './JuneWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -421,6 +422,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
 
     if (id === '19' && !submissionId) {
         return <MayWritingTest />;
+    }
+    if (id === '23' && !submissionId) {
+        return <JuneWritingTest />;
     }
 
     const [state, setState] = useState({
