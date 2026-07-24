@@ -1211,15 +1211,15 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           className={`w-full text-left flex border h-auto min-h-[44px] rounded-lg overflow-hidden transition-all hover:scale-[1.02] hover:shadow-md cursor-pointer ${isCorrect ? (colorTheme !== 'standard' ? 'border-green-800 shadow-sm' : 'border-green-300 shadow-sm') : (colorTheme !== 'standard' ? 'border-red-800 shadow-sm' : 'border-red-300 shadow-sm')}`}
           title="Click to view explanation in passage"
         >
-          <div className={`w-10 flex items-center justify-center font-bold text-[1.125em] border-r shrink-0 ${isCorrect ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-500 border-green-800' : 'bg-green-50 text-green-700 border-green-200') : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] text-red-500 border-red-800' : 'bg-red-50 text-red-700 border-red-200')}`}>
+          <div className={`w-10 flex items-center justify-center font-bold text-[1.25em] border-r shrink-0 ${isCorrect ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-500 border-green-800' : 'bg-green-50 text-green-700 border-green-200') : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] text-red-500 border-red-800' : 'bg-red-50 text-red-700 border-red-200')}`}>
             {qNum}
           </div>
           <div className={`flex-1 flex flex-col justify-center px-4 py-2 font-medium text-[1em] ${isCorrect ? (colorTheme !== 'standard' ? 'bg-[#222] text-green-400' : 'bg-white text-green-900') : (colorTheme !== 'standard' ? 'bg-[#222]' : 'bg-white')}`}>
-            <span className={isCorrect ? '' : (userAns ? (colorTheme !== 'standard' ? 'text-red-400 line-through opacity-80' : 'text-red-600 line-through opacity-80') : 'text-gray-500 italic text-[0.875em]')}>
+            <span className={isCorrect ? '' : (userAns ? (colorTheme !== 'standard' ? 'text-red-400 line-through opacity-80' : 'text-red-600 line-through opacity-80') : 'text-gray-500 italic text-[1.25em]')}>
               {userAns || 'No Answer'}
             </span>
             {!isCorrect && (
-              <span className={`text-[0.875em] font-bold block mt-1 flex items-center gap-1 ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>
+              <span className={`text-[1.25em] font-bold block mt-1 flex items-center gap-1 ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>
                  <CheckCircle2 size={14} /> {(currentAnswerKey as any)[qNum].replace('/', ' or ')}
               </span>
             )}
@@ -1239,40 +1239,40 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           
           <button 
              onClick={() => navigate('/dashboard')}
-             className={`absolute top-6 left-6 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-bold text-[0.875em] ${colorTheme !== 'standard' ? 'text-gray-400 hover:bg-[#222]' : 'text-gray-600 hover:bg-gray-100'}`}
+             className={`absolute top-6 left-6 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-bold text-[1.25em] ${colorTheme !== 'standard' ? 'text-gray-400 hover:bg-[#222]' : 'text-gray-600 hover:bg-gray-100'}`}
           >
              <ArrowLeft size={18} /> Back to Dashboard
           </button>
 
           <div className={`flex items-center justify-center gap-3 mb-8 py-3 mt-4 rounded-xl border ${colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-400 border-green-800' : 'bg-green-50 text-green-600 border-green-200'}`}>
             <CheckCircle2 size={24} />
-            <span className="text-[1.125em] font-bold">Test Submitted Successfully</span>
+            <span className="text-[1.25em] font-bold">Test Submitted Successfully</span>
           </div>
 
           <h1 className={`text-[2.25em] font-bold text-center mb-10 font-serif ${theme.heading}`}>IELTS Reading Results</h1>
           
           <div className={`flex flex-col md:flex-row justify-between items-center gap-8 mb-10 p-6 md:p-8 rounded-2xl border shadow-sm ${colorTheme !== 'standard' ? 'bg-[#222] border-gray-700' : 'bg-blue-50/50 border-blue-100'}`}>
-            <div className="font-bold text-[0.875em] w-full md:flex-1">
+            <div className="font-bold text-[1.25em] w-full md:flex-1">
               <div className="flex flex-col gap-2">
-                <span className={`uppercase tracking-widest text-[0.875em] ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-600'}`}>Candidate Name</span>
+                <span className={`uppercase tracking-widest text-[1.25em] ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-600'}`}>Candidate Name</span>
                 <div className={`border-b-2 px-4 py-3 text-[1.25em] uppercase tracking-wider rounded-t shadow-inner ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-600 text-gray-300' : 'bg-white border-blue-200 text-blue-900'}`}>{studentName}</div>
               </div>
             </div>
             
             <div className="flex gap-4 w-full md:w-auto justify-center">
               <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[140px] transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-700' : 'bg-white border-blue-100'}`}>
-                <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-2 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>Final Score</span>
+                <span className={`block text-[1.25em] font-bold uppercase tracking-widest mb-2 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>Final Score</span>
                 <span className={`text-[3.75em] font-black leading-none ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{score}<span className={`text-[0.5em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>/40</span></span>
               </div>
               
               <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[140px] transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800' : 'bg-green-50 border-green-300'}`}>
-                <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-2 ${colorTheme !== 'standard' ? 'text-green-600' : 'text-green-700'}`}>Band Score</span>
+                <span className={`block text-[1.25em] font-bold uppercase tracking-widest mb-2 ${colorTheme !== 'standard' ? 'text-green-600' : 'text-green-700'}`}>Band Score</span>
                 <span className={`text-[3.75em] font-black leading-none ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>{getBandScore(score)}</span>
               </div>
             </div>
           </div>
 
-          <p className={`text-center text-[0.875em] font-bold uppercase tracking-widest mb-6 flex items-center justify-center gap-2 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>
+          <p className={`text-center text-[1.25em] font-bold uppercase tracking-widest mb-6 flex items-center justify-center gap-2 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>
              <Info size={16} /> Click on any question below to see the explanation
           </p>
 
@@ -1361,8 +1361,8 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                 <AlertCircle size={24} className="text-red-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">{modalConfig.title}</h3>
-              <p className="text-[0.875em] text-gray-600 mb-8 leading-relaxed font-medium whitespace-pre-wrap">{modalConfig.message}</p>
-              <div className="flex justify-end gap-3 text-[0.875em] font-bold">
+              <p className="text-[1.25em] text-gray-600 mb-8 leading-relaxed font-medium whitespace-pre-wrap">{modalConfig.message}</p>
+              <div className="flex justify-end gap-3 text-[1.25em] font-bold">
                 <button
                   onClick={() => setModalConfig(null)}
                   className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -1412,7 +1412,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               onClick={() => {
                 setReviewMode(false);
               }}
-              className="flex items-center gap-2 hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-bold text-[0.875em] cursor-pointer pointer-events-auto"
+              className="flex items-center gap-2 hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors font-bold text-[1.25em] cursor-pointer pointer-events-auto"
             >
               <ArrowLeft size={18} /> Back to Results
             </button>
@@ -1426,7 +1426,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
         
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           {!reviewMode ? (
-            <div className={`pointer-events-auto flex items-center gap-2 px-4 py-1.5 rounded-full font-mono font-bold tracking-wider text-[1.125em] shadow-inner ${timeLeft < 300 ? 'bg-red-500 text-white animate-pulse shadow-red-900/50' : 'bg-blue-950 text-blue-100 border border-blue-800'}`}>
+            <div className={`pointer-events-auto flex items-center gap-2 px-4 py-1.5 rounded-full font-mono font-bold tracking-wider text-[1.25em] shadow-inner ${timeLeft < 300 ? 'bg-red-500 text-white animate-pulse shadow-red-900/50' : 'bg-blue-950 text-blue-100 border border-blue-800'}`}>
               <Clock size={20} />
               <span className={isPaused ? 'opacity-50' : ''}>{formatTime(timeLeft)}</span>
               
@@ -1442,7 +1442,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               )}
             </div>
           ) : (
-            <div className="pointer-events-auto flex items-center gap-2 px-6 py-2 rounded-full font-bold tracking-wider text-[0.875em] shadow-inner bg-yellow-500 text-black border border-yellow-400">
+            <div className="pointer-events-auto flex items-center gap-2 px-6 py-2 rounded-full font-bold tracking-wider text-[1.25em] shadow-inner bg-yellow-500 text-black border border-yellow-400">
               <Info size={16} />
               <span>Reviewing Explanations</span>
             </div>
@@ -1452,7 +1452,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
         <div className="flex items-center gap-4 relative z-30" ref={settingsRef}>
           <div className="hidden md:flex items-center gap-2 text-blue-200 bg-blue-800/50 px-3 py-1.5 rounded-full border border-blue-700">
             <User size={16} />
-            <span className="font-medium max-w-[150px] truncate text-[0.875em]">{studentName}</span>
+            <span className="font-medium max-w-[150px] truncate text-[1.25em]">{studentName}</span>
           </div>
           
           <button 
@@ -1469,30 +1469,30 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               </h4>
               
               <div className="mb-5">
-                <p className="text-[0.875em] font-bold text-gray-500 uppercase tracking-wider mb-3">Change Text Size</p>
+                <p className="text-[1.25em] font-bold text-gray-500 uppercase tracking-wider mb-3">Change Text Size</p>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-3 text-[0.875em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                  <label className="flex items-center gap-3 text-[1.25em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                     <input type="radio" name="textSize" className="w-4 h-4 text-blue-600 focus:ring-blue-500" checked={textSize === 'standard'} onChange={() => setTextSize('standard')} /> Standard
                   </label>
-                  <label className="flex items-center gap-3 text-[0.875em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                  <label className="flex items-center gap-3 text-[1.25em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                     <input type="radio" name="textSize" className="w-4 h-4 text-blue-600 focus:ring-blue-500" checked={textSize === 'large'} onChange={() => setTextSize('large')} /> Large
                   </label>
-                  <label className="flex items-center gap-3 text-[0.875em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                  <label className="flex items-center gap-3 text-[1.25em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                     <input type="radio" name="textSize" className="w-4 h-4 text-blue-600 focus:ring-blue-500" checked={textSize === 'xlarge'} onChange={() => setTextSize('xlarge')} /> Extra Large
                   </label>
                 </div>
               </div>
 
               <div>
-                <p className="text-[0.875em] font-bold text-gray-500 uppercase tracking-wider mb-3">Change Screen Colors</p>
+                <p className="text-[1.25em] font-bold text-gray-500 uppercase tracking-wider mb-3">Change Screen Colors</p>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-3 text-[0.875em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                  <label className="flex items-center gap-3 text-[1.25em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                     <input type="radio" name="colorTheme" className="w-4 h-4 text-blue-600 focus:ring-blue-500" checked={colorTheme === 'standard'} onChange={() => setColorTheme('standard')} /> Standard
                   </label>
-                  <label className="flex items-center gap-3 text-[0.875em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                  <label className="flex items-center gap-3 text-[1.25em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                     <input type="radio" name="colorTheme" className="w-4 h-4 text-blue-600 focus:ring-blue-500" checked={colorTheme === 'white-on-black'} onChange={() => setColorTheme('white-on-black')} /> White on black
                   </label>
-                  <label className="flex items-center gap-3 text-[0.875em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                  <label className="flex items-center gap-3 text-[1.25em] cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                     <input type="radio" name="colorTheme" className="w-4 h-4 text-blue-600 focus:ring-blue-500" checked={colorTheme === 'yellow-on-black'} onChange={() => setColorTheme('yellow-on-black')} /> Yellow on black
                   </label>
                 </div>
@@ -1510,7 +1510,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               setCurrentPassageIdx(idx);
               if (reviewMode) setActiveReviewQuestion(null);
             }}
-            className={`px-6 py-2.5 text-[0.875em] font-bold tracking-wide transition-all ${
+            className={`px-6 py-2.5 text-[1.25em] font-bold tracking-wide transition-all ${
               currentPassageIdx === idx 
                 ? (colorTheme !== 'standard' ? 'border-b-4 border-yellow-500 text-yellow-400 bg-[#333]' : 'border-b-4 border-white text-white bg-blue-900') 
                 : (colorTheme !== 'standard' ? 'border-b-4 border-transparent text-gray-400 hover:bg-[#222]' : 'border-b-4 border-transparent text-blue-200 hover:bg-blue-900/50 hover:text-white')
@@ -1532,8 +1532,8 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           <div className="p-8 max-w-3xl mx-auto">
             <div className={`mb-10 flex items-start justify-between border-b pb-6 ${theme.border} border-opacity-50`}>
               <div>
-                <h2 className={`text-[0.875em] font-bold uppercase tracking-widest mb-2 ${theme.muted}`}>{passage.title}</h2>
-                <h3 className={`text-[1.5em] font-bold leading-tight ${theme.heading}`}>{passage.subtitle}</h3>
+                <h2 className={`text-[1.25em] font-bold uppercase tracking-widest mb-2 ${theme.muted}`}>{passage.title}</h2>
+                <h3 className={`text-[1.5em] font-bold leading-tight ${theme.heading}`}>{(passage as any).subtitle}</h3>
               </div>
             </div>
             
@@ -1559,7 +1559,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   <div className="flex items-center h-9">
                     <button 
                       onClick={() => addHighlight('')}
-                      className="flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                      className="flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[1.25em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
                     >
                       <Highlighter size={16} strokeWidth={2.5} className="text-yellow-500" />
                       Highlight
@@ -1567,7 +1567,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     <div className="w-px h-5 bg-gray-200 mx-1"></div>
                     <button 
                       onClick={() => { setPopover({...popover, type: 'note-input'}); setNoteInput(''); }}
-                      className="flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                      className="flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[1.25em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
                     >
                       <Edit3 size={16} strokeWidth={2.5} className="text-blue-500" />
                       Add Note
@@ -1575,7 +1575,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     <div className="w-px h-5 bg-gray-200 mx-1"></div>
                     <button 
                       onClick={handleCopyText}
-                      className={`flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold transition-colors whitespace-nowrap ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
+                      className={`flex items-center justify-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[1.25em] font-semibold transition-colors whitespace-nowrap ${isCopied ? 'text-green-600' : 'text-gray-700'}`}
                     >
                       {isCopied ? <CheckCircle2 size={16} strokeWidth={2.5} className="text-green-600" /> : <Copy size={16} strokeWidth={2.5} className="text-gray-500" />}
                       {isCopied ? 'Copied!' : 'Copy'}
@@ -1587,7 +1587,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   <div className="flex flex-col">
                     {popover.noteText ? (
                       <div className="px-3 py-2 border-b border-gray-100 mb-1 max-w-xs bg-yellow-50/50 rounded-t">
-                        <p className="text-[0.875em] text-gray-800 break-words font-medium">{popover.noteText}</p>
+                        <p className="text-[1.25em] text-gray-800 break-words font-medium">{popover.noteText}</p>
                       </div>
                     ) : (
                       <div className="hidden"></div>
@@ -1596,7 +1596,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     <div className="flex items-center h-9">
                       <button 
                         onClick={() => { setPopover({...popover, type: 'note-input'}); setNoteInput(popover.noteText || ''); }}
-                        className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[1.25em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
                         title="Edit Note"
                       >
                         <Edit3 size={16} strokeWidth={2.5} className={popover.noteText ? "text-blue-500" : "text-gray-500"} /> {popover.noteText ? 'Edit Note' : 'Add Note'}
@@ -1604,7 +1604,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                       <div className="w-px h-5 bg-gray-200 mx-1"></div>
                       <button 
                         onClick={clearHighlight}
-                        className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[1.25em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
                         title="Clear Highlight"
                       >
                         <Eraser size={16} strokeWidth={2.5} className="text-red-400" /> Clear
@@ -1612,7 +1612,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                       <div className="w-px h-5 bg-gray-200 mx-1"></div>
                       <button 
                         onClick={() => { setPopover(null); clearAllHighlights(popover.passageId); }}
-                        className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[0.875em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 px-3 h-full hover:bg-gray-50 rounded text-[1.25em] font-semibold text-gray-700 transition-colors whitespace-nowrap"
                         title="Clear All Highlights"
                       >
                         <Trash2 size={16} strokeWidth={2.5} className="text-red-500" /> Clear all
@@ -1625,7 +1625,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   <div className="w-64 p-2">
                     <textarea
                       autoFocus
-                      className="w-full border border-gray-300 rounded p-3 text-[0.875em] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none shadow-inner"
+                      className="w-full border border-gray-300 rounded p-3 text-[1.25em] focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none shadow-inner"
                       rows={3}
                       placeholder="Type your note here..."
                       value={noteInput}
@@ -1633,13 +1633,13 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     />
                     <div className="flex justify-end gap-2 mt-2">
                       <button 
-                        className="px-4 py-1.5 text-gray-600 hover:bg-gray-100 rounded text-[0.875em] font-bold transition-colors" 
+                        className="px-4 py-1.5 text-gray-600 hover:bg-gray-100 rounded text-[1.25em] font-bold transition-colors" 
                         onClick={() => setPopover(null)}
                       >
                         Cancel
                       </button>
                       <button 
-                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[0.875em] font-bold shadow-sm transition-colors" 
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[1.25em] font-bold shadow-sm transition-colors" 
                         onClick={popover.highlightId ? updateNote : () => addHighlight(noteInput)}
                       >
                         Save Note
@@ -1676,7 +1676,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               <div className="mb-8 flex items-center justify-between bg-yellow-100 p-4 rounded-xl border border-yellow-300 shadow-sm animate-fade-in">
                 <div className="flex items-center gap-3 text-yellow-800">
                   <Info size={24} />
-                  <span className="font-bold text-[1.125em]">Reviewing Passage {currentPassageIdx + 1} - Click any question to view its explanation</span>
+                  <span className="font-bold text-[1.25em]">Reviewing Passage {currentPassageIdx + 1} - Click any question to view its explanation</span>
                 </div>
               </div>
             )}
@@ -1687,10 +1687,10 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               return (
                 <div key={bIdx} className={`mb-12 rounded-xl shadow-md border overflow-hidden ${theme.box} ${theme.border}`}>
                   <div className={`p-5 border-b ${theme.boxHeader}`}>
-                    <h4 className={`font-bold text-[1.125em] ${theme.boxTitle}`}>{block.title}</h4>
-                    <p className={`mt-2 whitespace-pre-wrap italic text-[0.875em] ${theme.boxSub}`}>{block.instruction}</p>
+                    <h4 className={`font-bold text-[1.25em] ${theme.boxTitle}`}>{block.title}</h4>
+                    <p className={`mt-2 whitespace-pre-wrap italic text-[1.25em] ${theme.boxSub}`}>{block.instruction}</p>
                     {block.description && (
-                      <div className={`mt-4 whitespace-pre-wrap font-medium text-[1.125em] ${theme.text}`}>{block.description}</div>
+                      <div className={`mt-4 whitespace-pre-wrap font-medium text-[1.25em] ${theme.text}`}>{block.description}</div>
                     )}
                     {block.list && (
                       <div className={`mt-4 p-4 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
@@ -1925,6 +1925,26 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                 </div>
                               )}
 
+
+                              {block.type === 'dropdown' && (
+                                <select
+                                  disabled={reviewMode}
+                                  className={`w-full border-2 rounded-lg p-4 focus:outline-none transition-all shadow-inner font-bold text-[1em] appearance-none cursor-pointer ${
+                                    reviewMode
+                                      ? (isCorrect
+                                          ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800 text-green-400 pointer-events-none' : 'bg-green-50 border-green-300 text-green-900 pointer-events-none')
+                                          : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-800 text-red-400 pointer-events-none' : 'bg-red-50 border-red-400 text-red-700 pointer-events-none'))
+                                      : `focus:border-blue-500 ${theme.input} ${theme.border}`
+                                  }`}
+                                  value={answers[q.id] || ''}
+                                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                >
+                                  <option value="" disabled>Select an option...</option>
+                                  {(q.options || block.options || []).map((opt: string) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              )}
                               {block.type === 'input' && (
                                  <input
                                    type="text"
@@ -2082,8 +2102,8 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               <AlertCircle size={24} className="text-blue-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">{modalConfig.title}</h3>
-            <p className="text-[0.875em] text-gray-600 mb-8 leading-relaxed font-medium whitespace-pre-wrap">{modalConfig.message}</p>
-            <div className="flex justify-end gap-3 text-[0.875em] font-bold">
+            <p className="text-[1.25em] text-gray-600 mb-8 leading-relaxed font-medium whitespace-pre-wrap">{modalConfig.message}</p>
+            <div className="flex justify-end gap-3 text-[1.25em] font-bold">
               <button
                 onClick={() => setModalConfig(null)}
                 className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
