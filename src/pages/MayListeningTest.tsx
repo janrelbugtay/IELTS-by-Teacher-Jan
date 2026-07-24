@@ -539,18 +539,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
               )}
           </div>
 
-          <div className="flex items-center gap-2">
-              <button className="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Settings</button>
-              <button className="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Help <span className="text-blue-700 font-bold ml-0.5">?</span></button>
-              <button onClick={() => navigate('/dashboard')} className="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Quit</button>
-              
-              <div className="flex items-center gap-2 ml-2 bg-gradient-to-b from-gray-100 to-gray-300 px-2 py-0.5 rounded border border-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
-                  </svg>
-                  <input type="range" className="w-16 h-1 bg-gray-400 rounded-lg appearance-none cursor-pointer" value={volume} onChange={handleVolumeChange} />
-              </div>
-          </div>
+          <div className="flex items-center gap-2"></div>
       </div>
 
       <div className="bg-white px-8 py-3 shadow-sm border-b border-gray-300 z-10 shrink-0 flex justify-between items-center">
@@ -559,7 +548,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
               <p className="text-[13px] text-gray-700">Listen and answer questions <span className="font-bold">{navQuestionRange}</span>.</p>
           </div>
           <div>
-              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1eYWQZIbPTbooFfQWEq6tfi1FAyjt-r9I"  isMockMode={testMode === 'mock'} />
+              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1ZKq-vISQpO7DHehoec-ickzrDFvPZRc3"  isMockMode={testMode === 'mock'} />
           </div>
       </div>
 
@@ -635,11 +624,11 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="space-y-4">
                         <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">11-12</span><span>Which TWO pieces of advice are given about the Marsden Coastal Walk?</span></div>
                         <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="A" className="mcq-checkbox" checked={answers[11] === 'A' || answers[12] === 'A'} onChange={(e) => handleMultiSelect(11, 12, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> Stop for lunch in an ancient town.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="B" className="mcq-checkbox" checked={answers[11] === 'B' || answers[12] === 'B'} onChange={(e) => handleMultiSelect(11, 12, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> Don't miss the ruins of a certain building.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="C" className="mcq-checkbox" checked={answers[11] === 'C' || answers[12] === 'C'} onChange={(e) => handleMultiSelect(11, 12, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> Catch a boat to the start of this walk.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="D" className="mcq-checkbox" checked={answers[11] === 'D' || answers[12] === 'D'} onChange={(e) => handleMultiSelect(11, 12, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> Be careful of the steep and rocky paths.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q11_12" value="E" className="mcq-checkbox" checked={answers[11] === 'E' || answers[12] === 'E'} onChange={(e) => handleMultiSelect(11, 12, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> Don't worry about getting lost.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q11_12" value="A" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[11] === 'A' || answers[12] === 'A'} onChange={(e) => handleMultiSelect(11, 12, 'A', e.target.checked)} /> <span className="font-bold w-6 shrink-0">A</span> Stop for lunch in an ancient town.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q11_12" value="B" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[11] === 'B' || answers[12] === 'B'} onChange={(e) => handleMultiSelect(11, 12, 'B', e.target.checked)} /> <span className="font-bold w-6 shrink-0">B</span> Don't miss the ruins of a certain building.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q11_12" value="C" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[11] === 'C' || answers[12] === 'C'} onChange={(e) => handleMultiSelect(11, 12, 'C', e.target.checked)} /> <span className="font-bold w-6 shrink-0">C</span> Catch a boat to the start of this walk.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q11_12" value="D" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[11] === 'D' || answers[12] === 'D'} onChange={(e) => handleMultiSelect(11, 12, 'D', e.target.checked)} /> <span className="font-bold w-6 shrink-0">D</span> Be careful of the steep and rocky paths.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q11_12" value="E" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[11] === 'E' || answers[12] === 'E'} onChange={(e) => handleMultiSelect(11, 12, 'E', e.target.checked)} /> <span className="font-bold w-6 shrink-0">E</span> Don't worry about getting lost.</label>
                         </div>
                     </div>
                 </div>
@@ -651,11 +640,11 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="space-y-4">
                         <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">13-14</span><span>Which TWO things are said about the Melby Heritage Walk?</span></div>
                         <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="A" className="mcq-checkbox" checked={answers[13] === 'A' || answers[14] === 'A'} onChange={(e) => handleMultiSelect(13, 14, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> This walk is mostly downhill.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="B" className="mcq-checkbox" checked={answers[13] === 'B' || answers[14] === 'B'} onChange={(e) => handleMultiSelect(13, 14, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> The paths can get busy during the day.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="C" className="mcq-checkbox" checked={answers[13] === 'C' || answers[14] === 'C'} onChange={(e) => handleMultiSelect(13, 14, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> This is a circular walk.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="D" className="mcq-checkbox" checked={answers[13] === 'D' || answers[14] === 'D'} onChange={(e) => handleMultiSelect(13, 14, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> A tower stands on the site of an older structure.</label>
-                            <label className="mcq-label"><input type="checkbox" name="q13_14" value="E" className="mcq-checkbox" checked={answers[13] === 'E' || answers[14] === 'E'} onChange={(e) => handleMultiSelect(13, 14, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> There are far-reaching views the whole way.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q13_14" value="A" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[13] === 'A' || answers[14] === 'A'} onChange={(e) => handleMultiSelect(13, 14, 'A', e.target.checked)} /> <span className="font-bold w-6 shrink-0">A</span> This walk is mostly downhill.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q13_14" value="B" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[13] === 'B' || answers[14] === 'B'} onChange={(e) => handleMultiSelect(13, 14, 'B', e.target.checked)} /> <span className="font-bold w-6 shrink-0">B</span> The paths can get busy during the day.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q13_14" value="C" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[13] === 'C' || answers[14] === 'C'} onChange={(e) => handleMultiSelect(13, 14, 'C', e.target.checked)} /> <span className="font-bold w-6 shrink-0">C</span> This is a circular walk.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q13_14" value="D" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[13] === 'D' || answers[14] === 'D'} onChange={(e) => handleMultiSelect(13, 14, 'D', e.target.checked)} /> <span className="font-bold w-6 shrink-0">D</span> A tower stands on the site of an older structure.</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q13_14" value="E" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[13] === 'E' || answers[14] === 'E'} onChange={(e) => handleMultiSelect(13, 14, 'E', e.target.checked)} /> <span className="font-bold w-6 shrink-0">E</span> There are far-reaching views the whole way.</label>
                         </div>
                     </div>
                 </div>
@@ -668,17 +657,17 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="content-box">
                         <h3 className="text-center font-bold text-xl mb-4 text-black">Melby Coal Mine</h3>
                         
-                        <div className="w-full max-w-[500px] h-[300px] border-2 border-dashed border-gray-400 mx-auto flex items-center justify-center bg-gray-50 mb-8 rounded relative">
-                            <span className="text-gray-500 font-bold text-center px-4">Map placeholder (image_392157.png) <br/><br/> Features A-I</span>
+                        <div className="w-full max-w-[600px] mx-auto flex items-center justify-center mb-8 rounded relative overflow-hidden border border-gray-300 shadow-sm bg-white">
+                            <img src="https://drive.google.com/thumbnail?id=1ku89kx9fgMCcJVuxCHRsj0HLFi01joGb&sz=w1000" alt="Map of Melby Coal Mine" className="w-full h-auto object-contain" referrerPolicy="no-referrer" />
                         </div>
 
                         <div className="space-y-4 max-w-[450px] mx-auto">
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">15</span><span className="flex-1">Exhibition</span> <input type="text" placeholder="15" className="ielts-input" value={answers[15] || ''} onChange={(e) => handleAnswerChange(15, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">16</span><span className="flex-1">Baths</span> <input type="text" placeholder="16" className="ielts-input" value={answers[16] || ''} onChange={(e) => handleAnswerChange(16, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">17</span><span className="flex-1">Tools</span> <input type="text" placeholder="17" className="ielts-input" value={answers[17] || ''} onChange={(e) => handleAnswerChange(17, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">18</span><span className="flex-1">Vehicles</span> <input type="text" placeholder="18" className="ielts-input" value={answers[18] || ''} onChange={(e) => handleAnswerChange(18, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">19</span><span className="flex-1">Ponies</span> <input type="text" placeholder="19" className="ielts-input" value={answers[19] || ''} onChange={(e) => handleAnswerChange(19, e.target.value)} /></div>
-                            <div className="flex items-center justify-between"><span className="font-bold w-8">20</span><span className="flex-1">Education centre</span> <input type="text" placeholder="20" className="ielts-input" value={answers[20] || ''} onChange={(e) => handleAnswerChange(20, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">15</span><span className="w-32">Exhibition</span> <input type="text" placeholder="15" className="ielts-input flex-1 max-w-[120px]" value={answers[15] || ''} onChange={(e) => handleAnswerChange(15, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">16</span><span className="w-32">Baths</span> <input type="text" placeholder="16" className="ielts-input flex-1 max-w-[120px]" value={answers[16] || ''} onChange={(e) => handleAnswerChange(16, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">17</span><span className="w-32">Tools</span> <input type="text" placeholder="17" className="ielts-input flex-1 max-w-[120px]" value={answers[17] || ''} onChange={(e) => handleAnswerChange(17, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">18</span><span className="w-32">Vehicles</span> <input type="text" placeholder="18" className="ielts-input flex-1 max-w-[120px]" value={answers[18] || ''} onChange={(e) => handleAnswerChange(18, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">19</span><span className="w-32">Ponies</span> <input type="text" placeholder="19" className="ielts-input flex-1 max-w-[120px]" value={answers[19] || ''} onChange={(e) => handleAnswerChange(19, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">20</span><span className="w-32">Education centre</span> <input type="text" placeholder="20" className="ielts-input flex-1 max-w-[120px]" value={answers[20] || ''} onChange={(e) => handleAnswerChange(20, e.target.value)} /></div>
                         </div>
                     </div>
                 </div>
@@ -694,11 +683,11 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="space-y-4">
                         <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">21-22</span><span>Which TWO facts in the sessions on food safety were new information for Nadia and Fergus?</span></div>
                         <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="A" className="mcq-checkbox" checked={answers[21] === 'A' || answers[22] === 'A'} onChange={(e) => handleMultiSelect(21, 22, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> the amount of plastic in the ocean</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="B" className="mcq-checkbox" checked={answers[21] === 'B' || answers[22] === 'B'} onChange={(e) => handleMultiSelect(21, 22, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> the number of diseases caused by contaminated food</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="C" className="mcq-checkbox" checked={answers[21] === 'C' || answers[22] === 'C'} onChange={(e) => handleMultiSelect(21, 22, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> the amount of food that is wasted</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="D" className="mcq-checkbox" checked={answers[21] === 'D' || answers[22] === 'D'} onChange={(e) => handleMultiSelect(21, 22, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> the number of people who are obese</label>
-                            <label className="mcq-label"><input type="checkbox" name="q21_22" value="E" className="mcq-checkbox" checked={answers[21] === 'E' || answers[22] === 'E'} onChange={(e) => handleMultiSelect(21, 22, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> the result of treating animals with antibiotics</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q21_22" value="A" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[21] === 'A' || answers[22] === 'A'} onChange={(e) => handleMultiSelect(21, 22, 'A', e.target.checked)} /> <span className="font-bold w-6 shrink-0">A</span> the amount of plastic in the ocean</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q21_22" value="B" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[21] === 'B' || answers[22] === 'B'} onChange={(e) => handleMultiSelect(21, 22, 'B', e.target.checked)} /> <span className="font-bold w-6 shrink-0">B</span> the number of diseases caused by contaminated food</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q21_22" value="C" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[21] === 'C' || answers[22] === 'C'} onChange={(e) => handleMultiSelect(21, 22, 'C', e.target.checked)} /> <span className="font-bold w-6 shrink-0">C</span> the amount of food that is wasted</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q21_22" value="D" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[21] === 'D' || answers[22] === 'D'} onChange={(e) => handleMultiSelect(21, 22, 'D', e.target.checked)} /> <span className="font-bold w-6 shrink-0">D</span> the number of people who are obese</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q21_22" value="E" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[21] === 'E' || answers[22] === 'E'} onChange={(e) => handleMultiSelect(21, 22, 'E', e.target.checked)} /> <span className="font-bold w-6 shrink-0">E</span> the result of treating animals with antibiotics</label>
                         </div>
                     </div>
                 </div>
@@ -710,11 +699,11 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="space-y-4">
                         <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">23-24</span><span>Which TWO features of a project aiming to prevent food fraud impressed Fergus?</span></div>
                         <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="A" className="mcq-checkbox" checked={answers[23] === 'A' || answers[24] === 'A'} onChange={(e) => handleMultiSelect(23, 24, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> the new technology it used</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="B" className="mcq-checkbox" checked={answers[23] === 'B' || answers[24] === 'B'} onChange={(e) => handleMultiSelect(23, 24, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> the publicity it received</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="C" className="mcq-checkbox" checked={answers[23] === 'C' || answers[24] === 'C'} onChange={(e) => handleMultiSelect(23, 24, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> the use of multiple tests on food items</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="D" className="mcq-checkbox" checked={answers[23] === 'D' || answers[24] === 'D'} onChange={(e) => handleMultiSelect(23, 24, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> the variety of dietary requirements included</label>
-                            <label className="mcq-label"><input type="checkbox" name="q23_24" value="E" className="mcq-checkbox" checked={answers[23] === 'E' || answers[24] === 'E'} onChange={(e) => handleMultiSelect(23, 24, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> the way information was made widely accessible</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q23_24" value="A" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[23] === 'A' || answers[24] === 'A'} onChange={(e) => handleMultiSelect(23, 24, 'A', e.target.checked)} /> <span className="font-bold w-6 shrink-0">A</span> the new technology it used</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q23_24" value="B" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[23] === 'B' || answers[24] === 'B'} onChange={(e) => handleMultiSelect(23, 24, 'B', e.target.checked)} /> <span className="font-bold w-6 shrink-0">B</span> the publicity it received</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q23_24" value="C" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[23] === 'C' || answers[24] === 'C'} onChange={(e) => handleMultiSelect(23, 24, 'C', e.target.checked)} /> <span className="font-bold w-6 shrink-0">C</span> the use of multiple tests on food items</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q23_24" value="D" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[23] === 'D' || answers[24] === 'D'} onChange={(e) => handleMultiSelect(23, 24, 'D', e.target.checked)} /> <span className="font-bold w-6 shrink-0">D</span> the variety of dietary requirements included</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q23_24" value="E" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[23] === 'E' || answers[24] === 'E'} onChange={(e) => handleMultiSelect(23, 24, 'E', e.target.checked)} /> <span className="font-bold w-6 shrink-0">E</span> the way information was made widely accessible</label>
                         </div>
                     </div>
                 </div>
@@ -726,11 +715,11 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="space-y-4">
                         <div className="font-bold mb-3 flex"><span className="w-12 shrink-0">25-26</span><span>Which TWO topics do both students recommend should be included in the course?</span></div>
                         <div className="pl-12 space-y-1 pb-4">
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="A" className="mcq-checkbox" checked={answers[25] === 'A' || answers[26] === 'A'} onChange={(e) => handleMultiSelect(25, 26, 'A', e.target.checked)} /> <span className="font-bold mr-3">A</span> sustainable fishing</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="B" className="mcq-checkbox" checked={answers[25] === 'B' || answers[26] === 'B'} onChange={(e) => handleMultiSelect(25, 26, 'B', e.target.checked)} /> <span className="font-bold mr-3">B</span> targeted nutrition</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="C" className="mcq-checkbox" checked={answers[25] === 'C' || answers[26] === 'C'} onChange={(e) => handleMultiSelect(25, 26, 'C', e.target.checked)} /> <span className="font-bold mr-3">C</span> global differences in consumption</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="D" className="mcq-checkbox" checked={answers[25] === 'D' || answers[26] === 'D'} onChange={(e) => handleMultiSelect(25, 26, 'D', e.target.checked)} /> <span className="font-bold mr-3">D</span> sustainable agriculture</label>
-                            <label className="mcq-label"><input type="checkbox" name="q25_26" value="E" className="mcq-checkbox" checked={answers[25] === 'E' || answers[26] === 'E'} onChange={(e) => handleMultiSelect(25, 26, 'E', e.target.checked)} /> <span className="font-bold mr-3">E</span> digital technology and food</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q25_26" value="A" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[25] === 'A' || answers[26] === 'A'} onChange={(e) => handleMultiSelect(25, 26, 'A', e.target.checked)} /> <span className="font-bold w-6 shrink-0">A</span> sustainable fishing</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q25_26" value="B" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[25] === 'B' || answers[26] === 'B'} onChange={(e) => handleMultiSelect(25, 26, 'B', e.target.checked)} /> <span className="font-bold w-6 shrink-0">B</span> targeted nutrition</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q25_26" value="C" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[25] === 'C' || answers[26] === 'C'} onChange={(e) => handleMultiSelect(25, 26, 'C', e.target.checked)} /> <span className="font-bold w-6 shrink-0">C</span> global differences in consumption</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q25_26" value="D" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[25] === 'D' || answers[26] === 'D'} onChange={(e) => handleMultiSelect(25, 26, 'D', e.target.checked)} /> <span className="font-bold w-6 shrink-0">D</span> sustainable agriculture</label>
+                            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors mb-2"><input type="checkbox" name="q25_26" value="E" className="w-5 h-5 mt-0.5 shrink-0" checked={answers[25] === 'E' || answers[26] === 'E'} onChange={(e) => handleMultiSelect(25, 26, 'E', e.target.checked)} /> <span className="font-bold w-6 shrink-0">E</span> digital technology and food</label>
                         </div>
                     </div>
                 </div>
@@ -743,32 +732,32 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                     <div className="content-box">
                         <div className="bg-gray-100 p-6 border border-gray-300 mb-8 max-w-[600px] mx-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 pl-4">
-                                <div><span className="font-bold mr-3">A</span> This was challenging but enjoyable.</div>
-                                <div><span className="font-bold mr-3">B</span> This led to some disagreement.</div>
-                                <div><span className="font-bold mr-3">C</span> This was easy to decide on.</div>
-                                <div><span className="font-bold mr-3">D</span> This was helped by the guidelines provided.</div>
-                                <div><span className="font-bold mr-3">E</span> This seemed like an unnecessary stage.</div>
-                                <div><span className="font-bold mr-3">F</span> This involved selecting a new ingredient.</div>
+                                <div><span className="font-bold w-6 shrink-0">A</span> This was challenging but enjoyable.</div>
+                                <div><span className="font-bold w-6 shrink-0">B</span> This led to some disagreement.</div>
+                                <div><span className="font-bold w-6 shrink-0">C</span> This was easy to decide on.</div>
+                                <div><span className="font-bold w-6 shrink-0">D</span> This was helped by the guidelines provided.</div>
+                                <div><span className="font-bold w-6 shrink-0">E</span> This seemed like an unnecessary stage.</div>
+                                <div><span className="font-bold w-6 shrink-0">F</span> This involved selecting a new ingredient.</div>
                             </div>
                         </div>
 
                         <div className="font-bold mb-4 text-[18px] border-b pb-2 text-center">Student project: developing a new food product</div>
                         
                         <div className="flex flex-col items-center space-y-4 my-8">
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Initial aim <span className="font-bold mx-2">27</span> <input type="text" placeholder="27" className="ielts-input" value={answers[27] || ''} onChange={(e) => handleAnswerChange(27, e.target.value)} />
+                            <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Initial aim <span className="font-bold mx-2">27</span> <input type="text" placeholder="27" className="ielts-input ielts-input-short" value={answers[27] || ''} onChange={(e) => handleAnswerChange(27, e.target.value)} />
                             </div>
                             <div className="text-2xl text-gray-400">&darr;</div>
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Literature review <span className="font-bold mx-2">28</span> <input type="text" placeholder="28" className="ielts-input" value={answers[28] || ''} onChange={(e) => handleAnswerChange(28, e.target.value)} />
+                            <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Literature review <span className="font-bold mx-2">28</span> <input type="text" placeholder="28" className="ielts-input ielts-input-short" value={answers[28] || ''} onChange={(e) => handleAnswerChange(28, e.target.value)} />
                             </div>
                             <div className="text-2xl text-gray-400">&darr;</div>
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Product development <span className="font-bold mx-2">29</span> <input type="text" placeholder="29" className="ielts-input" value={answers[29] || ''} onChange={(e) => handleAnswerChange(29, e.target.value)} />
+                            <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Product development <span className="font-bold mx-2">29</span> <input type="text" placeholder="29" className="ielts-input ielts-input-short" value={answers[29] || ''} onChange={(e) => handleAnswerChange(29, e.target.value)} />
                             </div>
                             <div className="text-2xl text-gray-400">&darr;</div>
-                            <div className="w-64 border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Product production <span className="font-bold mx-2">30</span> <input type="text" placeholder="30" className="ielts-input" value={answers[30] || ''} onChange={(e) => handleAnswerChange(30, e.target.value)} />
+                            <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
+                                Product production <span className="font-bold mx-2">30</span> <input type="text" placeholder="30" className="ielts-input ielts-input-short" value={answers[30] || ''} onChange={(e) => handleAnswerChange(30, e.target.value)} />
                             </div>
                         </div>
                     </div>

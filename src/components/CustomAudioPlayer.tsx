@@ -37,11 +37,18 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
     const onEnded = () => setIsPlaying(false);
 
     audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('durationchange', setAudioData);
+    audio.addEventListener('canplay', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
     audio.addEventListener('ended', onEnded);
 
-    return () => {
+    
+  
+
+  return () => {
       audio.removeEventListener('loadedmetadata', setAudioData);
+      audio.removeEventListener('durationchange', setAudioData);
+      audio.removeEventListener('canplay', setAudioData);
       audio.removeEventListener('timeupdate', setAudioTime);
       audio.removeEventListener('ended', onEnded);
     };
@@ -87,9 +94,26 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+
+  // Extract ID from src
+  let driveId = '';
+  if (src && src.includes('?id=')) {
+    driveId = src.split('?id=')[1].split('&')[0];
+  } else if (src && src.includes('file/d/')) {
+    driveId = src.split('file/d/')[1].split('/')[0];
+  }
+
+  if (driveId) {
+    return (
+      <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" style={{ height: '140px' }}>
+        <iframe src={`https://drive.google.com/file/d/${driveId}/preview`} width="100%" height="100%" style={{ border: 'none' }} allow="autoplay" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-4 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-200">
-      <audio ref={setRefs} src={src || undefined} />
+      <audio ref={setRefs} src={src || undefined} preload="auto" />
       
       <button 
         onClick={togglePlayPause}

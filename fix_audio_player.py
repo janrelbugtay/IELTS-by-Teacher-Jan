@@ -1,67 +1,31 @@
-import sys
-
-with open("src/components/CustomAudioPlayer.tsx", "r") as f:
+with open('src/components/CustomAudioPlayer.tsx', 'r') as f:
     content = f.read()
 
-content = content.replace("interface CustomAudioPlayerProps {", "interface CustomAudioPlayerProps {\n  isMockMode?: boolean;")
-content = content.replace("({ src }, ref) => {", "({ src, isMockMode }, ref) => {")
+# Remove the incorrectly inserted block
+import re
+content = re.sub(r'// Extract ID from src.*?return \(\n.*?\n.*?\n.*?\);\n  }', '', content, flags=re.DOTALL)
 
-toggle_play_pause_old = """  const togglePlayPause = () => {
-    const audio = innerAudioRef.current;
-    if (!audio) return;
-    
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play();
-    }
-    setIsPlaying(!isPlaying);
-  };"""
+# Find the real return statement for the component
+replacement = """
+  // Extract ID from src
+  let driveId = '';
+  if (src && src.includes('?id=')) {
+    driveId = src.split('?id=')[1].split('&')[0];
+  } else if (src && src.includes('file/d/')) {
+    driveId = src.split('file/d/')[1].split('/')[0];
+  }
 
-toggle_play_pause_new = """  const togglePlayPause = () => {
-    const audio = innerAudioRef.current;
-    if (!audio) return;
-    
-    if (isPlaying) {
-      if (isMockMode) return; // Cannot pause in mock mode
-      audio.pause();
-    } else {
-      audio.play();
-    }
-    setIsPlaying(!isPlaying);
-  };"""
+  if (driveId) {
+    return (
+      <div className="flex items-center gap-4 bg-white rounded-full px-2 py-1 shadow-sm border border-gray-200" style={{ width: '320px', height: '60px', overflow: 'hidden' }}>
+        <iframe src={`https://drive.google.com/file/d/${driveId}/preview`} width="100%" height="100%" style={{ border: 'none', borderRadius: '24px' }} allow="autoplay" />
+      </div>
+    );
+  }
+"""
 
-content = content.replace(toggle_play_pause_old, toggle_play_pause_new)
+content = content.replace('  return (\n    <div className="flex items-center', replacement + '\n  return (\n    <div className="flex items-center', 1)
 
-play_pause_btn_old = """      <button 
-        onClick={togglePlayPause}
-        className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors shrink-0 shadow-md"
-      >"""
-play_pause_btn_new = """      <button 
-        onClick={togglePlayPause}
-        disabled={isMockMode && isPlaying}
-        className={`w-12 h-12 flex items-center justify-center text-white rounded-full transition-colors shrink-0 shadow-md ${isMockMode && isPlaying ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-      >"""
-content = content.replace(play_pause_btn_old, play_pause_btn_new)
-
-range_old = """        <input 
-          type="range"
-          min={0}
-          max={duration || 100}
-          value={currentTime}
-          onChange={handleProgressChange}
-          className="flex-1 h-2.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-        />"""
-range_new = """        <input 
-          type="range"
-          min={0}
-          max={duration || 100}
-          value={currentTime}
-          onChange={handleProgressChange}
-          disabled={isMockMode}
-          className={`flex-1 h-2.5 bg-gray-200 rounded-lg appearance-none accent-blue-600 ${isMockMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-        />"""
-content = content.replace(range_old, range_new)
-
-with open("src/components/CustomAudioPlayer.tsx", "w") as f:
+with open('src/components/CustomAudioPlayer.tsx', 'w') as f:
     f.write(content)
+print("Done")
