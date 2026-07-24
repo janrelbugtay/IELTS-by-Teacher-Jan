@@ -24,6 +24,8 @@ import { FebruaryWritingTest } from './FebruaryWritingTest';
 import { MarchWritingTest } from './MarchWritingTest';
 import { AprilWritingTest } from './AprilWritingTest';
 import { MayWritingTest } from './MayWritingTest';
+import { JuneWritingTest } from './JuneWritingTest';
+import { JulyWritingTest } from './JulyWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -179,6 +181,12 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       }
       if (submission.assignmentTitle?.toLowerCase().includes('may')) {
           return <MayWritingTest submissionId={id} />;
+      }
+      if (submission.assignmentTitle?.toLowerCase().includes('june')) {
+          return <JuneWritingTest submissionId={id} />;
+      }
+      if (submission.assignmentTitle?.toLowerCase().includes('july')) {
+          return <JulyWritingTest submissionId={id} />;
       }
       return <ComputerWritingTest submissionId={id} />;
   }

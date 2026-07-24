@@ -277,6 +277,7 @@ Please log in and change your password immediately.
         </div>
       </div>
 
+      
       {/* User Tracking System */}
       <section>
          <h2 className="text-2xl font-bold text-natural-900 mb-6 flex items-center gap-2">

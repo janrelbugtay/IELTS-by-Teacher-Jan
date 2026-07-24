@@ -662,9 +662,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
 
   const theme = getTheme(colorTheme);
   const textClass: any = {
-    'standard': 'text-[11pt]',
-    'large': 'text-[14pt]',
-    'xlarge': 'text-[18pt]'
+    'standard': 'text-[20px] font-sans',
+    'large': 'text-[23px] font-sans',
+    'xlarge': 'text-[27px] font-sans'
   }[textSize];
 
   const getAbsoluteOffset = (parent: any, targetNode: any, targetOffset: number) => {
@@ -2028,10 +2028,10 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
 
       {!reviewMode && (
         <footer className={`border-t px-4 py-3 shrink-0 z-30 select-none overflow-x-auto relative shadow-[0_-10px_20px_rgba(0,0,0,0.05)] ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-800' : 'bg-[#e8ebf0] border-gray-300'}`}>
-          <div className="max-w-[1400px] mx-auto flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between w-full">
+          <div className="max-w-[1400px] mx-auto flex flex-row items-center justify-between min-w-max gap-6 w-full">
             
-            <div className="flex flex-col xl:flex-row gap-8 items-start xl:items-center">
-              <div className={`flex flex-col gap-1.5 shrink-0 mt-2 xl:mt-0 p-2 rounded-lg border text-[0.75em] font-bold ${colorTheme !== 'standard' ? 'bg-[#222] border-gray-800 text-gray-300' : 'bg-white border-gray-200 text-gray-600 shadow-sm'}`}>
+            <div className="flex flex-row items-center gap-8">
+              <div className={`flex flex-col gap-1.5 shrink-0 p-2 rounded-lg border text-[0.75em] font-bold ${colorTheme !== 'standard' ? 'bg-[#222] border-gray-800 text-gray-300' : 'bg-white border-gray-200 text-gray-600 shadow-sm'}`}>
                 <div className="flex items-center gap-2">
                    <div className={`w-3.5 h-3.5 rounded-[2px] ${colorTheme !== 'standard' ? 'bg-[#333]' : 'border border-gray-400 bg-white'}`}></div>
                    <span>Unanswered</span>
@@ -2046,29 +2046,25 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2.5">
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className={`flex items-center gap-3 p-1.5 rounded-lg ${currentPassageIdx === 0 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
-                    <span className={`font-bold text-[0.75em] uppercase tracking-wider w-14 shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 1</span>
-                    <div className="flex flex-wrap gap-[1px]">
+              <div className="flex flex-row items-center gap-4 xl:gap-6">
+                  <div className={`flex items-center gap-2 xl:gap-3 p-1.5 rounded-lg ${currentPassageIdx === 0 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
+                    <span className={`font-bold text-[0.75em] uppercase tracking-wider w-auto whitespace-nowrap shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 1</span>
+                    <div className="flex flex-row gap-[1px]">
                       {Array.from({ length: 13 }, (_, i) => i + 1).map(renderQuestionBox(0))}
                     </div>
                   </div>
-                  <div className={`flex items-center gap-3 p-1.5 rounded-lg ${currentPassageIdx === 1 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
-                    <span className={`font-bold text-[0.75em] uppercase tracking-wider w-14 shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 2</span>
-                    <div className="flex flex-wrap gap-[1px]">
+                  <div className={`flex items-center gap-2 xl:gap-3 p-1.5 rounded-lg ${currentPassageIdx === 1 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
+                    <span className={`font-bold text-[0.75em] uppercase tracking-wider w-auto whitespace-nowrap shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 2</span>
+                    <div className="flex flex-row gap-[1px]">
                       {Array.from({ length: 13 }, (_, i) => i + 14).map(renderQuestionBox(1))}
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className={`flex items-center gap-3 p-1.5 rounded-lg ${currentPassageIdx === 2 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
-                    <span className={`font-bold text-[0.75em] uppercase tracking-wider w-14 shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 3</span>
-                    <div className="flex flex-wrap gap-[1px]">
+                  <div className={`flex items-center gap-2 xl:gap-3 p-1.5 rounded-lg ${currentPassageIdx === 2 ? (colorTheme !== 'standard' ? 'bg-[#333]' : 'bg-white shadow-sm ring-1 ring-gray-300') : ''}`}>
+                    <span className={`font-bold text-[0.75em] uppercase tracking-wider w-auto whitespace-nowrap shrink-0 text-center ${colorTheme !== 'standard' ? 'text-gray-400' : 'text-gray-500'}`}>Part 3</span>
+                    <div className="flex flex-row gap-[1px]">
                       {Array.from({ length: 14 }, (_, i) => i + 27).map(renderQuestionBox(2))}
                     </div>
                   </div>
-                </div>
               </div>
             </div>
 

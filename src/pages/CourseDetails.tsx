@@ -160,6 +160,13 @@ export function CourseDetails() {
         color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
         link: '/test/listening/22'
       });
+      homeworkFolders.push({
+        title: 'July Writing Practice',
+        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the July CD-IELTS writing test.',
+        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
+        link: '/test/writing/27'
+      });
     }
 
     return (

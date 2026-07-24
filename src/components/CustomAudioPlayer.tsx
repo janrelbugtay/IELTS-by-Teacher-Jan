@@ -103,17 +103,15 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
     driveId = src.split('file/d/')[1].split('/')[0];
   }
 
-  if (driveId) {
-    return (
-      <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" style={{ height: '140px' }}>
-        <iframe src={`https://drive.google.com/file/d/${driveId}/preview`} width="100%" height="100%" style={{ border: 'none' }} allow="autoplay" />
-      </div>
-    );
+  // Use standard audio player instead of iframe to make it horizontal and small
+  let actualSrc = src;
+  if (driveId && src.includes('file/d/')) {
+      actualSrc = `/api/audio?id=${driveId}`;
   }
 
   return (
     <div className="flex items-center gap-4 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-200">
-      <audio ref={setRefs} src={src || undefined} preload="auto" />
+      <audio ref={setRefs} src={actualSrc || undefined} preload="auto" />
       
       <button 
         onClick={togglePlayPause}

@@ -1,7 +1,7 @@
 export const octoberPassages = [
   {
     "id": 1,
-    "title": "Keeping the water away \u2013 New approaches to flood control",
+    "title": "Reading Passage 1",
     "content": [
       "A. Recently, winter floods on the rivers of central Europe have been among the worst for 600 to 700 years, and dams and dykes (protective sea walls) have failed to solve the problem. Traditionally, river engineers have tried to get rid of the water quickly, draining it off the land and down to the sea in rivers reengineered as high-performance drains. But however high they build the artificial riverbanks, the floods keep coming back. And when they come, they seem to be worse than ever.",
       "B. Engineers are now turning to a different plan: to sap the water's destructive strength by dispersing it into fields; forgotten lakes and flood plains. They are reviving river bends and marshes to curb the flow, and even plugging city drains to encourage floodwater to use other means to go underground. Back in the days when rivers took a winding path to the sea, floodwaters lost force and volume while meandering across flood plains and inland deltas, but today the water tends to have a direct passage to the sea. This means that, when it rains in the uplands, the water comes down all at once.",
@@ -86,7 +86,7 @@ export const octoberPassages = [
   },
   {
     "id": 2,
-    "title": "Whale Culture",
+    "title": "Reading Passage 2",
     "content": [
       "A. Most social scientists stubbornly resist the idea that animals have culture. Even such advanced cetacean mammals as whales and dolphins clearly don\u2019t have art, literature, or architecture. But patient observation over many years has begun to reveal behaviors that can only have been learnt from other whales. And that, say whale biologists, constitutes culture.",
       "B. So far, humpback and killer whales provide the best evidence of culture in cetaceans, and the song of the male humpback is among the most striking examples. Humpback populations in different oceans sing different songs, but within the same ocean they all stick to the same one. However, during the breeding season the sounds change, as it appears that females are drawn to novel songs. One male might add an extra set of groans; another might drop a series of grunts. Soon all the other males have altered their own rendition to incorporate the changes until they are once again singing the same song. Since this occurs among thousands of whales spread across a vast part of the planet, the change cannot be in response to any factor in the animals\u2019 environment. The latest version of the song can be learnt only from other whales \u2013 almost certainly by imitation.",
@@ -189,7 +189,7 @@ export const octoberPassages = [
   },
   {
     "id": 3,
-    "title": "A closer examination of a study on verbal and non-verbal messages",
+    "title": "Reading Passage 3",
     "content": [
       "A study of non-verbal communication carried out in 1967 continues to be widely quoted today. David Lapakko looks at limitations in the original study.",
       "Description of the Study",

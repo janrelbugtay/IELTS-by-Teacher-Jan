@@ -3,7 +3,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
-import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Info, Menu, ExternalLink } from 'lucide-react';
 import { CustomAudioPlayer } from '../components/CustomAudioPlayer';
 
 const CustomStyles = () => (
@@ -122,11 +122,20 @@ export const LISTENING_ANSWER_KEY: Record<number, string> = {
 
 export function MayListeningTest({ submissionId }: { submissionId?: string }) {
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
+  const [candidateNumber, setCandidateNumber] = useState('');
+  const [candidateError, setCandidateError] = useState('');
+  const expectedCandidateNumber = '5924';
+  useEffect(() => {
+    if (isAdmin) {
+      setCandidateNumber(expectedCandidateNumber);
+    }
+  }, [isAdmin]);
+
   useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);
 
   const [hasStarted, setHasStarted] = useState(false);
@@ -195,6 +204,11 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
+    if (candidateNumber.trim().toUpperCase() !== expectedCandidateNumber) {
+      setCandidateError('Invalid Candidate Number. Please check with your administrator.');
+      return;
+    }
+    setCandidateError('');
     if (studentName.trim()) {
       setHasStarted(true);
     }
@@ -454,7 +468,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
         <div className="bg-white p-10 rounded-2xl shadow-2xl w-[560px] border border-gray-100 relative overflow-hidden">
-            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">IELTS Listening Test</h1>
+            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">May IELTS Listening Test</h1>
             <p className="text-[15px] text-gray-500 text-center mb-10">Configure your session and enter your details to begin.</p>
             
             <form onSubmit={handleStart} className="flex flex-col gap-6">
@@ -468,6 +482,19 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                       value={studentName}
                       onChange={(e) => setStudentName(e.target.value)}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-gray-800">Candidate Number</label>
+                  <input 
+                      type="text" 
+                      required
+                      className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all bg-gray-50 focus:bg-white" 
+                      placeholder="Enter candidate number" 
+                      value={candidateNumber}
+                      onChange={(e) => setCandidateNumber(e.target.value)}
+                  />
+                  {isAdmin && <p className="text-blue-600 text-xs mt-1 font-semibold">Admin: Candidate number auto-filled ({expectedCandidateNumber})</p>}
+                  {candidateError && <p className="text-red-500 text-sm mt-1">{candidateError}</p>}
                 </div>
                 
                 <div>
@@ -548,7 +575,14 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
               <p className="text-[13px] text-gray-700">Listen and answer questions <span className="font-bold">{navQuestionRange}</span>.</p>
           </div>
           <div>
-              <CustomAudioPlayer ref={audioRef} src="/api/audio?id=1ZKq-vISQpO7DHehoec-ickzrDFvPZRc3"  isMockMode={testMode === 'mock'} />
+              <iframe 
+                src="https://drive.google.com/file/d/1ZKq-vISQpO7DHehoec-ickzrDFvPZRc3/preview" 
+                width="640" 
+                height="160" 
+                allow="autoplay" 
+                className="rounded-xl overflow-hidden border-0 bg-transparent"
+                style={{ border: 'none', background: 'transparent' }}
+              ></iframe>
           </div>
       </div>
 
@@ -662,12 +696,30 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                         </div>
 
                         <div className="space-y-4 max-w-[450px] mx-auto">
-                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">15</span><span className="w-32">Exhibition</span> <input type="text" placeholder="15" className="ielts-input flex-1 max-w-[120px]" value={answers[15] || ''} onChange={(e) => handleAnswerChange(15, e.target.value)} /></div>
-                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">16</span><span className="w-32">Baths</span> <input type="text" placeholder="16" className="ielts-input flex-1 max-w-[120px]" value={answers[16] || ''} onChange={(e) => handleAnswerChange(16, e.target.value)} /></div>
-                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">17</span><span className="w-32">Tools</span> <input type="text" placeholder="17" className="ielts-input flex-1 max-w-[120px]" value={answers[17] || ''} onChange={(e) => handleAnswerChange(17, e.target.value)} /></div>
-                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">18</span><span className="w-32">Vehicles</span> <input type="text" placeholder="18" className="ielts-input flex-1 max-w-[120px]" value={answers[18] || ''} onChange={(e) => handleAnswerChange(18, e.target.value)} /></div>
-                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">19</span><span className="w-32">Ponies</span> <input type="text" placeholder="19" className="ielts-input flex-1 max-w-[120px]" value={answers[19] || ''} onChange={(e) => handleAnswerChange(19, e.target.value)} /></div>
-                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">20</span><span className="w-32">Education centre</span> <input type="text" placeholder="20" className="ielts-input flex-1 max-w-[120px]" value={answers[20] || ''} onChange={(e) => handleAnswerChange(20, e.target.value)} /></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">15</span><span className="w-32">Exhibition</span> <select className="ielts-input flex-1 max-w-[120px] bg-white border border-gray-300 rounded p-1" value={answers[15] || ''} onChange={(e) => handleAnswerChange(15, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEFGHI".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">16</span><span className="w-32">Baths</span> <select className="ielts-input flex-1 max-w-[120px] bg-white border border-gray-300 rounded p-1" value={answers[16] || ''} onChange={(e) => handleAnswerChange(16, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEFGHI".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">17</span><span className="w-32">Tools</span> <select className="ielts-input flex-1 max-w-[120px] bg-white border border-gray-300 rounded p-1" value={answers[17] || ''} onChange={(e) => handleAnswerChange(17, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEFGHI".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">18</span><span className="w-32">Vehicles</span> <select className="ielts-input flex-1 max-w-[120px] bg-white border border-gray-300 rounded p-1" value={answers[18] || ''} onChange={(e) => handleAnswerChange(18, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEFGHI".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">19</span><span className="w-32">Ponies</span> <select className="ielts-input flex-1 max-w-[120px] bg-white border border-gray-300 rounded p-1" value={answers[19] || ''} onChange={(e) => handleAnswerChange(19, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEFGHI".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select></div>
+                            <div className="flex items-center gap-4 bg-white p-2 border-b border-gray-100"><span className="font-bold w-8 text-gray-700">20</span><span className="w-32">Education centre</span> <select className="ielts-input flex-1 max-w-[120px] bg-white border border-gray-300 rounded p-1" value={answers[20] || ''} onChange={(e) => handleAnswerChange(20, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEFGHI".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select></div>
                         </div>
                     </div>
                 </div>
@@ -745,19 +797,31 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                         
                         <div className="flex flex-col items-center space-y-4 my-8">
                             <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Initial aim <span className="font-bold mx-2">27</span> <input type="text" placeholder="27" className="ielts-input ielts-input-short" value={answers[27] || ''} onChange={(e) => handleAnswerChange(27, e.target.value)} />
+                                Initial aim <span className="font-bold mx-2">27</span> <select className="ielts-input ielts-input-short bg-white border border-gray-300 rounded p-1" value={answers[27] || ''} onChange={(e) => handleAnswerChange(27, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEF".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select>
                             </div>
                             <div className="text-2xl text-gray-400">&darr;</div>
                             <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Literature review <span className="font-bold mx-2">28</span> <input type="text" placeholder="28" className="ielts-input ielts-input-short" value={answers[28] || ''} onChange={(e) => handleAnswerChange(28, e.target.value)} />
+                                Literature review <span className="font-bold mx-2">28</span> <select className="ielts-input ielts-input-short bg-white border border-gray-300 rounded p-1" value={answers[28] || ''} onChange={(e) => handleAnswerChange(28, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEF".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select>
                             </div>
                             <div className="text-2xl text-gray-400">&darr;</div>
                             <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Product development <span className="font-bold mx-2">29</span> <input type="text" placeholder="29" className="ielts-input ielts-input-short" value={answers[29] || ''} onChange={(e) => handleAnswerChange(29, e.target.value)} />
+                                Product development <span className="font-bold mx-2">29</span> <select className="ielts-input ielts-input-short bg-white border border-gray-300 rounded p-1" value={answers[29] || ''} onChange={(e) => handleAnswerChange(29, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEF".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select>
                             </div>
                             <div className="text-2xl text-gray-400">&darr;</div>
                             <div className="w-auto min-w-[280px] border border-gray-400 bg-blue-50 p-3 text-center rounded font-bold shadow-sm flex items-center justify-between">
-                                Product production <span className="font-bold mx-2">30</span> <input type="text" placeholder="30" className="ielts-input ielts-input-short" value={answers[30] || ''} onChange={(e) => handleAnswerChange(30, e.target.value)} />
+                                Product production <span className="font-bold mx-2">30</span> <select className="ielts-input ielts-input-short bg-white border border-gray-300 rounded p-1" value={answers[30] || ''} onChange={(e) => handleAnswerChange(30, e.target.value)}>
+                                    <option value=""></option>
+                                    {"ABCDEF".split('').map(letter => <option key={letter} value={letter}>{letter}</option>)}
+                                </select>
                             </div>
                         </div>
                     </div>

@@ -123,7 +123,7 @@ export const LISTENING_ANSWER_KEY: Record<number, string> = {
 
 export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -132,6 +132,15 @@ export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
   }
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
+  const [candidateNumber, setCandidateNumber] = useState('');
+  const [candidateError, setCandidateError] = useState('');
+  const expectedCandidateNumber = '6319';
+  useEffect(() => {
+    if (isAdmin) {
+      setCandidateNumber(expectedCandidateNumber);
+    }
+  }, [isAdmin]);
+
   useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);
 
   const [hasStarted, setHasStarted] = useState(false);
@@ -200,6 +209,11 @@ export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
+    if (candidateNumber.trim().toUpperCase() !== expectedCandidateNumber) {
+      setCandidateError('Invalid Candidate Number. Please check with your administrator.');
+      return;
+    }
+    setCandidateError('');
     if (studentName.trim()) {
       setHasStarted(true);
     }
@@ -458,7 +472,7 @@ export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
         <div className="bg-white p-10 rounded-2xl shadow-2xl w-[560px] border border-gray-100 relative overflow-hidden">
-            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">IELTS Listening Test</h1>
+            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">June IELTS Listening Test</h1>
             <p className="text-[15px] text-gray-500 text-center mb-10">Configure your session and enter your details to begin.</p>
             
             <form onSubmit={handleStart} className="flex flex-col gap-6">
@@ -472,6 +486,19 @@ export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
                       value={studentName}
                       onChange={(e) => setStudentName(e.target.value)}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-gray-800">Candidate Number</label>
+                  <input 
+                      type="text" 
+                      required
+                      className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all bg-gray-50 focus:bg-white" 
+                      placeholder="Enter candidate number" 
+                      value={candidateNumber}
+                      onChange={(e) => setCandidateNumber(e.target.value)}
+                  />
+                  {isAdmin && <p className="text-blue-600 text-xs mt-1 font-semibold">Admin: Candidate number auto-filled ({expectedCandidateNumber})</p>}
+                  {candidateError && <p className="text-red-500 text-sm mt-1">{candidateError}</p>}
                 </div>
                 
                 <div>
