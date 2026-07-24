@@ -1,3 +1,4 @@
+import { octoberPassages, octoberAnswers, octoberExplanations } from './octoberReadingData';
 import { febPassages, febAnswers, febExplanations } from './februaryReadingData';
 import { marchPassages, marchAnswers, marchExplanations } from './marchReadingData';
 import { aprilPassages, aprilAnswers, aprilExplanations } from './aprilReadingData';
@@ -41,9 +42,12 @@ export const getReadingTestData = (id: string | undefined) => {
   if (id === '33') {
     return { passages: septemberPassages, answers: septemberAnswers, explanations: septemberExplanations };
   }
+  if (id === '37') {
+    return { passages: octoberPassages, answers: octoberAnswers, explanations: octoberExplanations };
+  }
 
   // Explicitly defined future tests that don't have content yet
-  if (id && ['37', '41'].includes(id)) {
+  if (id && ['41'].includes(id)) {
     return {
       passages: [
         {
