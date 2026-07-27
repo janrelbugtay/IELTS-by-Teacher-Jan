@@ -119,46 +119,25 @@ export function CourseDetails() {
 
     if (id === 'ielts') {
       homeworkFolders.push({
-        title: 'January Listening Practice',
-        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the January CD-IELTS listening test.',
+        title: 'April Writing Practice',
+        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the April CD-IELTS writing test.',
         color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/listening/2'
+        link: '/test/writing/15'
       });
       homeworkFolders.push({
-        title: 'February Listening Practice',
-        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the February CD-IELTS listening test.',
+        title: 'May Writing Practice',
+        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the May CD-IELTS writing test.',
         color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/listening/6'
+        link: '/test/writing/19'
       });
       homeworkFolders.push({
-        title: 'March Listening Practice',
-        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the March CD-IELTS listening test.',
+        title: 'June Writing Practice',
+        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
+        desc: 'Take the June CD-IELTS writing test.',
         color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/listening/10'
-      });
-      homeworkFolders.push({
-        title: 'April Listening Practice',
-        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the April CD-IELTS listening test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/listening/14'
-      });
-      homeworkFolders.push({
-        title: 'May Listening Practice',
-        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the May CD-IELTS listening test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/listening/18'
-      });
-      homeworkFolders.push({
-        title: 'June Listening Practice',
-        icon: <Headphones className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the June CD-IELTS listening test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/listening/22'
+        link: '/test/writing/23'
       });
       homeworkFolders.push({
         title: 'July Writing Practice',

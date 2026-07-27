@@ -129,8 +129,8 @@ export const JuneWritingTest = ({ submissionId }: { submissionId?: string }) => 
     const candidateNameRef = useRef(candidateName);
     const sheetsContainerRef = useRef<HTMLDivElement>(null);
 
-    const prompt1Raw = "The plans below show a college café before it was redesigned and how it looks now. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. (Assume the 'before' plan shows a U-shaped counter on the right and an entrance on the bottom-left, with tables in the middle. The 'after' plan shows the counter moved to a U-shape at the bottom, a new entrance added at the top-left, a new outdoor seating area added at the top, and tables rearranged and rounded).";
-    const prompt2Raw = "Some people say that in the digital age, theatres and cinemas are no longer important as people can watch all the entertainment they want online. Others argue that theatres and cinemas are still important both economically and culturally. Discuss both these views and give your own opinion.";
+    const prompt1Raw = "The plans show a student common room from five years ago and now. Summarize the information by selecting and reporting the main features and make comparisons where relevant.";
+    const prompt2Raw = "Some people believe that sports competitions are a source of emotional stress for young people. Therefore, youth should be banned from participating in sports competitions. Do you agree or disagree?";
 
     useEffect(() => {
         text1Ref.current = text1;
@@ -200,8 +200,8 @@ export const JuneWritingTest = ({ submissionId }: { submissionId?: string }) => 
                 await addDoc(collection(db, 'submissions'), {
                     userId: user.uid,
                     studentName: candidateNameRef.current || 'CANDIDATE',
-                    assignmentId: '11',
-                    assignmentTitle: 'April Writing Practice',
+                    assignmentId: '23',
+                    assignmentTitle: 'June Writing Practice',
                     assignmentType: 'writing',
                     createdAt: serverTimestamp(),
                     status: 'submitted',
@@ -601,6 +601,12 @@ export const JuneWritingTest = ({ submissionId }: { submissionId?: string }) => 
                     
                     <div className="bg-[#ff3333] text-white font-bold text-center overflow-hidden whitespace-nowrap py-1.5 mb-2 text-base tracking-widest">
                         {redBarText}
+                    </div>
+                    
+                    <div className="mb-4 p-6 bg-gray-50 border-l-4 border-indigo-500 font-sans text-sm text-gray-800 text-left whitespace-pre-wrap">
+                        <span className="font-bold block mb-2 text-base">Task {taskNum} Question:</span>
+                        {taskNum === 1 ? prompt1Raw : prompt2Raw}
+                        
                     </div>
                     
                     <div className="sheet-text-area text-[#000080] font-serif px-2" style={{ flexGrow: 1, backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #94a3b8 31px, #94a3b8 32px)', lineHeight: '32px', fontSize: '18px', paddingTop: '5px', minHeight: '700px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>

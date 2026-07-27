@@ -603,6 +603,12 @@ export const MarchWritingTest = ({ submissionId }: { submissionId?: string }) =>
                         {redBarText}
                     </div>
                     
+                    <div className="mb-4 p-6 bg-gray-50 border-l-4 border-indigo-500 font-sans text-sm text-gray-800 text-left whitespace-pre-wrap">
+                        <span className="font-bold block mb-2 text-base">Task {taskNum} Question:</span>
+                        {taskNum === 1 ? prompt1Raw : prompt2Raw}
+                        
+                    </div>
+                    
                     <div className="sheet-text-area text-[#000080] font-serif px-2" style={{ flexGrow: 1, backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #94a3b8 31px, #94a3b8 32px)', lineHeight: '32px', fontSize: '18px', paddingTop: '5px', minHeight: '700px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                         {text}
                     </div>

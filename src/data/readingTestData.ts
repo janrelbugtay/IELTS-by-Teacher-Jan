@@ -1,3 +1,4 @@
+import { novemberPassages, novemberAnswers, novemberExplanations } from './novemberReadingData';
 import { octoberPassages, octoberAnswers, octoberExplanations } from './octoberReadingData';
 import { febPassages, febAnswers, febExplanations } from './februaryReadingData';
 import { marchPassages, marchAnswers, marchExplanations } from './marchReadingData';
@@ -46,8 +47,12 @@ export const getReadingTestData = (id: string | undefined) => {
     return { passages: octoberPassages, answers: octoberAnswers, explanations: octoberExplanations };
   }
 
+  if (id === '41') {
+    return { passages: novemberPassages, answers: novemberAnswers, explanations: novemberExplanations };
+  }
+
   // Explicitly defined future tests that don't have content yet
-  if (id && ['41'].includes(id)) {
+  if (id && ['45'].includes(id)) {
     return {
       passages: [
         {

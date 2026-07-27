@@ -233,7 +233,17 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
     }
     
     try {
-      let title = 'January Listening Practice';
+      let title = 'Listening Practice';
+      if (id) {
+          const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          const numId = parseInt(id, 10);
+          if (!isNaN(numId) && numId >= 1 && numId <= 48) {
+              const month = months[Math.ceil(numId / 4) - 1];
+              title = `${month} Listening Practice`;
+          } else {
+              title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+          }
+      }
       
       const checkAnswer = (qNum: number) => {
           let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();

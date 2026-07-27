@@ -24,6 +24,29 @@ const getFallbackType = (id) => {
   return 'unknown';
 };
 
+const getFallbackTitle = (id: any, currentTitle?: string) => {
+  const strId = String(id);
+  const numId = parseInt(strId, 10);
+  
+  if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 48) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const month = months[Math.ceil(numId / 4) - 1];
+    let skill = 'Practice';
+    if (numId % 4 === 1) skill = 'Reading';
+    if (numId % 4 === 2) skill = 'Listening';
+    if (numId % 4 === 3) skill = 'Writing';
+    if (numId % 4 === 0) skill = 'Speaking';
+    return `${month} ${skill} Practice`;
+  }
+
+  if (currentTitle && isNaN(Number(currentTitle))) {
+      return currentTitle;
+  }
+  
+  return currentTitle || null;
+};
+
+
 export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const { user, isAdmin } = useAuth();
   const location = useLocation();
@@ -590,7 +613,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {getSubmissionsByType('speaking').slice(0, 4).map(sub => {
               const assignment = assignments.find(a => a.id === sub.assignmentId);
-              const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+              const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
               return (
                 <div key={sub.id} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md transition-shadow">
                   <div className="sm:w-[45%] relative bg-slate-900 group">
@@ -675,7 +698,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     </tr>
                   ) : getSubmissionsByType('reading').slice(0, 5).map((sub) => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
-                    const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                    const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
                       <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
@@ -729,7 +752,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     </tr>
                   ) : getSubmissionsByType('listening').slice(0, 5).map((sub) => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
-                    const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                    const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
                       <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
@@ -763,59 +786,57 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {getSubmissionsByType('writing').slice(0, 4).map(sub => {
-              const assignment = assignments.find(a => a.id === sub.assignmentId);
-              const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
-              let wordCount = 0;
-              if (typeof sub.answers === 'string') {
-                wordCount = sub.answers.split(/\s+/).filter(w => w.length > 0).length;
-              } else if (sub.answers && sub.answers['task2']) {
-                 wordCount = sub.answers['task2'].split(/\s+/).filter(w => w.length > 0).length;
-              } else if (sub.answers && sub.answers['task1']) {
-                 wordCount = sub.answers['task1'].split(/\s+/).filter(w => w.length > 0).length;
-              }
-              return (
-                <div key={sub.id} className="bg-white p-6 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
-                      <p className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : 'N/A'}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mb-6">
-                    <div>
-                       <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Band</div>
-                       <div className="text-lg font-bold text-slate-900">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}</div>
-                    </div>
-                    <div>
-                       <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Words</div>
-                       <div className="text-lg font-bold text-slate-900">{wordCount}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-auto flex gap-2">
-                    <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
-                      Read Essay
-                    </button>
-                    <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
-                      Feedback
-                    </button>
-                    {isAdmin && (
-                      <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {getSubmissionsByType('writing').length === 0 && (
-              <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-[1.5rem] border border-slate-200 border-dashed">
-                No writing submissions yet.
-              </div>
-            )}
+          <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Words</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Time</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {getSubmissionsByType('writing').length === 0 ? (
+                    <tr>
+                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No writing activity yet.</td>
+                    </tr>
+                  ) : getSubmissionsByType('writing').slice(0, 5).map((sub) => {
+                    const assignment = assignments.find(a => a.id === sub.assignmentId);
+                    const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
+                    
+                    let wordCount = 0;
+                    if (typeof sub.answers === 'string') {
+                      wordCount = sub.answers.split(/\s+/).filter(w => w.length > 0).length;
+                    } else if (sub.answers && sub.answers['task2']) {
+                       wordCount = sub.answers['task2'].split(/\s+/).filter(w => w.length > 0).length;
+                    } else if (sub.answers && sub.answers['task1']) {
+                       wordCount = sub.answers['task1'].split(/\s+/).filter(w => w.length > 0).length;
+                    }
+                    
+                    return (
+                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                        <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
+                        <td className="px-6 py-4 font-bold text-[#F4A340]">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}</td>
+                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{wordCount}</td>
+                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-500 text-right text-sm">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        <td className="px-6 py-4 text-right">
+                          {isAdmin && (
+                            <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </div>
@@ -877,7 +898,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     return filtered.map((sub) => {
                   const assignment = assignments.find(a => a.id === sub.assignmentId);
-                  const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                  const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                   const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                   const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback;
                   
@@ -1089,7 +1110,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
-                      const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                      const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                       const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       return (
                         <React.Fragment key={sub.id}>
@@ -1226,7 +1247,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
-                      const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                      const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                       const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       return (
                         <React.Fragment key={sub.id}>
@@ -1363,7 +1384,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
-                      const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                      const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                       const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback || !!sub.fileUrl;
                       
@@ -1533,7 +1554,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     return filtered.map((sub) => {
                       const assignment = assignments.find(a => a.id === sub.assignmentId);
-                      const title = sub.assignmentTitle || assignment?.title || 'Unknown Test';
+                      const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                       const type = sub.assignmentType || assignment?.type || (getFallbackType(sub.assignmentId));
                       const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback;
                       const hasAudio = !!sub.audioUrl;

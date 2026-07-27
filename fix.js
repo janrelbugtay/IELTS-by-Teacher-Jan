@@ -1,8 +1,6 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/pages/AugustReadingTest.tsx', 'utf8');
+let file = fs.readFileSync('src/pages/TestResult.tsx', 'utf8');
 
-code = code.replace(/const passagesData = \[[\s\S]*?\];\n\nexport const ANSWER_KEY: Record<number, string> = \{[\s\S]*?\};\n/, `const passagesData: any[] = [];\n\nexport const ANSWER_KEY: Record<number, string> = {};\n`);
+file = file.replace(/\/\/ Swap logic so assignmentTitle has priority\n\s*if \(submission\.assignmentTitle\?\.toLowerCase\(\)\.includes\('january'\)\) return <JanuaryWritingTest submissionId=\{id\} \/>;/g, "const aId = submission.assignmentId;");
 
-code = code.replace(/MayReadingTest/g, 'AugustReadingTest');
-
-fs.writeFileSync('src/pages/AugustReadingTest.tsx', code);
+fs.writeFileSync('src/pages/TestResult.tsx', file);

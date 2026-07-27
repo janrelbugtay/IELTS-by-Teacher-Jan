@@ -1,4 +1,22 @@
 import React, { useEffect, useState } from 'react';
+
+const getFallbackTitle = (id: any) => {
+  const strId = String(id);
+  if (!/^\d+$/.test(strId)) return null;
+  const numId = parseInt(strId, 10);
+  if (!isNaN(numId) && numId >= 1 && numId <= 48) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const month = months[Math.ceil(numId / 4) - 1];
+    let skill = 'Practice';
+    if (numId % 4 === 1) skill = 'Reading';
+    if (numId % 4 === 2) skill = 'Listening';
+    if (numId % 4 === 3) skill = 'Writing';
+    if (numId % 4 === 0) skill = 'Speaking';
+    return `${month} ${skill} Practice (IELTS)`;
+  }
+  return null;
+};
+
 import { useParams, useNavigate } from 'react-router';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -124,7 +142,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
     return <div className="p-10 text-center">Result not found.</div>;
   }
 
-  const title = submission.assignmentTitle || assignment?.title || 'Test Submission';
+  const title = getFallbackTitle(submission.assignmentId) || submission.assignmentTitle || assignment?.title || 'Test Submission';
   const rawType = submission.assignmentType || assignment?.type || 'unknown';
   let type = rawType.toLowerCase();
   if (type === 'unknown' && submission.assignmentTitle) {
@@ -143,51 +161,43 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
   }
 
   if (type === 'listening') {
-      if (submission.assignmentTitle?.toLowerCase().includes('january')) {
-          return <JanuaryListeningTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('february')) {
-          return <FebruaryListeningTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('march')) {
-          return <MarchListeningTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
-          return <AprilListeningTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('may')) {
-          return <MayListeningTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('june')) {
-          return <JuneListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('july')) {
-          return <JulyListeningTest submissionId={id} />;
-      }
-      }
+      if (submission.assignmentTitle?.toLowerCase().includes('january')) return <JanuaryListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('february')) return <FebruaryListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('march')) return <MarchListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) return <AprilListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('may')) return <MayListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyListeningTest submissionId={id} />;
+
+      const aId = submission.assignmentId;
+      if (aId === '2') return <JanuaryListeningTest submissionId={id} />;
+      if (aId === '6') return <FebruaryListeningTest submissionId={id} />;
+      if (aId === '10') return <MarchListeningTest submissionId={id} />;
+      if (aId === '14') return <AprilListeningTest submissionId={id} />;
+      if (aId === '18') return <MayListeningTest submissionId={id} />;
+      if (aId === '22') return <JuneListeningTest submissionId={id} />;
+      if (aId === '26') return <JulyListeningTest submissionId={id} />;
+      
       return <ComputerListeningTest submissionId={id} />;
   }
   if (type === 'writing') {
-      if (submission.assignmentTitle?.toLowerCase().includes('january')) {
-          return <JanuaryWritingTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('february')) {
-          return <FebruaryWritingTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('march')) {
-          return <MarchWritingTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) {
-          return <AprilWritingTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('may')) {
-          return <MayWritingTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('june')) {
-          return <JuneWritingTest submissionId={id} />;
-      }
-      if (submission.assignmentTitle?.toLowerCase().includes('july')) {
-          return <JulyWritingTest submissionId={id} />;
-      }
+      if (submission.assignmentTitle?.toLowerCase().includes('january')) return <JanuaryWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('february')) return <FebruaryWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('march')) return <MarchWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('april')) return <AprilWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('may')) return <MayWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyWritingTest submissionId={id} />;
+
+      const aId = submission.assignmentId;
+      if (aId === '3') return <JanuaryWritingTest submissionId={id} />;
+      if (aId === '7') return <FebruaryWritingTest submissionId={id} />;
+      if (aId === '11') return <MarchWritingTest submissionId={id} />;
+      if (aId === '15') return <AprilWritingTest submissionId={id} />;
+      if (aId === '19') return <MayWritingTest submissionId={id} />;
+      if (aId === '23') return <JuneWritingTest submissionId={id} />;
+      if (aId === '27') return <JulyWritingTest submissionId={id} />;
+      
       return <ComputerWritingTest submissionId={id} />;
   }
   if (type === 'speaking') {

@@ -200,8 +200,8 @@ export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
                 await addDoc(collection(db, 'submissions'), {
                     userId: user.uid,
                     studentName: candidateNameRef.current || 'CANDIDATE',
-                    assignmentId: '11',
-                    assignmentTitle: 'April Writing Practice',
+                    assignmentId: '19',
+                    assignmentTitle: 'May Writing Practice',
                     assignmentType: 'writing',
                     createdAt: serverTimestamp(),
                     status: 'submitted',
@@ -601,6 +601,12 @@ export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
                     
                     <div className="bg-[#ff3333] text-white font-bold text-center overflow-hidden whitespace-nowrap py-1.5 mb-2 text-base tracking-widest">
                         {redBarText}
+                    </div>
+                    
+                    <div className="mb-4 p-6 bg-gray-50 border-l-4 border-indigo-500 font-sans text-sm text-gray-800 text-left whitespace-pre-wrap">
+                        <span className="font-bold block mb-2 text-base">Task {taskNum} Question:</span>
+                        {taskNum === 1 ? prompt1Raw : prompt2Raw}
+                        
                     </div>
                     
                     <div className="sheet-text-area text-[#000080] font-serif px-2" style={{ flexGrow: 1, backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #94a3b8 31px, #94a3b8 32px)', lineHeight: '32px', fontSize: '18px', paddingTop: '5px', minHeight: '700px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>

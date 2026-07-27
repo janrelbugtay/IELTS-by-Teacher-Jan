@@ -1,7 +1,18 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/data/readingTestData.ts', 'utf-8');
-code = code.replace(/id === '4'/g, "id === '5'");
-code = code.replace(/id === '7'/g, "id === '9'");
-code = code.replace(/id === '10'/g, "id === '13'");
-code = code.replace(/id === '13'/g, "id === '17'");
-fs.writeFileSync('src/data/readingTestData.ts', code);
+
+let data = fs.readFileSync('src/data/readingTestData.ts', 'utf8');
+
+data = "import { novemberPassages, novemberAnswers, novemberExplanations } from './novemberReadingData';\n" + data;
+
+data = data.replace(
+    /if \(id === '37'\) \{\n    return \{ passages: octoberPassages, answers: octoberAnswers, explanations: octoberExplanations \};\n  \}/g,
+    "if (id === '37') {\n    return { passages: octoberPassages, answers: octoberAnswers, explanations: octoberExplanations };\n  }\n\n  if (id === '41') {\n    return { passages: novemberPassages, answers: novemberAnswers, explanations: novemberExplanations };\n  }"
+);
+
+data = data.replace(
+    /\['41'\]\.includes\(id\)/g,
+    "['45'].includes(id)"
+);
+
+fs.writeFileSync('src/data/readingTestData.ts', data);
+console.log('Fixed readingTestData');

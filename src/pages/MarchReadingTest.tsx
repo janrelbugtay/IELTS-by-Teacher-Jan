@@ -1454,6 +1454,29 @@ export function MarchReadingTest({ submissionId, assignmentId }: { submissionId?
                           const normalLines: string[] = [];
                           const optionLines: string[] = [];
                           
+                          const isTFNG = block.options && (block.options.includes('TRUE') || block.options.includes('YES'));
+                          
+                          if (isTFNG) {
+                            return (
+                              <div className={`mt-2 font-bold text-[1.25em] ${colorTheme !== 'standard' ? 'text-white' : 'text-black'}`}>
+                                {lines.map((line: string, idx: number) => {
+                                  if (line.startsWith('TRUE') || line.startsWith('FALSE') || line.startsWith('NOT GIVEN') ||
+                                      line.startsWith('YES') || line.startsWith('NO')) {
+                                    const keyword = line.startsWith('NOT GIVEN') ? 'NOT GIVEN' : line.split(' ')[0];
+                                    const rest = line.substring(keyword.length);
+                                    return (
+                                      <div key={idx} className="mt-1">
+                                        <span className="uppercase text-[1.1em] underline decoration-2">{keyword}</span>
+                                        <span>{rest}</span>
+                                      </div>
+                                    );
+                                  }
+                                  return <div key={idx} className="mb-2">{line}</div>;
+                                })}
+                              </div>
+                            );
+                          }
+
                           lines.forEach((line: string) => {
                             if (/^[A-K][\.\)]?\s+/.test(line.trim())) {
                               optionLines.push(line);
@@ -1474,7 +1497,7 @@ export function MarchReadingTest({ submissionId, assignmentId }: { submissionId?
                                 </p>
                               )}
                               {optionLines.length > 0 && (
-                                <div className={`mt-4 p-5 border-2 rounded-lg shadow-sm font-sans not-italic text-[1.25em] font-semibold ${theme.box} ${theme.border} ${theme.text}`}>
+                                <div className={`mt-4 font-sans not-italic text-[1.25em] font-medium ${colorTheme !== 'standard' ? 'text-white' : 'text-black'}`}>
                                   {optionLines.map((line: string, idx: number) => (
                                     <div key={idx} className="mb-1.5 last:mb-0">{line}</div>
                                   ))}
@@ -1546,7 +1569,52 @@ export function MarchReadingTest({ submissionId, assignmentId }: { submissionId?
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex justify-between items-start mb-4 gap-4">
-                                    <p className={`font-medium text-[1em] leading-relaxed ${theme.text}`}>{q.text}</p>
+                                    <p className={`leading-relaxed whitespace-pre-wrap ${(block.options && (block.options.includes('TRUE') || block.options.includes('YES'))) ? 'font-bold text-[1.05em] text-black ' + (colorTheme !== 'standard' ? 'text-white' : 'text-black') : 'font-medium text-[1em] ' + theme.text}`}>
+                                  {(() => {
+                                    
+                                    let displayQText = q.text;
+                                    if (block.type === 'mcq') {
+                                      const textLines = (q.text || '').split('\n');
+                                      const newMainText = [];
+                                      textLines.forEach(l => {
+                                         if (!/^[A-H][\.\)]?\s+/.test(l.trim())) {
+                                            newMainText.push(l);
+                                         }
+                                      });
+                                      displayQText = newMainText.join('\n');
+                                    }
+                                    if (block.type !== 'input') return displayQText;
+                                    const regex = new RegExp(`(?:\\b${q.id}\\s*)?_{2,}`, 'g');
+                                    const parts = displayQText.split(regex);
+                                    if (parts.length <= 1) return q.text;
+                                    
+                                    return (
+                                      <>
+                                        {parts.map((part, i) => (
+                                          <React.Fragment key={i}>
+                                            {part}
+                                            {i < parts.length - 1 && (
+                                               <input
+                                                 type="text"
+                                                 disabled={reviewMode}
+                                                 className={`inline-block border-2 rounded px-2 py-1 mx-1 focus:outline-none transition-all shadow-inner font-medium text-[1em] disabled:opacity-100 w-40 ${
+                                                   reviewMode
+                                                      ? (isCorrect
+                                                          ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800 text-green-400 cursor-pointer pointer-events-none' : 'bg-green-50 border-green-300 text-green-900 cursor-pointer pointer-events-none')
+                                                         : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-800 text-red-400 cursor-pointer pointer-events-none' : 'bg-red-50 border-red-400 text-red-700 cursor-pointer font-bold placeholder-red-700 pointer-events-none'))
+                                                      : `focus:border-blue-500 ${theme.input} ${theme.border}`
+                                                 }`}
+                                                 placeholder={reviewMode ? (answers[q.id] || "No Answer") : q.id.toString()}
+                                                 value={reviewMode && !answers[q.id] ? "No Answer" : answers[q.id] || ''}
+                                                 onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                               />
+                                            )}
+                                          </React.Fragment>
+                                        ))}
+                                      </>
+                                    );
+                                  })()}
+                                </p>
                                     
                                     {/* Flag for Review Toggle Button */}
                                     {!reviewMode && (
@@ -1561,82 +1629,83 @@ export function MarchReadingTest({ submissionId, assignmentId }: { submissionId?
                                   </div>
                                   
                                   {/* MCQ and Matching logic */}
-                                  {(block.type === 'mcq' || block.type === 'matching') && (
-                                    <div className="space-y-3">
-                                      {(q.options || block.options).map((opt: string, optIdx: number) => {
-                                        const optionLetter = opt.charAt(0);
-                                        const isSelected = answers[q.id] === optionLetter;
-                                        return (
-                                          <label 
-                                            key={optIdx} 
-                                            onClick={(e) => {
-                                              if (reviewMode) {
-                                                e.preventDefault();
-                                                startReview(activeReviewQuestion === q.id ? 0 : q.id);
-                                              }
-                                            }}
-                                            className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all shadow-sm ${
-                                              isSelected ? theme.radioChecked : theme.radioUnchecked
-                                            } cursor-pointer`}
-                                          >
-                                            <input
-                                              type="radio"
-                                              name={`question-${q.id}`}
-                                              value={optionLetter}
-                                              checked={isSelected}
-                                              disabled={false}
-                                              onChange={(e) => {
-                                                if (!reviewMode) handleAnswerChange(q.id, e.target.value);
-                                              }}
-                                              className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                            />
-                                            <span className="text-[1em] leading-relaxed flex items-start font-serif">
-                                              <span className="font-bold font-sans mr-2 shrink-0">{optionLetter}.</span>
-                                              <span>{opt.substring(2).trim()}</span>
-                                            </span>
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
+                                                                {(block.type === 'mcq' || block.type === 'matching') && (() => {
+                                const lines = q.text ? q.text.split('\n') : [];
+                                let extractedOptions = {};
+                                if (block.type === 'mcq') {
+                                  lines.forEach(l => {
+                                    if (/^[A-H][\.\)]?\s+/.test(l.trim())) {
+                                      extractedOptions[l.trim().charAt(0)] = l.trim();
+                                    }
+                                  });
+                                }
+                                return (
+                                <div className="space-y-3">
+                                  {(q.options || block.options).map((opt: string, optIdx: number) => {
+                                    const optionLetter = opt.split(/[\s.]+/)[0];
+                                    const isSelected = answers[q.id] === optionLetter;
+                                    const isThisOptionCorrect = block.type === 'mcq' || block.type === 'matching' ? ((currentAnswerKey as any)[q.id] === optionLetter) : ((currentAnswerKey as any)[q.id] === opt);
+                                    
+                                    let labelClass = `flex items-start gap-3 p-4 rounded-lg border-2 transition-all shadow-sm ${reviewMode ? 'cursor-pointer' : 'cursor-pointer'} `;
+                                    
+                                    if (reviewMode) {
+                                        if (isThisOptionCorrect) {
+                                            labelClass += (colorTheme !== 'standard' ? 'border-green-600 bg-[#1a2e1a] text-green-400 ' : 'border-green-500 bg-green-100 text-green-800 ');
+                                        } else if (isSelected && !isThisOptionCorrect) {
+                                            labelClass += (colorTheme !== 'standard' ? 'border-red-600 bg-[#3a1a1a] text-red-400 ' : 'border-red-500 bg-red-100 text-red-800 ');
+                                        } else {
+                                            labelClass += (colorTheme !== 'standard' ? 'border-gray-800 bg-[#111] text-gray-500 opacity-60 ' : 'border-gray-200 bg-gray-50 text-gray-400 opacity-60 ');
+                                        }
+                                    } else {
+                                        labelClass += isSelected ? theme.radioChecked : theme.radioUnchecked;
+                                    }
+
+                                    const displayText = extractedOptions[optionLetter] || opt;
+
+                                    return (
+                                      <label key={optIdx} className={labelClass}>
+                                        <input
+                                          type="radio"
+                                          disabled={reviewMode}
+                                          name={`question-${q.id}`}
+                                          value={optionLetter}
+                                          checked={isSelected}
+                                          onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                          className={`mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${reviewMode ? 'cursor-pointer' : 'cursor-pointer'}`}
+                                        />
+                                        <span className="font-medium text-[1em] leading-relaxed">{displayText}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                                );
+                              })()}
 
                                   {/* YES/NO/NOT GIVEN or TRUE/FALSE/NOT GIVEN */}
-                                  {block.type === 'choice' && (
-                                    <div className="flex flex-wrap gap-3">
-                                      {block.options.map((opt: string) => {
-                                        const isSelected = answers[q.id] === opt;
-                                        return (
-                                          <label 
-                                            key={opt}
-                                            onClick={(e) => {
-                                              if (reviewMode) {
-                                                e.preventDefault();
-                                                startReview(activeReviewQuestion === q.id ? 0 : q.id);
-                                              }
-                                            }}
-                                            className={`flex-1 min-w-[120px] text-[1em] text-center p-3 rounded-lg border-2 transition-all font-bold shadow-sm ${
-                                              isSelected 
-                                                ? theme.radioChecked 
-                                                : theme.radioUnchecked
-                                            } cursor-pointer`}
-                                          >
-                                            <input
-                                              type="radio"
-                                              name={`question-${q.id}`}
-                                              value={opt}
-                                              className="hidden"
-                                              checked={isSelected}
-                                              disabled={false}
-                                              onChange={(e) => {
-                                                if (!reviewMode) handleAnswerChange(q.id, e.target.value);
-                                              }}
-                                            />
-                                            {opt}
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
+                                                                {block.type === 'choice' && (
+                                <div className="relative mt-2 max-w-[250px]">
+                                  <select
+                                    disabled={reviewMode}
+                                    className={`w-full border-2 rounded-lg p-3 pr-10 focus:outline-none transition-all shadow-sm font-bold text-[1em] appearance-none cursor-pointer ${
+                                      reviewMode
+                                        ? (isCorrect
+                                            ? (colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800 text-green-400 pointer-events-none' : 'bg-green-50 border-green-300 text-green-900 pointer-events-none')
+                                            : (colorTheme !== 'standard' ? 'bg-[#3a1a1a] border-red-800 text-red-400 pointer-events-none' : 'bg-red-50 border-red-400 text-red-700 pointer-events-none'))
+                                        : `focus:border-blue-500 ${theme.input} ${theme.border}`
+                                    }`}
+                                    value={answers[q.id] || ''}
+                                    onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                  >
+                                    <option value="" disabled>Select an option...</option>
+                                    {block.options.map((opt: string) => (
+                                      <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                  </select>
+                                  <div className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${reviewMode ? (isCorrect ? (colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600') : (colorTheme !== 'standard' ? 'text-red-400' : 'text-red-600')) : theme.text}`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                  </div>
+                                </div>
+                              )}
 
                                   {/* Simple Text Input Fallback */}
     
