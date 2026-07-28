@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+const fs = require('fs');
+
+const code = `import React, { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ArrowLeft } from 'lucide-react';
@@ -67,3 +69,6 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
     </div>
   );
 }
+`
+
+fs.writeFileSync('src/pages/SpeakingTestResult.tsx', code);

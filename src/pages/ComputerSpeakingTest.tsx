@@ -1,33 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
+import { db, storage } from '../lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveSpeakingTestScreen } from '../components/LiveSpeakingTestScreen';
-import { Mic, Camera, Wifi, MessageSquare, BarChart, FileText, CheckCircle2, ChevronRight, UploadCloud } from 'lucide-react';
+import { SpeakingPerformanceReport } from '../components/SpeakingPerformanceReport';
+import { SpeakingRecordingsReview } from '../components/SpeakingRecordingsReview';
+import { Mic, Camera, Wifi, MessageSquare, BarChart, FileText, CheckCircle2, ChevronRight, UploadCloud, Play, Square, Volume2 } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 
 const STAGES = {
   MIC_CHECK: 'MIC_CHECK',
-  CAMERA_CHECK: 'CAMERA_CHECK',
-  WAITING: 'WAITING',
   TEST: 'TEST',
-  EVALUATION: 'EVALUATION',
-  RESULTS: 'RESULTS'
+  PERFORMANCE: 'PERFORMANCE',
+  RECORDING: 'RECORDING'
 };
 
 const SIDEBAR_STEPS = [
   { id: STAGES.MIC_CHECK, label: 'Microphone Ready', icon: Mic },
-  { id: STAGES.CAMERA_CHECK, label: 'Camera Ready', icon: Camera },
-  { id: STAGES.WAITING, label: 'Connected', icon: Wifi },
   { id: STAGES.TEST, label: 'Speaking Test', icon: MessageSquare },
-  { id: STAGES.EVALUATION, label: 'Evaluation', icon: BarChart },
-  { id: STAGES.RESULTS, label: 'Results', icon: FileText }
+  { id: STAGES.PERFORMANCE, label: 'Performance Report', icon: BarChart },
+  { id: STAGES.RECORDING, label: 'Recordings', icon: FileText }
 ];
 
 export function ComputerSpeakingTest() {
   const { user } = useAuth();
+  const { id } = useParams();
   const [stage, setStage] = useState(STAGES.MIC_CHECK);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const navigate = useNavigate();
 
   if (!user) {
@@ -83,33 +87,9 @@ export function ComputerSpeakingTest() {
               key="mic" 
               title="Microphone Check" 
               description="Let's make sure we can hear you clearly."
-              onNext={() => setStage(STAGES.CAMERA_CHECK)} 
+              onNext={() => setStage(STAGES.TEST)} 
             >
               <MicCheckContent />
-            </SetupStep>
-          )}
-
-          {stage === STAGES.CAMERA_CHECK && (
-            <SetupStep 
-              key="cam" 
-              title="Camera Check" 
-              description="Position yourself in the center of the frame."
-              onNext={() => setStage(STAGES.WAITING)} 
-            >
-              <CameraCheckContent />
-            </SetupStep>
-          )}
-
-          {stage === STAGES.WAITING && (
-            <SetupStep 
-              key="wait" 
-              title="Connecting..." 
-              description="Establishing secure connection to the examiner."
-              onNext={() => setStage(STAGES.TEST)} 
-              autoNext
-              duration={2500}
-            >
-              <WaitingContent />
             </SetupStep>
           )}
 
@@ -119,38 +99,84 @@ export function ComputerSpeakingTest() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
+              className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
-              <LiveSpeakingTestScreen onComplete={(blob: Blob | undefined) => {
-                if (blob) setRecordedAudio(blob);
-                setStage(STAGES.EVALUATION);
+              {isSaving && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <h3 className="text-xl font-bold text-slate-800">Saving your test...</h3>
+                  <p className="text-slate-500 mt-2">Please wait while we process your recording</p>
+                </div>
+              )}
+              <LiveSpeakingTestScreen onComplete={async (blob: Blob | undefined) => {
+                if (blob) {
+                  setRecordedAudio(blob);
+                  
+                  // Save to Firebase
+                  setIsSaving(true);
+                  try {
+                    // Upload audio
+                    const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}.webm`);
+                    const uploadTask = await uploadBytesResumable(audioRef, blob);
+                    const downloadUrl = await getDownloadURL(uploadTask.ref);
+
+                    // Determine title and ID
+                    const testNum = id || '1';
+                    const assignmentTitle = `January Speaking Practice`;
+                    
+                    // Create submission
+                    await addDoc(collection(db, 'submissions'), {
+                      userId: user?.uid,
+                      assignmentId: testNum,
+                      assignmentTitle: assignmentTitle,
+                      assignmentType: 'speaking',
+                      audioUrl: downloadUrl,
+                      bandScore: 7, // Mock score for now
+                      timeSpent: 14 * 60, // 14 mins
+                      createdAt: serverTimestamp(),
+                      answers: {}
+                    });
+                    
+                    setIsSaving(false);
+                    setStage(STAGES.PERFORMANCE);
+                  } catch (error) {
+                    console.error("Error saving test:", error);
+                    setIsSaving(false);
+                    alert("Failed to save recording, but you can still view your report.");
+                    setStage(STAGES.PERFORMANCE);
+                  }
+                } else {
+                  alert("Test aborted or failed to record. Returning to dashboard.");
+                  navigate('/');
+                }
               }} />
             </motion.div>
           )}
 
-          {stage === STAGES.EVALUATION && (
-            <SetupStep 
-              key="eval" 
-              title="Evaluating Results" 
-              description="Our AI is analyzing your pronunciation, fluency, and vocabulary."
-              onNext={() => setStage(STAGES.RESULTS)} 
-              autoNext
-              duration={4000}
-            >
-              <EvaluationContent />
-            </SetupStep>
-          )}
-
-          {stage === STAGES.RESULTS && (
+          {stage === STAGES.PERFORMANCE && (
             <motion.div 
-              key="results"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex-1 flex items-center justify-center p-8 overflow-y-auto"
+              key="performance"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex-1 flex flex-col overflow-y-auto"
             >
-              <ResultsDashboard onFinish={() => navigate('/ielts/dashboard')} recordedAudio={recordedAudio} />
+              <SpeakingPerformanceReport testId={id} onNext={() => setStage(STAGES.RECORDING)} />
             </motion.div>
           )}
+
+          {stage === STAGES.RECORDING && (
+            <motion.div 
+              key="recording"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
+            >
+              <SpeakingRecordingsReview testId={id} recordedAudio={recordedAudio} />
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
     </div>
@@ -176,6 +202,7 @@ const SetupStep = ({ title, description, children, onNext, autoNext, duration = 
     >
       <div className="bg-white/80 backdrop-blur-xl border border-white p-10 rounded-[32px] shadow-[0_8px_32px_rgba(79,125,255,0.08)] max-w-xl w-full text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#4F7DFF] to-[#6CCB5F]" />
+        
         <h2 className="text-3xl font-bold mb-3 text-[#1A1A1A]">{title}</h2>
         <p className="text-slate-500 mb-10 text-lg">{description}</p>
         
@@ -198,177 +225,170 @@ const SetupStep = ({ title, description, children, onNext, autoNext, duration = 
 
 const MicCheckContent = () => {
   const [level, setLevel] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
-  useEffect(() => {
-    const i = setInterval(() => setLevel(Math.random()), 100);
-    return () => clearInterval(i);
-  }, []);
-
-  return (
-    <div className="flex flex-col items-center w-full">
-      <div className="w-32 h-32 rounded-full bg-blue-50 flex items-center justify-center mb-8 relative">
-        <div className="absolute inset-0 bg-[#4F7DFF] rounded-full opacity-20 animate-ping" />
-        <Mic size={48} className="text-[#4F7DFF]" />
-      </div>
-      <div className="flex items-end gap-1 h-12 w-64 justify-center">
-        {[...Array(20)].map((_, i) => (
-          <motion.div 
-            key={i}
-            animate={{ height: `${20 + (level * Math.random() * 80)}%` }}
-            className="w-2 bg-[#4F7DFF] rounded-full"
-            transition={{ type: 'spring', bounce: 0, duration: 0.1 }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const CameraCheckContent = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number>();
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(s => {
-          stream = s;
-          if (videoRef.current) videoRef.current.srcObject = s;
-        })
-        .catch(err => {
-          console.warn("Camera not available, ignoring:", err);
-        });
-    }
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, []);
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyzer = audioContext.createAnalyser();
+      analyzer.fftSize = 64;
+      source.connect(analyzer);
+      analyzerRef.current = analyzer;
+      
+      const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+      const updateLevel = () => {
+        if (!analyzerRef.current) return;
+        analyzerRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        setLevel(average / 255);
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+      updateLevel();
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        setLevel(0);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setAudioUrl(null);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      alert("Microphone access is required to test audio.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+    }
+  };
+
+  const playAudio = () => {
+    if (audioUrl) {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(audioUrl);
+      } else {
+        audioRef.current.src = audioUrl;
+      }
+      
+      audioRef.current.onended = () => {
+        setIsPlaying(false);
+      };
+      
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+  
+  const stopAudio = () => {
+    if (audioRef.current && isPlaying) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  }
+
   return (
-    <div className="w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden relative shadow-inner ring-4 ring-slate-100 max-w-sm mx-auto">
-      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+    <div className="flex flex-col items-center w-full">
+      <p className="text-[#1A1A1A] font-medium mb-6 text-lg">Please say: <span className="font-bold text-[#4F7DFF]">&quot;I love English!&quot;</span></p>
+      
+      <div className="w-32 h-32 rounded-full bg-blue-50 flex items-center justify-center mb-8 relative">
+        {isRecording && <div className="absolute inset-0 bg-[#4F7DFF] rounded-full opacity-20 animate-ping" />}
+        <Mic size={48} className={`transition-colors ${isRecording ? "text-[#4F7DFF]" : "text-slate-400"}`} />
+      </div>
+      
+      <div className="flex items-end gap-1 h-12 w-64 justify-center mb-8">
+        {[...Array(20)].map((_, i) => (
+          <motion.div 
+            key={i}
+            animate={{ height: `${20 + (level * Math.random() * 80)}%` }}
+            className={`w-2 rounded-full ${isRecording ? "bg-[#4F7DFF]" : "bg-slate-200"}`}
+            transition={{ type: 'spring', bounce: 0, duration: 0.1 }}
+          />
+        ))}
+      </div>
+      
+      <div className="flex gap-4">
+        {!isRecording ? (
+          <button 
+            onClick={startRecording}
+            className="flex items-center gap-2 bg-[#4F7DFF] text-white px-6 py-2.5 rounded-xl font-medium hover:bg-blue-600 transition-colors"
+          >
+            <Mic size={18} /> Record
+          </button>
+        ) : (
+          <button 
+            onClick={stopRecording}
+            className="flex items-center gap-2 bg-red-500 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+          >
+            <Square size={18} /> Stop
+          </button>
+        )}
+        
+        {audioUrl && !isRecording && (
+          !isPlaying ? (
+            <button 
+              onClick={playAudio}
+              className="flex items-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-200 px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-100 transition-colors"
+            >
+              <Play size={18} /> Playback
+            </button>
+          ) : (
+            <button 
+              onClick={stopAudio}
+              className="flex items-center gap-2 bg-amber-50 text-amber-600 border border-amber-200 px-6 py-2.5 rounded-xl font-medium hover:bg-amber-100 transition-colors"
+            >
+              <Square size={18} /> Stop Playback
+            </button>
+          )
+        )}
+      </div>
     </div>
   );
 };
-
-const WaitingContent = () => (
-  <div className="flex flex-col items-center">
-    <div className="w-24 h-24 border-4 border-slate-100 border-t-[#4F7DFF] rounded-full animate-spin mb-8" />
-    <p className="text-xl font-medium animate-pulse text-[#4F7DFF]">Finding an examiner...</p>
-  </div>
-);
-
-const EvaluationContent = () => (
-  <div className="flex flex-col items-center">
-    <div className="relative w-32 h-32 mb-8">
-      <div className="absolute inset-0 border-4 border-[#6CCB5F] rounded-full opacity-20 animate-ping" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <BarChart size={48} className="text-[#6CCB5F]" />
-      </div>
-    </div>
-    <p className="text-xl font-medium animate-pulse text-[#6CCB5F]">Generating personalized feedback...</p>
-  </div>
-);
-
-const ResultsDashboard = ({ onFinish, recordedAudio }: any) => {
-  const [uploading, setUploading] = useState(false);
-  const [driveLink, setDriveLink] = useState('');
-
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setUploading(true);
-        const metadata = {
-          name: 'IELTS_Speaking_Test_Audio.webm',
-          mimeType: 'audio/webm',
-        };
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        if (recordedAudio) {
-          form.append('file', recordedAudio);
-        }
-
-        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
-          },
-          body: form,
-        });
-        const file = await response.json();
-        setDriveLink(`https://drive.google.com/file/d/${file.id}/view`);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to upload audio to Google Drive");
-      } finally {
-        setUploading(false);
-      }
-    },
-    scope: 'https://www.googleapis.com/auth/drive.file'
-  });
-
-  return (
-  <div className="bg-white/80 backdrop-blur-xl border border-white p-12 rounded-[40px] shadow-[0_8px_32px_rgba(79,125,255,0.08)] max-w-4xl w-full">
-    <div className="text-center mb-12">
-      <div className="inline-flex items-center justify-center w-20 h-20 bg-green-50 rounded-full mb-6">
-        <CheckCircle2 size={40} className="text-[#6CCB5F]" />
-      </div>
-      <h1 className="text-4xl font-bold mb-4 text-[#1A1A1A]">Test Complete!</h1>
-      <p className="text-xl text-slate-500">Here is your estimated band score.</p>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-      <div className="bg-gradient-to-br from-[#4F7DFF] to-[#3B66E0] text-white rounded-3xl p-8 flex flex-col items-center justify-center shadow-lg shadow-blue-500/20">
-        <span className="text-sm uppercase tracking-wider font-semibold opacity-80 mb-2">Overall Band Score</span>
-        <span className="text-7xl font-bold">7.5</span>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        {[
-          { label: 'Fluency', score: '7.0' },
-          { label: 'Vocabulary', score: '8.0' },
-          { label: 'Grammar', score: '7.5' },
-          { label: 'Pronunciation', score: '7.5' }
-        ].map(s => (
-          <div key={s.label} className="bg-slate-50 rounded-2xl p-6 flex flex-col items-center justify-center border border-slate-100">
-            <span className="text-sm text-slate-500 font-medium mb-1">{s.label}</span>
-            <span className="text-3xl font-bold text-[#1A1A1A]">{s.score}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-    
-    {recordedAudio && (
-      <div className="mb-10 text-center">
-         {!driveLink ? (
-           <button 
-             onClick={() => login()} 
-             disabled={uploading}
-             className="inline-flex items-center gap-2 bg-white text-[#1E4DB7] border border-[#1E4DB7] px-6 py-3 rounded-xl font-medium hover:bg-blue-50 transition-colors disabled:opacity-50"
-           >
-             <UploadCloud size={20} />
-             {uploading ? 'Uploading...' : 'Save Audio to Google Drive'}
-           </button>
-         ) : (
-           <a 
-             href={driveLink} 
-             target="_blank" 
-             rel="noreferrer"
-             className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-6 py-3 rounded-xl font-medium hover:bg-emerald-100 transition-colors"
-           >
-             <UploadCloud size={20} />
-             View Audio in Google Drive
-           </a>
-         )}
-      </div>
-    )}
-
-    <button 
-      onClick={onFinish}
-      className="w-full bg-[#1A1A1A] text-white py-5 rounded-2xl text-xl font-semibold hover:bg-slate-800 transition-colors"
-    >
-      Return to Dashboard
-    </button>
-  </div>
-)};

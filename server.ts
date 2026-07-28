@@ -1,3 +1,4 @@
+import fs from "fs";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -341,7 +342,7 @@ function pcmToWav(pcmData: Buffer, sampleRate: number = 24000, numChannels: numb
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } }
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } }
           }
         }
       });
@@ -506,15 +507,17 @@ ${text}`
   const wss = new WebSocketServer({ server, path: '/live' });
 
   wss.on("connection", async (clientWs) => {
+    console.log("New client connected to /live");
+    clientWs.send(JSON.stringify({ text: 'Hello from server /live' }));
     try {
       const session = await ai.live.connect({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.1-flash-live-preview",
         config: {
-          responseModalities: [Modality.AUDIO, Modality.TEXT],
+          responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } },
           },
-          systemInstruction: `You are a professional IELTS Speaking examiner. Conduct a full speaking test: Part 1, Part 2, and Part 3. Be conversational, strict but friendly, and pace appropriately. 
+          systemInstruction: { parts: [{ text: `You are a professional IELTS Speaking examiner. Conduct a full speaking test: Part 1, Part 2, and Part 3. Be conversational, strict but friendly, and pace appropriately. 
 Ask these exact questions one by one naturally, waiting for the candidate to respond:
 
 Part 1:
@@ -537,10 +540,11 @@ Part 3:
 - Is there any situation where in people may disobey the law?
 - What qualities should a police officer possess?
 - How to solve major crimes in the city?
-- Should people be penalized when they use mobile phones while driving?`,
+- Should people be penalized when they use mobile phones while driving?` }] },
         },
         callbacks: {
           onmessage: (message) => {
+            console.log("GEMINI MESSAGE:", JSON.stringify(message));
             const parts = message.serverContent?.modelTurn?.parts || [];
             let textOutput = "";
             for (const p of parts) {
@@ -559,21 +563,19 @@ Part 3:
              clientWs.close();
           },
           onerror: (err) => {
-             console.error("Gemini Live error:", err);
+             fs.writeFileSync("live-error2.log", err.toString()); console.error("Gemini Live error:", err);
           }
         },
       });
 
-      clientWs.on("message", (data) => {
+      clientWs.on("message", async (data) => {
         try {
           const { audio, text } = JSON.parse(data.toString());
           if (audio) {
-            session.sendRealtimeInput({
-              audio: { data: audio, mimeType: "audio/pcm;rate=16000" },
-            });
+            session.sendRealtimeInput({ media: { data: audio, mimeType: "audio/pcm;rate=16000" } });
           }
           if (text) {
-            session.sendClientContent({
+            await session.sendClientContent({
               turns: [{ parts: [{ text }] }],
               turnComplete: true
             });
@@ -587,7 +589,7 @@ Part 3:
         console.log("Client disconnected, closing session");
       });
     } catch (e) {
-      console.error("Failed to connect to Live API:", e);
+      fs.writeFileSync("live-error.log", e.toString()); console.error("Failed to connect to Live API:", e);
       clientWs.close();
     }
   });

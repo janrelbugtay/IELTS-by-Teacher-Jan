@@ -204,7 +204,7 @@ export const novemberPassages = [
       {
         "title": "Questions 27-30",
         "instruction": "Choose the correct letter, A, B, C or D.",
-        "type": "mcq",
+        "type": "choice",
         "options": ["A", "B", "C", "D"],
         "questions": [
           {
