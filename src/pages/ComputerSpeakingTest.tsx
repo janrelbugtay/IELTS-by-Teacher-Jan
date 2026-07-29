@@ -30,8 +30,8 @@ export function ComputerSpeakingTest() {
   const { id } = useParams();
   const [stage, setStage] = useState(STAGES.MIC_CHECK);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  
+  const [hasRecorded, setHasRecorded] = useState(false);
+    
   const navigate = useNavigate();
 
   if (!user) {
@@ -88,8 +88,9 @@ export function ComputerSpeakingTest() {
               title="Microphone Check" 
               description="Let's make sure we can hear you clearly."
               onNext={() => setStage(STAGES.TEST)} 
+              canContinue={hasRecorded}
             >
-              <MicCheckContent />
+              <MicCheckContent onHasRecorded={() => setHasRecorded(true)} />
             </SetupStep>
           )}
 
@@ -101,50 +102,41 @@ export function ComputerSpeakingTest() {
               exit={{ opacity: 0, y: -20 }}
               className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
-              {isSaving && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                  <h3 className="text-xl font-bold text-slate-800">Saving your test...</h3>
-                  <p className="text-slate-500 mt-2">Please wait while we process your recording</p>
-                </div>
-              )}
               <LiveSpeakingTestScreen onComplete={async (blob: Blob | undefined) => {
                 if (blob) {
                   setRecordedAudio(blob);
                   
-                  // Save to Firebase
-                  setIsSaving(true);
-                  try {
-                    // Upload audio
-                    const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}.webm`);
-                    const uploadTask = await uploadBytesResumable(audioRef, blob);
-                    const downloadUrl = await getDownloadURL(uploadTask.ref);
+                  // Go to performance stage immediately!
+                  setStage(STAGES.PERFORMANCE);
+                  
+                  // Save to Firebase in the background
+                  (async () => {
+                    try {
+                      // Upload audio
+                      const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}.webm`);
+                      const uploadTask = await uploadBytesResumable(audioRef, blob);
+                      const downloadUrl = await getDownloadURL(uploadTask.ref);
 
-                    // Determine title and ID
-                    const testNum = id || '1';
-                    const assignmentTitle = `January Speaking Practice`;
-                    
-                    // Create submission
-                    await addDoc(collection(db, 'submissions'), {
-                      userId: user?.uid,
-                      assignmentId: testNum,
-                      assignmentTitle: assignmentTitle,
-                      assignmentType: 'speaking',
-                      audioUrl: downloadUrl,
-                      bandScore: 7, // Mock score for now
-                      timeSpent: 14 * 60, // 14 mins
-                      createdAt: serverTimestamp(),
-                      answers: {}
-                    });
-                    
-                    setIsSaving(false);
-                    setStage(STAGES.PERFORMANCE);
-                  } catch (error) {
-                    console.error("Error saving test:", error);
-                    setIsSaving(false);
-                    alert("Failed to save recording, but you can still view your report.");
-                    setStage(STAGES.PERFORMANCE);
-                  }
+                      // Determine title and ID
+                      const testNum = id || '1';
+                      const assignmentTitle = `January Speaking Practice`;
+                      
+                      // Create submission
+                      await addDoc(collection(db, 'submissions'), {
+                        userId: user?.uid,
+                        assignmentId: testNum,
+                        assignmentTitle: assignmentTitle,
+                        assignmentType: 'speaking',
+                        audioUrl: downloadUrl,
+                        bandScore: 7, // Mock score for now
+                        timeSpent: 14 * 60, // 14 mins
+                        createdAt: serverTimestamp(),
+                        answers: {}
+                      });
+                    } catch (error) {
+                      console.error("Error saving test in background:", error);
+                    }
+                  })();
                 } else {
                   alert("Test aborted or failed to record. Returning to dashboard.");
                   navigate('/');
@@ -185,7 +177,7 @@ export function ComputerSpeakingTest() {
 
 // --- Setup Subcomponents ---
 
-const SetupStep = ({ title, description, children, onNext, autoNext, duration = 2000 }: any) => {
+const SetupStep = ({ title, description, children, onNext, autoNext, duration = 2000, canContinue = true }: any) => {
   useEffect(() => {
     if (autoNext) {
       const t = setTimeout(onNext, duration);
@@ -213,7 +205,8 @@ const SetupStep = ({ title, description, children, onNext, autoNext, duration = 
         {!autoNext && (
           <button 
             onClick={onNext}
-            className="w-full bg-gradient-to-r from-[#4F7DFF] to-[#3B66E0] text-white py-4 rounded-2xl text-lg font-semibold hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
+            disabled={!canContinue}
+            className={`w-full py-4 rounded-2xl text-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${canContinue ? 'bg-gradient-to-r from-[#4F7DFF] to-[#3B66E0] text-white hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-1' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
           >
             Continue <ChevronRight size={20} />
           </button>
@@ -223,7 +216,7 @@ const SetupStep = ({ title, description, children, onNext, autoNext, duration = 
   );
 };
 
-const MicCheckContent = () => {
+const MicCheckContent = ({ onHasRecorded }: { onHasRecorded?: () => void }) => {
   const [level, setLevel] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -280,9 +273,14 @@ const MicCheckContent = () => {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
+        
+        if (onHasRecorded) {
+          onHasRecorded();
+        }
         
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
@@ -290,11 +288,11 @@ const MicCheckContent = () => {
         setLevel(0);
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(500);
       setIsRecording(true);
       setAudioUrl(null);
     } catch (err) {
-      console.error("Failed to start recording:", err);
+      console.warn("Failed to start recording:", err);
       alert("Microphone access is required to test audio.");
     }
   };
@@ -321,8 +319,12 @@ const MicCheckContent = () => {
         setIsPlaying(false);
       };
       
-      audioRef.current.play();
-      setIsPlaying(true);
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.warn("Audio play error:", err);
+        setIsPlaying(false);
+      });
     }
   };
   

@@ -1,6 +1,6 @@
 import { PerformanceTable } from '../../components/PerformanceTable';
 import React, { useEffect, useState, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs, where, deleteDoc, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, where, addDoc, deleteDoc, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../lib/firebase';
 import { Assignment, Submission, OperationType } from '../../types';
@@ -51,6 +51,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const { user, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showAddOffline, setShowAddOffline] = useState(false);
+  const [offlineForm, setOfflineForm] = useState({ id: '', name: '', link: '', score: '', date: new Date().toISOString().split('T')[0], feedback: '', vietnameseTranslation: '' });
+  const [viewFeedbackItem, setViewFeedbackItem] = useState<any>(null);
 
   const handleLinkGoogle = async () => {
     if (!user) return;
@@ -351,7 +354,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const readingSubs = getSubmissionsByType('reading');
   const listeningSubs = getSubmissionsByType('listening');
   const writingSubs = getSubmissionsByType('writing');
-  const speakingSubs = getSubmissionsByType('speaking');
+  const speakingSubs = getSubmissionsByType('speaking').filter(s => s.assignmentId !== 'offline_speaking' && !(s.assignmentTitle || '').toLowerCase().includes('offline'));
+  const offlineSpeakingSubs = getSubmissionsByType('speaking').filter(s => s.assignmentId === 'offline_speaking' || (s.assignmentTitle || '').toLowerCase().includes('offline'));
 
   const rScore = averageScore(readingSubs);
   const lScore = averageScore(listeningSubs);
@@ -583,7 +587,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Speaking</h3>
             <div className="flex items-end gap-2 h-32">
-              {getSubmissionsByType('speaking').slice(0, 5).reverse().map((sub, i) => (
+              {speakingSubs.slice(0, 5).reverse().map((sub, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
                   <div className="w-full bg-purple-100 rounded-t-sm relative transition-all group-hover:bg-purple-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -592,7 +596,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                 </div>
               ))}
-              {getSubmissionsByType('speaking').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
+              {speakingSubs.length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
             </div>
           </div>
         </div>
@@ -604,14 +608,14 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <section className="space-y-6">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Mic className="w-6 h-6 text-purple-600" /> Speaking Recordings
+              <Mic className="w-6 h-6 text-purple-600" /> Speaking Practice Tests
             </h2>
             <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : '/ielts/dashboard?tab=speaking')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {getSubmissionsByType('speaking').slice(0, 4).map(sub => {
+            {speakingSubs.slice(0, 4).map(sub => {
               const assignment = assignments.find(a => a.id === sub.assignmentId);
               const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
               return (
@@ -660,15 +664,86 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 </div>
               );
             })}
-            {getSubmissionsByType('speaking').length === 0 && (
+            {speakingSubs.length === 0 && (
               <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-[1.5rem] border border-slate-200 border-dashed">
-                No speaking recordings yet.
+                No speaking practice tests yet.
               </div>
             )}
           </div>
         </section>
 
-        {/* Reading Activity */}
+        {/* Offline Speaking Assignments */}
+        {offlineSpeakingSubs.length > 0 && (
+          <section className="space-y-6 mt-12">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <Mic className="w-6 h-6 text-emerald-600" /> Offline Speaking Assignments
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {offlineSpeakingSubs.slice(0, 4).map(sub => {
+                const title = sub.assignmentTitle || 'Offline Speaking Assignment';
+                return (
+                  <div key={sub.id} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md transition-shadow">
+                    <div className="sm:w-[45%] relative bg-slate-800 group flex items-center justify-center min-h-[160px]">
+                      <Mic className="w-12 h-12 text-emerald-400 opacity-50" />
+                    </div>
+                    <div className="p-5 sm:w-[55%] flex flex-col">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
+                        {isAdmin && (
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                setOfflineForm({
+                                    id: sub.id,
+                                    name: sub.assignmentTitle || 'Offline Speaking Assignment',
+                                    link: sub.audioUrl || '',
+                                    score: sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toString() : '',
+                                    date: sub.createdAt ? new Date(sub.createdAt.seconds ? sub.createdAt.seconds * 1000 : sub.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                    feedback: sub.feedback || sub.teacherComment || sub.aiFeedback || sub.answers?.feedback || sub.answers?.teacherComment || '',
+                                    vietnameseTranslation: sub.vietnameseTranslation || sub.teacherCommentVi || sub.answers?.vietnameseTranslation || sub.answers?.teacherCommentVi || ''
+                                });
+                                setShowAddOffline(true);
+                            }} className="text-slate-400 hover:text-blue-600 p-1">
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mb-3 mt-1">
+                        {sub.bandScore !== undefined && sub.bandScore !== null ? (
+                          <span className="text-sm font-bold text-slate-900">Band {sub.bandScore.toFixed(1)}</span>
+                        ) : (
+                          <span className="text-sm font-bold text-slate-900">Pending</span>
+                        )}
+                        <span className="text-slate-300">•</span>
+                        <span className="text-sm text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : 'N/A'}</span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
+                      </div>
+                      
+                      <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
+                        <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
+                          Feedback
+                        </button>
+                        {sub.audioUrl && (
+                          <a href={sub.audioUrl} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
+                            <Upload className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {isAdmin && (
+                          <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
         <section className="space-y-6">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -1506,25 +1581,14 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
              {isAdmin && (
                <div>
                  <button
-                   onClick={async () => {
-                     try {
-                       const refId = doc(collection(db, 'submissions')).id;
-                       await setDoc(doc(db, 'submissions', refId), {
-                         assignmentId: 'offline_speaking',
-                         assignmentTitle: 'Offline Speaking Assignment',
-                         assignmentType: 'speaking',
-                         userId: targetUserId,
-                         answers: 'Offline submission',
-                         createdAt: serverTimestamp(),
-                       });
-                     } catch(err) {
-                       console.error(err);
-                     }
-                   }}
-                   className="flex items-center gap-2 bg-[#1E4DB7] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-800 transition-colors"
-                 >
-                   <Plus className="w-4 h-4" /> Add Offline Entry
-                 </button>
+                  onClick={() => {
+                      setOfflineForm({ id: '', name: 'Offline Speaking Assignment', link: '', score: '', date: new Date().toISOString().split('T')[0], feedback: '', vietnameseTranslation: '' });
+                      setShowAddOffline(true);
+                  }}
+                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add Offline Entry
+                </button>
                </div>
              )}
           </div>
@@ -1676,6 +1740,132 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </div>
       )}
 
+      {showAddOffline && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 my-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-slate-900">{offlineForm.id ? 'Edit Offline Entry' : 'Add Offline Entry'}</h3>
+              <button onClick={() => setShowAddOffline(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Test Name</label>
+                <input 
+                  type="text"
+                  value={offlineForm.name}
+                  onChange={(e) => setOfflineForm({...offlineForm, name: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
+                  placeholder="e.g. Offline Speaking Assignment"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Link (e.g. Google Drive Video/Audio)</label>
+                <input 
+                  type="url"
+                  value={offlineForm.link}
+                  onChange={(e) => setOfflineForm({...offlineForm, link: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
+                  placeholder="https://drive.google.com/..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Band Score</label>
+                <input 
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="9"
+                  value={offlineForm.score}
+                  onChange={(e) => setOfflineForm({...offlineForm, score: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
+                  placeholder="e.g. 6.5"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Date</label>
+                <input 
+                  type="date"
+                  value={offlineForm.date}
+                  onChange={(e) => setOfflineForm({...offlineForm, date: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Feedback / Notes</label>
+                <textarea 
+                  value={offlineForm.feedback}
+                  onChange={(e) => setOfflineForm({...offlineForm, feedback: e.target.value})}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900 resize-none"
+                  placeholder="Add any teacher feedback or personal notes here..."
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Vietnamese Translation</label>
+                <textarea 
+                  value={offlineForm.vietnameseTranslation || ''}
+                  onChange={(e) => setOfflineForm({...offlineForm, vietnameseTranslation: e.target.value})}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900 resize-none"
+                  placeholder="Bản dịch tiếng Việt..."
+                ></textarea>
+              </div>
+              
+              <div className="pt-4 flex gap-4">
+                <button 
+                  onClick={() => setShowAddOffline(false)} 
+                  className="flex-1 py-3.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                      if (!targetUserId) return;
+                      try {
+                        const bandScore = parseFloat(offlineForm.score);
+                        const payload = {
+                          assignmentTitle: offlineForm.name || 'Offline Speaking Assignment',
+                          audioUrl: offlineForm.link,
+                          bandScore: isNaN(bandScore) ? null : bandScore,
+                          feedback: offlineForm.feedback,
+                          teacherComment: offlineForm.feedback,
+                          vietnameseTranslation: offlineForm.vietnameseTranslation,
+                          teacherCommentVi: offlineForm.vietnameseTranslation,
+                          createdAt: offlineForm.date ? new Date(offlineForm.date) : serverTimestamp(),
+                        };
+                        if (offlineForm.id) {
+                            await updateDoc(doc(db, 'submissions', offlineForm.id), payload);
+                        } else {
+                            await addDoc(collection(db, 'submissions'), {
+                              ...payload,
+                              assignmentId: 'offline_speaking',
+                              assignmentType: 'speaking',
+                              userId: targetUserId,
+                            });
+                        }
+                        setShowAddOffline(false);
+                      } catch (err) {
+                        console.error(err);
+                        alert("Failed to save entry");
+                      }
+                  }} 
+                  className="flex-1 py-3.5 bg-emerald-600 text-white font-bold hover:bg-emerald-700 rounded-xl transition-colors shadow-lg shadow-emerald-500/30"
+                >
+                  Save Entry
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {isEditingProfile && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 my-8">

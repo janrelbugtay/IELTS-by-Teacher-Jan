@@ -1,20 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Play, Pause } from 'lucide-react';
+import { Mic, Play, Pause, Video, ExternalLink } from 'lucide-react';
 
 const MOCK_QUESTIONS = {
   part1: [
-    { id: 'p1_1', text: 'What do you enjoy most about your work?', duration: '0:42' },
-    { id: 'p1_2', text: 'Do you prefer working alone or with others?', duration: '0:31' },
-    { id: 'p1_3', text: 'Do you think you are a careful reader?', duration: '0:45' }
+    { id: 'p1_1', text: 'Did you like going to parks as a child?', duration: '0:30' },
+    { id: 'p1_2', text: 'Do you still like going to parks now?', duration: '0:35' },
+    { id: 'p1_3', text: 'Would you like to see more parks in your city?', duration: '0:40' },
+    { id: 'p1_4', text: 'Are there any parks you want to go to in the future?', duration: '0:35' },
+    { id: 'p1_5', text: 'Do you like to keep things tidy?', duration: '0:30' },
+    { id: 'p1_6', text: 'Did you use to keep your room tidy when you were a child?', duration: '0:35' },
+    { id: 'p1_7', text: 'Have you ever seen old buildings in the city？', duration: '0:40' },
+    { id: 'p1_8', text: 'Do you think we should preserve old buildings in cities？', duration: '0:45' },
+    { id: 'p1_9', text: 'Do you prefer living in an old building or a modern house？', duration: '0:45' }
   ],
   part2: {
     id: 'p2_1',
-    text: 'Describe a time when you helped someone. You should say: who you helped, how you helped them, why you helped them, and how you felt about it.',
-    duration: '2:04'
+    text: 'Describe an environmental protection law. You should say: What is it? How did you first learn about it? Who benefits from it? And explain how you feel about this law?',
+    duration: '2:00'
   },
   part3: [
-    { id: 'p3_1', text: 'Do you think people are less willing to help others these days?', duration: '0:55' },
-    { id: 'p3_2', text: 'What kinds of people need help in society?', duration: '1:12' }
+    { id: 'p3_1', text: 'Is there any situation where in people may disobey the law?', duration: '0:55' },
+    { id: 'p3_2', text: 'What qualities should a police officer possess?', duration: '1:00' },
+    { id: 'p3_3', text: 'How to solve major crimes in the city?', duration: '1:10' },
+    { id: 'p3_4', text: 'Should people be penalized when they use mobile phones while driving?', duration: '1:05' }
   ]
 };
 
@@ -29,6 +37,7 @@ const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: stri
     if (src && isRealAudio) {
       const audio = new Audio(src);
       audioRef.current = audio;
+      audio.onerror = (e) => console.warn("Audio error", e);
 
       const setAudioData = () => {
         const mins = Math.floor(audio.duration / 60);
@@ -66,10 +75,13 @@ const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: stri
     if (isRealAudio && audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(e => {
+          console.warn("Playback failed", e);
+          setIsPlaying(false);
+        });
       }
-      setIsPlaying(!isPlaying);
     } else {
       // Mock playback
       if (isPlaying) return;
@@ -126,6 +138,8 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
     }
   }, [recordedAudio]);
 
+  const isOffline = testId === 'offline_speaking' || testId?.toLowerCase().includes('offline');
+
   const today = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -146,6 +160,45 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
 
         {/* Content */}
         <div className="space-y-16 max-w-3xl">
+          {/* Full Test Recording */}
+          <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-10">
+            <h2 className="text-[14px] font-bold text-[#4F7DFF] tracking-wide uppercase mb-4">{isOffline ? "Offline Submission Link" : "Full Test Recording"}</h2>
+            {isOffline && audioUrl && audioUrl.startsWith('http') ? (
+                (() => {
+                    let embedUrl = audioUrl;
+                    if (audioUrl.includes('drive.google.com') && !audioUrl.includes('preview')) {
+                        const match = audioUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+                        }
+                    } else if (audioUrl.includes('youtube.com/watch')) {
+                        const urlParams = new URL(audioUrl).searchParams;
+                        if (urlParams.has('v')) {
+                            embedUrl = `https://www.youtube.com/embed/${urlParams.get('v')}`;
+                        }
+                    } else if (audioUrl.includes('youtu.be/')) {
+                        const match = audioUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            embedUrl = `https://www.youtube.com/embed/${match[1]}`;
+                        }
+                    }
+                    return (
+                        <div className="w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 relative" style={{ paddingTop: '56.25%' }}>
+                            <iframe 
+                                src={embedUrl} 
+                                className="absolute inset-0 w-full h-full"
+                                allow="autoplay; encrypted-media; fullscreen" 
+                                allowFullScreen
+                            ></iframe>
+                        </div>
+                    );
+                })()
+            ) : (
+                <SimpleAudioPlayer src={audioUrl} defaultDurationStr={isOffline ? "Audio Recording" : "Full Recording"} isRealAudio={!!audioUrl} />
+            )}
+          </section>
+          {!isOffline && (
+            <>
           {/* Part 1 */}
           <section>
             <h2 className="text-[13px] font-bold text-[#A5B4CB] tracking-[0.2em] uppercase mb-8">Part 1</h2>
@@ -153,7 +206,7 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
               {MOCK_QUESTIONS.part1.map((q, i) => (
                 <div key={q.id}>
                   <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                  <SimpleAudioPlayer src={audioUrl} defaultDurationStr={q.duration} isRealAudio={i === 0 && !!audioUrl} />
+                  
                 </div>
               ))}
             </div>
@@ -165,7 +218,7 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
             <div className="space-y-10 pl-4 border-l-2 border-transparent">
               <div>
                 <p className="text-[17px] text-[#1c2b4d] font-medium mb-3 leading-relaxed">{MOCK_QUESTIONS.part2.text}</p>
-                <SimpleAudioPlayer src={audioUrl} defaultDurationStr={MOCK_QUESTIONS.part2.duration} />
+                
               </div>
             </div>
           </section>
@@ -177,11 +230,13 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
               {MOCK_QUESTIONS.part3.map((q) => (
                 <div key={q.id}>
                   <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                  <SimpleAudioPlayer src={audioUrl} defaultDurationStr={q.duration} />
+                  
                 </div>
               ))}
             </div>
           </section>
+          </>
+          )}
         </div>
       </div>
     </div>
