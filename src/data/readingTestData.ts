@@ -1,4 +1,5 @@
 import { novemberPassages, novemberAnswers, novemberExplanations } from './novemberReadingData';
+import { decemberPassages, decemberAnswers, decemberExplanations } from './decemberReadingData';
 import { octoberPassages, octoberAnswers, octoberExplanations } from './octoberReadingData';
 import { febPassages, febAnswers, febExplanations } from './februaryReadingData';
 import { marchPassages, marchAnswers, marchExplanations } from './marchReadingData';
@@ -51,23 +52,8 @@ export const getReadingTestData = (id: string | undefined) => {
     return { passages: novemberPassages, answers: novemberAnswers, explanations: novemberExplanations };
   }
 
-  // Explicitly defined future tests that don't have content yet
-  if (id && ['45'].includes(id)) {
-    return {
-      passages: [
-        {
-          id: 1,
-          title: "Content Coming Soon",
-          subtitle: "Future Update",
-          content: [
-            "The reading practice test for this month is currently under development and will be available in a future update."
-          ],
-          questionBlocks: []
-        }
-      ],
-      answers: {},
-      explanations: {}
-    };
+  if (id === '45') {
+    return { passages: decemberPassages, answers: decemberAnswers, explanations: decemberExplanations };
   }
   
   // Default to January/original content for backwards compatibility with old submissions

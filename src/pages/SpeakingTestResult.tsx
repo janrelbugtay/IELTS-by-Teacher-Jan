@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import Markdown from 'react-markdown';
 import { renderMarkdown } from '../lib/markdown';
 import { SpeakingRecordingsReview } from '../components/SpeakingRecordingsReview';
 import { SpeakingPerformanceReport } from '../components/SpeakingPerformanceReport';
@@ -12,7 +13,12 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
   const [submissionData, setSubmissionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const isOffline = submissionData?.assignmentId === 'offline_speaking' || submissionData?.assignmentTitle?.toLowerCase().includes('offline');
+  const hasVideoLink = submissionData?.audioUrl && (
+    submissionData.audioUrl.includes('drive.google.com') || 
+    submissionData.audioUrl.includes('youtube.com') || 
+    submissionData.audioUrl.includes('youtu.be')
+  );
+  const isOffline = submissionData?.assignmentId === 'offline_speaking' || submissionData?.assignmentTitle?.toLowerCase().includes('offline') || hasVideoLink;
 
   useEffect(() => {
     async function fetchData() {
@@ -69,17 +75,21 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
         </div>
       )}
 
-      {(submissionData.assignmentId === 'offline_speaking' || submissionData.assignmentTitle?.toLowerCase().includes('offline')) && (
+      {(submissionData.assignmentId === 'offline_speaking' || submissionData.assignmentTitle?.toLowerCase().includes('offline') || submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment) && (
         <div className="max-w-4xl mx-auto w-full px-8 pb-12">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
                 <h2 className="text-xl font-bold text-[#282B5C] mb-4">Feedback</h2>
                 
                 <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 text-slate-700 whitespace-pre-wrap max-h-[50vh] overflow-y-auto">
-                    <div className="mb-4 prose prose-slate max-w-none" dangerouslySetInnerHTML={renderMarkdown(submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment || "No feedback provided for this activity yet.")} />
+                    <div className="mb-4 prose prose-slate max-w-none">
+                        <Markdown>{submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment || "No feedback provided for this activity yet."}</Markdown>
+                    </div>
                     {(submissionData.vietnameseTranslation || submissionData.teacherCommentVi || submissionData.answers?.vietnameseTranslation || submissionData.answers?.teacherCommentVi) && (
                         <div className="mt-4 pt-4 border-t border-slate-200">
                             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Vietnamese Translation</h4>
-                            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={renderMarkdown(submissionData.vietnameseTranslation || submissionData.teacherCommentVi || submissionData.answers?.vietnameseTranslation || submissionData.answers?.teacherCommentVi)} />
+                            <div className="prose prose-slate max-w-none">
+                                <Markdown>{submissionData.vietnameseTranslation || submissionData.teacherCommentVi || submissionData.answers?.vietnameseTranslation || submissionData.answers?.teacherCommentVi}</Markdown>
+                            </div>
                         </div>
                     )}
                 </div>

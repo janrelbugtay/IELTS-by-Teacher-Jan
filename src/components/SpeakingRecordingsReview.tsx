@@ -163,7 +163,7 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
           {/* Full Test Recording */}
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-10">
             <h2 className="text-[14px] font-bold text-[#4F7DFF] tracking-wide uppercase mb-4">{isOffline ? "Offline Submission Link" : "Full Test Recording"}</h2>
-            {isOffline && audioUrl && audioUrl.startsWith('http') ? (
+            {(audioUrl && (audioUrl.includes('drive.google.com') || audioUrl.includes('youtube.com') || audioUrl.includes('youtu.be') || (isOffline && audioUrl.startsWith('http')))) ? (
                 (() => {
                     let embedUrl = audioUrl;
                     if (audioUrl.includes('drive.google.com') && !audioUrl.includes('preview')) {

@@ -1,9 +1,11 @@
 const fs = require('fs');
-let data = fs.readFileSync('src/data/septemberReadingData.ts', 'utf8');
+let code = fs.readFileSync('src/data/decemberReadingData.ts', 'utf8');
 
-data = data.replace(
-  /instruction: "Complete the summary using the list of words, A–I, below.\\n\\n\*\*The television series is based on Ekman's work\*\*\\nA new TV series based on Ekman's work features a hero named Lightman, who detects lies. Initially, Ekman was unenthusiastic about the TV project because he feared the possibility of encouraging viewers' \{19\}. For example, he was worried that one day the program could result in \{20\} not being carried out. Ultimately though, he has given the show his blessing because he is not aware of any other comparable program based on a single person's \{21\}. The \{22\} of the show's producer has been another pleasant surprise and, considering the genre of the program, Ekman is happy with the show's overall \{23\}.",/,
-  'instruction: "Complete the summary using the list of words, A–I, below.",\n        text: "**The television series is based on Ekman\'s work**\\n\\nA new TV series based on Ekman\'s work features a hero named Lightman, who detects lies. Initially, Ekman was unenthusiastic about the TV project because he feared the possibility of encouraging viewers\' {19}. For example, he was worried that one day the program could result in {20} not being carried out. Ultimately though, he has given the show his blessing because he is not aware of any other comparable program based on a single person\'s {21}. The {22} of the show\'s producer has been another pleasant surprise and, considering the genre of the program, Ekman is happy with the show\'s overall {23}.",\n'
-);
+code = code.replace(/14 _______/g, '{14}');
+code = code.replace(/15 _______/g, '{15}');
+code = code.replace(/16 _______/g, '{16}');
+code = code.replace(/17 _______/g, '{17}');
+code = code.replace(/18 _______/g, '{18}');
+code = code.replace(/19 _______/g, '{19}');
 
-fs.writeFileSync('src/data/septemberReadingData.ts', data);
+fs.writeFileSync('src/data/decemberReadingData.ts', code);

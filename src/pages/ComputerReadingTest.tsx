@@ -1060,7 +1060,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     onChange={(e) => handleAnswerChange(qId, e.target.value)}
                   >
                     <option value="">Select...</option>
-                    {options.map((opt: string) => (
+                    {options && options.map((opt: string) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                     {reviewMode && !answers[qId] && <option value="No Answer">No Answer</option>}
@@ -1763,7 +1763,13 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                   <div className="p-6">
                     {(block.type === 'summary-options' || block.type === 'summary-input') && (
                       <div className={`p-6 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
-                        {block.options && (
+                        {block.optionsList ? (
+                          <div className={`mb-6 pb-6 border-b grid grid-cols-2 md:grid-cols-3 gap-3 ${theme.border}`}>
+                            {block.optionsList.map((opt: any) => (
+                               <div key={opt.letter} className={`px-4 py-2 border rounded shadow-sm font-medium ${theme.optionBg} ${theme.border} ${theme.text}`}><strong>{opt.letter}</strong> {opt.text}</div>
+                            ))}
+                          </div>
+                        ) : block.options && (
                           <div className={`mb-6 pb-6 border-b grid grid-cols-2 md:grid-cols-3 gap-3 ${theme.border}`}>
                             {block.options.map((opt: string) => (
                                <div key={opt} className={`px-4 py-2 border rounded shadow-sm font-medium ${theme.optionBg} ${theme.border} ${theme.text}`}>{opt}</div>
