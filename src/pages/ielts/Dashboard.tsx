@@ -14,6 +14,7 @@ import { linkWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth'
 
 
 const getFallbackType = (id) => {
+  if (id === 'offline_speaking') return 'speaking';
   const numId = parseInt(String(id));
   if (!isNaN(numId)) {
     if (numId % 4 === 1) return 'reading';
@@ -360,7 +361,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const rScore = averageScore(readingSubs);
   const lScore = averageScore(listeningSubs);
   const wScore = averageScore(writingSubs);
-  const sScore = averageScore(speakingSubs);
+  const sScore = averageScore([...speakingSubs, ...offlineSpeakingSubs]);
 
   const overallBand = () => {
     let scores = [rScore, lScore, wScore, sScore].filter(s => s > 0);
@@ -608,7 +609,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <section className="space-y-6">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Mic className="w-6 h-6 text-purple-600" /> Speaking Practice Tests
+              <Mic className="w-6 h-6 text-purple-600" /> Online Speaking Tests
             </h2>
             <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : '/ielts/dashboard?tab=speaking')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
@@ -666,7 +667,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             })}
             {speakingSubs.length === 0 && (
               <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-[1.5rem] border border-slate-200 border-dashed">
-                No speaking practice tests yet.
+                No online speaking tests yet.
               </div>
             )}
           </div>
@@ -684,9 +685,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               {offlineSpeakingSubs.slice(0, 4).map(sub => {
                 const title = sub.assignmentTitle || 'Offline Speaking Assignment';
                 return (
-                  <div key={sub.id} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md transition-shadow">
+                  <div key={sub.id} onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer">
                     <div className="sm:w-[45%] relative bg-slate-800 group flex items-center justify-center min-h-[160px]">
-                      <Mic className="w-12 h-12 text-emerald-400 opacity-50" />
+                      <Mic className="w-12 h-12 text-emerald-400 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
                     </div>
                     <div className="p-5 sm:w-[55%] flex flex-col">
                       <div className="flex justify-between items-start mb-1">
@@ -700,8 +701,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     link: sub.audioUrl || '',
                                     score: sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toString() : '',
                                     date: sub.createdAt ? new Date(sub.createdAt.seconds ? sub.createdAt.seconds * 1000 : sub.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                                    feedback: sub.feedback || sub.teacherComment || sub.aiFeedback || sub.answers?.feedback || sub.answers?.teacherComment || '',
-                                    vietnameseTranslation: sub.vietnameseTranslation || sub.teacherCommentVi || sub.answers?.vietnameseTranslation || sub.answers?.teacherCommentVi || ''
+                                    feedback: (sub as any).feedback || sub.teacherComment || sub.aiFeedback || (sub.answers as any)?.feedback || (sub.answers as any)?.teacherComment || '',
+                                    vietnameseTranslation: sub.vietnameseTranslation || sub.teacherCommentVi || (sub.answers as any)?.vietnameseTranslation || (sub.answers as any)?.teacherCommentVi || ''
                                 });
                                 setShowAddOffline(true);
                             }} className="text-slate-400 hover:text-blue-600 p-1">
@@ -723,11 +724,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       </div>
                       
                       <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
-                        <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
+                        <button onClick={(e) => { e.stopPropagation(); navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
                           Feedback
                         </button>
                         {sub.audioUrl && (
-                          <a href={sub.audioUrl} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
+                          <a href={sub.audioUrl} onClick={(e) => e.stopPropagation()} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
                             <Upload className="w-3.5 h-3.5" />
                           </a>
                         )}

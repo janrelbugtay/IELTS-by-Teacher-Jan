@@ -157,7 +157,7 @@ export function ViewAssignment() {
                 </div>
               </div>
               <div className="bg-white p-6 md:p-8 rounded-2xl border border-natural-200 whitespace-pre-wrap text-natural-800 leading-relaxed text-lg shadow-sm">
-                {submission.answers}
+                {typeof submission.answers === 'string' ? submission.answers : JSON.stringify(submission.answers, null, 2)}
               </div>
             </div>
           ) : (

@@ -306,7 +306,7 @@ export function PETCalculator({ initialTab = 'reading', hideTabs = false, hideHe
       }
     `;
     document.head.appendChild(style);
-    return () => document.head.removeChild(style);
+    return () => { document.head.removeChild(style); };
   }, []);
 
   const handleScoreChange = (section, field, value) => {

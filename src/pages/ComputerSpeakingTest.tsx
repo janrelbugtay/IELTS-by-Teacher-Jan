@@ -29,7 +29,7 @@ export function ComputerSpeakingTest() {
   const { user } = useAuth();
   const { id } = useParams();
   const [stage, setStage] = useState(STAGES.MIC_CHECK);
-  const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
+  const [recordedAudio, setRecordedAudio] = useState<any>(null);
   const [hasRecorded, setHasRecorded] = useState(false);
     
   const navigate = useNavigate();
@@ -102,9 +102,12 @@ export function ComputerSpeakingTest() {
               exit={{ opacity: 0, y: -20 }}
               className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
-              <LiveSpeakingTestScreen onComplete={async (blob: Blob | undefined) => {
+              <LiveSpeakingTestScreen onComplete={async (responses: Record<string, Blob>, blob?: Blob) => {
+                if (responses) {
+                  setRecordedAudio(responses);
+                  blob = blob || Object.values(responses)[0];
+                }
                 if (blob) {
-                  setRecordedAudio(blob);
                   
                   // Go to performance stage immediately!
                   setStage(STAGES.PERFORMANCE);
@@ -119,7 +122,7 @@ export function ComputerSpeakingTest() {
 
                       // Determine title and ID
                       const testNum = id || '1';
-                      const assignmentTitle = `January Speaking Practice`;
+                      const assignmentTitle = `Online Speaking Test ${testNum}`;
                       
                       // Create submission
                       await addDoc(collection(db, 'submissions'), {
@@ -227,7 +230,7 @@ const MicCheckContent = ({ onHasRecorded }: { onHasRecorded?: () => void }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     return () => {

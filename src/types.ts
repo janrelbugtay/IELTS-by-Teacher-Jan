@@ -46,12 +46,14 @@ export interface Submission {
   assignmentType?: AssignmentType;
   userId: string;
   sessionId?: string; // added for grouped speaking tests
+  studentName?: string;
   answers: string | Record<string, string>; // answers or essay content
   audioUrl?: string; // For speaking
   fileUrl?: string; // For writing PDF
   correctedFileUrl?: string; // For corrected writing
   bandScore?: number; // Automatic or manual score
   percentage?: number; // % correct for reading/listening
+  score?: number;
   teacherComment?: string;
   vietnameseTranslation?: string;
   teacherCommentVi?: string;

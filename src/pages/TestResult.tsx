@@ -44,6 +44,7 @@ import { AprilWritingTest } from './AprilWritingTest';
 import { MayWritingTest } from './MayWritingTest';
 import { JuneWritingTest } from './JuneWritingTest';
 import { JulyWritingTest } from './JulyWritingTest';
+import { AugustWritingTest } from './AugustWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -188,6 +189,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (submission.assignmentTitle?.toLowerCase().includes('may')) return <MayWritingTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneWritingTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('august')) return <AugustWritingTest submissionId={id} />;
 
       const aId = submission.assignmentId;
       if (aId === '3') return <JanuaryWritingTest submissionId={id} />;
@@ -197,6 +199,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '19') return <MayWritingTest submissionId={id} />;
       if (aId === '23') return <JuneWritingTest submissionId={id} />;
       if (aId === '27') return <JulyWritingTest submissionId={id} />;
+      if (aId === '31') return <AugustWritingTest submissionId={id} />;
       
       return <ComputerWritingTest submissionId={id} />;
   }

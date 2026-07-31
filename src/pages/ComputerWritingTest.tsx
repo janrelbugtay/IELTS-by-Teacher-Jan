@@ -14,6 +14,7 @@ import { AprilWritingTest } from './AprilWritingTest';
 import { MayWritingTest } from './MayWritingTest';
 import { JuneWritingTest } from './JuneWritingTest';
 import { JulyWritingTest } from './JulyWritingTest';
+import { AugustWritingTest } from './AugustWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -61,37 +62,28 @@ const getCustomPrompt = (id: string | undefined) => {
     switch (id) {
         case '31': // August
             return {
-                t1Title: "The table below shows the percentage of the population in four different countries who lived in cities in 1990 and 2010, with projections for 2030.",
-                t1Desc: "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Title: "The charts below give information about players of electronic games in South Korea in 2003.",
+                t1Desc: "Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t1Content: (
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 mt-10">
-                        <table className="w-full border-collapse mt-0" style={{ fontSize: 'inherit' }}>
-                            <thead>
-                                <tr>
-                                    <th className="bg-slate-50 text-left p-3 border border-slate-300 font-bold">Country</th>
-                                    <th className="bg-slate-50 text-left p-3 border border-slate-300 font-bold">1990</th>
-                                    <th className="bg-slate-50 text-left p-3 border border-slate-300 font-bold">2010</th>
-                                    <th className="bg-slate-50 text-left p-3 border border-slate-300 font-bold">2030 (proj)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr className="hover:bg-gray-50"><td className="p-3 border border-slate-300">USA</td><td className="p-3 border border-slate-300">75%</td><td className="p-3 border border-slate-300">82%</td><td className="p-3 border border-slate-300">87%</td></tr>
-                                <tr className="hover:bg-gray-50"><td className="p-3 border border-slate-300">China</td><td className="p-3 border border-slate-300">26%</td><td className="p-3 border border-slate-300">49%</td><td className="p-3 border border-slate-300">68%</td></tr>
-                                <tr className="hover:bg-gray-50"><td className="p-3 border border-slate-300">India</td><td className="p-3 border border-slate-300">25%</td><td className="p-3 border border-slate-300">30%</td><td className="p-3 border border-slate-300">40%</td></tr>
-                                <tr className="hover:bg-gray-50"><td className="p-3 border border-slate-300">UK</td><td className="p-3 border border-slate-300">89%</td><td className="p-3 border border-slate-300">90%</td><td className="p-3 border border-slate-300">92%</td></tr>
-                            </tbody>
-                        </table>
+                    <div className="mt-10 flex justify-center">
+                        <img 
+                            src="https://lh3.googleusercontent.com/d/1dRo5GTj_08XVMKzZVQSsmjTKb3_CY-wR" 
+                            alt="Players of electronic games in South Korea in 2003" 
+                            className="max-w-full h-auto rounded-lg shadow-sm"
+                            referrerPolicy="no-referrer"
+                        />
                     </div>
                 ),
-                t1Raw: "The table below shows the percentage of the population in four different countries (USA, China, India, UK) who lived in cities in 1990, 2010, and projected for 2030. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Raw: "The charts below give information about players of electronic games in South Korea in 2003. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t2Prompt: (
                     <>
-                        <p className="font-bold mb-4">In many countries, an increasing number of people are using the internet to diagnose their own medical conditions rather than seeing a doctor.</p>
-                        <p className="font-bold mb-4">Do you think this is a positive or negative development?</p>
+                        <p className="font-bold mb-4">In many countries, more and more people choose to buy imported food rather than food produced locally.</p>
+                        <p className="font-bold mb-4">Why do people buy imported food?</p>
+                        <p className="font-bold mb-4">What could be done to encourage people to buy local food?</p>
                     </>
                 ),
                 t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
-                t2Raw: "In many countries, an increasing number of people are using the internet to diagnose their own medical conditions rather than seeing a doctor. Do you think this is a positive or negative development? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+                t2Raw: "In many countries, more and more people choose to buy imported food rather than food produced locally. Why do people buy imported food? What could be done to encourage people to buy local food? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
             };
         case '35': // September
             return {
@@ -567,6 +559,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     if (id === '27' && !submissionId) {
         return <JulyWritingTest />;
     }
+    if (id === '31' && !submissionId) {
+        return <AugustWritingTest />;
+    }
 
     const [state, setState] = useState({
         studentName: user?.displayName || "",
@@ -580,7 +575,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
         textPart2: "",
         activePart: 1,
         textSize: 16,
-        reviewState: { 1: false, 2: false } as Record<number, boolean>
+        reviewState: { 1: false, 2: false } as Record<number, boolean>,
+        aiFeedback: "",
+        aiBandScore: 0
     });
     
     const [timeLeft, setTimeLeft] = useState(TEST_DURATION);

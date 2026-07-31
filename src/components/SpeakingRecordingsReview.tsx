@@ -125,16 +125,28 @@ const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: stri
   );
 }
 
-export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl }: { testId?: string, recordedAudio?: Blob | null, providedAudioUrl?: string | null }) => {
+export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl }: { testId?: string, recordedAudio?: any, providedAudioUrl?: string | null }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(providedAudioUrl || null);
+  const [responseUrls, setResponseUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (providedAudioUrl) {
       setAudioUrl(providedAudioUrl);
-    } else if (recordedAudio && recordedAudio.size > 0) {
+    } else if (recordedAudio && recordedAudio instanceof Blob && recordedAudio.size > 0) {
       const url = URL.createObjectURL(recordedAudio);
       setAudioUrl(url);
       return () => URL.revokeObjectURL(url);
+    } else if (recordedAudio && !(recordedAudio instanceof Blob)) {
+      const urls: Record<string, string> = {};
+      for (const [id, blob] of Object.entries(recordedAudio)) {
+        if (blob instanceof Blob && blob.size > 0) {
+          urls[id] = URL.createObjectURL(blob);
+        }
+      }
+      setResponseUrls(urls);
+      return () => {
+        Object.values(urls).forEach(url => URL.revokeObjectURL(url));
+      };
     }
   }, [recordedAudio]);
 
@@ -160,28 +172,32 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
 
         {/* Content */}
         <div className="space-y-16 max-w-3xl">
-          {/* Full Test Recording */}
+          
+          {isOffline && audioUrl && (
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-10">
-            <h2 className="text-[14px] font-bold text-[#4F7DFF] tracking-wide uppercase mb-4">{isOffline ? "Offline Submission Link" : "Full Test Recording"}</h2>
-            {(audioUrl && (audioUrl.includes('drive.google.com') || audioUrl.includes('youtube.com') || audioUrl.includes('youtu.be') || (isOffline && audioUrl.startsWith('http')))) ? (
-                (() => {
-                    let embedUrl = audioUrl;
-                    if (audioUrl.includes('drive.google.com') && !audioUrl.includes('preview')) {
-                        const match = audioUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                        if (match && match[1]) {
-                            embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
-                        }
-                    } else if (audioUrl.includes('youtube.com/watch')) {
-                        const urlParams = new URL(audioUrl).searchParams;
-                        if (urlParams.has('v')) {
-                            embedUrl = `https://www.youtube.com/embed/${urlParams.get('v')}`;
-                        }
-                    } else if (audioUrl.includes('youtu.be/')) {
-                        const match = audioUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-                        if (match && match[1]) {
-                            embedUrl = `https://www.youtube.com/embed/${match[1]}`;
-                        }
+            <h2 className="text-[14px] font-bold text-[#4F7DFF] tracking-wide uppercase mb-4">Offline Submission Link</h2>
+            {(() => {
+                let embedUrl = audioUrl;
+                if (audioUrl.includes('drive.google.com') && !audioUrl.includes('preview')) {
+                    // Match /file/d/ID or ?id=ID
+                    let match = audioUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                    if (!match) match = audioUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                    if (match && match[1]) {
+                        embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
                     }
+                } else if (audioUrl.includes('youtube.com/watch')) {
+                    const urlParams = new URL(audioUrl).searchParams;
+                    if (urlParams.has('v')) {
+                        embedUrl = `https://www.youtube.com/embed/${urlParams.get('v')}`;
+                    }
+                } else if (audioUrl.includes('youtu.be/')) {
+                    const match = audioUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+                    if (match && match[1]) {
+                        embedUrl = `https://www.youtube.com/embed/${match[1]}`;
+                    }
+                }
+                
+                if (embedUrl.includes('drive.google.com') || embedUrl.includes('youtube.com')) {
                     return (
                         <div className="w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 relative" style={{ paddingTop: '56.25%' }}>
                             <iframe 
@@ -192,11 +208,23 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                             ></iframe>
                         </div>
                     );
-                })()
-            ) : (
-                <SimpleAudioPlayer src={audioUrl} defaultDurationStr={isOffline ? "Audio Recording" : "Full Recording"} isRealAudio={!!audioUrl} />
-            )}
+                }
+                
+                return (
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                         <a href={audioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-medium hover:underline flex items-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                            </svg>
+                            Open Submission Link
+                         </a>
+                    </div>
+                );
+            })()}
           </section>
+          )}
+
           {!isOffline && (
             <>
           {/* Part 1 */}
@@ -206,6 +234,9 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
               {MOCK_QUESTIONS.part1.map((q, i) => (
                 <div key={q.id}>
                   <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
+                  {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr={q.duration} isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
+                  ) : null}
                   
                 </div>
               ))}
@@ -230,6 +261,9 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
               {MOCK_QUESTIONS.part3.map((q) => (
                 <div key={q.id}>
                   <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
+                  {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr={q.duration} isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
+                  ) : null}
                   
                 </div>
               ))}

@@ -52,8 +52,8 @@ export const SpeakingPerformanceReport = ({ testId, onNext, reportData = emptyRe
     year: 'numeric'
   });
 
-  const formattedId = testId ? (testId.includes('Practice') ? testId : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')) : '';
-  const title = customTitle || (testId && testId.includes('Practice') ? testId : (formattedId ? `${formattedId} Speaking Practice` : 'Speaking Practice'));
+  const formattedId = testId ? (testId.includes('Test') || testId.includes('Practice') ? testId : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')) : '';
+  const title = customTitle || (testId && (testId.includes('Practice') || testId.includes('Test')) ? testId : (!isNaN(parseInt(testId)) ? `Online Speaking Test ${testId}` : (formattedId ? `${formattedId} Online Speaking Test` : 'Online Speaking Test')));
 
   const handleSave = () => {
     setIsEditing(false);
