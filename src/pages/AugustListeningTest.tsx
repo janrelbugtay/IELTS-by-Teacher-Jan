@@ -110,14 +110,14 @@ const CustomStyles = () => (
 );
 
 export const LISTENING_ANSWER_KEY: Record<number, string> = {
-    1: '', 2: '', 3: '', 4: '', 5: '',
-    6: '', 7: '', 8: '', 9: '', 10: '',
-    11: '', 12: '', 13: '', 14: '', 15: '',
-    16: '', 17: '', 18: '', 19: '', 20: '',
-    21: '', 22: '', 23: '', 24: '', 25: '',
-    26: '', 27: '', 28: '', 29: '', 30: '',
-    31: '', 32: '', 33: '', 34: '', 35: '',
-    36: '', 37: '', 38: '', 39: '', 40: ''
+    1: 'collecting', 2: 'records', 3: 'West', 4: 'transport', 5: 'art',
+    6: 'hospital', 7: 'garden', 8: 'quiz', 9: 'tickets', 10: 'poster',
+    11: 'B', 12: 'C', 13: 'C', 14: 'B', 15: 'D',
+    16: 'C', 17: 'G', 18: 'A', 19: 'E', 20: 'F',
+    21: 'D', 22: 'E', 23: 'D', 24: 'C', 25: 'A',
+    26: 'E', 27: 'F', 28: 'B', 29: 'C', 30: 'C',
+    31: '321,000', 32: 'vocabulary', 33: 'podcast', 34: 'smartphones', 35: 'bilingual',
+    36: 'playground', 37: 'picture', 38: 'grammar', 39: 'identity', 40: 'fluent'
 };
 
 export function AugustListeningTest({ submissionId }: { submissionId?: string }) {
@@ -254,7 +254,7 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
     }
     
     try {
-      let title = 'June Listening Practice';
+      let title = 'August Listening Practice (IELTS)';
       
       const checkAnswer = (qNum: number) => {
           let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
@@ -469,7 +469,7 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
         <div className="bg-white p-10 rounded-2xl shadow-2xl w-[560px] border border-gray-100 relative overflow-hidden">
-            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">July IELTS Listening Test</h1>
+            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">August IELTS Listening Test</h1>
             <p className="text-[15px] text-gray-500 text-center mb-10">Configure your session and enter your details to begin.</p>
             
             <form onSubmit={handleStart} className="flex flex-col gap-6">
@@ -589,9 +589,9 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
           <div>
               <CustomAudioPlayer 
                   ref={audioRef} 
-                  src="/api/audio?id=1fjJ_EmkcFK8tm9C7EbehCVERPuQy5EZV" 
+                  src="/api/audio?id=1A-Tu0PuDY4QLt3NZpa11Ww5c7EMKUYq_" 
                   isMockMode={testMode === 'mock'} 
-                  onPlayClick={() => { window.open('https://drive.google.com/file/d/1fjJ_EmkcFK8tm9C7EbehCVERPuQy5EZV/view?usp=sharing', '_blank'); return true; }}
+                  onPlayClick={() => { window.open('https://drive.google.com/file/d/1A-Tu0PuDY4QLt3NZpa11Ww5c7EMKUYq_/view?usp=sharing', '_blank'); return true; }}
               />
           </div>
       </div>
