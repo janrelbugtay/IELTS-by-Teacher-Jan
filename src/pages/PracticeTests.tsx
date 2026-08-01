@@ -106,7 +106,11 @@ const generateMockTests = (courseName: string) => {
       
       tests.push({
         id: testId as any,
-        title: skill.name === 'Speaking' && courseName === 'IELTS' ? `Online Speaking Test ${mIndex + 1}` : `${month} ${skill.name} Practice (${courseName})`,
+        title: courseName === 'IELTS' 
+          ? (skill.name === 'Speaking' ? `Online Speaking Test ${mIndex + 1}` 
+            : skill.name === 'Reading' ? `IELTS Reading Test ${mIndex + 1}` 
+            : `${month} ${skill.name} Practice (${courseName})`)
+          : `${month} ${skill.name} Practice (${courseName})`,
         skill: skill.name,
         month: month,
         attempts: randomAttempts(idCounter),
@@ -119,6 +123,24 @@ const generateMockTests = (courseName: string) => {
       idCounter++;
     });
   });
+
+  
+  if (courseName === 'IELTS') {
+    let readingIds = [49, 53, 57];
+    for (let i = 13; i <= 15; i++) {
+        tests.push({
+            id: readingIds[i - 13] as any,
+            title: `IELTS Reading Test ${i}`,
+            skill: 'Reading',
+            month: 'Extra', // We can just put empty or 'Extra'
+            attempts: randomAttempts(readingIds[i - 13]),
+            difficulty: getDifficulty(readingIds[i - 13]),
+            duration: '60 mins',
+            image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+            createdAt: new Date(2026, 11 + i, 1).getTime(),
+        });
+    }
+  }
 
   return tests;
 };
@@ -288,7 +310,7 @@ export function PracticeTests() {
               </div>
               
               <div className="mt-auto">
-                {[1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 31, 33, 37, 41, 45, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
+                {[1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 37, 41, 45, 49, 53, 57, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
                   <Link 
                     to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                     className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"

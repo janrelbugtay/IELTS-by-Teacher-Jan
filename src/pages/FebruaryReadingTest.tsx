@@ -1299,7 +1299,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
               </div>
               
               <div className="space-y-6 leading-relaxed pb-32">
-                {passage.content.map((paragraph, idx) => (
+                {(passage.content as string[]).map((paragraph, idx) => (
                   <p key={idx} data-paragraph-idx={idx} className={`text-justify relative text-[1em] ${theme.text}`}>
                     {renderParagraphWithHighlights(paragraph, idx, passage.id)}
                   </p>
@@ -1446,7 +1446,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
             className={`h-1/2 md:h-full overflow-y-auto ${theme.panelRight}`}
           >
             <div className="p-8 max-w-3xl mx-auto pb-32">
-                  {passage.questionBlocks.map((block: any, bIdx: number) => (
+                  {(passage as any).questionBlocks.map((block: any, bIdx: number) => (
                     <div key={bIdx} className={`mb-12 rounded-xl shadow-md border overflow-hidden ${theme.box} ${theme.border}`}>
                       <div className={`p-5 border-b ${theme.boxHeader}`}>
                         <h4 className={`font-bold text-[1.25em] ${theme.boxTitle}`}>{block.title}</h4>
@@ -1479,7 +1479,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
                           }
 
                           lines.forEach((line: string) => {
-                            if (/^[A-K][\.\)]?\s+/.test(line.trim())) {
+                            if (/^(?:[A-K][.)]?\s+|(?:i{1,3}|iv|v|vi{1,3}|ix|x)[.)]\s+)/i.test(line.trim())) {
                               optionLines.push(line);
                             } else {
                               if (optionLines.length === 0) {
@@ -1630,7 +1630,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
                                   </div>
                                   
                                   {/* MCQ and Matching logic */}
-                                                                {(block.type === 'mcq' || block.type === 'matching') && (() => {
+                                                                {(block.type === 'mcq') && (() => {
                                 const lines = q.text ? q.text.split('\n') : [];
                                 let extractedOptions = {};
                                 if (block.type === 'mcq') {
@@ -1645,7 +1645,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
                                   {(q.options || block.options).map((opt: string, optIdx: number) => {
                                     const optionLetter = opt.split(/[\s.]+/)[0];
                                     const isSelected = answers[q.id] === optionLetter;
-                                    const isThisOptionCorrect = block.type === 'mcq' || block.type === 'matching' ? ((currentAnswerKey as any)[q.id] === optionLetter) : ((currentAnswerKey as any)[q.id] === opt);
+                                    const isThisOptionCorrect = block.type === 'mcq' ? ((currentAnswerKey as any)[q.id] === optionLetter) : ((currentAnswerKey as any)[q.id] === opt);
                                     
                                     let labelClass = `flex items-start gap-3 p-4 rounded-lg border-2 transition-all shadow-sm ${reviewMode ? 'cursor-pointer' : 'cursor-pointer'} `;
                                     
@@ -1683,7 +1683,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
                               })()}
 
                                   {/* YES/NO/NOT GIVEN or TRUE/FALSE/NOT GIVEN */}
-                                                                {block.type === 'choice' && (
+                                                                {(block.type === 'choice' || block.type === 'matching') && (
                                 <div className="relative mt-2 max-w-[250px]">
                                   <select
                                     disabled={reviewMode}
@@ -1837,7 +1837,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
                       
                       if (user) {
                         try {
-                          let title = 'February Reading Practice';
+                          let title = 'IELTS Reading Test 2';
                           if (id) {
                             const numericId = Number(id);
                             if (!isNaN(numericId) && numericId >= 1) {
@@ -1847,7 +1847,7 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
                               ];
                               const monthIndex = Math.floor((numericId - 1) / 3);
                               if (monthIndex >= 0 && monthIndex < months.length) {
-                                title = `${months[monthIndex]} Reading Practice`;
+                                title = `IELTS Reading Test ${monthIndex + 1}`;
                               }
                             } else {
                               title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');

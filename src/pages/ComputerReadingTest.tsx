@@ -1142,7 +1142,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     
     if (user && !submissionId) {
       try {
-        let title = 'January Reading Practice';
+        let title = 'IELTS Reading Test 1';
         if (id) {
           const numericId = Number(id);
           if (!isNaN(numericId) && numericId >= 1) {
@@ -1151,12 +1151,12 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               'July', 'August', 'September', 'October', 'November', 'December'
             ];
             const monthIndex = Math.floor((numericId - 1) / 4);
-            if (monthIndex >= 0 && monthIndex < months.length) {
-              title = `${months[monthIndex]} Reading Practice`;
+            if (monthIndex >= 0) {
+              title = `IELTS Reading Test ${monthIndex + 1}`;
             }
           } else {
             if (id === 'IELTS-READING-JAN2026-001') {
-              title = 'December Reading Practice';
+              title = 'IELTS Reading Test 12';
             } else {
               title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
             }
@@ -1538,7 +1538,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             </div>
             
             <div className="space-y-6 leading-relaxed pb-32">
-              {passage.content.map((paragraph: string, idx: number) => (
+              {(passage.content as string[]).map((paragraph: string, idx: number) => (
                 <p key={idx} data-paragraph-idx={idx} className={`text-justify relative text-[1em] ${theme.text}`}>
                   {renderParagraphWithHighlights(paragraph, idx, passage.id)}
                 </p>
@@ -1681,7 +1681,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               </div>
             )}
             
-            {passage.questionBlocks.map((block: any, bIdx: number) => {
+            {(passage as any).questionBlocks.map((block: any, bIdx: number) => {
               const summaryIds = block.type.startsWith('summary') ? [...block.text.matchAll(/\{(\d+)\}/g)].map(m => parseInt(m[1])) : [];
               
               return (
@@ -1717,7 +1717,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                           }
 
                           lines.forEach((line: string) => {
-                            if (/^[A-K][\.\)]?\s+/.test(line.trim())) {
+                            if (/^(?:[A-K][.)]?\s+|(?:i{1,3}|iv|v|vi{1,3}|ix|x)[.)]\s+)/i.test(line.trim())) {
                               optionLines.push(line);
                             } else {
                               if (optionLines.length === 0) {
@@ -1736,7 +1736,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                 </p>
                               )}
                               {optionLines.length > 0 && (
-                                <div className={`mt-4 font-sans not-italic text-[1.25em] font-bold ${colorTheme !== 'standard' ? 'text-white' : 'text-black'}`}>
+                                <div className={`mt-4 font-sans not-italic text-[1.25em] text-black`}>
                                   {optionLines.map((line: string, idx: number) => (
                                     <div key={idx} className="mb-1.5 last:mb-0">{line}</div>
                                   ))}
@@ -1902,7 +1902,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                   {(() => {
                                     
                                     let displayQText = q.text;
-                                    if (block.type === 'mcq' || block.type === 'matching') {
+                                    if (block.type === 'mcq') {
                                       const textLines = (q.text || '').split('\n');
                                       const newMainText = [];
                                       textLines.forEach(l => {
@@ -1956,7 +1956,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                 )}
                               </div>
                               
-                                                            {(block.type === 'mcq' || block.type === 'matching') && (() => {
+                                                            {(block.type === 'mcq') && (() => {
                                 const lines = q.text ? q.text.split('\n') : [];
                                 let extractedOptions = {};
                                 if (block.type === 'mcq') {
@@ -1971,7 +1971,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                   {(q.options || block.options).map((opt: string, optIdx: number) => {
                                     const optionLetter = opt.split(/[\s.]+/)[0];
                                     const isSelected = answers[q.id] === optionLetter;
-                                    const isThisOptionCorrect = block.type === 'mcq' || block.type === 'matching' ? ((currentAnswerKey as any)[q.id] === optionLetter) : ((currentAnswerKey as any)[q.id] === opt);
+                                    const isThisOptionCorrect = block.type === 'mcq' ? ((currentAnswerKey as any)[q.id] === optionLetter) : ((currentAnswerKey as any)[q.id] === opt);
                                     
                                     let labelClass = `flex items-start gap-3 p-4 rounded-lg border-2 transition-all shadow-sm ${reviewMode ? 'cursor-pointer' : 'cursor-pointer'} `;
                                     
@@ -2008,7 +2008,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                 );
                               })()}
 
-                                                            {block.type === 'choice' && (
+                                                            {(block.type === 'choice' || block.type === 'matching') && (
                                 <div className="relative mt-2 max-w-[250px]">
                                   <select
                                     disabled={reviewMode}

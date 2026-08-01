@@ -127,6 +127,7 @@ import { AprilListeningTest } from './AprilListeningTest';
 import { MayListeningTest } from './MayListeningTest';
 import { JuneListeningTest } from './JuneListeningTest';
 import { JulyListeningTest } from './JulyListeningTest';
+import { AugustListeningTest } from './AugustListeningTest';
 
 export function ComputerListeningTest({ submissionId }: { submissionId?: string }) {
 
@@ -142,6 +143,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
   if (id === '18' && !submissionId) return <MayListeningTest />;
   if (id === '22' && !submissionId) return <JuneListeningTest />;
   if (id === '26' && !submissionId) return <JulyListeningTest />;
+  if (id === '30' && !submissionId) return <AugustListeningTest />;
     if (id === '2' && !submissionId) return <JanuaryListeningTest />;
 
   const [studentName, setStudentName] = useState(user?.displayName || '');

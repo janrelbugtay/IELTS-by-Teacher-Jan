@@ -1698,7 +1698,7 @@ export function AugustReadingTest({ submissionId, assignmentId }: { submissionId
                       
                       if (user) {
                         try {
-                          let title = 'May Reading Practice';
+                          let title = 'IELTS Reading Test 5';
                           if (id) {
                             const numericId = Number(id);
                             if (!isNaN(numericId) && numericId >= 1) {
@@ -1708,7 +1708,7 @@ export function AugustReadingTest({ submissionId, assignmentId }: { submissionId
                               ];
                               const monthIndex = Math.floor((numericId - 1) / 3);
                               if (monthIndex >= 0 && monthIndex < months.length) {
-                                title = `${months[monthIndex]} Reading Practice`;
+                                title = `IELTS Reading Test ${monthIndex + 1}`;
                               }
                             } else {
                               title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');

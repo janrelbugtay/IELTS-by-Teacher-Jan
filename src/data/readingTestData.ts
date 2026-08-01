@@ -9,6 +9,9 @@ import { junePassages, juneAnswers, juneExplanations } from './juneReadingData';
 import { julyPassages, julyAnswers, julyExplanations } from './julyReadingData';
 import { augustPassages, augustAnswers, augustExplanations } from './augustReadingData';
 import { septemberPassages, septemberAnswers, septemberExplanations } from './septemberReadingData';
+import { test13Passages, test13Answers, test13Explanations } from './test13ReadingData';
+import { test14Passages, test14Answers, test14Explanations } from './test14ReadingData';
+import { test15Passages, test15Answers, test15Explanations } from './test15ReadingData';
 
 export const getReadingTestData = (id: string | undefined) => {
   // Return null for January (id === '1') or any unknown ID (e.g. old submissions)
@@ -21,6 +24,7 @@ export const getReadingTestData = (id: string | undefined) => {
   if (id === '9') {
     return { passages: marchPassages, answers: marchAnswers, explanations: marchExplanations };
   }
+
   if (id === '13') {
     return { passages: aprilPassages, answers: aprilAnswers, explanations: aprilExplanations };
   }
@@ -44,6 +48,7 @@ export const getReadingTestData = (id: string | undefined) => {
   if (id === '33') {
     return { passages: septemberPassages, answers: septemberAnswers, explanations: septemberExplanations };
   }
+
   if (id === '37') {
     return { passages: octoberPassages, answers: octoberAnswers, explanations: octoberExplanations };
   }
@@ -54,6 +59,18 @@ export const getReadingTestData = (id: string | undefined) => {
 
   if (id === '45') {
     return { passages: decemberPassages, answers: decemberAnswers, explanations: decemberExplanations };
+  }
+  
+  if (id === '49') {
+    return { passages: test13Passages, answers: test13Answers, explanations: test13Explanations };
+  }
+
+  if (id === '53') {
+    return { passages: test14Passages, answers: test14Answers, explanations: test14Explanations };
+  }
+
+  if (id === '57') {
+    return { passages: test15Passages, answers: test15Answers, explanations: test15Explanations };
   }
   
   // Default to January/original content for backwards compatibility with old submissions

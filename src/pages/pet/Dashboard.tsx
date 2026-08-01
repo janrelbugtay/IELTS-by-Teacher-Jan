@@ -337,9 +337,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
     const [activities, setActivities] = useState<any>({
         reading: [
-            { name: "May Reading Practice", score: "0.0", correct: "0/40", time: "0m 4s", date: "Jul 7" },
-            { name: "May Reading Practice", score: "0.0", correct: "0/40", time: "-", date: "Jul 4" },
-            { name: "March Reading Practice", score: "0.0", correct: "0/40", time: "0m 3s", date: "Jul 4" }
+            { name: "IELTS Reading Test 5", score: "0.0", correct: "0/40", time: "0m 4s", date: "Jul 7" },
+            { name: "IELTS Reading Test 5", score: "0.0", correct: "0/40", time: "-", date: "Jul 4" },
+            { name: "IELTS Reading Test 3", score: "0.0", correct: "0/40", time: "0m 3s", date: "Jul 4" }
         ],
         listening: [
             { name: "January Listening Practice", score: "0.0", correct: "1/40", time: "0m 7s", date: "Jul 4" },
