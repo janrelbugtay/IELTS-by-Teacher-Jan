@@ -30,14 +30,13 @@ const getFallbackTitle = (id: any, currentTitle?: string) => {
   const numId = parseInt(strId, 10);
   
   if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 48) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const month = months[Math.ceil(numId / 4) - 1];
+    const testNum = Math.ceil(numId / 4);
     let skill = 'Practice';
     if (numId % 4 === 1) skill = 'Reading';
     if (numId % 4 === 2) skill = 'Listening';
     if (numId % 4 === 3) skill = 'Writing';
     if (numId % 4 === 0) skill = 'Speaking';
-    return `${month} ${skill} Practice`;
+    return `IELTS ${skill} Test ${testNum}`;
   }
 
   if (currentTitle && isNaN(Number(currentTitle))) {
@@ -83,6 +82,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   
   const [editingScoreId, setEditingScoreId] = useState<string | null>(null);
   const [editScoreValue, setEditScoreValue] = useState<string>('');
+  const [editRawScoreValue, setEditRawScoreValue] = useState<string>('');
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [editLinkValue, setEditLinkValue] = useState<string>('');
   const [editingCorrectedLinkId, setEditingCorrectedLinkId] = useState<string | null>(null);
@@ -108,17 +108,26 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   };
 
   const handleEditScore = async (subId: string) => {
-    if (!editScoreValue) {
+    if (!editScoreValue && !editRawScoreValue) {
       setEditingScoreId(null);
       return;
     }
     try {
-      const score = parseFloat(editScoreValue);
-      if (!isNaN(score)) {
-        await updateDoc(doc(db, 'submissions', subId), {
-          bandScore: score
-        });
+      const updates: any = {};
+      
+      if (editScoreValue) {
+        const score = parseFloat(editScoreValue);
+        if (!isNaN(score)) updates.bandScore = score;
       }
+      if (editRawScoreValue) {
+        const rawScore = parseInt(editRawScoreValue, 10);
+        if (!isNaN(rawScore)) updates.score = rawScore;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(doc(db, 'submissions', subId), updates);
+      }
+      
       setEditingScoreId(null);
     } catch (err: any) {
       console.error("Error updating score:", err);
@@ -1033,16 +1042,29 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                               value={editScoreValue}
                               onChange={(e) => setEditScoreValue(e.target.value)}
                               className="w-16 px-2 py-1 text-sm border border-slate-300 rounded"
+                              placeholder="Band"
+                              title="Band Score"
                               autoFocus
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              max="40"
+                              className="w-16 px-2 py-1 text-sm border border-slate-300 rounded"
+                              value={editRawScoreValue}
+                              onChange={(e) => setEditRawScoreValue(e.target.value)}
+                              placeholder="Raw"
+                              title="Raw Score"
                             />
                             <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
                             <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
-                            {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                            {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
+         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                             {isAdmin && (
-                              <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
+                              <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                             )}
@@ -1225,15 +1247,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                               {editingScoreId === sub.id ? (
                                 <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                  <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} />
+                                  <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} placeholder="Band" title="Band Score" />
+                                  <input type="number" min="0" max="40" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editRawScoreValue} onChange={(e) => setEditRawScoreValue(e.target.value)} placeholder="Raw" title="Raw Score" />
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-end gap-2">
-                                  {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                                  {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
+         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                                   {isAdmin && (
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                   )}
@@ -1362,15 +1386,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                               {editingScoreId === sub.id ? (
                                 <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                  <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} />
+                                  <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} placeholder="Band" title="Band Score" />
+                                  <input type="number" min="0" max="40" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editRawScoreValue} onChange={(e) => setEditRawScoreValue(e.target.value)} placeholder="Raw" title="Raw Score" />
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-end gap-2">
-                                  {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                                  {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
+         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                                   {isAdmin && (
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                   )}
@@ -1506,15 +1532,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                               {editingScoreId === sub.id ? (
                                 <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                  <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} />
+                                  <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} placeholder="Band" title="Band Score" />
+                                  <input type="number" min="0" max="40" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editRawScoreValue} onChange={(e) => setEditRawScoreValue(e.target.value)} placeholder="Raw" title="Raw Score" />
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-end gap-2">
-                                  {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                                  {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
+         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                                   {isAdmin && (
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                   )}
@@ -1662,15 +1690,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                             {editingScoreId === sub.id ? (
                               <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} />
+                                <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editScoreValue} onChange={(e) => setEditScoreValue(e.target.value)} placeholder="Band" title="Band Score" />
+                                  <input type="number" min="0" max="40" className="w-16 px-2 py-1 border border-slate-300 rounded" value={editRawScoreValue} onChange={(e) => setEditRawScoreValue(e.target.value)} placeholder="Raw" title="Raw Score" />
                                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
                                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                               </div>
                             ) : (
                               <div className="flex items-center justify-end gap-2">
-                                {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                                {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
+         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                                 {isAdmin && (
-                                  <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
+                                  <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}

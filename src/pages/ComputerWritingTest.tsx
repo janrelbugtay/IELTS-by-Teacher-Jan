@@ -849,11 +849,10 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
             try {
                 let title = 'Writing Test';
                 if (id) {
-                    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
                     const numId = parseInt(id, 10);
                     if (!isNaN(numId) && numId >= 1 && numId <= 48) {
-                        const month = months[Math.ceil(numId / 4) - 1];
-                        title = `${month} Writing Practice`;
+                        const testNum = Math.ceil(numId / 4);
+                        title = `IELTS Writing Test ${testNum}`;
                     } else {
                         title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     }

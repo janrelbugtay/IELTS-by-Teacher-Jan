@@ -279,6 +279,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   
   const [currentPassageIdx, setCurrentPassageIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [adminEditingMode, setAdminEditingMode] = useState(false);
+  const [manualScore, setManualScore] = useState<number | null>(null);
+  const [manualBandScore, setManualBandScore] = useState<number | null>(null);
   const [reviewFlags, setReviewFlags] = useState<Record<number, boolean>>({});
   const [studentName, setStudentName] = useState(user?.displayName || '');
   
@@ -1262,7 +1265,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             <div className="flex gap-4 w-full md:w-auto justify-center">
               <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[140px] transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-700' : 'bg-white border-blue-100'}`}>
                 <span className={`block text-[1.25em] font-bold uppercase tracking-widest mb-2 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>Final Score</span>
-                <span className={`text-[3.75em] font-black leading-none ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{score}<span className={`text-[0.5em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>/40</span></span>
+                <span className={`text-[3.75em] font-black leading-none ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{finalScore}<span className={`text-[0.5em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>/40</span></span>
               </div>
               
               <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[140px] transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#1a2e1a] border-green-800' : 'bg-green-50 border-green-300'}`}>

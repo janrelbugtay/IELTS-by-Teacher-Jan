@@ -268,6 +268,9 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
 
   const [currentPassageIdx, setCurrentPassageIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [adminEditingMode, setAdminEditingMode] = useState(false);
+  const [manualScore, setManualScore] = useState<number | null>(null);
+  const [manualBandScore, setManualBandScore] = useState<number | null>(null);
   const [reviewFlags, setReviewFlags] = useState<Record<number, boolean>>({});
   const [studentName, setStudentName] = useState(user?.displayName || '');
   const [hasStarted, setHasStarted] = useState(false);
@@ -333,6 +336,8 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
               parsedAnswers = data.answers || {};
             }
             setAnswers(parsedAnswers);
+            if (data.score !== undefined) setManualScore(data.score);
+            if (data.bandScore !== undefined) setManualBandScore(data.bandScore);
             setHasStarted(true);
             setIsSubmitted(true);
             setReviewMode(false);
@@ -985,6 +990,10 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
     else if (score >= 4) bandScore = 2.5;
     else if (score >= 2) bandScore = 2.0;
     else if (score >= 1) bandScore = 1.0;
+    const finalScore = manualScore !== null ? manualScore : score;
+    const finalBandScore = manualBandScore !== null ? manualBandScore : bandScore;
+
+
 
     const renderGradedRow = (qNum: number) => {
       const isCorrect = checkAnswer(qNum);
@@ -1068,11 +1077,11 @@ export function FebruaryReadingTest({ submissionId, assignmentId }: { submission
               <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[200px] flex flex-col justify-center gap-6 transform hover:scale-105 transition-transform ${colorTheme !== 'standard' ? 'bg-[#111] border-gray-700' : 'bg-white border-blue-100'}`}>
                  <div>
                      <span className={`block text-[1.25em] font-bold uppercase tracking-widest mb-1 ${colorTheme !== 'standard' ? 'text-gray-500' : 'text-gray-500'}`}>Band Score</span>
-                     <span className={`text-[4.5em] leading-none font-black ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>{bandScore.toFixed(1)}</span>
+                     <span className={`text-[4.5em] leading-none font-black ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>{finalBandScore.toFixed(1)}</span>
                  </div>
                  <div className={`border-t pt-4 ${colorTheme !== 'standard' ? 'border-gray-800' : 'border-blue-50'}`}>
                      <span className={`block text-[0.75em] font-bold uppercase tracking-widest mb-1 ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>Raw Score</span>
-                     <span className={`text-[1.5em] font-black ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{score}<span className={`text-[0.6em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>/40</span></span>
+                     <span className={`text-[1.5em] font-black ${colorTheme !== 'standard' ? 'text-blue-400' : 'text-blue-600'}`}>{finalScore}<span className={`text-[0.6em] font-bold ${colorTheme !== 'standard' ? 'text-gray-600' : 'text-gray-400'}`}>/40</span></span>
                  </div>
               </div>
             </div>

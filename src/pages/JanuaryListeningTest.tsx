@@ -162,6 +162,9 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
   const [timeLeft, setTimeLeft] = useState(40 * 60);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [adminEditingMode, setAdminEditingMode] = useState(false);
+  const [manualScore, setManualScore] = useState<number | null>(null);
+  const [manualBandScore, setManualBandScore] = useState<number | null>(null);
   const [currentPartIndex, setCurrentPartIndex] = useState(1);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -180,6 +183,8 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
               parsedAnswers = data.answers || {};
             }
             setAnswers(parsedAnswers);
+            if (data.score !== undefined) setManualScore(data.score);
+            if (data.bandScore !== undefined) setManualBandScore(data.bandScore);
             setHasStarted(true);
             setIsSubmitted(true);
             setTimeLeft(0);
@@ -266,18 +271,12 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
     }
     
     try {
-      let title = 'January Listening Practice';
+      let title = 'IELTS Listening Test 1';
       
       const checkAnswer = (qNum: number) => {
           let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
           const correctAns = LISTENING_ANSWER_KEY[qNum];
           if (!correctAns) return false;
-
-          if (userAns === 'T') userAns = 'TRUE';
-          if (userAns === 'F') userAns = 'FALSE';
-          if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
-          if (userAns === 'Y') userAns = 'YES';
-          if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
 
           const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
           for (let ans of correctAnswers) {
@@ -308,7 +307,11 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
       else if (score >= 6) bandScore = 3.0;
       else if (score >= 4) bandScore = 2.5;
       else if (score >= 2) bandScore = 2.0;
-      else if (score >= 1) bandScore = 1.0;
+    else if (score >= 1) bandScore = 1.0;
+    const finalScore = manualScore !== null ? manualScore : score;
+    const finalBandScore = manualBandScore !== null ? manualBandScore : bandScore;
+
+
 
       await addDoc(collection(db, 'submissions'), {
         userId: user.uid,
@@ -343,12 +346,6 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
         const correctAns = LISTENING_ANSWER_KEY[qNum];
         if (!correctAns) return false;
 
-        if (userAns === 'T') userAns = 'TRUE';
-        if (userAns === 'F') userAns = 'FALSE';
-        if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
-        if (userAns === 'Y') userAns = 'YES';
-        if (userAns === 'N' && String(correctAns).includes('NO')) userAns = 'NO';
-
         const correctAnswers = String(correctAns).toUpperCase().split(/\s*\bOR\b\s*|\s*\/\s*/);
         for (let ans of correctAnswers) {
           ans = ans.trim();
@@ -377,18 +374,15 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
     else if (score >= 6) bandScore = 3.0;
     else if (score >= 4) bandScore = 2.5;
     else if (score >= 2) bandScore = 2.0;
-      else if (score >= 1) bandScore = 1.0;
     else if (score >= 1) bandScore = 1.0;
+    const finalScore = manualScore !== null ? manualScore : score;
+    const finalBandScore = manualBandScore !== null ? manualBandScore : bandScore;
+
+
 
     const renderGradedRow = (qNum: number) => {
       const isCorrect = checkAnswer(qNum);
       let userAns = (answers[qNum] || '').toString().trim().toUpperCase();
-
-      if (userAns === 'T') userAns = 'TRUE';
-      if (userAns === 'F') userAns = 'FALSE';
-      if (userAns === 'NG' || userAns === 'N') userAns = 'NOT GIVEN';
-      if (userAns === 'Y') userAns = 'YES';
-      if (userAns === 'N' && String(LISTENING_ANSWER_KEY[qNum]).includes('NO')) userAns = 'NO';
 
       return (
         <div key={qNum} className={`w-full text-left flex border h-auto min-h-[44px] rounded-lg overflow-hidden ${isCorrect ? 'border-green-300 shadow-sm' : 'border-red-300 shadow-sm'}`}>
@@ -396,13 +390,19 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
             {qNum}
           </div>
           <div className={`flex-1 flex flex-col justify-center px-4 py-2 font-medium text-[1em] ${isCorrect ? 'bg-white text-green-900' : 'bg-white'}`}>
-            <span className={isCorrect ? '' : (userAns ? 'text-red-600 line-through opacity-80' : 'text-gray-500 italic text-[0.875em]')}>
+            {isAdmin && adminEditingMode ? (
+              <input type="text" className="w-full border rounded px-2 py-1 text-sm font-bold bg-white text-black outline-none focus:ring-2 focus:ring-blue-500" value={answers[qNum] || ''} onChange={(e) => setAnswers(prev => ({ ...prev, [qNum]: e.target.value }))} placeholder="Edit answer..." onClick={e => e.stopPropagation()} />
+            ) : (
+              <>
+                <span className={isCorrect ? '' : (userAns ? 'text-red-600 line-through opacity-80' : 'text-gray-500 italic text-[0.875em]')}>
               {userAns || 'No Answer'}
             </span>
             {!isCorrect && (
               <span className={`text-[0.875em] font-bold block mt-1 flex items-center gap-1 text-green-600`}>
                  <CheckCircle2 size={14} /> {LISTENING_ANSWER_KEY[qNum]}
               </span>
+            )}
+              </>
             )}
           </div>
           <div className={`w-12 border-l flex items-center justify-center font-bold text-[1.25em] shrink-0 ${isCorrect ? 'border-green-200 bg-green-100 text-green-600' : 'border-red-200 bg-red-100 text-red-600'}`}>
@@ -428,6 +428,40 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
 
             <h1 className={`text-[2.25em] font-bold text-center mb-10 font-serif`}>IELTS Listening Results</h1>
             
+            {isAdmin && submissionId && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between shadow-sm gap-4">
+                <div className="text-yellow-800 font-bold">Admin Controls: Edit Results</div>
+                <div className="flex flex-wrap items-center gap-4">
+                   {adminEditingMode ? (
+                     <>
+                        <div className="flex items-center gap-2">
+                           <label className="text-xs font-bold text-yellow-800 uppercase">Raw Score Override:</label>
+                           <input type="number" min="0" max="40" className="w-16 px-2 py-1 border rounded bg-white text-black" value={manualScore !== null ? manualScore : ''} onChange={e => setManualScore(e.target.value ? parseInt(e.target.value) : null)} placeholder="Auto" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <label className="text-xs font-bold text-yellow-800 uppercase">Band Score Override:</label>
+                           <input type="number" step="0.5" min="0" max="9" className="w-16 px-2 py-1 border rounded bg-white text-black" value={manualBandScore !== null ? manualBandScore : ''} onChange={e => setManualBandScore(e.target.value ? parseFloat(e.target.value) : null)} placeholder="Auto" />
+                        </div>
+                        <button onClick={async () => {
+                           try {
+                             
+                             
+                             const scoreVal = manualScore !== null ? manualScore : score;
+                             const bandScoreVal = manualBandScore !== null ? manualBandScore : bandScore;
+                             await setDoc(doc(db, 'submissions', submissionId), { answers: JSON.stringify(answers), score: scoreVal, bandScore: bandScoreVal }, { merge: true });
+                             setAdminEditingMode(false);
+                             alert("Saved successfully!");
+                           } catch(err) { alert("Failed to save"); console.error(err); }
+                        }} className="bg-green-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-green-700">Save Changes</button>
+                        <button onClick={() => setAdminEditingMode(false)} className="text-gray-600 hover:text-gray-800 font-bold px-2">Cancel</button>
+                     </>
+                   ) : (
+                     <button onClick={() => setAdminEditingMode(true)} className="bg-yellow-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-yellow-700">Edit Answers & Score</button>
+                   )}
+                </div>
+              </div>
+            )}
+            
             <div className={`flex flex-col md:flex-row justify-between items-center gap-8 mb-10 p-6 md:p-8 rounded-2xl border shadow-sm bg-blue-50/50 border-blue-100`}>
               <div className="space-y-5 font-bold text-[0.875em] w-full md:w-2/3">
                 <div className="flex items-center gap-4">
@@ -452,11 +486,11 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
               <div className={`text-center p-6 rounded-2xl shadow-md border min-w-[200px] flex flex-col justify-center gap-6 transform hover:scale-105 transition-transform bg-white border-blue-100`}>
                  <div>
                      <span className={`block text-[0.875em] font-bold uppercase tracking-widest mb-1 text-gray-500`}>Band Score</span>
-                     <span className={`text-[4.5em] leading-none font-black text-green-600`}>{bandScore.toFixed(1)}</span>
+                     <span className={`text-[4.5em] leading-none font-black text-green-600`}>{finalBandScore.toFixed(1)}</span>
                  </div>
                  <div className={`border-t pt-4 border-blue-50`}>
                      <span className={`block text-[0.75em] font-bold uppercase tracking-widest mb-1 text-gray-400`}>Raw Score</span>
-                     <span className={`text-[1.5em] font-black text-blue-600`}>{score}<span className={`text-[0.6em] font-bold text-gray-400`}>/40</span></span>
+                     <span className={`text-[1.5em] font-black text-blue-600`}>{finalScore}<span className={`text-[0.6em] font-bold text-gray-400`}>/40</span></span>
                  </div>
               </div>
             </div>
@@ -581,7 +615,7 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
               {testMode === 'practice' && (
                 <button 
                   onClick={() => setIsTimePaused(!isTimePaused)} 
-                  className="ml-2 px-2 py-0.5 text-xs font-normal bg-white border border-gray-400 rounded hover:bg-gray-100"
+                  className="ml-2 px-2 py-0.5 text-xs font-normal bg-white text-black border border-gray-400 rounded hover:bg-gray-100"
                 >
                   {isTimePaused ? 'Resume' : 'Pause'}
                 </button>
@@ -589,9 +623,7 @@ export function JanuaryListeningTest({ submissionId }: { submissionId?: string }
           </div>
 
           <div className="flex items-center gap-2">
-              <button className="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Settings</button>
-              <button className="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Help <span className="text-blue-700 font-bold ml-0.5">?</span></button>
-              <button onClick={() => navigate('/dashboard')} className="bg-gradient-to-b from-gray-100 to-gray-300 text-black px-3 py-0.5 rounded text-xs border border-gray-400 shadow-sm hover:from-white hover:to-gray-200">Quit</button>
+              
               
               <div className="flex items-center gap-2 ml-2 bg-gradient-to-b from-gray-100 to-gray-300 px-2 py-0.5 rounded border border-gray-400">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 20 20" fill="currentColor">

@@ -107,9 +107,7 @@ const generateMockTests = (courseName: string) => {
       tests.push({
         id: testId as any,
         title: courseName === 'IELTS' 
-          ? (skill.name === 'Speaking' ? `Online Speaking Test ${mIndex + 1}` 
-            : skill.name === 'Reading' ? `IELTS Reading Test ${mIndex + 1}` 
-            : `${month} ${skill.name} Practice (${courseName})`)
+          ? `IELTS ${skill.name} Test ${mIndex + 1}`
           : `${month} ${skill.name} Practice (${courseName})`,
         skill: skill.name,
         month: month,
