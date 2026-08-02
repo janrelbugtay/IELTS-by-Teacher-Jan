@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
 import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
@@ -129,14 +129,32 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
   
 
   const [studentName, setStudentName] = useState(user?.displayName || '');
-  const [candidateNumber, setCandidateNumber] = useState('');
-  const [candidateError, setCandidateError] = useState('');
-  const expectedCandidateNumber = '7295';
+  const [isPublished, setIsPublished] = useState(true);
+
   useEffect(() => {
-    if (isAdmin) {
-      setCandidateNumber(expectedCandidateNumber);
+    async function checkPublished() {
+      try {
+        const docRef = doc(db, 'activity_logs', `listening_settings_${id}`);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setIsPublished(docSnap.data().isPublished !== false);
+        }
+      } catch (err) {
+        console.error("Failed to fetch test settings", err);
+      }
     }
-  }, [isAdmin]);
+    checkPublished();
+  }, [id]);
+
+  const handleTogglePublish = async () => {
+    const newVal = !isPublished;
+    setIsPublished(newVal);
+    try {
+      await setDoc(doc(db, 'activity_logs', `listening_settings_${id}`), { isPublished: newVal }, { merge: true });
+    } catch (err) {
+      console.error("Failed to update test settings", err);
+    }
+  };
 
   useEffect(() => { if (user?.displayName && !studentName) setStudentName(user.displayName); }, [user]);
 
@@ -206,11 +224,6 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
-    if (candidateNumber.trim().toUpperCase() !== expectedCandidateNumber) {
-      setCandidateError('Invalid Candidate Number. Please check with your administrator.');
-      return;
-    }
-    setCandidateError('');
     if (studentName.trim()) {
       setHasStarted(true);
     }
@@ -296,6 +309,7 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
       else if (score >= 6) bandScore = 3.0;
       else if (score >= 4) bandScore = 2.5;
       else if (score >= 2) bandScore = 2.0;
+      else if (score >= 1) bandScore = 1.0;
 
       await addDoc(collection(db, 'submissions'), {
         userId: user.uid,
@@ -364,6 +378,7 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
     else if (score >= 6) bandScore = 3.0;
     else if (score >= 4) bandScore = 2.5;
     else if (score >= 2) bandScore = 2.0;
+      else if (score >= 1) bandScore = 1.0;
     else if (score >= 1) bandScore = 1.0;
 
     const renderGradedRow = (qNum: number) => {
@@ -484,19 +499,20 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
                       onChange={(e) => setStudentName(e.target.value)}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold mb-2 text-gray-800">Candidate Number</label>
-                  <input 
-                      type="text" 
-                      required
-                      className="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all bg-gray-50 focus:bg-white" 
-                      placeholder="Enter candidate number" 
-                      value={candidateNumber}
-                      onChange={(e) => setCandidateNumber(e.target.value)}
-                  />
-                  {isAdmin && <p className="text-blue-600 text-xs mt-1 font-semibold">Admin: Candidate number auto-filled ({expectedCandidateNumber})</p>}
-                  {candidateError && <p className="text-red-500 text-sm mt-1">{candidateError}</p>}
-                </div>
+                {isAdmin && (
+                  <div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                      <div>
+                        <div className="font-bold text-gray-800 text-sm">Test Visibility (Admin Only)</div>
+                        <div className="text-xs text-gray-500 mt-1">Control whether students can take this test.</div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={isPublished} onChange={handleTogglePublish} />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-bold mb-3 text-gray-800">Select Test Mode</label>
@@ -537,9 +553,15 @@ export function AugustListeningTest({ submissionId }: { submissionId?: string })
                   </div>
                 </div>
                 
-                <button type="submit" disabled={!studentName.trim()} className="mt-4 w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all text-[15px] disabled:opacity-50 disabled:hover:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed">
-                    Start Test Now
-                </button>
+                {!isAdmin && !isPublished ? (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-center font-medium text-sm">
+                     Test is currently unpublished. Please ask your administrator for permission to access this test.
+                  </div>
+                ) : (
+                  <button type="submit" disabled={!studentName.trim()} className="mt-4 w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all text-[15px] disabled:opacity-50 disabled:hover:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed">
+                      Start Test Now
+                  </button>
+                )}
             </form>
         </div>
       </div>

@@ -287,6 +287,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
       else if (score >= 6) bandScore = 3.0;
       else if (score >= 4) bandScore = 2.5;
       else if (score >= 2) bandScore = 2.0;
+      else if (score >= 1) bandScore = 1.0;
 
       await addDoc(collection(db, 'submissions'), {
         userId: user.uid,
@@ -355,6 +356,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
     else if (score >= 6) bandScore = 3.0;
     else if (score >= 4) bandScore = 2.5;
     else if (score >= 2) bandScore = 2.0;
+      else if (score >= 1) bandScore = 1.0;
     else if (score >= 1) bandScore = 1.0;
 
     const renderGradedRow = (qNum: number) => {

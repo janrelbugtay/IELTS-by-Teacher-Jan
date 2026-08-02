@@ -5,73 +5,171 @@
       "description": "An IELTS homework assignment",
       "type": "object",
       "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "type": { "type": "string", "enum": ["reading", "listening", "writing"] },
-        "content": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "number" },
-        "updatedAt": { "type": "number" }
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "reading",
+            "listening",
+            "writing"
+          ]
+        },
+        "content": {
+          "type": "string"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "number"
+        }
       },
-      "required": ["title", "description", "type", "content", "createdBy", "createdAt", "updatedAt"]
+      "required": [
+        "title",
+        "description",
+        "type",
+        "content",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "Submission": {
       "title": "Submission",
       "description": "A student's answer to an assignment",
       "type": "object",
       "properties": {
-        "assignmentId": { "type": "string" },
-        "userId": { "type": "string" },
-        "answers": { "type": "string" },
-        "createdAt": { "type": "number" }
+        "assignmentId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "answers": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        }
       },
-      "required": ["assignmentId", "userId", "answers", "createdAt"]
+      "required": [
+        "assignmentId",
+        "userId",
+        "answers",
+        "createdAt"
+      ]
     },
     "Class": {
       "title": "Class",
       "description": "A class created by a teacher",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "number" }
+        "name": {
+          "type": "string"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        }
       },
-      "required": ["name", "createdBy", "createdAt"]
+      "required": [
+        "name",
+        "createdBy",
+        "createdAt"
+      ]
     },
     "Student": {
       "title": "Student",
       "description": "A student profile within a class",
       "type": "object",
       "properties": {
-        "classId": { "type": "string" },
-        "name": { "type": "string" },
-        "avatarSeed": { "type": "string" },
-        "points": { "type": "number" },
-        "createdAt": { "type": "number" }
+        "classId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "avatarSeed": {
+          "type": "string"
+        },
+        "points": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "number"
+        }
       },
-      "required": ["classId", "name", "avatarSeed", "points", "createdAt"]
+      "required": [
+        "classId",
+        "name",
+        "avatarSeed",
+        "points",
+        "createdAt"
+      ]
+    },
+    "TestSetting": {
+      "title": "TestSetting",
+      "description": "Visibility settings for tests",
+      "type": "object",
+      "properties": {
+        "isPublished": {
+          "type": "boolean"
+        }
+      },
+      "required": []
     }
   },
   "firestore": {
     "/assignments/{assignmentId}": {
-      "schema": { "$ref": "#/entities/Assignment" },
+      "schema": {
+        "$ref": "#/entities/Assignment"
+      },
       "description": "Assignments created by the teacher"
     },
     "/submissions/{submissionId}": {
-      "schema": { "$ref": "#/entities/Submission" },
+      "schema": {
+        "$ref": "#/entities/Submission"
+      },
       "description": "Submissions belonging to students"
     },
     "/classes/{classId}": {
-      "schema": { "$ref": "#/entities/Class" },
+      "schema": {
+        "$ref": "#/entities/Class"
+      },
       "description": "Classes created by the teacher"
     },
     "/students/{studentId}": {
-      "schema": { "$ref": "#/entities/Student" },
+      "schema": {
+        "$ref": "#/entities/Student"
+      },
       "description": "Student profiles belonging to a class"
     },
     "/admins/{userId}": {
-      "schema": { "type": "object", "properties": { "email": { "type": "string" } } },
+      "schema": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
       "description": "Trusted admin users (teachers)"
+    },
+    "/test_settings/{testId}": {
+      "schema": {
+        "$ref": "#/entities/TestSetting"
+      },
+      "description": "Settings for test visibility"
     }
   }
 }
