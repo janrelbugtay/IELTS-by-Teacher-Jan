@@ -515,9 +515,9 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
 
   if (!hasStarted) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
-        <div className="bg-white p-10 rounded-2xl shadow-2xl w-[560px] border border-gray-100 relative overflow-hidden">
-            <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">May IELTS Listening Test</h1>
+      <div className="min-h-screen w-full z-50 flex flex-col items-center justify-center bg-gray-50 p-4 sm:p-8">
+        <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-2xl w-full max-w-[560px] border border-gray-100 relative overflow-y-auto max-h-full">
+            <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">May IELTS Listening Test</h1>
             <p className="text-[15px] text-gray-500 text-center mb-10">Configure your session and enter your details to begin.</p>
             
             <form onSubmit={handleStart} className="flex flex-col gap-6">
@@ -633,7 +633,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
           <div>
               <iframe 
                 src="https://drive.google.com/file/d/1ZKq-vISQpO7DHehoec-ickzrDFvPZRc3/preview" 
-                width="640" 
+                width="100%" style={{ maxWidth: "640px" }} 
                 height="160" 
                 allow="autoplay" 
                 className="rounded-xl overflow-hidden border-0 bg-transparent"
