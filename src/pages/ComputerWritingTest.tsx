@@ -87,23 +87,27 @@ const getCustomPrompt = (id: string | undefined) => {
             };
         case '35': // September
             return {
-                t1Title: "The pie charts below show the main reasons for migration to and from the UK in 2007.",
-                t1Desc: "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Title: "The diagram gives information about the process of making carbonated drinks.",
+                t1Desc: "Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t1Content: (
-                    <div className="mt-10 p-6 border border-gray-200 rounded-lg bg-gray-50 text-center italic text-sm text-gray-700 leading-relaxed">
-                        [Pie Chart 1: Immigration to UK (2007): Formal study 26%, Definite job 30%, Looking for work 12%, Accompany/join 15%, Other 11%, No reason stated 6%.]<br/><br/>
-                        [Pie Chart 2: Emigration from UK (2007): Formal study 4%, Definite job 29%, Looking for work 22%, Accompany/join 13%, Other 14%, No reason stated 18%]
+                    <div className="mt-6 mb-6 flex justify-center">
+                        <img 
+                            src="https://drive.google.com/thumbnail?id=1ZBw6BPamaIf801hTx52KE1J5yOzsh4Bm&sz=w1000" 
+                            alt="The process of making carbonated drinks" 
+                            className="max-w-full h-auto rounded-lg shadow-sm"
+                            referrerPolicy="no-referrer"
+                        />
                     </div>
                 ),
-                t1Raw: "The pie charts below show the main reasons for migration to and from the UK in 2007. Immigration reasons: Formal study 26%, Definite job 30%, Looking for work 12%, Accompany/join 15%, Other 11%, No reason stated 6%. Emigration reasons: Formal study 4%, Definite job 29%, Looking for work 22%, Accompany/join 13%, Other 14%, No reason stated 18%. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Raw: "The diagram gives information about the process of making carbonated drinks. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t2Prompt: (
                     <>
-                        <p className="font-bold mb-4">Some people think that all teenagers should be required to do unpaid work in their free time to help the local community. They believe this would benefit both the individual teenager and society as a whole.</p>
-                        <p className="font-bold mb-4">Do you agree or disagree?</p>
+                        <p className="font-bold mb-4">It is argued that the parents of children who break the rules should be punished in some ways as parents are responsible for the children’s actions.</p>
+                        <p className="font-bold mb-4">To what extent do you agree or disagree?</p>
                     </>
                 ),
                 t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
-                t2Raw: "Some people think that all teenagers should be required to do unpaid work in their free time to help the local community. They believe this would benefit both the individual teenager and society as a whole. Do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+                t2Raw: "It is argued that the parents of children who break the rules should be punished in some ways as parents are responsible for the children’s actions. To what extent do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
             };
         case '39': // October
             return {
