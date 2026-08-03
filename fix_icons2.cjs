@@ -10,6 +10,6 @@ const CheckCircle2 = (p: any) => <svg {...p} xmlns="http://www.w3.org/2000/svg" 
 `;
 
 if (!content.includes('const SettingsIcon')) {
-  content = content.replace('export default function SeptemberListeningTest() {', icons + '\nexport default function SeptemberListeningTest() {');
+  content = content.replace('export function SeptemberListeningTest', icons + '\nexport function SeptemberListeningTest');
 }
 fs.writeFileSync('src/pages/SeptemberListeningTest.tsx', content);

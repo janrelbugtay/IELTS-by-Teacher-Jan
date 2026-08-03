@@ -36,6 +36,7 @@ import { MayListeningTest } from './MayListeningTest';
 import { JuneListeningTest } from './JuneListeningTest';
 import { JulyListeningTest } from './JulyListeningTest';
 import { AugustListeningTest } from './AugustListeningTest';
+import { SeptemberListeningTest } from './SeptemberListeningTest';
 import { ComputerWritingTest } from './ComputerWritingTest';
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
@@ -171,6 +172,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '22') return <JuneListeningTest submissionId={id} />;
       if (aId === '26') return <JulyListeningTest submissionId={id} />;
       if (aId === '30') return <AugustListeningTest submissionId={id} />;
+      if (aId === '34') return <SeptemberListeningTest submissionId={id} />;
 
       if (submission.assignmentTitle?.toLowerCase().includes('january')) return <JanuaryListeningTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('february')) return <FebruaryListeningTest submissionId={id} />;
@@ -180,6 +182,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneListeningTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyListeningTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('august')) return <AugustListeningTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('september')) return <SeptemberListeningTest submissionId={id} />;
       
       return <ComputerListeningTest submissionId={id} />;
   }

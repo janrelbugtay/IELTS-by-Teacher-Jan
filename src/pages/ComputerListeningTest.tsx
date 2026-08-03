@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
 import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
@@ -128,10 +128,11 @@ import { MayListeningTest } from './MayListeningTest';
 import { JuneListeningTest } from './JuneListeningTest';
 import { JulyListeningTest } from './JulyListeningTest';
 import { AugustListeningTest } from './AugustListeningTest';
+import { SeptemberListeningTest } from './SeptemberListeningTest';
 
 export function ComputerListeningTest({ submissionId }: { submissionId?: string }) {
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -144,6 +145,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
   if (id === '22' && !submissionId) return <JuneListeningTest />;
   if (id === '26' && !submissionId) return <JulyListeningTest />;
   if (id === '30' && !submissionId) return <AugustListeningTest />;
+  if (id === '34' && !submissionId) return <SeptemberListeningTest />;
     if (id === '2' && !submissionId) return <JanuaryListeningTest />;
 
   const [studentName, setStudentName] = useState(user?.displayName || '');

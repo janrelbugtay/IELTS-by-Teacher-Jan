@@ -637,7 +637,7 @@ export function MayListeningTest({ submissionId }: { submissionId?: string }) {
                 height="160" 
                 allow="autoplay" 
                 className="rounded-xl overflow-hidden border-0 bg-transparent"
-                style={{ border: 'none', background: 'transparent' }}
+                
               ></iframe>
           </div>
       </div>

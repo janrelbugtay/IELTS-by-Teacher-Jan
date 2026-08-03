@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+::highlight(my-custom-highlight) {
+  background-color: yellow;
+  color: black;
+}
+</style>
+</head>
+<body>
+<p id="p1">This is a paragraph to highlight.</p>
+<button onclick="highlight()">Highlight</button>
+<script>
+function highlight() {
+  const selection = window.getSelection();
+  if (!selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    const highlight = new Highlight(range);
+    CSS.highlights.set("my-custom-highlight", highlight);
+  }
+}
+</script>
+</body>
+</html>
