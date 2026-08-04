@@ -7,7 +7,7 @@ import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2 } from 'lucide-react';
+import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { linkWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
@@ -52,6 +52,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [showAddOffline, setShowAddOffline] = useState(false);
+  const [speakingFolderOpen, setSpeakingFolderOpen] = useState(true);
   const [offlineForm, setOfflineForm] = useState({ id: '', name: '', link: '', score: '', date: new Date().toISOString().split('T')[0], feedback: '', vietnameseTranslation: '' });
   const [viewFeedbackItem, setViewFeedbackItem] = useState<any>(null);
 
@@ -624,59 +625,85 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {speakingSubs.slice(0, 4).map(sub => {
-              const assignment = assignments.find(a => a.id === sub.assignmentId);
-              const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
-              return (
-                <div key={sub.id} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md transition-shadow">
-                  <div className="sm:w-[45%] relative bg-slate-900 group">
-                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center opacity-60 group-hover:opacity-40 transition-opacity"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <button onClick={() => navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)} className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all shadow-lg ring-1 ring-white/50">
-                        <PlayCircle className="w-6 h-6" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-5 sm:w-[55%] flex flex-col">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 mb-3 mt-1">
-                      {sub.bandScore !== undefined && sub.bandScore !== null ? (
-                        <span className="text-sm font-bold text-slate-900">Band {sub.bandScore.toFixed(1)}</span>
-                      ) : (
-                        <span className="text-sm font-bold text-slate-900">Pending</span>
-                      )}
-                      <span className="text-slate-300">•</span>
-                      <span className="text-sm text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m'}</span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
-                    </div>
-                    
-                    <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
-                      <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
-                        Feedback
-                      </button>
-                      {sub.audioUrl && (
-                        <a href={sub.audioUrl} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
-                          <Upload className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                      {isAdmin && (
-                        <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div 
+              className="p-6 flex items-center justify-between bg-slate-50 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
+              onClick={() => setSpeakingFolderOpen(!speakingFolderOpen)}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 rounded-xl">
+                  <Folder className="w-6 h-6 text-purple-600" />
                 </div>
-              );
-            })}
-            {speakingSubs.length === 0 && (
-              <div className="col-span-full py-12 text-center text-slate-500 bg-slate-50 rounded-[1.5rem] border border-slate-200 border-dashed">
-                No online speaking tests yet.
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">IELTS Speaking</h3>
+                  <p className="text-sm text-slate-500">Your online speaking test submissions</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="bg-purple-100 text-purple-700 font-bold px-4 py-1.5 rounded-full text-sm">
+                  {speakingSubs.length} items
+                </span>
+                {speakingFolderOpen ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+              </div>
+            </div>
+            {speakingFolderOpen && (
+              <div className="p-6 bg-slate-50/50">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {speakingSubs.slice(0, 4).map(sub => {
+                    const assignment = assignments.find(a => a.id === sub.assignmentId);
+                    const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
+                    return (
+                      <div key={sub.id} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md transition-shadow">
+                        <div className="sm:w-[45%] relative bg-slate-900 group">
+                          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=400&q=80')] bg-cover bg-center opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <button onClick={() => navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)} className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all shadow-lg ring-1 ring-white/50">
+                              <PlayCircle className="w-6 h-6" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-5 sm:w-[55%] flex flex-col">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 mb-3 mt-1">
+                            {sub.bandScore !== undefined && sub.bandScore !== null ? (
+                              <span className="text-sm font-bold text-slate-900">Band {sub.bandScore.toFixed(1)}</span>
+                            ) : (
+                              <span className="text-sm font-bold text-slate-900">Pending</span>
+                            )}
+                            <span className="text-slate-300">•</span>
+                            <span className="text-sm text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m'}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
+                          </div>
+                          
+                          <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
+                            <button onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
+                              Feedback
+                            </button>
+                            {sub.audioUrl && (
+                              <a href={sub.audioUrl} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
+                                <Upload className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            {isAdmin && (
+                              <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {speakingSubs.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-[1.5rem] border border-slate-200 border-dashed">
+                      No online speaking tests yet.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

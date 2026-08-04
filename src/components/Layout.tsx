@@ -3,10 +3,11 @@ import { Link, useLocation } from 'react-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award , Facebook, Instagram, Youtube} from 'lucide-react';
+import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award , Facebook, Instagram, Youtube, Sun, Moon, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EraLogo } from './EraLogo';
 import { ChatBox } from './ChatBox';
+import { useTheme } from '../contexts/ThemeContext';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -21,6 +22,7 @@ const TiktokIcon = ({ className }: { className?: string }) => (
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, userCourse, isAdmin, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -54,7 +56,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const visibleLinks = navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-[#0F172A] flex flex-col selection:bg-[#3B82F6] selection:text-white">
+    <div className="min-h-screen font-sans flex flex-col selection:bg-[#3B82F6] selection:text-white">
       {/* Navbar */}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -112,6 +114,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <div className="flex items-center gap-4">
+                  <div className="flex bg-slate-100 rounded-full p-1 gap-1">
+                    <button 
+                      onClick={() => setTheme('light')}
+                      className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
+                      title="Light Mode"
+                    >
+                      <Sun className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setTheme('dark')}
+                      className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'bg-[#0F172A] shadow-sm text-white' : 'text-[#64748B] hover:text-[#0F172A]'}`}
+                      title="Dark Mode"
+                    >
+                      <Moon className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setTheme('picture')}
+                      className={`p-1.5 rounded-full transition-colors ${theme === 'picture' ? 'bg-[#cddbe8] shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
+                      title="Picture Theme"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                   <button className="relative p-2 text-[#64748B] hover:text-[#0F172A] transition-colors rounded-full hover:bg-slate-100">
                     <Bell className="w-5 h-5" />
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F59E0B] rounded-full border-2 border-white"></span>

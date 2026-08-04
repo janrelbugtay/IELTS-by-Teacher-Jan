@@ -81,7 +81,7 @@ export function Home() {
   ];
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-20">
+    <div className="min-h-screen pb-20">
       {/* Abstract Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-100/40 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3"></div>
@@ -511,7 +511,7 @@ export function Home() {
       </section>
 
       {/* Latest News Section */}
-      <section className="py-24 bg-[#F8FAFC] border-t border-[#E2E8F0]">
+      <section className="py-24 border-t border-[#E2E8F0] faq-section">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">

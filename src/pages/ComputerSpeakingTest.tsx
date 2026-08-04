@@ -20,9 +20,7 @@ const STAGES = {
 
 const SIDEBAR_STEPS = [
   { id: STAGES.MIC_CHECK, label: 'Microphone Ready', icon: Mic },
-  { id: STAGES.TEST, label: 'Speaking Test', icon: MessageSquare },
-  { id: STAGES.PERFORMANCE, label: 'Performance Report', icon: BarChart },
-  { id: STAGES.RECORDING, label: 'Recordings', icon: FileText }
+  { id: STAGES.TEST, label: 'Speaking Test', icon: MessageSquare }
 ];
 
 export function ComputerSpeakingTest() {
@@ -31,6 +29,7 @@ export function ComputerSpeakingTest() {
   const [stage, setStage] = useState(STAGES.MIC_CHECK);
   const [recordedAudio, setRecordedAudio] = useState<any>(null);
   const [hasRecorded, setHasRecorded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
     
   const navigate = useNavigate();
 
@@ -102,73 +101,55 @@ export function ComputerSpeakingTest() {
               exit={{ opacity: 0, y: -20 }}
               className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
+              {isSaving && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-[#4F7DFF] border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-lg font-bold text-slate-700 animate-pulse">Saving your performance...</p>
+                  </div>
+                </div>
+              )}
               <LiveSpeakingTestScreen onComplete={async (responses: Record<string, Blob>, blob?: Blob) => {
                 if (responses) {
                   setRecordedAudio(responses);
                   blob = blob || Object.values(responses)[0];
                 }
                 if (blob) {
-                  
-                  // Go to performance stage immediately!
-                  setStage(STAGES.PERFORMANCE);
-                  
-                  // Save to Firebase in the background
-                  (async () => {
-                    try {
-                      // Upload audio
-                      const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}.webm`);
-                      const uploadTask = await uploadBytesResumable(audioRef, blob);
-                      const downloadUrl = await getDownloadURL(uploadTask.ref);
+                  setIsSaving(true);
+                  try {
+                    // Upload audio
+                    const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}.webm`);
+                    const uploadTask = await uploadBytesResumable(audioRef, blob);
+                    const downloadUrl = await getDownloadURL(uploadTask.ref);
 
-                      // Determine title and ID
-                      const testNum = id || '1';
-                      const assignmentTitle = `Online Speaking Test ${testNum}`;
-                      
-                      // Create submission
-                      await addDoc(collection(db, 'submissions'), {
-                        userId: user?.uid,
-                        assignmentId: testNum,
-                        assignmentTitle: assignmentTitle,
-                        assignmentType: 'speaking',
-                        audioUrl: downloadUrl,
-                        bandScore: 7, // Mock score for now
-                        timeSpent: 14 * 60, // 14 mins
-                        createdAt: serverTimestamp(),
-                        answers: {}
-                      });
-                    } catch (error) {
-                      console.error("Error saving test in background:", error);
-                    }
-                  })();
+                    // Determine title and ID
+                    const testNum = id || '1';
+                    const assignmentTitle = `IELTS Speaking Test ${testNum}`;
+                    
+                    // Create submission
+                    await addDoc(collection(db, 'submissions'), {
+                      userId: user?.uid,
+                      assignmentId: testNum,
+                      assignmentTitle: assignmentTitle,
+                      assignmentType: 'speaking',
+                      audioUrl: downloadUrl,
+                      bandScore: 7, // Mock score for now
+                      timeSpent: 14 * 60, // 14 mins
+                      createdAt: serverTimestamp(),
+                      answers: {}
+                    });
+                    
+                    navigate('/ielts/dashboard?tab=speaking');
+                  } catch (error) {
+                    console.error("Error saving test in background:", error);
+                    alert("Failed to save the test. Please try again.");
+                    setIsSaving(false);
+                  }
                 } else {
                   alert("Test aborted or failed to record. Returning to dashboard.");
-                  navigate('/');
+                  navigate('/ielts/dashboard');
                 }
               }} />
-            </motion.div>
-          )}
-
-          {stage === STAGES.PERFORMANCE && (
-            <motion.div 
-              key="performance"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col overflow-y-auto"
-            >
-              <SpeakingPerformanceReport testId={id} onNext={() => setStage(STAGES.RECORDING)} />
-            </motion.div>
-          )}
-
-          {stage === STAGES.RECORDING && (
-            <motion.div 
-              key="recording"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
-            >
-              <SpeakingRecordingsReview testId={id} recordedAudio={recordedAudio} />
             </motion.div>
           )}
 

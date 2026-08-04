@@ -65,3 +65,36 @@
   --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 .mcq-checkbox { margin-top: 4px; margin-right: 12px; cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; }
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #0f172a;
+}
+
+html.dark {
+  --bg-color: #0f172a;
+  --text-color: #f1f5f9;
+  color-scheme: dark;
+}
+html.dark body {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color);
+}
+html.dark .bg-white { background-color: #1e293b !important; }
+html.dark .bg-slate-50 { background-color: #0f172a !important; }
+html.dark .text-\[\#0F172A\] { color: #f1f5f9 !important; }
+html.dark .text-\[\#64748B\] { color: #94a3b8 !important; }
+html.dark .border-\[\#E2E8F0\] { border-color: #334155 !important; }
+
+html.theme-picture {
+  --bg-color: #cddbe8;
+  --text-color: #0f172a;
+}
+html.theme-picture body {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color);
+}
+html.theme-picture .bg-white, html.theme-picture .bg-slate-50 {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(8px);
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Clock, Edit3, Volume2, RotateCcw, ChevronRight, Square, Play, Pause } from 'lucide-react';
+import { Mic, Clock, Edit3, Volume2, RotateCcw, ChevronRight, Square, Play, Pause, CheckCircle2 } from 'lucide-react';
 
 const MOCK_QUESTIONS = {
   part1: [
@@ -101,9 +101,79 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
     let timer: any;
     if (phase !== 'intro' && phase !== 'p2-prep') {
       if (qState === 'ai_speaking') {
-        timer = setTimeout(() => {
-          startRecording();
-        }, 2000);
+        let textToRead = '';
+        if (phase === 'p1') {
+            textToRead = MOCK_QUESTIONS.part1[qIndex].text;
+            if (qIndex === 0) {
+                textToRead = `Part 1. Let's talk about ${MOCK_QUESTIONS.part1[qIndex].topic}. ${textToRead}`;
+            }
+        } else if (phase === 'p2') {
+            textToRead = `Now, I'd like you to talk about a topic for one to two minutes. ${MOCK_QUESTIONS.part2.topic}. Please start speaking now.`;
+        } else if (phase === 'p3') {
+            textToRead = MOCK_QUESTIONS.part3[qIndex].text;
+            if (qIndex === 0) {
+                textToRead = `Part 3. Let's discuss ${MOCK_QUESTIONS.part3[qIndex].topic}. ${textToRead}`;
+            }
+            if (qIndex === MOCK_QUESTIONS.part3.length - 1) {
+                textToRead += " That's all for the speaking test today.";
+            }
+        }
+        
+        if (textToRead && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.rate = 0.95;
+            
+            const setVoiceAndSpeak = () => {
+                const voices = window.speechSynthesis.getVoices();
+                // Prefer Google UK English Female if available, or any UK English voice
+                const ukVoice = voices.find(v => (v.lang === 'en-GB' || v.lang === 'en-UK') && v.name.includes('Google')) || 
+                                voices.find(v => v.lang === 'en-GB' || v.lang === 'en-UK');
+                if (ukVoice) {
+                    utterance.voice = ukVoice;
+                }
+                
+                // Track if we already started recording to prevent double firing
+                let recordingStarted = false;
+                
+                const startRec = () => {
+                    if (!recordingStarted && qState === 'ai_speaking') {
+                        recordingStarted = true;
+                        startRecording();
+                    }
+                };
+
+                utterance.onend = () => {
+                    timer = setTimeout(() => {
+                        startRec();
+                    }, 500);
+                };
+                
+                // Fallback timeout in case onend doesn't fire reliably
+                const fallbackDuration = textToRead.length * 80 + 2000;
+                timer = setTimeout(() => {
+                    startRec();
+                }, fallbackDuration);
+                
+                window.speechSynthesis.speak(utterance);
+            };
+
+            if (window.speechSynthesis.getVoices().length > 0) {
+                setVoiceAndSpeak();
+            } else {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    setVoiceAndSpeak();
+                };
+                // Fallback if event doesn't fire
+                setTimeout(() => {
+                    if (qState === 'ai_speaking') setVoiceAndSpeak();
+                }, 1000);
+            }
+        } else {
+            timer = setTimeout(() => {
+              startRecording();
+            }, 3000);
+        }
       } else if (qState === 'recording') {
         timer = setInterval(() => {
           setRecordingTime(prev => prev + 1);
@@ -121,8 +191,14 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
         });
       }, 1000);
     }
-    return () => { clearTimeout(timer); clearInterval(timer); };
-  }, [phase, qState]);
+    return () => { 
+        clearTimeout(timer); 
+        clearInterval(timer); 
+        if (qState === 'ai_speaking' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+    };
+  }, [phase, qState, qIndex]);
 
   const startRecording = () => {
     setQState('recording');
@@ -205,11 +281,7 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
         setQIndex(qIndex + 1);
         setQState('ai_speaking');
       } else {
-        // Complete
-        // Generate a dummy full blob for the old format, or just pass responses
-        // We'll pass an empty blob as the second argument if needed, or we can just pass responses[p1_1]
-        // But better to just pass responses
-        onComplete(responses, responses['p1_1'] || new Blob()); 
+        setPhase('completed');
       }
     }
   };
@@ -329,6 +401,22 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
               </h2>
             </div>
           )}
+
+          {phase === 'completed' && (
+            <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full text-center">
+              <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-lg border border-emerald-200">
+                <CheckCircle2 size={40} className="text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4 mb-4">
+                  Test Completed
+                </h2>
+                <p className="text-xl text-slate-600 max-w-xl mx-auto leading-relaxed">
+                  You have completed all parts of the speaking test. Click Submit to save your performance and recordings.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl">
@@ -336,7 +424,12 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
                  
               {/* Status Indicator */}
               <div className="w-full md:w-1/3 flex items-center justify-center md:justify-start gap-4">
-                {qState === 'recording' && phase !== 'intro' && phase !== 'p2-prep' ? (
+                {phase === 'completed' ? (
+                  <div className="flex items-center gap-3 text-emerald-600 bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-100 shadow-sm">
+                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                     <span className="font-bold text-sm uppercase tracking-wider">Ready to Submit</span>
+                  </div>
+                ) : qState === 'recording' && phase !== 'intro' && phase !== 'p2-prep' ? (
                   <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 px-5 py-2.5 rounded-full shadow-sm">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />
                     <span className="font-bold text-sm uppercase tracking-wider">Recording</span>
@@ -391,7 +484,7 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
                     Skip Prep
                   </button>
                 )}
-                {phase !== 'intro' && phase !== 'p2-prep' && qState === 'recording' && (
+                {phase !== 'intro' && phase !== 'p2-prep' && phase !== 'completed' && qState === 'recording' && (
                   <button 
                     onClick={stopRecording}
                     className="flex items-center gap-2 bg-red-600 text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-red-700 transition-all shadow-md text-sm tracking-wide"
@@ -399,7 +492,7 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
                     <Square size={16} fill="currentColor" /> Stop Recording
                   </button>
                 )}
-                {phase !== 'intro' && phase !== 'p2-prep' && qState === 'reviewing' && (
+                {phase !== 'intro' && phase !== 'p2-prep' && phase !== 'completed' && qState === 'reviewing' && (
                   <>
                     <button 
                       onClick={() => {
@@ -425,6 +518,16 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
                       <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                   </>
+                )}
+                {phase === 'completed' && (
+                  <button 
+                    onClick={() => {
+                      onComplete(responses, responses['p1_1'] || new Blob()); 
+                    }}
+                    className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-emerald-700 transition-all shadow-md text-base tracking-wide"
+                  >
+                    Submit Test
+                  </button>
                 )}
               </div>
           </div>
