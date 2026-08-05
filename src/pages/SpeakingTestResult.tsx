@@ -54,24 +54,15 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
 
   return (
     <div className="space-y-8 bg-[#F8FAFC] min-h-screen">
-      <div className="max-w-5xl mx-auto pt-8 px-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors font-medium"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Dashboard
-        </button>
-      </div>
       
       {/* We can just render both components */}
       {submissionData.assignmentId !== 'offline_speaking' && !submissionData.assignmentTitle?.toLowerCase().includes('offline') && (
-         <SpeakingPerformanceReport testId={submissionData.assignmentTitle || submissionData.assignmentId} />
+         <SpeakingPerformanceReport testId={submissionData.assignmentTitle || submissionData.assignmentId} audioUrl={submissionData.audioUrl} submissionId={submissionId} submissionData={submissionData} />
       )}
       
-      {(submissionData.audioUrl || submissionData.assignmentId === 'offline_speaking') && (
+      {isOffline && (submissionData.audioUrl || submissionData.assignmentId === 'offline_speaking') && (
         <div className="pb-8">
-           <SpeakingRecordingsReview testId={isOffline ? 'offline_speaking' : (submissionData.assignmentTitle || submissionData.assignmentId)} providedAudioUrl={submissionData.audioUrl} />
+           <SpeakingRecordingsReview testId={'offline_speaking'} providedAudioUrl={submissionData.audioUrl} providedAnswers={submissionData.answers} />
         </div>
       )}
 

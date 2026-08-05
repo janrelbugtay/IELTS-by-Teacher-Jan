@@ -51,7 +51,7 @@ const Waveform = ({ isRecording }: { isRecording: boolean }) => (
   </div>
 );
 
-export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses: Record<string, Blob>, fullBlob?: Blob) => void }) => {
+export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses: Record<string, Blob>) => void }) => {
   const [phase, setPhase] = useState('intro'); // intro, p1, p2-prep, p2, p3
   const [qIndex, setQIndex] = useState(0);
   const [qState, setQState] = useState<'ai_speaking' | 'recording' | 'reviewing'>('ai_speaking');
@@ -522,7 +522,7 @@ export const LiveSpeakingTestScreen = ({ onComplete }: { onComplete: (responses:
                 {phase === 'completed' && (
                   <button 
                     onClick={() => {
-                      onComplete(responses, responses['p1_1'] || new Blob()); 
+                      onComplete(responses); 
                     }}
                     className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-emerald-700 transition-all shadow-md text-base tracking-wide"
                   >

@@ -15,6 +15,7 @@ import { MayWritingTest } from './MayWritingTest';
 import { JuneWritingTest } from './JuneWritingTest';
 import { JulyWritingTest } from './JulyWritingTest';
 import { AugustWritingTest } from './AugustWritingTest';
+import { SeptemberWritingTest } from './SeptemberWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -63,7 +64,7 @@ const getCustomPrompt = (id: string | undefined) => {
         case '31': // August
             return {
                 t1Title: "The charts below give information about players of electronic games in South Korea in 2003.",
-                t1Desc: "Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Desc: "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t1Content: (
                     <div className="mt-10 flex justify-center">
                         <img 
@@ -74,7 +75,7 @@ const getCustomPrompt = (id: string | undefined) => {
                         />
                     </div>
                 ),
-                t1Raw: "The charts below give information about players of electronic games in South Korea in 2003. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Raw: "The charts below give information about players of electronic games in South Korea in 2003. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t2Prompt: (
                     <>
                         <p className="font-bold mb-4">In many countries, more and more people choose to buy imported food rather than food produced locally.</p>
@@ -88,26 +89,26 @@ const getCustomPrompt = (id: string | undefined) => {
         case '35': // September
             return {
                 t1Title: "The diagram gives information about the process of making carbonated drinks.",
-                t1Desc: "Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Desc: "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t1Content: (
                     <div className="mt-6 mb-6 flex justify-center">
                         <img 
-                            src="https://drive.google.com/thumbnail?id=1ZBw6BPamaIf801hTx52KE1J5yOzsh4Bm&sz=w1000" 
+                            src="https://lh3.googleusercontent.com/d/1ZBw6BPamaIf801hTx52KE1J5yOzsh4Bm=w1000" 
                             alt="The process of making carbonated drinks" 
                             className="max-w-full h-auto rounded-lg shadow-sm"
                             referrerPolicy="no-referrer"
                         />
                     </div>
                 ),
-                t1Raw: "The diagram gives information about the process of making carbonated drinks. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.",
+                t1Raw: "The diagram gives information about the process of making carbonated drinks. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
                 t2Prompt: (
                     <>
-                        <p className="font-bold mb-4">It is argued that the parents of children who break the rules should be punished in some ways as parents are responsible for the children’s actions.</p>
+                        <p className="font-bold mb-4">It is argued that the parents of children who break the rules should be punished in some way as parents are responsible for their children's actions.</p>
                         <p className="font-bold mb-4">To what extent do you agree or disagree?</p>
                     </>
                 ),
                 t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
-                t2Raw: "It is argued that the parents of children who break the rules should be punished in some ways as parents are responsible for the children’s actions. To what extent do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+                t2Raw: "It is argued that the parents of children who break the rules should be punished in some way as parents are responsible for their children's actions. To what extent do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
             };
         case '39': // October
             return {
@@ -565,6 +566,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     }
     if (id === '31' && !submissionId) {
         return <AugustWritingTest />;
+    }
+    if (id === '35' && !submissionId) {
+        return <SeptemberWritingTest />;
     }
 
     const [state, setState] = useState({

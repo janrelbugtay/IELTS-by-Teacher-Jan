@@ -3,30 +3,21 @@ import { Mic, Play, Pause, Video, ExternalLink } from 'lucide-react';
 
 const MOCK_QUESTIONS = {
   part1: [
-    { id: 'p1_1', text: 'Did you like going to parks as a child?', duration: '0:30' },
-    { id: 'p1_2', text: 'Do you still like going to parks now?', duration: '0:35' },
-    { id: 'p1_3', text: 'Would you like to see more parks in your city?', duration: '0:40' },
-    { id: 'p1_4', text: 'Are there any parks you want to go to in the future?', duration: '0:35' },
-    { id: 'p1_5', text: 'Do you like to keep things tidy?', duration: '0:30' },
-    { id: 'p1_6', text: 'Did you use to keep your room tidy when you were a child?', duration: '0:35' },
-    { id: 'p1_7', text: 'Have you ever seen old buildings in the city？', duration: '0:40' },
-    { id: 'p1_8', text: 'Do you think we should preserve old buildings in cities？', duration: '0:45' },
-    { id: 'p1_9', text: 'Do you prefer living in an old building or a modern house？', duration: '0:45' }
+    { id: 'p1_1', text: "Let's talk about your hometown. Where is your hometown?", duration: '0:30' },
+    { id: 'p1_2', text: 'What do you like most about it?', duration: '0:35' }
   ],
   part2: {
     id: 'p2_1',
-    text: 'Describe an environmental protection law. You should say: What is it? How did you first learn about it? Who benefits from it? And explain how you feel about this law?',
+    text: 'Describe a book you have recently read.\nYou should say:\n• what kind of book it is\n• what it is about\n• what sort of people would enjoy it\nand explain why you liked it.',
     duration: '2:00'
   },
   part3: [
-    { id: 'p3_1', text: 'Is there any situation where in people may disobey the law?', duration: '0:55' },
-    { id: 'p3_2', text: 'What qualities should a police officer possess?', duration: '1:00' },
-    { id: 'p3_3', text: 'How to solve major crimes in the city?', duration: '1:10' },
-    { id: 'p3_4', text: 'Should people be penalized when they use mobile phones while driving?', duration: '1:05' }
+    { id: 'p3_1', text: 'How have reading habits changed since the internet became popular?', duration: '0:55' },
+    { id: 'p3_2', text: 'Do you think printed books will eventually disappear?', duration: '1:00' }
   ]
 };
 
-const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: string | null, defaultDurationStr: string, isRealAudio?: boolean }) => {
+export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: string | null, defaultDurationStr: string, isRealAudio?: boolean }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('0:00');
@@ -125,12 +116,22 @@ const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: stri
   );
 }
 
-export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl }: { testId?: string, recordedAudio?: any, providedAudioUrl?: string | null }) => {
+export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl, providedAnswers }: { testId?: string, recordedAudio?: any, providedAudioUrl?: string | null, providedAnswers?: Record<string, any> }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(providedAudioUrl || null);
   const [responseUrls, setResponseUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (providedAudioUrl) {
+    if (providedAnswers && Object.keys(providedAnswers).length > 0) {
+      const urls: Record<string, string> = {};
+      for (const [id, data] of Object.entries(providedAnswers)) {
+        if (data && typeof data === 'object' && data.audioUrl) {
+          urls[id] = data.audioUrl;
+        } else if (typeof data === 'string') {
+          urls[id] = data; // fallback just in case
+        }
+      }
+      setResponseUrls(urls);
+    } else if (providedAudioUrl) {
       setAudioUrl(providedAudioUrl);
     } else if (recordedAudio && recordedAudio instanceof Blob && recordedAudio.size > 0) {
       const url = URL.createObjectURL(recordedAudio);

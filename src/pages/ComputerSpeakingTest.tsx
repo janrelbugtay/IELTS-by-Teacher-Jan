@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { db, storage } from '../lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveSpeakingTestScreen } from '../components/LiveSpeakingTestScreen';
@@ -109,39 +109,68 @@ export function ComputerSpeakingTest() {
                   </div>
                 </div>
               )}
-              <LiveSpeakingTestScreen onComplete={async (responses: Record<string, Blob>, blob?: Blob) => {
-                if (responses) {
+              <LiveSpeakingTestScreen onComplete={async (responses: Record<string, Blob>) => {
+                if (responses && Object.keys(responses).length > 0) {
                   setRecordedAudio(responses);
-                  blob = blob || Object.values(responses)[0];
-                }
-                if (blob) {
+                  
                   setIsSaving(true);
                   try {
-                    // Upload audio
-                    const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}.webm`);
-                    const uploadTask = await uploadBytesResumable(audioRef, blob);
-                    const downloadUrl = await getDownloadURL(uploadTask.ref);
-
                     // Determine title and ID
                     const testNum = id || '1';
                     const assignmentTitle = `IELTS Speaking Test ${testNum}`;
                     
-                    // Create submission
-                    await addDoc(collection(db, 'submissions'), {
+                    // Create submission immediately for fast access
+                    const docRef = await addDoc(collection(db, 'submissions'), {
                       userId: user?.uid,
                       assignmentId: testNum,
                       assignmentTitle: assignmentTitle,
                       assignmentType: 'speaking',
-                      audioUrl: downloadUrl,
+                      audioUrl: '', 
                       bandScore: 7, // Mock score for now
                       timeSpent: 14 * 60, // 14 mins
                       createdAt: serverTimestamp(),
-                      answers: {}
+                      answers: {},
+                      status: 'processing' // indicate it's still uploading
                     });
                     
+                    // Navigate immediately
                     navigate('/ielts/dashboard?tab=speaking');
+
+                    // Run uploads in background
+                    (async () => {
+                      try {
+                        const uploadPromises = Object.entries(responses).map(async ([qId, blob]) => {
+                          if (blob.size === 0) return { qId, url: "" };
+                          const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}_${qId}.webm`);
+                          const uploadResult = await uploadBytes(audioRef, blob);
+                          const url = await getDownloadURL(uploadResult.ref);
+                          return { qId, url };
+                        });
+
+                        const uploadedItems = await Promise.all(uploadPromises);
+                        
+                        const answersObj: Record<string, any> = {};
+                        let firstAudioUrl = "";
+                        uploadedItems.forEach(({ qId, url }) => {
+                          if (url) {
+                            answersObj[qId] = { audioUrl: url };
+                            if (!firstAudioUrl) firstAudioUrl = url;
+                          }
+                        });
+
+                        // Update the document with actual URLs
+                        await updateDoc(doc(db, 'submissions', docRef.id), {
+                          audioUrl: firstAudioUrl,
+                          answers: answersObj,
+                          status: 'completed'
+                        });
+                      } catch (err) {
+                        console.error("Background upload failed:", err);
+                      }
+                    })();
+                    
                   } catch (error) {
-                    console.error("Error saving test in background:", error);
+                    console.error("Error saving test:", error);
                     alert("Failed to save the test. Please try again.");
                     setIsSaving(false);
                   }
