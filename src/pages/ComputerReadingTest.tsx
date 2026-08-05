@@ -865,7 +865,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
 
     const correctAnsRaw = (currentAnswerKey as any)[activeReviewQuestion];
     const answerParts = correctAnsRaw ? correctAnsRaw.split('/').map((a: string) => a.trim()) : [];
-    const isInputType = activeReviewQuestion <= 7 || (activeReviewQuestion >= 23 && activeReviewQuestion <= 26) || (activeReviewQuestion >= 33 && activeReviewQuestion <= 40);
+    
+    const isInputType = answerParts.length > 0 && !['TRUE', 'FALSE', 'NOT GIVEN', 'YES', 'NO'].includes(answerParts[0].toUpperCase()) && answerParts[0].length > 1;
+    
 
     let elements: any[] = [text];
     
