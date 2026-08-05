@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
@@ -21,22 +21,33 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
   const isOffline = submissionData?.assignmentId === 'offline_speaking' || submissionData?.assignmentTitle?.toLowerCase().includes('offline') || hasVideoLink;
 
   useEffect(() => {
+    let unsubscribe: () => void;
     async function fetchData() {
       try {
         if (submissionId) {
-          const subDoc = await getDoc(doc(db, 'submissions', submissionId));
-          if (subDoc.exists()) {
-            setSubmissionData(subDoc.data());
-          }
+          const subRef = doc(db, 'submissions', submissionId);
+          unsubscribe = onSnapshot(subRef, (subDoc) => {
+            if (subDoc.exists()) {
+              setSubmissionData(subDoc.data());
+            }
+            setLoading(false);
+          }, (err) => {
+            console.error("Error fetching submission data", err);
+            setLoading(false);
+          });
+        } else {
+          setLoading(false);
         }
       } catch (err) {
-        console.error("Error fetching submission data", err);
-      } finally {
+        console.error("Error setting up snapshot", err);
         setLoading(false);
       }
     }
 
     fetchData();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [submissionId]);
 
   if (loading) {

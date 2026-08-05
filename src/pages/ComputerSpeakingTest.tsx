@@ -116,7 +116,11 @@ export function ComputerSpeakingTest() {
                   setIsSaving(true);
                   try {
                     // Determine title and ID
-                    const testNum = id || '1';
+                    let testNum = id || '1';
+                    const numId = parseInt(testNum, 10);
+                    if (!isNaN(numId)) {
+                      testNum = Math.ceil(numId / 4).toString();
+                    }
                     const assignmentTitle = `IELTS Speaking Test ${testNum}`;
                     
                     // Create submission immediately for fast access

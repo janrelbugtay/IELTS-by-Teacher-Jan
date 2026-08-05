@@ -1,21 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Play, Pause, Video, ExternalLink } from 'lucide-react';
-
-const MOCK_QUESTIONS = {
-  part1: [
-    { id: 'p1_1', text: "Let's talk about your hometown. Where is your hometown?", duration: '0:30' },
-    { id: 'p1_2', text: 'What do you like most about it?', duration: '0:35' }
-  ],
-  part2: {
-    id: 'p2_1',
-    text: 'Describe a book you have recently read.\nYou should say:\n• what kind of book it is\n• what it is about\n• what sort of people would enjoy it\nand explain why you liked it.',
-    duration: '2:00'
-  },
-  part3: [
-    { id: 'p3_1', text: 'How have reading habits changed since the internet became popular?', duration: '0:55' },
-    { id: 'p3_2', text: 'Do you think printed books will eventually disappear?', duration: '1:00' }
-  ]
-};
+import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
 
 export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: string | null, defaultDurationStr: string, isRealAudio?: boolean }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -119,6 +104,11 @@ export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { sr
 export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl, providedAnswers }: { testId?: string, recordedAudio?: any, providedAudioUrl?: string | null, providedAnswers?: Record<string, any> }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(providedAudioUrl || null);
   const [responseUrls, setResponseUrls] = useState<Record<string, string>>({});
+
+  const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'fallback';
+  const testNumMatch = formattedId.match(/Test\s+(\d+)/i);
+  const testNum = testNumMatch ? testNumMatch[1] : 'fallback';
+  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['fallback'];
 
   useEffect(() => {
     if (providedAnswers && Object.keys(providedAnswers).length > 0) {
@@ -232,11 +222,11 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
           <section>
             <h2 className="text-[13px] font-bold text-[#A5B4CB] tracking-[0.2em] uppercase mb-8">Part 1</h2>
             <div className="space-y-10 pl-4 border-l-2 border-transparent">
-              {MOCK_QUESTIONS.part1.map((q, i) => (
+              {testQuestions.part1.map((q, i) => (
                 <div key={q.id}>
                   <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
                   {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr={q.duration} isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
+                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="0:30" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
                   ) : null}
                   
                 </div>
@@ -249,8 +239,14 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
             <h2 className="text-[13px] font-bold text-[#A5B4CB] tracking-[0.2em] uppercase mb-8">Part 2</h2>
             <div className="space-y-10 pl-4 border-l-2 border-transparent">
               <div>
-                <p className="text-[17px] text-[#1c2b4d] font-medium mb-3 leading-relaxed">{MOCK_QUESTIONS.part2.text}</p>
-                
+                <p className="text-[17px] text-[#1c2b4d] font-medium mb-3 leading-relaxed whitespace-pre-line">
+                  {testQuestions.part2.topic}{"\n"}
+                  You should say:{"\n"}
+                  {testQuestions.part2.bulletPoints.map(bp => `• ${bp}`).join("\n")}
+                </p>
+                {(responseUrls[testQuestions.part2.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                  <SimpleAudioPlayer src={responseUrls[testQuestions.part2.id] || audioUrl} defaultDurationStr="2:00" isRealAudio={!!responseUrls[testQuestions.part2.id] || !!audioUrl} />
+                ) : null}
               </div>
             </div>
           </section>
@@ -259,11 +255,11 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
           <section>
             <h2 className="text-[13px] font-bold text-[#A5B4CB] tracking-[0.2em] uppercase mb-8">Part 3</h2>
             <div className="space-y-10 pl-4 border-l-2 border-transparent">
-              {MOCK_QUESTIONS.part3.map((q) => (
+              {testQuestions.part3.map((q) => (
                 <div key={q.id}>
                   <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
                   {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr={q.duration} isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
+                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="1:00" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
                   ) : null}
                   
                 </div>

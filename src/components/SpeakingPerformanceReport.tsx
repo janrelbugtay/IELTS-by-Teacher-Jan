@@ -4,6 +4,7 @@ import { Play, Pause, RefreshCw, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
 
 export interface PerformanceReportData {
   overallScore: number;
@@ -113,6 +114,11 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
 
   const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'IELTS Speaking Test 1';
 
+  // Extract test number or use fallback
+  const testNumMatch = formattedId.match(/Test\s+(\d+)/i);
+  const testNum = testNumMatch ? testNumMatch[1] : 'fallback';
+  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['fallback'];
+
   const resetScores = () => {
     if (!isAdmin) return;
     setSelectedScores({ FC: null, LR: null, GRA: null, PR: null });
@@ -181,8 +187,8 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
     if (submissionData && submissionData.answers && Object.keys(submissionData.answers).length > 0) {
       const urls: Record<string, string> = {};
       for (const [id, data] of Object.entries(submissionData.answers)) {
-        if (data && typeof data === 'object' && data.audioUrl) {
-          urls[id] = data.audioUrl;
+        if (data && typeof data === 'object' && (data as any).audioUrl) {
+          urls[id] = (data as any).audioUrl;
         } else if (typeof data === 'string') {
           urls[id] = data as string;
         }
@@ -340,20 +346,15 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                   Introduction & Interview
                 </h3>
                 <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-slate-700 font-medium mb-3">1. Let's talk about your hometown. Where is your hometown?</p>
-                    <button onClick={() => togglePlayAudio('p1_1')} className="flex items-center gap-2 px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg transition-colors text-sm font-semibold border border-violet-200">
-                      {playingId === 'p1_1' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      {playingId === 'p1_1' ? 'Pause Recording' : 'Play Recording'}
-                    </button>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-slate-700 font-medium mb-3">2. What do you like most about it?</p>
-                    <button onClick={() => togglePlayAudio('p1_2')} className="flex items-center gap-2 px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg transition-colors text-sm font-semibold border border-violet-200">
-                      {playingId === 'p1_2' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      {playingId === 'p1_2' ? 'Pause Recording' : 'Play Recording'}
-                    </button>
-                  </div>
+                  {testQuestions.part1.map((q, idx) => (
+                    <div key={q.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                      <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
+                      <button onClick={() => togglePlayAudio(q.id)} className="flex items-center gap-2 px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg transition-colors text-sm font-semibold border border-violet-200">
+                        {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -365,16 +366,17 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                 </h3>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="mb-4 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100 text-slate-700 text-sm italic">
-                    Describe a book you have recently read.<br/>
+                    {testQuestions.part2.topic}<br/>
                     You should say:<br/>
-                    • what kind of book it is<br/>
-                    • what it is about<br/>
-                    • what sort of people would enjoy it<br/>
-                    and explain why you liked it.
+                    {testQuestions.part2.bulletPoints.map((bp, i) => (
+                      <React.Fragment key={i}>
+                        {i < testQuestions.part2.bulletPoints.length - 1 ? `• ${bp}` : bp}<br/>
+                      </React.Fragment>
+                    ))}
                   </div>
-                  <button onClick={() => togglePlayAudio('p2_1')} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-sm font-semibold border border-indigo-200">
-                    {playingId === 'p2_1' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    {playingId === 'p2_1' ? 'Pause Recording (2 mins)' : 'Play Recording (2 mins)'}
+                  <button onClick={() => togglePlayAudio(testQuestions.part2.id)} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-sm font-semibold border border-indigo-200">
+                    {playingId === testQuestions.part2.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    {playingId === testQuestions.part2.id ? 'Pause Recording (2 mins)' : 'Play Recording (2 mins)'}
                   </button>
                 </div>
               </div>
@@ -386,20 +388,15 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                   Discussion
                 </h3>
                 <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-slate-700 font-medium mb-3">1. How have reading habits changed since the internet became popular?</p>
-                    <button onClick={() => togglePlayAudio('p3_1')} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 rounded-lg transition-colors text-sm font-semibold border border-fuchsia-200">
-                      {playingId === 'p3_1' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      {playingId === 'p3_1' ? 'Pause Recording' : 'Play Recording'}
-                    </button>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-slate-700 font-medium mb-3">2. Do you think printed books will eventually disappear?</p>
-                    <button onClick={() => togglePlayAudio('p3_2')} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 rounded-lg transition-colors text-sm font-semibold border border-fuchsia-200">
-                      {playingId === 'p3_2' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      {playingId === 'p3_2' ? 'Pause Recording' : 'Play Recording'}
-                    </button>
-                  </div>
+                  {testQuestions.part3.map((q, idx) => (
+                    <div key={q.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                      <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
+                      <button onClick={() => togglePlayAudio(q.id)} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 rounded-lg transition-colors text-sm font-semibold border border-fuchsia-200">
+                        {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
