@@ -6,8 +6,8 @@ import { format } from 'date-fns';
 const getFallbackType = (id: any) => {
   const numId = parseInt(String(id));
   if (!isNaN(numId)) {
-    if (numId % 4 === 1) return 'reading';
-    if (numId % 4 === 2) return 'listening';
+    if (numId % 4 === 1) return 'listening';
+    if (numId % 4 === 2) return 'reading';
     if (numId % 4 === 3) return 'writing';
     if (numId % 4 === 0) return 'speaking';
   }

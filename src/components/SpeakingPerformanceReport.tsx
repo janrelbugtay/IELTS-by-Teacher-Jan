@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { Play, Pause, RefreshCw, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
+import { getAudioFromIndexedDB } from '../lib/indexedDB';
 
 export interface PerformanceReportData {
   overallScore: number;
@@ -116,8 +117,8 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
 
   // Extract test number or use fallback
   const testNumMatch = formattedId.match(/Test\s+(\d+)/i);
-  const testNum = testNumMatch ? testNumMatch[1] : 'fallback';
-  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['fallback'];
+  const testNum = testNumMatch ? testNumMatch[1] : '1';
+  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
 
   const resetScores = () => {
     if (!isAdmin) return;
@@ -184,21 +185,56 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (submissionData && submissionData.answers && Object.keys(submissionData.answers).length > 0) {
-      const urls: Record<string, string> = {};
-      for (const [id, data] of Object.entries(submissionData.answers)) {
-        if (data && typeof data === 'object' && (data as any).audioUrl) {
-          urls[id] = (data as any).audioUrl;
-        } else if (typeof data === 'string') {
-          urls[id] = data as string;
+    const resolveUrls = async () => {
+      if (submissionData && submissionData.answers && Object.keys(submissionData.answers).length > 0) {
+        const urls: Record<string, string> = {};
+        for (const [id, data] of Object.entries(submissionData.answers)) {
+          let url = '';
+          if (data && typeof data === 'object' && (data as any).audioUrl) {
+            url = (data as any).audioUrl;
+          } else if (typeof data === 'string') {
+            url = data as string;
+          }
+          
+          if (url.startsWith('idb:')) {
+            const localId = url.split(':')[1];
+            try {
+              const blob = await getAudioFromIndexedDB(localId);
+              if (blob) {
+                url = URL.createObjectURL(blob);
+              }
+            } catch(e) {
+              console.error(e);
+            }
+          } else if (url.startsWith('subcollection:') && submissionId) {
+             const subId = url.split(':')[1];
+             try {
+               const docSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', subId));
+               if (docSnap.exists()) {
+                 url = docSnap.data().audioUrl;
+               }
+             } catch(e) {
+               console.error(e);
+             }
+          }
+          
+          if (url) urls[id] = url;
         }
+        setResponseUrls(urls);
       }
-      setResponseUrls(urls);
+    };
+    resolveUrls();
+  }, [submissionData, submissionId]);
+
+  const getAudioUrl = (qId: string) => {
+    if (Object.keys(responseUrls).length > 0) {
+      return responseUrls[qId] || null;
     }
-  }, [submissionData]);
+    return audioUrl;
+  };
 
   const togglePlayAudio = (qId: string) => {
-    const url = responseUrls[qId] || audioUrl;
+    let url = getAudioUrl(qId);
     if (!url) {
       alert("No recording available for this test.");
       return;
@@ -211,11 +247,16 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
       if (audioRef.current) {
         audioRef.current.pause();
       }
+
       audioRef.current = new Audio(url);
       audioRef.current.play().then(() => setPlayingId(qId)).catch(e => {
         console.warn("Playback failed", e);
         setPlayingId(null);
-        window.open(url, '_blank');
+        if (!url?.startsWith('data:audio/')) {
+          window.open(url, '_blank');
+        } else {
+          alert("Could not play the recording in this browser.");
+        }
       });
       audioRef.current.onended = () => setPlayingId(null);
     }
@@ -332,10 +373,17 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
             })}
           </div>
 
-          {/* Maker Recordings */}
+          {/* Your Recordings / Uploading */}
           <div className="mt-8 relative">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] rounded-full">
-              Maker Recordings
+              {submissionData?.status === 'processing' ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
+                  Uploading your performance...
+                </span>
+              ) : (
+                'Your Recordings'
+              )}
             </div>
             
             <div className="space-y-8 pt-6">
@@ -346,15 +394,25 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                   Introduction & Interview
                 </h3>
                 <div className="space-y-4">
-                  {testQuestions.part1.map((q, idx) => (
-                    <div key={q.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                      <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
-                      <button onClick={() => togglePlayAudio(q.id)} className="flex items-center gap-2 px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg transition-colors text-sm font-semibold border border-violet-200">
-                        {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
-                      </button>
-                    </div>
-                  ))}
+                  {testQuestions.part1.map((q, idx) => {
+                    const isNewTopic = idx === 0 || testQuestions.part1[idx - 1].topic !== q.topic;
+                    return (
+                      <div key={q.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        {isNewTopic && q.topic && (
+                          <p className="text-violet-600 font-semibold mb-3 text-sm">Let's talk about {q.topic.toLowerCase()}</p>
+                        )}
+                        <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
+                        <button 
+                          onClick={() => togglePlayAudio(q.id)} 
+                          disabled={!getAudioUrl(q.id)}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-semibold border ${getAudioUrl(q.id) ? 'bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                        >
+                          {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                          {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -374,7 +432,11 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                       </React.Fragment>
                     ))}
                   </div>
-                  <button onClick={() => togglePlayAudio(testQuestions.part2.id)} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-sm font-semibold border border-indigo-200">
+                  <button 
+                    onClick={() => togglePlayAudio(testQuestions.part2.id)} 
+                    disabled={!getAudioUrl(testQuestions.part2.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-semibold border ${getAudioUrl(testQuestions.part2.id) ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                  >
                     {playingId === testQuestions.part2.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     {playingId === testQuestions.part2.id ? 'Pause Recording (2 mins)' : 'Play Recording (2 mins)'}
                   </button>
@@ -388,15 +450,25 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                   Discussion
                 </h3>
                 <div className="space-y-4">
-                  {testQuestions.part3.map((q, idx) => (
-                    <div key={q.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                      <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
-                      <button onClick={() => togglePlayAudio(q.id)} className="flex items-center gap-2 px-4 py-2 bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 rounded-lg transition-colors text-sm font-semibold border border-fuchsia-200">
-                        {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
-                      </button>
-                    </div>
-                  ))}
+                  {testQuestions.part3.map((q, idx) => {
+                    const isNewTopic = idx === 0 || testQuestions.part3[idx - 1].topic !== q.topic;
+                    return (
+                      <div key={q.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        {isNewTopic && q.topic && (
+                          <p className="text-fuchsia-600 font-semibold mb-3 text-sm">Let's discuss {q.topic.toLowerCase()}</p>
+                        )}
+                        <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
+                        <button 
+                          onClick={() => togglePlayAudio(q.id)} 
+                          disabled={!getAudioUrl(q.id)}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-semibold border ${getAudioUrl(q.id) ? 'bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                        >
+                          {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                          {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

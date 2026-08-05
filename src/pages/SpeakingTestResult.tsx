@@ -73,7 +73,7 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
       
       {isOffline && (submissionData.audioUrl || submissionData.assignmentId === 'offline_speaking') && (
         <div className="pb-8">
-           <SpeakingRecordingsReview testId={'offline_speaking'} providedAudioUrl={submissionData.audioUrl} providedAnswers={submissionData.answers} />
+           <SpeakingRecordingsReview testId={'offline_speaking'} providedAudioUrl={submissionData.audioUrl} providedAnswers={submissionData.answers} submissionId={submissionId} />
         </div>
       )}
 

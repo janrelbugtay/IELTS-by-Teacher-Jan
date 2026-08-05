@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Play, Pause, Video, ExternalLink } from 'lucide-react';
 import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { getAudioFromIndexedDB } from '../lib/indexedDB';
 
 export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: string | null, defaultDurationStr: string, isRealAudio?: boolean }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -101,45 +104,68 @@ export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { sr
   );
 }
 
-export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl, providedAnswers }: { testId?: string, recordedAudio?: any, providedAudioUrl?: string | null, providedAnswers?: Record<string, any> }) => {
+export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioUrl, providedAnswers, submissionId }: { testId?: string, recordedAudio?: any, providedAudioUrl?: string | null, providedAnswers?: Record<string, any>, submissionId?: string }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(providedAudioUrl || null);
   const [responseUrls, setResponseUrls] = useState<Record<string, string>>({});
 
   const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'fallback';
   const testNumMatch = formattedId.match(/Test\s+(\d+)/i);
-  const testNum = testNumMatch ? testNumMatch[1] : 'fallback';
-  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['fallback'];
+  const testNum = testNumMatch ? testNumMatch[1] : '1';
+  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
 
   useEffect(() => {
-    if (providedAnswers && Object.keys(providedAnswers).length > 0) {
-      const urls: Record<string, string> = {};
-      for (const [id, data] of Object.entries(providedAnswers)) {
-        if (data && typeof data === 'object' && data.audioUrl) {
-          urls[id] = data.audioUrl;
-        } else if (typeof data === 'string') {
-          urls[id] = data; // fallback just in case
+    const fetchUrls = async () => {
+      if (providedAnswers && Object.keys(providedAnswers).length > 0) {
+        const urls: Record<string, string> = {};
+        for (const [id, data] of Object.entries(providedAnswers)) {
+          let url = '';
+          if (data && typeof data === 'object' && data.audioUrl) {
+            url = data.audioUrl;
+          } else if (typeof data === 'string') {
+            url = data; // fallback just in case
+          }
+          
+          if (url.startsWith('subcollection:') && submissionId) {
+            const subId = url.split(':')[1];
+            try {
+              const docSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', subId));
+              if (docSnap.exists()) {
+                url = docSnap.data().audioUrl;
+              }
+            } catch (e) {
+              console.error("Failed to fetch recording from subcollection:", e);
+            }
+          } else if (url.startsWith('idb:')) {
+            const localId = url.split(':')[1];
+            try {
+              const blob = await getAudioFromIndexedDB(localId);
+              if (blob) {
+                url = URL.createObjectURL(blob);
+              }
+            } catch (e) {
+              console.error("Failed to fetch recording from IndexedDB:", e);
+            }
+          }
+          urls[id] = url;
         }
-      }
-      setResponseUrls(urls);
-    } else if (providedAudioUrl) {
-      setAudioUrl(providedAudioUrl);
-    } else if (recordedAudio && recordedAudio instanceof Blob && recordedAudio.size > 0) {
-      const url = URL.createObjectURL(recordedAudio);
-      setAudioUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else if (recordedAudio && !(recordedAudio instanceof Blob)) {
-      const urls: Record<string, string> = {};
-      for (const [id, blob] of Object.entries(recordedAudio)) {
-        if (blob instanceof Blob && blob.size > 0) {
-          urls[id] = URL.createObjectURL(blob);
+        setResponseUrls(urls);
+      } else if (providedAudioUrl) {
+        setAudioUrl(providedAudioUrl);
+      } else if (recordedAudio && recordedAudio instanceof Blob && recordedAudio.size > 0) {
+        const url = URL.createObjectURL(recordedAudio);
+        setAudioUrl(url);
+      } else if (recordedAudio && !(recordedAudio instanceof Blob)) {
+        const urls: Record<string, string> = {};
+        for (const [id, blob] of Object.entries(recordedAudio)) {
+          if (blob instanceof Blob && blob.size > 0) {
+            urls[id] = URL.createObjectURL(blob);
+          }
         }
+        setResponseUrls(urls);
       }
-      setResponseUrls(urls);
-      return () => {
-        Object.values(urls).forEach(url => URL.revokeObjectURL(url));
-      };
-    }
-  }, [recordedAudio]);
+    };
+    fetchUrls();
+  }, [recordedAudio, providedAnswers, providedAudioUrl, submissionId]);
 
   const isOffline = testId === 'offline_speaking' || testId?.toLowerCase().includes('offline');
 
@@ -222,15 +248,21 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
           <section>
             <h2 className="text-[13px] font-bold text-[#A5B4CB] tracking-[0.2em] uppercase mb-8">Part 1</h2>
             <div className="space-y-10 pl-4 border-l-2 border-transparent">
-              {testQuestions.part1.map((q, i) => (
-                <div key={q.id}>
-                  <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                  {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="0:30" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
-                  ) : null}
-                  
-                </div>
-              ))}
+              {testQuestions.part1.map((q, i) => {
+                const isNewTopic = i === 0 || testQuestions.part1[i - 1].topic !== q.topic;
+                return (
+                  <div key={q.id}>
+                    {isNewTopic && q.topic && (
+                      <p className="text-[#4F7DFF] font-semibold mb-3 text-sm tracking-wide">Let's talk about {q.topic.toLowerCase()}</p>
+                    )}
+                    <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
+                    {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                      <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="0:30" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
+                    ) : null}
+                    
+                  </div>
+                );
+              })}
             </div>
           </section>
 
@@ -255,15 +287,21 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
           <section>
             <h2 className="text-[13px] font-bold text-[#A5B4CB] tracking-[0.2em] uppercase mb-8">Part 3</h2>
             <div className="space-y-10 pl-4 border-l-2 border-transparent">
-              {testQuestions.part3.map((q) => (
-                <div key={q.id}>
-                  <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                  {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                    <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="1:00" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
-                  ) : null}
-                  
-                </div>
-              ))}
+              {testQuestions.part3.map((q, i) => {
+                const isNewTopic = i === 0 || testQuestions.part3[i - 1].topic !== q.topic;
+                return (
+                  <div key={q.id}>
+                    {isNewTopic && q.topic && (
+                      <p className="text-[#4F7DFF] font-semibold mb-3 text-sm tracking-wide">Let's discuss {q.topic.toLowerCase()}</p>
+                    )}
+                    <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
+                    {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                      <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="1:00" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
+                    ) : null}
+                    
+                  </div>
+                );
+              })}
             </div>
           </section>
           </>

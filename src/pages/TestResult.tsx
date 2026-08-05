@@ -7,8 +7,8 @@ const getFallbackTitle = (id: any) => {
   if (!isNaN(numId) && numId >= 1 && numId <= 48) {
     const testNum = Math.ceil(numId / 4);
     let skill = 'Practice';
-    if (numId % 4 === 1) skill = 'Reading';
-    if (numId % 4 === 2) skill = 'Listening';
+    if (numId % 4 === 1) skill = 'Listening';
+    if (numId % 4 === 2) skill = 'Reading';
     if (numId % 4 === 3) skill = 'Writing';
     if (numId % 4 === 0) skill = 'Speaking';
     return `IELTS ${skill} Test ${testNum}`;
@@ -46,6 +46,7 @@ import { MayWritingTest } from './MayWritingTest';
 import { JuneWritingTest } from './JuneWritingTest';
 import { JulyWritingTest } from './JulyWritingTest';
 import { AugustWritingTest } from './AugustWritingTest';
+import { SeptemberWritingTest } from './SeptemberWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -196,6 +197,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '23') return <JuneWritingTest submissionId={id} />;
       if (aId === '27') return <JulyWritingTest submissionId={id} />;
       if (aId === '31') return <AugustWritingTest submissionId={id} />;
+      if (aId === '35') return <SeptemberWritingTest submissionId={id} />;
 
       if (submission.assignmentTitle?.toLowerCase().includes('january')) return <JanuaryWritingTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('february')) return <FebruaryWritingTest submissionId={id} />;
@@ -205,6 +207,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneWritingTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyWritingTest submissionId={id} />;
       if (submission.assignmentTitle?.toLowerCase().includes('august')) return <AugustWritingTest submissionId={id} />;
+      if (submission.assignmentTitle?.toLowerCase().includes('september')) return <SeptemberWritingTest submissionId={id} />;
       
       return <ComputerWritingTest submissionId={id} />;
   }

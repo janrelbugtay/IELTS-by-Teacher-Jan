@@ -17,8 +17,8 @@ const getFallbackType = (id) => {
   if (id === 'offline_speaking') return 'speaking';
   const numId = parseInt(String(id));
   if (!isNaN(numId)) {
-    if (numId % 4 === 1) return 'reading';
-    if (numId % 4 === 2) return 'listening';
+    if (numId % 4 === 1) return 'listening';
+    if (numId % 4 === 2) return 'reading';
     if (numId % 4 === 3) return 'writing';
     if (numId % 4 === 0) return 'speaking';
   }
@@ -32,8 +32,8 @@ const getFallbackTitle = (id: any, currentTitle?: string) => {
   if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 48) {
     const testNum = Math.ceil(numId / 4);
     let skill = 'Practice';
-    if (numId % 4 === 1) skill = 'Reading';
-    if (numId % 4 === 2) skill = 'Listening';
+    if (numId % 4 === 1) skill = 'Listening';
+    if (numId % 4 === 2) skill = 'Reading';
     if (numId % 4 === 3) skill = 'Writing';
     if (numId % 4 === 0) skill = 'Speaking';
     return `IELTS ${skill} Test ${testNum}`;

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { db, storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveSpeakingTestScreen } from '../components/LiveSpeakingTestScreen';
@@ -23,6 +23,8 @@ const SIDEBAR_STEPS = [
   { id: STAGES.TEST, label: 'Speaking Test', icon: MessageSquare }
 ];
 
+import { saveAudioToIndexedDB } from '../lib/indexedDB';
+
 export function ComputerSpeakingTest() {
   const { user } = useAuth();
   const { id } = useParams();
@@ -38,6 +40,12 @@ export function ComputerSpeakingTest() {
   }
 
   const currentIndex = SIDEBAR_STEPS.findIndex(s => s.id === stage);
+
+  let testNum = id || '1';
+  const numId = parseInt(testNum, 10);
+  if (!isNaN(numId)) {
+    testNum = Math.ceil(numId / 4).toString();
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] bg-[#F6F8FC] w-full font-sans text-[#1A1A1A]">
@@ -101,32 +109,19 @@ export function ComputerSpeakingTest() {
               exit={{ opacity: 0, y: -20 }}
               className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
-              {isSaving && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-[#4F7DFF] border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-lg font-bold text-slate-700 animate-pulse">Saving your performance...</p>
-                  </div>
-                </div>
-              )}
-              <LiveSpeakingTestScreen onComplete={async (responses: Record<string, Blob>) => {
+              
+              <LiveSpeakingTestScreen testId={testNum} onComplete={async (responses: Record<string, Blob>) => {
                 if (responses && Object.keys(responses).length > 0) {
                   setRecordedAudio(responses);
                   
-                  setIsSaving(true);
+                  
                   try {
-                    // Determine title and ID
-                    let testNum = id || '1';
-                    const numId = parseInt(testNum, 10);
-                    if (!isNaN(numId)) {
-                      testNum = Math.ceil(numId / 4).toString();
-                    }
                     const assignmentTitle = `IELTS Speaking Test ${testNum}`;
                     
                     // Create submission immediately for fast access
                     const docRef = await addDoc(collection(db, 'submissions'), {
                       userId: user?.uid,
-                      assignmentId: testNum,
+                      assignmentId: id || '1',
                       assignmentTitle: assignmentTitle,
                       assignmentType: 'speaking',
                       audioUrl: '', 
@@ -137,50 +132,59 @@ export function ComputerSpeakingTest() {
                       status: 'processing' // indicate it's still uploading
                     });
                     
-                    // Navigate immediately
-                    navigate('/ielts/dashboard?tab=speaking');
-
-                    // Run uploads in background
-                    (async () => {
+                    // Navigate AFTER uploads
+                    const uploadPromises = Object.entries(responses).map(async ([qId, blob]) => {
+                      if (blob.size === 0) return { qId, url: "" };
+                      
                       try {
-                        const uploadPromises = Object.entries(responses).map(async ([qId, blob]) => {
-                          if (blob.size === 0) return { qId, url: "" };
+                        const localId = `${docRef.id}_${qId}`;
+                        
+                        try {
                           const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}_${qId}.webm`);
-                          const uploadResult = await uploadBytes(audioRef, blob);
+                          const uploadPromise = uploadBytes(audioRef, blob);
+                          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 30000));
+                          const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as any;
                           const url = await getDownloadURL(uploadResult.ref);
                           return { qId, url };
-                        });
-
-                        const uploadedItems = await Promise.all(uploadPromises);
-                        
-                        const answersObj: Record<string, any> = {};
-                        let firstAudioUrl = "";
-                        uploadedItems.forEach(({ qId, url }) => {
-                          if (url) {
-                            answersObj[qId] = { audioUrl: url };
-                            if (!firstAudioUrl) firstAudioUrl = url;
-                          }
-                        });
-
-                        // Update the document with actual URLs
-                        await updateDoc(doc(db, 'submissions', docRef.id), {
-                          audioUrl: firstAudioUrl,
-                          answers: answersObj,
-                          status: 'completed'
-                        });
+                        } catch (err) {
+                          console.warn("Storage upload failed or timed out, saving to IndexedDB locally:", err);
+                          await saveAudioToIndexedDB(localId, blob);
+                          return { qId, url: `idb:${localId}` };
+                        }
                       } catch (err) {
-                        console.error("Background upload failed:", err);
+                        console.error("Upload and fallback both failed", err);
+                        return { qId, url: "" };
                       }
-                    })();
+                    });
+
+                    const uploadedItems = await Promise.all(uploadPromises);
+                    
+                    const answersObj: Record<string, any> = {};
+                    let firstAudioUrl = "";
+                    uploadedItems.forEach(({ qId, url }) => {
+                      if (url) {
+                        answersObj[qId] = { audioUrl: url };
+                        if (!firstAudioUrl) firstAudioUrl = url;
+                      }
+                    });
+
+                    // Update the document with actual URLs
+                    await updateDoc(doc(db, 'submissions', docRef.id), {
+                      audioUrl: firstAudioUrl,
+                      answers: answersObj,
+                      status: 'completed'
+                    });
+                    
+                    
                     
                   } catch (error) {
                     console.error("Error saving test:", error);
-                    alert("Failed to save the test. Please try again.");
-                    setIsSaving(false);
+                    console.error("Failed to save");
+                    
                   }
                 } else {
-                  alert("Test aborted or failed to record. Returning to dashboard.");
-                  navigate('/ielts/dashboard');
+                  
+                  
                 }
               }} />
             </motion.div>
