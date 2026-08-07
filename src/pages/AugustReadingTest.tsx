@@ -1163,7 +1163,7 @@ export function AugustReadingTest({ submissionId, assignmentId }: { submissionId
             <div className="p-8 max-w-3xl mx-auto">
               <div className={`mb-10 flex items-start justify-between border-b pb-6 ${theme.border} border-opacity-50`}>
                 <div>
-                  <h2 className={`text-[1.25em] font-bold uppercase tracking-widest mb-2 ${theme.muted}`}>{passage.title}</h2>
+                  
                   <h3 className={`text-[1.5em] font-bold leading-tight ${theme.heading}`}>{(passage as any).subtitle}</h3>
                 </div>
               </div>
