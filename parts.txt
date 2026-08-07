@@ -1,0 +1,291 @@
+   899	<div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 1 ? 'block' : 'hidden'}`}>
+   900	    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 1-10</div>
+   901	    <div className="mb-4 italic text-[15px] text-gray-700">Complete the notes below.</div>
+   902	    <div className="mb-6 font-bold text-[15px] uppercase">Write ONE WORD AND/OR A NUMBER for each answer.</div>
+   903	
+   904	    <div className="border border-black p-6 mb-8">
+   905	        <h3 className="text-center font-bold text-[20px] mb-4">Job details from employment agency</h3>
+   906	        
+   907	        <div className="grid grid-cols-[150px_1fr] gap-y-4 mb-4">
+   908	            <div className="font-bold">Role</div>
+   909	            <div><span className="font-bold mx-2">1</span><input type="text" placeholder="1" className={`ielts-input ${theme.inputBg} ${answers[1] ? 'active-state' : ''}`} value={answers[1] || ''} onChange={(e) => handleAnswerChange(1, e.target.value)} disabled={isSubmitted} /></div>
+   910	            
+   911	            <div className="font-bold">Location</div>
+   912	            <div>
+   913	                <div className="mb-2">Fordham <span className="font-bold mx-2">2</span><input type="text" placeholder="2" className={`ielts-input ${theme.inputBg} ${answers[2] ? 'active-state' : ''}`} value={answers[2] || ''} onChange={(e) => handleAnswerChange(2, e.target.value)} disabled={isSubmitted} /> Centre</div>
+   914	                <div><span className="font-bold mx-2">3</span><input type="text" placeholder="3" className={`ielts-input ${theme.inputBg} ${answers[3] ? 'active-state' : ''}`} value={answers[3] || ''} onChange={(e) => handleAnswerChange(3, e.target.value)} disabled={isSubmitted} /> Road, Fordham</div>
+   915	            </div>
+   916	            
+   917	            <div className="font-bold">Work involves</div>
+   918	            <div>
+   919	                <ul className="list-disc pl-6 mb-6 space-y-3">
+   920	                    <li>dealing with enquiries</li>
+   921	                    <li>making <span className="font-bold mx-2">4</span><input type="text" placeholder="4" className={`ielts-input ${theme.inputBg} ${answers[4] ? 'active-state' : ''}`} value={answers[4] || ''} onChange={(e) => handleAnswerChange(4, e.target.value)} disabled={isSubmitted} /> and reorganising them</li>
+   922	                    <li>maintaining the internal <span className="font-bold mx-2">5</span><input type="text" placeholder="5" className={`ielts-input ${theme.inputBg} ${answers[5] ? 'active-state' : ''}`} value={answers[5] || ''} onChange={(e) => handleAnswerChange(5, e.target.value)} disabled={isSubmitted} /></li>
+   923	                    <li>general administration</li>
+   924	                </ul>
+   925	            </div>
+   926	            
+   927	            <div className="font-bold">Requirements</div>
+   928	            <div>
+   929	                <ul className="list-disc pl-6 mb-6 space-y-3">
+   930	                    <li><span className="font-bold mx-2">6</span><input type="text" placeholder="6" className={`ielts-input ${theme.inputBg} ${answers[6] ? 'active-state' : ''}`} value={answers[6] || ''} onChange={(e) => handleAnswerChange(6, e.target.value)} disabled={isSubmitted} /> (essential)</li>
+   931	                    <li>a calm and <span className="font-bold mx-2">7</span><input type="text" placeholder="7" className={`ielts-input ${theme.inputBg} ${answers[7] ? 'active-state' : ''}`} value={answers[7] || ''} onChange={(e) => handleAnswerChange(7, e.target.value)} disabled={isSubmitted} /> manner</li>
+   932	                    <li>good IT skills</li>
+   933	                </ul>
+   934	            </div>
+   935	            
+   936	            <div className="font-bold">Other information</div>
+   937	            <div>
+   938	                <ul className="list-disc pl-6 mb-6 space-y-3">
+   939	                    <li>a <span className="font-bold mx-2">8</span><input type="text" placeholder="8" className={`ielts-input ${theme.inputBg} ${answers[8] ? 'active-state' : ''}`} value={answers[8] || ''} onChange={(e) => handleAnswerChange(8, e.target.value)} disabled={isSubmitted} /> job – further opportunities may be available</li>
+   940	                    <li>hours: 7.45 a.m. to 9 <span className="font-bold mx-2">9</span><input type="text" placeholder="9" className={`ielts-input ${theme.inputBg} ${answers[9] ? 'active-state' : ''}`} value={answers[9] || ''} onChange={(e) => handleAnswerChange(9, e.target.value)} disabled={isSubmitted} /> p.m. Monday to Friday</li>
+   941	                    <li><span className="font-bold mx-2">10</span><input type="text" placeholder="10" className={`ielts-input ${theme.inputBg} ${answers[10] ? 'active-state' : ''}`} value={answers[10] || ''} onChange={(e) => handleAnswerChange(10, e.target.value)} disabled={isSubmitted} /> is available onsite</li>
+   942	                </ul>
+   943	            </div>
+   944	        </div>
+   945	    </div>
+   946	</div>
+   947	
+   948	<div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 2 ? 'block' : 'hidden'}`}>
+   949	    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 11-20</div>
+   950	    <div className="mb-4 italic text-[15px] text-gray-700">Questions 11-14</div>
+   951	    <div className="mb-6 font-bold text-[15px] uppercase">Choose the correct letter, A, B or C.</div>
+   952	
+   953	    {[
+   954	        { num: 11, q: "The museum building was originally", options: ["a factory.", "a private home.", "a hall of residence."] },
+   955	        { num: 12, q: "The university uses part of the museum building as", options: ["teaching rooms.", "a research library.", "administration offices."] },
+   956	        { num: 13, q: "What does the guide say about the entrance fee?", options: ["Visitors decide whether or not they wish to pay.", "Only children and students receive a discount.", "The museum charges extra for special exhibitions."] },
+   957	        { num: 14, q: "What are visitors advised to leave in the cloakroom?", options: ["cameras", "coats", "bags"] }
+   958	    ].map(q => (
+   959	        <div key={q.num} className="mb-6">
+   960	            <div className="flex gap-4 mb-3">
+   961	                <span className="font-bold text-[16px]">{q.num}</span>
+   962	                <span>{q.q}</span>
+   963	            </div>
+   964	            <div className="pl-8 space-y-3">
+   965	                {q.options.map((opt, i) => {
+   966	                    const letter = String.fromCharCode(65 + i);
+   967	                    return (
+   968	                        <label key={i} className={`mcq-label ${answers[q.num] === letter ? 'selected' : ''}`}>
+   969	                            <input 
+   970	                                type="radio" 
+   971	                                name={`q${q.num}`} 
+   972	                                className="mcq-radio"
+   973	                                checked={answers[q.num] === letter}
+   974	                                onChange={() => handleAnswerChange(q.num, letter)}
+   975	                                disabled={isSubmitted}
+   976	                            />
+   977	                            <span className="font-bold mr-2">{letter}</span>
+   978	                            <span>{opt}</span>
+   979	                        </label>
+   980	                    );
+   981	                })}
+   982	            </div>
+   983	        </div>
+   984	    ))}
+   985	
+   986	    <div className="mb-4 italic text-[15px] text-gray-700 mt-8">Questions 15-20</div>
+   987	    <div className="mb-4 italic text-[15px] text-gray-700">What information does the speaker give about each of the following areas of the museum?</div>
+   988	    <div className="mb-6 font-bold text-[15px] uppercase">Choose SIX answers from the box and write the correct letter, A-H, next to Questions 15-20.</div>
+   989	
+   990	    <div className="border border-black p-4 mb-6 max-w-md mx-auto">
+   991	        <h4 className="font-bold text-center mb-4">Information</h4>
+   992	        <ul className="space-y-2">
+   993	            <li><span className="font-bold mr-4">A</span> Parents must supervise their children.</li>
+   994	            <li><span className="font-bold mr-4">B</span> There are new things to see.</li>
+   995	            <li><span className="font-bold mr-4">C</span> It is closed today.</li>
+   996	            <li><span className="font-bold mr-4">D</span> This is only for school groups.</li>
+   997	            <li><span className="font-bold mr-4">E</span> There is a quiz for visitors.</li>
+   998	            <li><span className="font-bold mr-4">F</span> It features something created by students.</li>
+   999	            <li><span className="font-bold mr-4">G</span> An expert is here today.</li>
+  1000	            <li><span className="font-bold mr-4">H</span> There is a one-way system.</li>
+  1001	        </ul>
+  1002	    </div>
+  1003	
+  1004	    <div className="space-y-4 mb-8">
+  1005	        <h4 className="font-bold ml-12">Areas of museum</h4>
+  1006	        {[
+  1007	            { num: 15, text: "Four Seasons" },
+  1008	            { num: 16, text: "Farmhouse Kitchen" },
+  1009	            { num: 17, text: "A Year on the Farm" },
+  1010	            { num: 18, text: "Wagon Walk" },
+  1011	            { num: 19, text: "Bees are Magic" },
+  1012	            { num: 20, text: "The Pond" }
+  1013	        ].map(q => (
+  1014	            <div key={q.num} className="flex items-center gap-4">
+  1015	                <span className="font-bold">{q.num}</span>
+  1016	                <span className="w-48">{q.text}</span>
+  1017	                <input type="text" placeholder={q.num.toString()} className={`ielts-input w-12 ${answers[q.num] ? 'active-state' : ''}`} value={answers[q.num] || ''} onChange={(e) => handleAnswerChange(q.num, e.target.value.toUpperCase().slice(0, 1))} disabled={isSubmitted} />
+  1018	            </div>
+  1019	        ))}
+  1020	    </div>
+  1021	</div>
+  1022	
+  1023	<div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 3 ? 'block' : 'hidden'}`}>
+  1024	    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 21-30</div>
+  1025	    <div className="mb-4 italic text-[15px] text-gray-700">Questions 21 and 22</div>
+  1026	    <div className="mb-6 font-bold text-[15px] uppercase">Choose TWO letters, A-E.</div>
+  1027	    <div className="mb-4">Which <span className="font-bold">TWO</span> educational skills were shown in the video of children doing origami?</div>
+  1028	    
+  1029	    <div className="pl-4 space-y-3 mb-8">
+  1030	        {[
+  1031	            "solving problems",
+  1032	            "following instructions",
+  1033	            "working cooperatively",
+  1034	            "learning through play",
+  1035	            "developing hand-eye coordination"
+  1036	        ].map((opt, i) => {
+  1037	            const letter = String.fromCharCode(65 + i);
+  1038	            const isSelected = [answers[21], answers[22]].includes(letter);
+  1039	            return (
+  1040	                <label key={i} className={`mcq-label ${isSelected ? 'selected' : ''}`}>
+  1041	                    <input 
+  1042	                        type="checkbox" 
+  1043	                        className="mcq-radio"
+  1044	                        checked={isSelected}
+  1045	                        onChange={(e) => {
+  1046	                            if (e.target.checked) {
+  1047	                                if (!answers[21]) handleAnswerChange(21, letter);
+  1048	                                else if (!answers[22]) handleAnswerChange(22, letter);
+  1049	                            } else {
+  1050	                                if (answers[21] === letter) handleAnswerChange(21, '');
+  1051	                                else if (answers[22] === letter) handleAnswerChange(22, '');
+  1052	                            }
+  1053	                        }}
+  1054	                        disabled={isSubmitted}
+  1055	                    />
+  1056	                    <span className="font-bold mr-2">{letter}</span>
+  1057	                    <span>{opt}</span>
+  1058	                </label>
+  1059	            );
+  1060	        })}
+  1061	    </div>
+  1062	
+  1063	    <div className="mb-4 italic text-[15px] text-gray-700 mt-8">Questions 23-27</div>
+  1064	    <div className="mb-4 italic text-[15px] text-gray-700">Which comment do the students make about each of the following children in the video?</div>
+  1065	    <div className="mb-6 font-bold text-[15px] uppercase">Choose FIVE answers from the box and write the correct letter, A-G, next to Questions 23-27.</div>
+  1066	
+  1067	    <div className="border border-black p-4 mb-6 max-w-md mx-auto">
+  1068	        <h4 className="font-bold text-center mb-4">Comments</h4>
+  1069	        <ul className="space-y-2">
+  1070	            <li><span className="font-bold mr-4">A</span> demonstrated independence</li>
+  1071	            <li><span className="font-bold mr-4">B</span> asked for teacher support</li>
+  1072	            <li><span className="font-bold mr-4">C</span> developed a competitive attitude</li>
+  1073	            <li><span className="font-bold mr-4">D</span> seemed to find the activity calming</li>
+  1074	            <li><span className="font-bold mr-4">E</span> seemed pleased with the results</li>
+  1075	            <li><span className="font-bold mr-4">F</span> seemed confused</li>
+  1076	            <li><span className="font-bold mr-4">G</span> seemed to find the activity easy</li>
+  1077	        </ul>
+  1078	    </div>
+  1079	
+  1080	    <div className="space-y-4 mb-8">
+  1081	        <h4 className="font-bold ml-12">Children</h4>
+  1082	        {[
+  1083	            { num: 23, text: "Sid" },
+  1084	            { num: 24, text: "Jack" },
+  1085	            { num: 25, text: "Naomi" },
+  1086	            { num: 26, text: "Anya" },
+  1087	            { num: 27, text: "Zara" }
+  1088	        ].map(q => (
+  1089	            <div key={q.num} className="flex items-center gap-4">
+  1090	                <span className="font-bold">{q.num}</span>
+  1091	                <span className="w-48">{q.text}</span>
+  1092	                <input type="text" placeholder={q.num.toString()} className={`ielts-input w-12 ${answers[q.num] ? 'active-state' : ''}`} value={answers[q.num] || ''} onChange={(e) => handleAnswerChange(q.num, e.target.value.toUpperCase().slice(0, 1))} disabled={isSubmitted} />
+  1093	            </div>
+  1094	        ))}
+  1095	    </div>
+  1096	
+  1097	    <div className="mb-4 italic text-[15px] text-gray-700 mt-8">Questions 28-30</div>
+  1098	    <div className="mb-6 font-bold text-[15px] uppercase">Choose the correct letter, A, B or C.</div>
+  1099	
+  1100	    {[
+  1101	        { num: 28, q: "Before starting an origami activity in class, the students think it is important for the teacher to", options: ["make models that demonstrate the different stages.", "check children understand the terminology involved.", "tell children not to worry if they find the activity difficult."] },
+  1102	        { num: 29, q: "The students agree that some teachers might be unwilling to use origami in class because", options: ["they may not think that crafts are important.", "they may not have the necessary skills.", "they may worry that it will take up too much time."] },
+  1103	        { num: 30, q: "Why do the students decide to use origami in their maths teaching practice?", options: ["to correct a particular misunderstanding", "to set a challenge", "to introduce a new concept"] }
+  1104	    ].map(q => (
+  1105	        <div key={q.num} className="mb-6">
+  1106	            <div className="flex gap-4 mb-3">
+  1107	                <span className="font-bold text-[16px]">{q.num}</span>
+  1108	                <span>{q.q}</span>
+  1109	            </div>
+  1110	            <div className="pl-8 space-y-3">
+  1111	                {q.options.map((opt, i) => {
+  1112	                    const letter = String.fromCharCode(65 + i);
+  1113	                    return (
+  1114	                        <label key={i} className={`mcq-label ${answers[q.num] === letter ? 'selected' : ''}`}>
+  1115	                            <input 
+  1116	                                type="radio" 
+  1117	                                name={`q${q.num}`} 
+  1118	                                className="mcq-radio"
+  1119	                                checked={answers[q.num] === letter}
+  1120	                                onChange={() => handleAnswerChange(q.num, letter)}
+  1121	                                disabled={isSubmitted}
+  1122	                            />
+  1123	                            <span className="font-bold mr-2">{letter}</span>
+  1124	                            <span>{opt}</span>
+  1125	                        </label>
+  1126	                    );
+  1127	                })}
+  1128	            </div>
+  1129	        </div>
+  1130	    ))}
+  1131	</div>
+  1132	
+  1133	<div className={`bg-white p-10 border border-gray-300 shadow-sm text-[16px] leading-[1.8] ${currentPartIndex === 4 ? 'block' : 'hidden'}`}>
+  1134	    <div className="mb-4 font-bold text-[18px] text-gray-800 italic">Questions 31-40</div>
+  1135	    <div className="mb-4 italic text-[15px] text-gray-700">Complete the notes below.</div>
+  1136	    <div className="mb-6 font-bold text-[15px] uppercase">Write ONE WORD ONLY for each answer.</div>
+  1137	
+  1138	    <div className="border border-black p-6 mb-8">
+  1139	        <h3 className="text-left font-bold text-[20px] mb-6">Victor Hugo</h3>
+  1140	        
+  1141	        <div className="mb-6">
+  1142	            <div className="font-bold mb-2">His novel, <i>Les Misérables</i></div>
+  1143	            <ul className="list-disc pl-6 mb-6 space-y-3">
+  1144	                <li>It has been adapted for theatre and cinema.</li>
+  1145	                <li>We know more about its overall <span className="font-bold mx-2">31</span><input type="text" placeholder="31" className={`ielts-input ${theme.inputBg} ${answers[31] ? 'active-state' : ''}`} value={answers[31] || ''} onChange={(e) => handleAnswerChange(31, e.target.value)} disabled={isSubmitted} /> than about its author.</li>
+  1146	            </ul>
+  1147	        </div>
+  1148	        
+  1149	        <div className="mb-6">
+  1150	            <div className="font-bold mb-2">His early career</div>
+  1151	            <ul className="list-disc pl-6 mb-6 space-y-3">
+  1152	                <li>In Paris, his career was successful and he led the Romantic movement.</li>
+  1153	                <li>He spoke publicly about social issues, such as <span className="font-bold mx-2">32</span><input type="text" placeholder="32" className={`ielts-input ${theme.inputBg} ${answers[32] ? 'active-state' : ''}`} value={answers[32] || ''} onChange={(e) => handleAnswerChange(32, e.target.value)} disabled={isSubmitted} /> and education.</li>
+  1154	                <li>Napoleon III disliked his views and exiled him.</li>
+  1155	            </ul>
+  1156	        </div>
+  1157	
+  1158	        <div className="mb-6">
+  1159	            <div className="font-bold mb-2">His exile from France</div>
+  1160	            <ul className="list-disc pl-6 mb-6 space-y-3">
+  1161	                <li>Victor Hugo had to live elsewhere in <span className="font-bold mx-2">33</span><input type="text" placeholder="33" className={`ielts-input ${theme.inputBg} ${answers[33] ? 'active-state' : ''}`} value={answers[33] || ''} onChange={(e) => handleAnswerChange(33, e.target.value)} disabled={isSubmitted} /> .</li>
+  1162	                <li>He used his income from the sale of some <span className="font-bold mx-2">34</span><input type="text" placeholder="34" className={`ielts-input ${theme.inputBg} ${answers[34] ? 'active-state' : ''}`} value={answers[34] || ''} onChange={(e) => handleAnswerChange(34, e.target.value)} disabled={isSubmitted} /> he had written to buy a house on Guernsey.</li>
+  1163	            </ul>
+  1164	        </div>
+  1165	
+  1166	        <div>
+  1167	            <div className="font-bold mb-2">His house on Guernsey</div>
+  1168	            <ul className="list-disc pl-6 mb-6 space-y-3">
+  1169	                <li>Victor Hugo lived in this house until the end of the Empire in France.</li>
+  1170	                <li>The ground floor contains portraits, <span className="font-bold mx-2">35</span><input type="text" placeholder="35" className={`ielts-input ${theme.inputBg} ${answers[35] ? 'active-state' : ''}`} value={answers[35] || ''} onChange={(e) => handleAnswerChange(35, e.target.value)} disabled={isSubmitted} /> and tapestries that he valued.</li>
+  1171	                <li>He bought cheap <span className="font-bold mx-2">36</span><input type="text" placeholder="36" className={`ielts-input ${theme.inputBg} ${answers[36] ? 'active-state' : ''}`} value={answers[36] || ''} onChange={(e) => handleAnswerChange(36, e.target.value)} disabled={isSubmitted} /> made of wood and turned this into beautiful wall carvings.</li>
+  1172	                <li>The first floor consists of furnished areas with wallpaper and <span className="font-bold mx-2">37</span><input type="text" placeholder="37" className={`ielts-input ${theme.inputBg} ${answers[37] ? 'active-state' : ''}`} value={answers[37] || ''} onChange={(e) => handleAnswerChange(37, e.target.value)} disabled={isSubmitted} /> that have a Chinese design.</li>
+  1173	                <li>The library still contains many of his favourite books.</li>
+  1174	                <li>He wrote in a room at the top of the house that had a view of the <span className="font-bold mx-2">38</span><input type="text" placeholder="38" className={`ielts-input ${theme.inputBg} ${answers[38] ? 'active-state' : ''}`} value={answers[38] || ''} onChange={(e) => handleAnswerChange(38, e.target.value)} disabled={isSubmitted} /> .</li>
+  1175	                <li>He entertained other writers as well as poor <span className="font-bold mx-2">39</span><input type="text" placeholder="39" className={`ielts-input ${theme.inputBg} ${answers[39] ? 'active-state' : ''}`} value={answers[39] || ''} onChange={(e) => handleAnswerChange(39, e.target.value)} disabled={isSubmitted} /> in his house.</li>
+  1176	                <li>Victor Hugo's <span className="font-bold mx-2">40</span><input type="text" placeholder="40" className={`ielts-input ${theme.inputBg} ${answers[40] ? 'active-state' : ''}`} value={answers[40] || ''} onChange={(e) => handleAnswerChange(40, e.target.value)} disabled={isSubmitted} /> gave ownership of the house to the city of Paris in 1927.</li>
+  1177	            </ul>
+  1178	        </div>
+  1179	    </div>
+  1180	</div>
+  1181	          </div>
+  1182	      </div>
+  1183	      <div className="bg-[#e1e5eb] border-t border-gray-300 p-2 flex justify-between items-center shrink-0 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] z-20 overflow-x-auto">
+  1184	          <div className="flex items-center text-[12px] font-bold text-gray-800 ml-4 cursor-pointer shrink-0">
+  1185	               <input type="checkbox" className="mr-2 w-4 h-4 cursor-pointer" id="review-checkbox" /> <label htmlFor="review-checkbox" className="cursor-pointer">Review</label>
+  1186	          </div>
+  1187	          
+  1188	          <div className="flex items-center gap-6 mx-auto shrink-0 min-w-max px-4">
+  1189	              {[1, 2, 3, 4].map(partNum => (

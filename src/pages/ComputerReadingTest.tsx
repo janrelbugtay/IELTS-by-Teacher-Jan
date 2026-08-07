@@ -868,7 +868,6 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     
     const isInputType = answerParts.length > 0 && !['TRUE', 'FALSE', 'NOT GIVEN', 'YES', 'NO'].includes(answerParts[0].toUpperCase()) && answerParts[0].length > 1;
     
-
     let elements: any[] = [text];
     
     explanation.highlights.forEach((highlightStr: string) => {
@@ -876,22 +875,36 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
       const newElements: any[] = [];
       elements.forEach((el) => {
         if (typeof el === 'string') {
-          const parts = el.split(highlightStr);
+          const escapeRegExp = (string: string) => string.replace(/[.*+?^\$\{}()|[\]\\\/]/g, '\\$&');
+          const highlightParts = highlightStr.split('...');
+          const escapedParts = highlightParts.map(p => escapeRegExp(p.trim())).filter(p => p.length > 0);
+          
+          let regexString = escapedParts.join('[\\s\\S]*?');
+          regexString = regexString.replace(/['’‘]/g, "['’‘]").replace(/["“”]/g, '["“”]');
+
+          if (!regexString) {
+             newElements.push(el);
+             return;
+          }
+
+          const regex = new RegExp(`(${regexString})`, 'i');
+          const parts = el.split(regex);
+          
           parts.forEach((part, i) => {
-            newElements.push(part);
-            if (i < parts.length - 1) {
-              
-              let innerElements: any[] = [highlightStr];
+            if (i % 2 === 0) {
+              if (part) newElements.push(part);
+            } else {
+              let innerElements: any[] = [part];
               
               if (isInputType && answerParts.length > 0) {
                   answerParts.forEach((ans: string) => {
                       const escapedAns = ans.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-                      const regex = new RegExp(`\\b(${escapedAns})\\b`, 'gi');
+                      const regexAns = new RegExp(`\\b(${escapedAns})\\b`, 'gi');
                       
                       const newInner: any[] = [];
                       innerElements.forEach(innerEl => {
                           if (typeof innerEl === 'string') {
-                              const splitInner = innerEl.split(regex);
+                              const splitInner = innerEl.split(regexAns);
                               splitInner.forEach((si, keyIdx) => {
                                   if (si.toLowerCase() === ans.toLowerCase()) {
                                       newInner.push(<span key={`ans-${keyIdx}`} className="bg-green-600 text-white px-1.5 py-[1px] rounded shadow-sm font-black mx-[2px] uppercase tracking-wider">{si}</span>);
@@ -1776,20 +1789,20 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                           
                           if (isTFNG) {
                             return (
-                              <div className={`mt-2 font-bold text-[1.25em] ${colorTheme !== 'standard' ? 'text-white' : 'text-black'}`}>
+                              <div className="mt-2 text-[1.25em]">
                                 {lines.map((line: string, idx: number) => {
                                   if (line.startsWith('TRUE') || line.startsWith('FALSE') || line.startsWith('NOT GIVEN') ||
                                       line.startsWith('YES') || line.startsWith('NO')) {
                                     const keyword = line.startsWith('NOT GIVEN') ? 'NOT GIVEN' : line.split(' ')[0];
                                     const rest = line.substring(keyword.length);
                                     return (
-                                      <div key={idx} className="mt-1">
+                                      <div key={idx} className={`mt-1 font-normal ${colorTheme !== 'standard' ? 'text-white' : 'text-black'}`}>
                                         <span className="uppercase text-[1.1em] underline decoration-2">{keyword}</span>
                                         <span>{rest}</span>
                                       </div>
                                     );
                                   }
-                                  return <div key={idx} className="mb-2">{line}</div>;
+                                  return <div key={idx} className={`mb-2 italic ${theme.boxSub}`}>{line}</div>;
                                 })}
                               </div>
                             );
@@ -1810,9 +1823,14 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                           return (
                             <>
                               {normalLines.length > 0 && (
-                                <p className={`mt-2 whitespace-pre-wrap italic text-[1.25em] ${theme.boxSub}`}>
-                                  {normalLines.join('\n')}
-                                </p>
+                                <div className="mt-2 text-[1.25em]">
+                                  {normalLines.map((line: string, idx: number) => {
+                                    if (line.trim().endsWith('?')) {
+                                      return <div key={idx} className={`mt-2 font-medium not-italic ${colorTheme !== 'standard' ? 'text-white' : 'text-black'}`}>{line}</div>;
+                                    }
+                                    return <div key={idx} className={`italic ${theme.boxSub} whitespace-pre-wrap`}>{line}</div>;
+                                  })}
+                                </div>
                               )}
                               {optionLines.length > 0 && (
                                 <div className={`mt-4 font-sans not-italic text-[1.25em] text-black`}>
@@ -1977,7 +1995,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between items-start mb-4 gap-4">
-                                <p className={`leading-relaxed mt-1 whitespace-pre-wrap ${(block.options && (block.options.includes('TRUE') || block.options.includes('YES'))) ? 'font-bold text-[1.05em] text-black ' + (colorTheme !== 'standard' ? 'text-white' : 'text-black') : 'font-medium text-[1em] ' + theme.text}`}>
+                                <p className={`leading-relaxed mt-1 whitespace-pre-wrap font-medium text-[1em] ${theme.text}`}>
                                   {(() => {
                                     
                                     let displayQText = q.text;

@@ -404,10 +404,10 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                 <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light mb-6">
                   {MOCK_QUESTIONS.part2.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
                 </ul>
-                {MOCK_QUESTIONS.part2.sampleAnswer && (
+                {(MOCK_QUESTIONS.part2 as any).sampleAnswer && (
                   <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-4">
                     <button 
-                      onClick={() => playSampleAnswerText(MOCK_QUESTIONS.part2.sampleAnswer)}
+                      onClick={() => playSampleAnswerText((MOCK_QUESTIONS.part2 as any).sampleAnswer)}
                       className="flex items-center gap-2 px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full font-medium transition-colors border border-slate-200 shadow-sm"
                     >
                       <Play size={18} className="text-[#4F7DFF]" />
@@ -416,7 +416,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                     {showSampleAnswer && (
                       <div className="mt-4 p-6 bg-slate-50 border border-slate-200 rounded-2xl w-full text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
                         <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
-                        {MOCK_QUESTIONS.part2.sampleAnswer}
+                        {(MOCK_QUESTIONS.part2 as any).sampleAnswer}
                       </div>
                     )}
                   </div>
@@ -470,10 +470,10 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
               <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4">
                 {MOCK_QUESTIONS.part3[qIndex].text}
               </h2>
-              {showSampleAnswer && MOCK_QUESTIONS.part3[qIndex].sampleAnswer && (
+              {showSampleAnswer && (MOCK_QUESTIONS.part3[qIndex] as any).sampleAnswer && (
                 <div className="mt-8 mx-auto max-w-2xl text-left p-6 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
                    <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
-                   {MOCK_QUESTIONS.part3[qIndex].sampleAnswer}
+                   {(MOCK_QUESTIONS.part3[qIndex] as any).sampleAnswer}
                 </div>
               )}
             </div>
@@ -516,7 +516,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                     <button 
                       onClick={() => {
                         const arr = MOCK_QUESTIONS.part3;
-                        const sample = arr[qIndex].sampleAnswer;
+                        const sample = (arr[qIndex] as any).sampleAnswer;
                         if (sample) {
                             playSampleAnswerText(sample);
                         } else {

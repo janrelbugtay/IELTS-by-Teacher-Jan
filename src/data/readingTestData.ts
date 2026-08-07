@@ -12,6 +12,9 @@ import { septemberPassages, septemberAnswers, septemberExplanations } from './se
 import { test13Passages, test13Answers, test13Explanations } from './test13ReadingData';
 import { test14Passages, test14Answers, test14Explanations } from './test14ReadingData';
 import { test15Passages, test15Answers, test15Explanations } from './test15ReadingData';
+import { test16Passages, test16Answers, test16Explanations } from './test16ReadingData';
+import { test17Passages, test17Answers, test17Explanations } from './test17ReadingData';
+import { test18Passages, test18Answers, test18Explanations } from './test18ReadingData';
 
 export const getReadingTestData = (id: string | undefined) => {
   // Return null for January (id === '1') or any unknown ID (e.g. old submissions)
@@ -71,6 +74,15 @@ export const getReadingTestData = (id: string | undefined) => {
 
   if (id === '57') {
     return { passages: test15Passages, answers: test15Answers, explanations: test15Explanations };
+  }
+  if (id === '61') {
+    return { passages: test16Passages, answers: test16Answers, explanations: test16Explanations };
+  }
+  if (id === '65') {
+    return { passages: test17Passages, answers: test17Answers, explanations: test17Explanations };
+  }
+  if (id === '69') {
+    return { passages: test18Passages, answers: test18Answers, explanations: test18Explanations };
   }
   
   // Default to January/original content for backwards compatibility with old submissions
