@@ -7,20 +7,15 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function run() {
-  const q = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'), limit(10));
+  const q = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'), limit(15));
   const snap = await getDocs(q);
-  let c = 0;
   snap.forEach(doc => {
-    c++;
     const data = doc.data();
+    console.log(doc.id, "|", data.studentName, "|", data.assignmentTitle, "|", data.assignmentId, "| Score:", data.bandScore);
     if (data.assignmentId === '57') {
-      console.log("ID:", doc.id);
       console.log("Answers:", data.answers);
-      console.log("Assignment:", data.assignmentId);
-      console.log("Score:", data.bandScore);
     }
   });
-  console.log("Total docs:", c);
   process.exit(0);
 }
 run();

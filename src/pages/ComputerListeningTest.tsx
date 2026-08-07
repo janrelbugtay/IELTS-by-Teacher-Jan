@@ -234,6 +234,11 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
     }));
   };
 
+  const submitStateRef = useRef({ answers, timeLeft, id, studentName });
+  useEffect(() => {
+    submitStateRef.current = { answers, timeLeft, id, studentName };
+  }, [answers, timeLeft, id, studentName]);
+
   const submitTest = async () => {
     setIsSubmitted(true);
     if (!user) {
@@ -242,19 +247,20 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
     }
     
     try {
+      const currentState = submitStateRef.current;
       let title = 'Listening Practice';
-      if (id) {
-          const numId = parseInt(id, 10);
+      if (currentState.id) {
+          const numId = parseInt(currentState.id, 10);
           if (!isNaN(numId) && numId >= 1 && numId <= 48) {
               const testNum = Math.ceil(numId / 4);
               title = `IELTS Listening Test ${testNum}`;
           } else {
-              title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+              title = currentState.id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
           }
       }
       
       const checkAnswer = (qNum: number) => {
-          let userAns = (answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
+          let userAns = (currentState.answers[qNum] || '').toString().trim().replace(/\s+/g, ' ').toUpperCase();
           const correctAns = LISTENING_ANSWER_KEY[qNum];
           if (!correctAns) return false;
 
@@ -295,16 +301,16 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
 
       await addDoc(collection(db, 'submissions'), {
         userId: user.uid,
-        studentName: studentName || user.displayName || 'Student',
-        assignmentId: id,
+        studentName: currentState.studentName || user.displayName || 'Student',
+        assignmentId: currentState.id,
         assignmentTitle: title,
         assignmentType: 'listening',
         createdAt: serverTimestamp(),
         status: 'submitted',
-        answers: JSON.stringify(answers),
+        answers: JSON.stringify(currentState.answers),
         bandScore,
         percentage: (score / 40) * 100,
-        timeSpent: (40 * 60) - timeLeft,
+        timeSpent: (40 * 60) - currentState.timeLeft,
         requiresEvaluation: false
       });
 

@@ -30,13 +30,46 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
 
   const [phase, setPhase] = useState('intro'); // intro, p1, p2-prep, p2, p3
   const [qIndex, setQIndex] = useState(0);
-  const [qState, setQState] = useState<'ai_speaking' | 'recording' | 'reviewing' | 'prep'>('ai_speaking');
+  const [qState, setQState] = useState<'ai_speaking' | 'recording' | 'reviewing' | 'prep' | 'waiting_to_record'>('ai_speaking');
   const [recordingTime, setRecordingTime] = useState(0);
   const [prepTime, setPrepTime] = useState(60);
+  const [isPrepTimerRunning, setIsPrepTimerRunning] = useState(false);
   const [notes, setNotes] = useState('');
   const [responses, setResponses] = useState<Record<string, Blob>>({});
   const hasSubmittedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showSampleAnswer, setShowSampleAnswer] = useState(false);
+  
+  const playSampleAnswerText = (text) => {
+      setShowSampleAnswer(true);
+      if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.95;
+          
+          const setVoiceAndSpeak = () => {
+              const voices = window.speechSynthesis.getVoices();
+              const ukVoice = voices.find(v => (v.lang === 'en-GB' || v.lang === 'en-UK') && v.name.includes('Google')) || 
+                              voices.find(v => v.lang === 'en-GB' || v.lang === 'en-UK');
+              if (ukVoice) {
+                  utterance.voice = ukVoice;
+              } else {
+                  const preferredVoice = voices.find(v => v.lang.startsWith('en-GB') || v.lang.startsWith('en-US'));
+                  if (preferredVoice) utterance.voice = preferredVoice;
+              }
+              window.speechSynthesis.speak(utterance);
+          };
+
+          if (window.speechSynthesis.getVoices().length > 0) {
+              setVoiceAndSpeak();
+          } else {
+              window.speechSynthesis.onvoiceschanged = () => {
+                  setVoiceAndSpeak();
+              };
+          }
+      }
+  };
+
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -134,7 +167,11 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                                 onComplete(responses);
                             }
                         } else {
-                            startRecording();
+                            if (true) {
+                                setQState('waiting_to_record');
+                            } else {
+                                startRecording();
+                            }
                         }
                     }
                 };
@@ -167,7 +204,11 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
             }
         } else {
             timer = setTimeout(() => {
-              startRecording();
+              if (true) {
+                setQState('waiting_to_record');
+              } else {
+                startRecording();
+              }
             }, 3000);
         }
       } else if (qState === 'recording') {
@@ -175,9 +216,11 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
           setRecordingTime(prev => prev + 1);
         }, 1000);
       } else if (phase === 'p2-prep' && qState === 'prep') {
-        timer = setInterval(() => {
-          setPrepTime(prev => prev - 1);
-        }, 1000);
+        if (isPrepTimerRunning) {
+          timer = setInterval(() => {
+            setPrepTime(prev => prev - 1);
+          }, 1000);
+        }
       }
     }
     return () => { 
@@ -251,6 +294,10 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
 
   const handleNext = async () => {
     stopPlayback();
+    setShowSampleAnswer(false);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     if (phase === 'intro') {
       await initAudio();
       if (!streamRef.current) return;
@@ -323,6 +370,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
               <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4">
                 {MOCK_QUESTIONS.part1[qIndex].text}
               </h2>
+
             </div>
           )}
 
@@ -333,18 +381,46 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                   <h2 className="text-xl font-bold text-slate-900 mb-1">Part 2 Preparation</h2>
                   <p className="text-slate-500 font-medium">You have 1 minute to prepare.</p>
                 </div>
-                <div className="text-3xl font-mono font-bold text-slate-800 flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-full border border-slate-200 shadow-inner">
-                   <Clock size={28} className="text-[#F7B731] animate-pulse" />
-                   {formatTime(prepTime)}
+                <div className="flex items-center gap-3">
+                  {true && (
+                    <button 
+                      onClick={() => setIsPrepTimerRunning(!isPrepTimerRunning)}
+                      className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold transition-colors text-sm border border-slate-200"
+                    >
+                      {isPrepTimerRunning ? <Pause size={16} /> : <Play size={16} />}
+                      {isPrepTimerRunning ? 'Pause Timer' : 'Start Timer'}
+                    </button>
+                  )}
+                  <div className="text-3xl font-mono font-bold text-slate-800 flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-full border border-slate-200 shadow-inner">
+                     <Clock size={28} className={!isPrepTimerRunning ? 'text-slate-400' : 'text-[#F7B731] animate-pulse'} />
+                     {formatTime(prepTime)}
+                  </div>
                 </div>
               </div>
                  
               <div className="bg-white backdrop-blur-xl border border-slate-200 shadow-lg p-8 rounded-3xl">
                 <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">{MOCK_QUESTIONS.part2.topic}</h3>
                 <p className="text-slate-600 mb-4 font-medium text-lg">You should say:</p>
-                <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light">
+                <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light mb-6">
                   {MOCK_QUESTIONS.part2.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
                 </ul>
+                {MOCK_QUESTIONS.part2.sampleAnswer && (
+                  <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-4">
+                    <button 
+                      onClick={() => playSampleAnswerText(MOCK_QUESTIONS.part2.sampleAnswer)}
+                      className="flex items-center gap-2 px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full font-medium transition-colors border border-slate-200 shadow-sm"
+                    >
+                      <Play size={18} className="text-[#4F7DFF]" />
+                      Play Sample Answer
+                    </button>
+                    {showSampleAnswer && (
+                      <div className="mt-4 p-6 bg-slate-50 border border-slate-200 rounded-2xl w-full text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
+                        <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
+                        {MOCK_QUESTIONS.part2.sampleAnswer}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -371,9 +447,11 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg">
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight text-center mb-6">{MOCK_QUESTIONS.part2.topic}</h3>
                 <p className="text-slate-600 mb-4 font-medium text-lg">You should say:</p>
-                <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light">
+                <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light mb-6">
                   {MOCK_QUESTIONS.part2.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
                 </ul>
+                
+
               </div>
               {notes && (
                 <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-slate-700 whitespace-pre-wrap font-mono text-lg shadow-inner">
@@ -392,6 +470,12 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
               <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4">
                 {MOCK_QUESTIONS.part3[qIndex].text}
               </h2>
+              {showSampleAnswer && MOCK_QUESTIONS.part3[qIndex].sampleAnswer && (
+                <div className="mt-8 mx-auto max-w-2xl text-left p-6 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
+                   <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
+                   {MOCK_QUESTIONS.part3[qIndex].sampleAnswer}
+                </div>
+              )}
             </div>
           )}
 
@@ -427,6 +511,29 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                      <span className="font-bold text-sm uppercase tracking-wider">Ready to Submit</span>
                   </div>
+                ) : qState === 'waiting_to_record' && phase !== 'intro' && phase !== 'p2-prep' ? (
+                  phase === 'p3' ? (
+                    <button 
+                      onClick={() => {
+                        const arr = MOCK_QUESTIONS.part3;
+                        const sample = arr[qIndex].sampleAnswer;
+                        if (sample) {
+                            playSampleAnswerText(sample);
+                        } else {
+                            alert('Sample answer not available yet.');
+                        }
+                      }}
+                      className="flex items-center gap-3 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm transition-colors cursor-pointer"
+                    >
+                       <Play size={18} className="text-[#4F7DFF]" />
+                       <span className="font-bold text-sm uppercase tracking-wider">Play Sample Answer</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3 text-slate-600 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
+                       <Mic size={20} />
+                       <span className="font-bold text-sm uppercase tracking-wider">Ready to Record</span>
+                    </div>
+                  )
                 ) : qState === 'recording' && phase !== 'intro' && phase !== 'p2-prep' ? (
                   <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 px-5 py-2.5 rounded-full shadow-sm">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />
@@ -475,6 +582,14 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (re
                     className="bg-slate-100 text-slate-700 border border-slate-200 px-8 py-3 h-12 rounded-full font-bold hover:bg-slate-200 transition-all text-sm tracking-wide shadow-sm"
                   >
                     Skip Prep
+                  </button>
+                )}
+                {phase !== 'intro' && phase !== 'p2-prep' && phase !== 'completed' && qState === 'waiting_to_record' && (
+                  <button 
+                    onClick={startRecording}
+                    className="flex items-center gap-2 bg-[#4F7DFF] text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-[#3D63CC] transition-all shadow-md text-sm tracking-wide"
+                  >
+                    <Mic size={16} /> Start Recording
                   </button>
                 )}
                 {phase !== 'intro' && phase !== 'p2-prep' && phase !== 'completed' && qState === 'recording' && (

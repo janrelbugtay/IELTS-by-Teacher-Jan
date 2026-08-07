@@ -4,11 +4,11 @@ const getFallbackTitle = (id: any) => {
   const strId = String(id);
   if (!/^\d+$/.test(strId)) return null;
   const numId = parseInt(strId, 10);
-  if (!isNaN(numId) && numId >= 1 && numId <= 48) {
+  if (!isNaN(numId) && numId >= 1 && numId <= 60) {
     const testNum = Math.ceil(numId / 4);
     let skill = 'Practice';
-    if (numId % 4 === 1) skill = 'Listening';
-    if (numId % 4 === 2) skill = 'Reading';
+    if (numId % 4 === 1) skill = 'Reading';
+    if (numId % 4 === 2) skill = 'Listening';
     if (numId % 4 === 3) skill = 'Writing';
     if (numId % 4 === 0) skill = 'Speaking';
     return `IELTS ${skill} Test ${testNum}`;

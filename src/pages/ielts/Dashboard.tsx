@@ -17,8 +17,8 @@ const getFallbackType = (id) => {
   if (id === 'offline_speaking') return 'speaking';
   const numId = parseInt(String(id));
   if (!isNaN(numId)) {
-    if (numId % 4 === 1) return 'listening';
-    if (numId % 4 === 2) return 'reading';
+    if (numId % 4 === 1) return 'reading';
+    if (numId % 4 === 2) return 'listening';
     if (numId % 4 === 3) return 'writing';
     if (numId % 4 === 0) return 'speaking';
   }
@@ -29,11 +29,11 @@ const getFallbackTitle = (id: any, currentTitle?: string) => {
   const strId = String(id);
   const numId = parseInt(strId, 10);
   
-  if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 48) {
+  if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 60) {
     const testNum = Math.ceil(numId / 4);
     let skill = 'Practice';
-    if (numId % 4 === 1) skill = 'Listening';
-    if (numId % 4 === 2) skill = 'Reading';
+    if (numId % 4 === 1) skill = 'Reading';
+    if (numId % 4 === 2) skill = 'Listening';
     if (numId % 4 === 3) skill = 'Writing';
     if (numId % 4 === 0) skill = 'Speaking';
     return `IELTS ${skill} Test ${testNum}`;
@@ -774,9 +774,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </button>
           </div>
           <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-slate-50">
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
@@ -828,9 +828,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </button>
           </div>
           <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-slate-50">
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
@@ -882,9 +882,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </button>
           </div>
           <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-slate-50">
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
@@ -957,9 +957,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                  </select>
              </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Subject</th>
@@ -1193,9 +1193,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                </div>
              )}
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
@@ -1332,9 +1332,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                </div>
              )}
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
@@ -1470,9 +1470,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                </div>
              )}
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
@@ -1631,9 +1631,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                </div>
              )}
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
