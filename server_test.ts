@@ -23,7 +23,7 @@ const ai = new GoogleGenAI({
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = 3001;
 
   app.use(express.json());
 
@@ -78,25 +78,6 @@ async function startServer() {
     } catch (err) {
       console.error("Drive upload error (Apps Script):", err);
       res.status(500).json({ error: err?.message || "Failed to upload to Google Drive via Apps Script" });
-    }
-  });
-
-
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
-  });
-
-  app.get("/api/audio", async (req, res) => {
-    try {
-      const { id } = req.query;
-      if (!id || typeof id !== 'string') {
-        return res.status(400).send("Missing audio id");
-      }
-      const url = `https://drive.google.com/uc?export=download&id=${id}&confirm=t`;
-      res.redirect(url);
-    } catch (err) {
-      console.error("Audio Proxy Error:", err);
-      res.status(500).send("Failed to proxy audio.");
     }
   });
 
