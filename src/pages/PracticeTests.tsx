@@ -296,19 +296,53 @@ export function PracticeTests() {
               <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2">{test.title}</h3>
               
               <div className="space-y-2 mb-6">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Users className="w-4 h-4 text-slate-400" /> {test.attempts.toLocaleString()} attempts
-                </div>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <BarChart className="w-4 h-4 text-[#F4A340]" /> Difficulty: <span className="font-semibold text-slate-800">{test.difficulty}</span>
-                </div>
+                {courseInfo.name === 'IELTS' && test.skill === 'Reading' ? (
+                  <div className="flex flex-col gap-1.5 text-sm text-slate-600">
+{(() => {
+                      const readingTitles = {
+                        1: ['What Lucy Taught Us', 'The history of tea', 'Knowledge in medicine'],
+                        5: ['Why good ideas fail', 'The return of monkey life', 'The value of research into mite harvestmen'],
+                        9: ['The development of the silk industry', 'The culture of Chimpanzees', 'History of telegraph in communication'],
+                        13: ['Thomas Young The Last True Know-it-all', 'The Dugong: Sea Cow', 'Can Scientists Tell Us: What happiness is?'],
+                        17: ['A Wonder Plant-Bamboo', 'Finding Our Way', 'Designed to Last'],
+                        21: ['The Impact of the Potato', 'Public Libraries', 'Blind to Change'],
+                        25: ['The Davies Sisters', 'Why we need silence', 'Book review: The World of Sugar by Ulbe Bosma'],
+                        29: ['Do animals dream?', 'Mapungubwe', 'Artificial Intelligence'],
+                        33: ['Seaweeds of New Zealand', 'The art of deception', 'Mapping the Mind'],
+                        37: ['Passage 1', 'Passage 2', 'Passage 3'],
+                        41: ['Passage 1', 'Passage 2', 'Passage 3'],
+                        45: ['READING PASSAGE 1', 'READING PASSAGE 2', "A review of Peter Bellerby's book"],
+                        49: ['Satellite Technology', 'A Brief History of Humans and Food', 'Jellyfish: A Remarkable Marine Life Form'],
+                        53: ['The History of the Chicken', 'A study of introvert and extrovert characters', 'Seeing the colour of sounds'],
+                        57: ['Passage 1', 'Passage 2', 'Passage 3']
+                      };
+                      const titles = readingTitles[test.id] || ['Passage 1', 'Passage 2', 'Passage 3'];
+                      return (
+                        <>
+                          <div className="flex items-start gap-2"><Book className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" /> <span className="line-clamp-1"><span className="font-semibold">Passage 1:</span> {titles[0]}</span></div>
+                          <div className="flex items-start gap-2"><Book className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" /> <span className="line-clamp-1"><span className="font-semibold">Passage 2:</span> {titles[1]}</span></div>
+                          <div className="flex items-start gap-2"><Book className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" /> <span className="line-clamp-1"><span className="font-semibold">Passage 3:</span> {titles[2]}</span></div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Users className="w-4 h-4 text-slate-400" /> {test.attempts.toLocaleString()} attempts
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <BarChart className="w-4 h-4 text-[#F4A340]" /> Difficulty: <span className="font-semibold text-slate-800">{test.difficulty}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Clock className="w-4 h-4 text-[#1E4DB7]" /> {test.duration}
                 </div>
               </div>
               
               <div className="mt-auto">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 34, 35, 37, 41, 45, 49, 53, 57, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 34, 35, 37, 39, 41, 45, 49, 53, 57, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
                   <Link 
                     to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                     className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"

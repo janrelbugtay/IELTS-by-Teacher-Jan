@@ -409,7 +409,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.answers) {
-              setAnswers(JSON.parse(data.answers));
+              try { if (typeof data.answers === "string") { setAnswers(JSON.parse(data.answers)); } else { setAnswers(data.answers); } } catch (e) { console.error("Parse error", e); setAnswers({}); }
             }
             if (data.studentName) {
               setStudentName(data.studentName);
@@ -1182,15 +1182,21 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     return "0.0";
   };
 
+  const stateRef = useRef({ answers, timeLeft, studentName, id });
+  useEffect(() => {
+    stateRef.current = { answers, timeLeft, studentName, id };
+  }, [answers, timeLeft, studentName, id]);
+
   const handleSubmit = async () => {
     setIsSubmitted(true);
     setModalConfig(null);
     
     if (user && !submissionId) {
       try {
+        const { answers: currentAnswers, timeLeft: currentTimeLeft, studentName: currentStudentName, id: currentId } = stateRef.current;
         let title = 'IELTS Reading Test 1';
-        if (id) {
-          const numericId = Number(id);
+        if (currentId) {
+          const numericId = Number(currentId);
           if (!isNaN(numericId) && numericId >= 1) {
             const months = [
               'January', 'February', 'March', 'April', 'May', 'June',
@@ -1201,29 +1207,41 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               title = `IELTS Reading Test ${monthIndex + 1}`;
             }
           } else {
-            if (id === 'IELTS-READING-JAN2026-001') {
+            if (currentId === 'IELTS-READING-JAN2026-001') {
               title = 'IELTS Reading Test 12';
             } else {
-              title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+              title = currentId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
             }
           }
         }
         
-        const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+        const checkAnswerRef = (qNum: number) => {
+          const userAns = (currentAnswers[qNum] || '').toString().trim().toUpperCase();
+          const correctAnsRaw = (currentAnswerKey as any)[qNum];
+          if (!correctAnsRaw) return false;
+          const validAnswers = correctAnsRaw.split('/').map((s: string) => s.trim().toUpperCase());
+          for (let correctAns of validAnswers) {
+            if (userAns === correctAns) return true;
+            if (userAns.startsWith(correctAns + " ") || userAns.startsWith(correctAns + ".")) return true;
+          }
+          return false;
+        };
+
+        const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswerRef(qNum)).length;
         const bandScoreNum = parseFloat(getBandScore(score));
         
         await addDoc(collection(db, 'submissions'), {
           userId: user.uid,
-          studentName: studentName || user.displayName || 'Student',
-          assignmentId: id,
+          studentName: currentStudentName || user.displayName || 'Student',
+          assignmentId: currentId,
           assignmentTitle: title,
           assignmentType: 'reading',
           createdAt: serverTimestamp(),
           status: 'submitted',
-          answers: JSON.stringify(answers),
+          answers: JSON.stringify(currentAnswers),
           bandScore: bandScoreNum,
           percentage: (score / 40) * 100,
-          timeSpent: 3600 - timeLeft,
+          timeSpent: 3600 - currentTimeLeft,
           requiresEvaluation: false
         });
       } catch (err) {

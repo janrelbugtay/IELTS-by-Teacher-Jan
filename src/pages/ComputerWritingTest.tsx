@@ -16,6 +16,7 @@ import { JuneWritingTest } from './JuneWritingTest';
 import { JulyWritingTest } from './JulyWritingTest';
 import { AugustWritingTest } from './AugustWritingTest';
 import { SeptemberWritingTest } from './SeptemberWritingTest';
+import { OctoberWritingTest } from './OctoberWritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -570,6 +571,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     if (id === '35' && !submissionId) {
         return <SeptemberWritingTest />;
     }
+    if (id === '39' && !submissionId) {
+        return <OctoberWritingTest />;
+    }
 
     const [state, setState] = useState({
         studentName: user?.displayName || "",
@@ -830,13 +834,21 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
         }));
     };
 
+    const submitStateRef = useRef({ state, timeLeft, id });
+    useEffect(() => {
+        submitStateRef.current = { state, timeLeft, id };
+    }, [state, timeLeft, id]);
+
     const handleConfirmSubmit = async () => {
-        if (!state.textPart1.trim() && !state.textPart2.trim()) {
+        const currentState = submitStateRef.current.state;
+        const currentTimeLeft = submitStateRef.current.timeLeft;
+        const currentId = submitStateRef.current.id;
+
+        if (!currentState.textPart1.trim() && !currentState.textPart2.trim()) {
             alert("Your writing response is empty. Please write something before submitting.");
             setShowSubmitModal(false);
             return;
         }
-
         const submitTime = Date.now();
         setState(prev => {
             const newState = {
@@ -846,7 +858,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                 aiFeedback: "",
                 aiBandScore: 0
             };
-            localStorage.setItem(`${STORAGE_KEY}_${id}`, JSON.stringify(newState));
+            localStorage.setItem(`${STORAGE_KEY}_${currentId}`, JSON.stringify(newState));
             return newState;
         });
         
@@ -856,28 +868,28 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
         if (user) {
             try {
                 let title = 'Writing Test';
-                if (id) {
-                    const numId = parseInt(id, 10);
+                if (currentId) {
+                    const numId = parseInt(currentId, 10);
                     if (!isNaN(numId) && numId >= 1 && numId <= 48) {
                         const testNum = Math.ceil(numId / 4);
                         title = `IELTS Writing Test ${testNum}`;
                     } else {
-                        title = id.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                        title = currentId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     }
                 }
                 
                 await addDoc(collection(db, 'submissions'), {
                     userId: user.uid,
-                    studentName: state.studentName,
-                    assignmentId: id,
+                    studentName: currentState.studentName,
+                    assignmentId: currentId,
                     assignmentTitle: title,
                     assignmentType: 'writing',
                     createdAt: serverTimestamp(),
                     status: 'submitted',
-                    answers: JSON.stringify({ part1: state.textPart1, part2: state.textPart2 }),
+                    answers: JSON.stringify({ part1: currentState.textPart1, part2: currentState.textPart2 }),
                     aiFeedback: "",
                     bandScore: 0,
-                    timeSpent: TEST_DURATION - timeLeft,
+                    timeSpent: TEST_DURATION - currentTimeLeft,
                     requiresEvaluation: false 
                 });
             } catch (error) {
