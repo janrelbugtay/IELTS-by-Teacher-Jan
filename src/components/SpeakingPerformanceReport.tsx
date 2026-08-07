@@ -252,11 +252,7 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
       audioRef.current.play().then(() => setPlayingId(qId)).catch(e => {
         console.warn("Playback failed", e);
         setPlayingId(null);
-        if (!url?.startsWith('data:audio/')) {
-          window.open(url, '_blank');
-        } else {
-          alert("Could not play the recording in this browser.");
-        }
+        alert("Could not play the recording in this browser. The audio format may not be supported or it might be blocked.");
       });
       audioRef.current.onended = () => setPlayingId(null);
     }
