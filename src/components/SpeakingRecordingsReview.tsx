@@ -137,13 +137,18 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
             }
           } else if (url.startsWith('idb:')) {
             const localId = url.split(':')[1];
+            let foundBlob = false;
             try {
               const blob = await getAudioFromIndexedDB(localId);
               if (blob) {
                 url = URL.createObjectURL(blob);
+                foundBlob = true;
               }
             } catch (e) {
               console.error("Failed to fetch recording from IndexedDB:", e);
+            }
+            if (!foundBlob) {
+              url = '';
             }
           }
           urls[id] = url;

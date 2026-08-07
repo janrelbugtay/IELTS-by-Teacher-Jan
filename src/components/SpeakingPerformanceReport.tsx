@@ -198,13 +198,18 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
           
           if (url.startsWith('idb:')) {
             const localId = url.split(':')[1];
+            let foundBlob = false;
             try {
               const blob = await getAudioFromIndexedDB(localId);
               if (blob) {
                 url = URL.createObjectURL(blob);
+                foundBlob = true;
               }
             } catch(e) {
               console.error(e);
+            }
+            if (!foundBlob) {
+              url = ''; // Prevent idb url from being used
             }
           } else if (url.startsWith('subcollection:') && submissionId) {
              const subId = url.split(':')[1];
@@ -227,10 +232,13 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
   }, [submissionData, submissionId]);
 
   const getAudioUrl = (qId: string) => {
-    if (Object.keys(responseUrls).length > 0) {
-      return responseUrls[qId] || null;
+    if (Object.keys(responseUrls).length > 0 && responseUrls[qId]) {
+      return responseUrls[qId];
     }
-    return audioUrl;
+    if (audioUrl && (audioUrl.includes('drive.google.com') || audioUrl.includes('youtube') || audioUrl.includes('youtu.be') || audioUrl.startsWith('http'))) {
+      return null;
+    }
+    return audioUrl || null;
   };
 
   const togglePlayAudio = (qId: string) => {
@@ -369,6 +377,53 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
             })}
           </div>
 
+          
+          {audioUrl && (audioUrl.includes('drive.google.com') || audioUrl.includes('youtube.com') || audioUrl.includes('youtu.be') || audioUrl.includes('http')) && !audioUrl.startsWith('blob:') && (
+            <div className="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+              <h3 className="text-[14px] font-bold text-[#4F7DFF] tracking-wide uppercase mb-4">External Audio/Video Link</h3>
+              {(() => {
+                  let embedUrl = audioUrl;
+                  if (audioUrl.includes('drive.google.com') && !audioUrl.includes('preview')) {
+                      let match = audioUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                      if (!match) match = audioUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                      if (match && match[1]) {
+                          embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+                      }
+                  } else if (audioUrl.includes('youtube.com/watch')) {
+                      const urlParams = new URL(audioUrl).searchParams;
+                      if (urlParams.has('v')) {
+                          embedUrl = `https://www.youtube.com/embed/${urlParams.get('v')}`;
+                      }
+                  } else if (audioUrl.includes('youtu.be/')) {
+                      const match = audioUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+                      if (match && match[1]) {
+                          embedUrl = `https://www.youtube.com/embed/${match[1]}`;
+                      }
+                  }
+                  
+                  if (embedUrl !== audioUrl || audioUrl.includes('drive.google.com') || audioUrl.includes('youtube')) {
+                      return (
+                          <div className="aspect-video w-full max-w-2xl mx-auto rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                              <iframe src={embedUrl} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen></iframe>
+                          </div>
+                      );
+                  }
+                  
+                  return (
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                           <a href={audioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-medium hover:underline flex items-center gap-2">
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                              </svg>
+                              Open External Submission Link
+                           </a>
+                      </div>
+                  );
+              })()}
+            </div>
+          )}
+          
           {/* Your Recordings / Uploading */}
           <div className="mt-8 relative">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] rounded-full">
@@ -398,14 +453,12 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                           <p className="text-violet-600 font-semibold mb-3 text-sm">Let's talk about {q.topic.toLowerCase()}</p>
                         )}
                         <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
-                        <button 
-                          onClick={() => togglePlayAudio(q.id)} 
-                          disabled={!getAudioUrl(q.id)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-semibold border ${getAudioUrl(q.id) ? 'bg-violet-50 hover:bg-violet-100 text-violet-700 border-violet-200' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
-                        >
-                          {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                          {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
-                        </button>
+                        
+                        {getAudioUrl(q.id) ? (
+                          <audio controls src={getAudioUrl(q.id) as string} className="w-full max-w-sm mt-2" />
+                        ) : (
+                          <div className="text-slate-400 text-sm italic">No recording</div>
+                        )}
                       </div>
                     );
                   })}
@@ -428,14 +481,12 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                       </React.Fragment>
                     ))}
                   </div>
-                  <button 
-                    onClick={() => togglePlayAudio(testQuestions.part2.id)} 
-                    disabled={!getAudioUrl(testQuestions.part2.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-semibold border ${getAudioUrl(testQuestions.part2.id) ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
-                  >
-                    {playingId === testQuestions.part2.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    {playingId === testQuestions.part2.id ? 'Pause Recording (2 mins)' : 'Play Recording (2 mins)'}
-                  </button>
+                  
+                  {getAudioUrl(testQuestions.part2.id) ? (
+                    <audio controls src={getAudioUrl(testQuestions.part2.id) as string} className="w-full max-w-sm mt-2" />
+                  ) : (
+                    <div className="text-slate-400 text-sm italic">No recording</div>
+                  )}
                 </div>
               </div>
 
@@ -454,14 +505,12 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                           <p className="text-fuchsia-600 font-semibold mb-3 text-sm">Let's discuss {q.topic.toLowerCase()}</p>
                         )}
                         <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
-                        <button 
-                          onClick={() => togglePlayAudio(q.id)} 
-                          disabled={!getAudioUrl(q.id)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-semibold border ${getAudioUrl(q.id) ? 'bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
-                        >
-                          {playingId === q.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                          {playingId === q.id ? 'Pause Recording' : 'Play Recording'}
-                        </button>
+                        
+                        {getAudioUrl(q.id) ? (
+                          <audio controls src={getAudioUrl(q.id) as string} className="w-full max-w-sm mt-2" />
+                        ) : (
+                          <div className="text-slate-400 text-sm italic">No recording</div>
+                        )}
                       </div>
                     );
                   })}

@@ -5,6 +5,10 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, ThinkingLevel, LiveServerMessage, Modality } from "@google/genai";
 import dotenv from "dotenv";
 import { WebSocketServer } from "ws";
+import { google } from "googleapis";
+import multer from "multer";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 dotenv.config();
 
@@ -24,21 +28,56 @@ async function startServer() {
   app.use(express.json());
 
   // API routes
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
-  });
 
-  app.get("/api/audio", async (req, res) => {
+  app.post("/api/upload-drive", upload.single("audio"), async (req, res) => {
     try {
-      const { id } = req.query;
-      if (!id || typeof id !== 'string') {
-        return res.status(400).send("Missing audio id");
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
       }
-      const url = `https://drive.google.com/uc?export=download&id=${id}&confirm=t`;
-      res.redirect(url);
+      
+      const folderId = req.body.folderId || process.env.GOOGLE_DRIVE_FOLDER_ID || "1d2io0UUmFF6OItoG_HybPZLe_noI5uxy";
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbyV0-09yEzIFZSzI8VtSur12zfKlJpUs8pPnq2VwNd3DgHOSV18EnzNmX3XCWKNaPlx/exec";
+      
+      const base64Data = req.file.buffer.toString('base64');
+      
+      const payload = {
+        name: req.body.filename || req.file.originalname || `speaking_test_${Date.now()}.webm`,
+        mimeType: req.file.mimetype || "audio/webm",
+        data: base64Data,
+        folderId: folderId
+      };
+
+      const response = await fetch(scriptUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain", // To avoid CORS preflight OPTIONS request
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const resultText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(resultText);
+      } catch (e) {
+        console.error("Apps script response:", resultText);
+        throw new Error("Invalid response from Apps Script: " + resultText.substring(0, 100));
+      }
+
+      // Check if it was successful based on common Apps Script responses
+      if (result && (result.success || result.url || result.fileId || result.webViewLink)) {
+        res.json({ 
+          success: true, 
+          fileId: result.fileId || result.id || "unknown",
+          webViewLink: result.url || result.webViewLink || result.link || ""
+        });
+      } else {
+        throw new Error(result.error || "Unknown error from Apps Script");
+      }
+
     } catch (err) {
-      console.error("Audio Proxy Error:", err);
-      res.status(500).send("Failed to proxy audio.");
+      console.error("Drive upload error (Apps Script):", err);
+      res.status(500).json({ error: err?.message || "Failed to upload to Google Drive via Apps Script" });
     }
   });
 
