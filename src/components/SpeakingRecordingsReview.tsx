@@ -130,7 +130,19 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
             try {
               const docSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', subId));
               if (docSnap.exists()) {
-                url = docSnap.data().audioUrl;
+                 const data = docSnap.data();
+                 if (data.chunks) {
+                   let fullBase64 = '';
+                   for (let i = 0; i < data.chunks; i++) {
+                     const chunkSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', `${subId}_chunk_${i}`));
+                     if (chunkSnap.exists()) {
+                       fullBase64 += chunkSnap.data().audioUrl;
+                     }
+                   }
+                   url = fullBase64;
+                 } else {
+                   url = data.audioUrl;
+                 }
               }
             } catch (e) {
               console.error("Failed to fetch recording from subcollection:", e);
@@ -148,7 +160,7 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
               console.error("Failed to fetch recording from IndexedDB:", e);
             }
             if (!foundBlob) {
-              url = '';
+              url = 'LOCAL_ONLY';
             }
           }
           urls[id] = url;
@@ -261,7 +273,9 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                       <p className="text-[#4F7DFF] font-semibold mb-3 text-sm tracking-wide">Let's talk about {q.topic.toLowerCase()}</p>
                     )}
                     <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                    {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                    {(responseUrls[q.id] === 'LOCAL_ONLY' || (!responseUrls[q.id] && audioUrl && audioUrl.startsWith('idb:'))) ? (
+                        <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200">Recording saved locally on student's device.</div>
+                    ) : (responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
                       <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="0:30" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
                     ) : null}
                     
@@ -281,7 +295,9 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                   You should say:{"\n"}
                   {testQuestions.part2.bulletPoints.map(bp => `• ${bp}`).join("\n")}
                 </p>
-                {(responseUrls[testQuestions.part2.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                {(responseUrls[testQuestions.part2.id] === 'LOCAL_ONLY' || (!responseUrls[testQuestions.part2.id] && audioUrl && audioUrl.startsWith('idb:'))) ? (
+                  <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200">Recording saved locally on student's device.</div>
+                ) : (responseUrls[testQuestions.part2.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
                   <SimpleAudioPlayer src={responseUrls[testQuestions.part2.id] || audioUrl} defaultDurationStr="2:00" isRealAudio={!!responseUrls[testQuestions.part2.id] || !!audioUrl} />
                 ) : null}
               </div>
@@ -300,7 +316,9 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                       <p className="text-[#4F7DFF] font-semibold mb-3 text-sm tracking-wide">Let's discuss {q.topic.toLowerCase()}</p>
                     )}
                     <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                    {(responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
+                    {(responseUrls[q.id] === 'LOCAL_ONLY' || (!responseUrls[q.id] && audioUrl && audioUrl.startsWith('idb:'))) ? (
+                        <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200">Recording saved locally on student's device.</div>
+                    ) : (responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
                       <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="1:00" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
                     ) : null}
                     

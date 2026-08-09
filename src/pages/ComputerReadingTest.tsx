@@ -1848,7 +1848,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     {block.list && (
                       <div className={`mt-4 p-4 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
                         {block.listTitle && <h5 className={`font-bold mb-3 ${theme.text}`}>{block.listTitle}</h5>}
-                        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2`}>
+                        <div className={`flex flex-col gap-2`}>
                           {block.list.map((item: string, i: number) => (
                             <div key={i} className={`px-4 py-2 border rounded shadow-sm font-medium ${theme.optionBg} ${theme.border} ${theme.text}`}>{item}</div>
                           ))}
@@ -1861,13 +1861,13 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                     {(block.type === 'summary-options' || block.type === 'summary-input') && (
                       <div className={`p-6 rounded-lg border shadow-sm ${theme.panelRight} ${theme.border}`}>
                         {block.optionsList ? (
-                          <div className={`mb-6 pb-6 border-b grid grid-cols-2 md:grid-cols-3 gap-3 ${theme.border}`}>
+                          <div className={`mb-6 pb-6 border-b grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3 ${theme.border}`}>
                             {block.optionsList.map((opt: any) => (
                                <div key={opt.letter} className={`px-4 py-2 border rounded shadow-sm font-medium ${theme.optionBg} ${theme.border} ${theme.text}`}><strong>{opt.letter}</strong> {opt.text}</div>
                             ))}
                           </div>
                         ) : block.options && (
-                          <div className={`mb-6 pb-6 border-b grid grid-cols-2 md:grid-cols-3 gap-3 ${theme.border}`}>
+                          <div className={`mb-6 pb-6 border-b grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 ${theme.border}`}>
                             {block.options.map((opt: string) => (
                                <div key={opt} className={`px-4 py-2 border rounded shadow-sm font-medium ${theme.optionBg} ${theme.border} ${theme.text}`}>{opt}</div>
                             ))}

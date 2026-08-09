@@ -140,54 +140,41 @@ export function ComputerSpeakingTest() {
                         const localId = `${docRef.id}_${qId}`;
                         
                         try {
-                          console.log("Attempting Google Drive integration...");
-                          const formData = new FormData();
-                          formData.append("audio", blob, `speaking_test_${user?.uid}_${Date.now()}_${qId}.webm`);
-                          
-                          const driveRes = await fetch("/api/upload-drive", {
-                            method: "POST",
-                            body: formData
-                          });
-                          const driveData = await driveRes.json();
-                          if (driveData.success && driveData.webViewLink) {
-                              return { qId, url: driveData.webViewLink };
-                          } else {
-                              throw new Error("Drive upload failed: " + (driveData.error || "Unknown"));
-                          }
-                        } catch (driveErr) {
-                          console.warn("Drive upload failed, falling back to Firebase Storage...", driveErr);
-                          try {
                             const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}_${qId}.webm`);
                             const uploadPromise = uploadBytes(audioRef, blob);
                             const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
                             const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as any;
                             const url = await getDownloadURL(uploadResult.ref);
                             return { qId, url };
-                          } catch (err) {
+                        } catch (err) {
                             console.warn("Storage upload failed, attempting to save to Firestore subcollection...", err);
-                          try {
-                            const reader = new FileReader();
-                            const base64Promise = new Promise<string>((resolve, reject) => {
-                              reader.onloadend = () => resolve(reader.result as string);
-                              reader.onerror = reject;
-                              reader.readAsDataURL(blob);
-                            });
-                            const base64 = await base64Promise;
-                            if (base64.length < 1000000) { // Keep under ~1MB Firestore limit
-                                await setDoc(doc(db, 'submissions', docRef.id, 'recordings', qId), { audioUrl: base64 });
-                                return { qId, url: `subcollection:${qId}` };
-                            } else {
-                                console.warn("Audio too large for Firestore, falling back to IndexedDB");
+                            try {
+                                const reader = new FileReader();
+                                const base64Promise = new Promise<string>((resolve, reject) => {
+                                  reader.onloadend = () => resolve(reader.result as string);
+                                  reader.onerror = reject;
+                                  reader.readAsDataURL(blob);
+                                });
+                                const base64 = await base64Promise;
+                                if (base64.length < 900000) { // Keep under ~1MB Firestore limit
+                                    await setDoc(doc(db, 'submissions', docRef.id, 'recordings', qId), { audioUrl: base64 });
+                                    return { qId, url: `subcollection:${qId}` };
+                                } else {
+                                    const chunkSize = 800000;
+                                    const chunks = Math.ceil(base64.length / chunkSize);
+                                    for (let i = 0; i < chunks; i++) {
+                                        const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
+                                        await setDoc(doc(db, 'submissions', docRef.id, 'recordings', `${qId}_chunk_${i}`), { audioUrl: chunkData });
+                                    }
+                                    await setDoc(doc(db, 'submissions', docRef.id, 'recordings', qId), { chunks });
+                                    return { qId, url: `subcollection:${qId}` };
+                                }
+                            } catch (fbErr) {
+                                console.warn("Firestore save failed, falling back to IndexedDB", fbErr);
                                 await saveAudioToIndexedDB(localId, blob);
                                 return { qId, url: `idb:${localId}` };
                             }
-                          } catch (fbErr) {
-                             console.warn("Firestore save failed, falling back to IndexedDB", fbErr);
-                             await saveAudioToIndexedDB(localId, blob);
-                             return { qId, url: `idb:${localId}` };
-                          }
                         }
-                      }
                       } catch (err) {
                         console.error("Upload and fallback both failed", err);
                         return { qId, url: "" };

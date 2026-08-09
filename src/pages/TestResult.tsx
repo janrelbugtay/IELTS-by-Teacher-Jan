@@ -37,6 +37,7 @@ import { JuneListeningTest } from './JuneListeningTest';
 import { JulyListeningTest } from './JulyListeningTest';
 import { AugustListeningTest } from './AugustListeningTest';
 import { SeptemberListeningTest } from './SeptemberListeningTest';
+import { OctoberListeningTest } from './OctoberListeningTest';
 import { ComputerWritingTest } from './ComputerWritingTest';
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
@@ -47,6 +48,7 @@ import { JuneWritingTest } from './JuneWritingTest';
 import { JulyWritingTest } from './JulyWritingTest';
 import { AugustWritingTest } from './AugustWritingTest';
 import { SeptemberWritingTest } from './SeptemberWritingTest';
+import { OctoberWritingTest } from './OctoberWritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -174,21 +176,35 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '26') return <JulyListeningTest submissionId={id} />;
       if (aId === '30') return <AugustListeningTest submissionId={id} />;
       if (aId === '34') return <SeptemberListeningTest submissionId={id} />;
+      if (aId === '38') return <OctoberListeningTest submissionId={id} />;
 
-      if (submission.assignmentTitle?.toLowerCase().includes('january')) return <JanuaryListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('february')) return <FebruaryListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('march')) return <MarchListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) return <AprilListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('may')) return <MayListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('august')) return <AugustListeningTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('september')) return <SeptemberListeningTest submissionId={id} />;
+
+      if (title.includes('january')) return <JanuaryListeningTest submissionId={id} />;
+      if (title.includes('february')) return <FebruaryListeningTest submissionId={id} />;
+      if (title.includes('march')) return <MarchListeningTest submissionId={id} />;
+      if (title.includes('april')) return <AprilListeningTest submissionId={id} />;
+      if (title.includes('may')) return <MayListeningTest submissionId={id} />;
+      if (title.includes('june')) return <JuneListeningTest submissionId={id} />;
+      if (title.includes('july')) return <JulyListeningTest submissionId={id} />;
+      if (title.includes('august')) return <AugustListeningTest submissionId={id} />;
+      if (title.includes('september')) return <SeptemberListeningTest submissionId={id} />;
+      if (title.includes('october')) return <OctoberListeningTest submissionId={id} />;
+
       
       return <ComputerListeningTest submissionId={id} />;
   }
   if (type === 'writing') {
-      const aId = submission.assignmentId;
+      let aId = submission.assignmentId;
+      let title = submission.assignmentTitle?.toLowerCase() || '';
+
+      if (aId === '35' || title.includes('september')) {
+          const answerText = typeof submission.answers === 'string' ? submission.answers.toLowerCase() : JSON.stringify(submission.answers).toLowerCase();
+          if (answerText.includes('expenditure') || answerText.includes('tuition') || answerText.includes('country a')) {
+              aId = '39';
+              title = 'october';
+          }
+      }
+
       if (aId === '3') return <JanuaryWritingTest submissionId={id} />;
       if (aId === '7') return <FebruaryWritingTest submissionId={id} />;
       if (aId === '11') return <MarchWritingTest submissionId={id} />;
@@ -198,16 +214,20 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '27') return <JulyWritingTest submissionId={id} />;
       if (aId === '31') return <AugustWritingTest submissionId={id} />;
       if (aId === '35') return <SeptemberWritingTest submissionId={id} />;
+      if (aId === '39') return <OctoberWritingTest submissionId={id} />;
 
-      if (submission.assignmentTitle?.toLowerCase().includes('january')) return <JanuaryWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('february')) return <FebruaryWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('march')) return <MarchWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('april')) return <AprilWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('may')) return <MayWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('june')) return <JuneWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('july')) return <JulyWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('august')) return <AugustWritingTest submissionId={id} />;
-      if (submission.assignmentTitle?.toLowerCase().includes('september')) return <SeptemberWritingTest submissionId={id} />;
+
+      if (title.includes('january')) return <JanuaryWritingTest submissionId={id} />;
+      if (title.includes('february')) return <FebruaryWritingTest submissionId={id} />;
+      if (title.includes('march')) return <MarchWritingTest submissionId={id} />;
+      if (title.includes('april')) return <AprilWritingTest submissionId={id} />;
+      if (title.includes('may')) return <MayWritingTest submissionId={id} />;
+      if (title.includes('june')) return <JuneWritingTest submissionId={id} />;
+      if (title.includes('july')) return <JulyWritingTest submissionId={id} />;
+      if (title.includes('august')) return <AugustWritingTest submissionId={id} />;
+      if (title.includes('september')) return <SeptemberWritingTest submissionId={id} />;
+      if (title.includes('october')) return <OctoberWritingTest submissionId={id} />;
+
       
       return <ComputerWritingTest submissionId={id} />;
   }

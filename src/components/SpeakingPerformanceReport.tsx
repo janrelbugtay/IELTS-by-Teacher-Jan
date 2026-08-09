@@ -216,14 +216,26 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
              try {
                const docSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', subId));
                if (docSnap.exists()) {
-                 url = docSnap.data().audioUrl;
+                 const data = docSnap.data();
+                 if (data.chunks) {
+                   let fullBase64 = '';
+                   for (let i = 0; i < data.chunks; i++) {
+                     const chunkSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', `${subId}_chunk_${i}`));
+                     if (chunkSnap.exists()) {
+                       fullBase64 += chunkSnap.data().audioUrl;
+                     }
+                   }
+                   url = fullBase64;
+                 } else {
+                   url = data.audioUrl;
+                 }
                }
              } catch(e) {
                console.error(e);
              }
           }
           
-          if (url) urls[id] = url;
+          if (url && !url.startsWith('idb:')) urls[id] = url; else if (url.startsWith('idb:')) urls[id] = 'LOCAL_ONLY';
         }
         setResponseUrls(urls);
       }
@@ -238,7 +250,7 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
     if (audioUrl && (audioUrl.includes('drive.google.com') || audioUrl.includes('youtube') || audioUrl.includes('youtu.be') || audioUrl.startsWith('http'))) {
       return null;
     }
-    return audioUrl || null;
+    return (audioUrl && audioUrl.startsWith('idb:')) ? 'LOCAL_ONLY' : (audioUrl || null);
   };
 
   const togglePlayAudio = (qId: string) => {
@@ -454,7 +466,9 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                         )}
                         <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
                         
-                        {getAudioUrl(q.id) ? (
+                        {getAudioUrl(q.id) === 'LOCAL_ONLY' ? (
+                            <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200 mt-2">Recording saved locally on student's device.</div>
+                        ) : getAudioUrl(q.id) ? (
                           <audio controls src={getAudioUrl(q.id) as string} className="w-full max-w-sm mt-2" />
                         ) : (
                           <div className="text-slate-400 text-sm italic">No recording</div>
@@ -482,7 +496,9 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                     ))}
                   </div>
                   
-                  {getAudioUrl(testQuestions.part2.id) ? (
+                  {getAudioUrl(testQuestions.part2.id) === 'LOCAL_ONLY' ? (
+                      <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200 mt-2">Recording saved locally on student's device.</div>
+                  ) : getAudioUrl(testQuestions.part2.id) ? (
                     <audio controls src={getAudioUrl(testQuestions.part2.id) as string} className="w-full max-w-sm mt-2" />
                   ) : (
                     <div className="text-slate-400 text-sm italic">No recording</div>
@@ -506,7 +522,9 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                         )}
                         <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
                         
-                        {getAudioUrl(q.id) ? (
+                        {getAudioUrl(q.id) === 'LOCAL_ONLY' ? (
+                            <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200 mt-2">Recording saved locally on student's device.</div>
+                        ) : getAudioUrl(q.id) ? (
                           <audio controls src={getAudioUrl(q.id) as string} className="w-full max-w-sm mt-2" />
                         ) : (
                           <div className="text-slate-400 text-sm italic">No recording</div>

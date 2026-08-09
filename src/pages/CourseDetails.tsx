@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';
+import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award, Users, BarChart, Clock, ArrowRight } from 'lucide-react';
 import { HomeLeaderboardDashboard } from '../components/HomeLeaderboardDashboard';
 
 // Removed duplicate mock data
@@ -20,6 +20,7 @@ export function CourseDetails() {
   const searchParams = new URLSearchParams(location.search);
   const initialTab = searchParams.get('tab') || 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeHomeworkFolder, setActiveHomeworkFolder] = useState<string | null>(null);
 
   useEffect(() => {
     const currentTab = searchParams.get('tab') || 'overview';
@@ -90,6 +91,68 @@ export function CourseDetails() {
 
   
   const renderHomework = () => {
+    if (activeHomeworkFolder === 'Speaking') {
+      const tests = [
+        { id: 'homework-test-1', title: 'Speaking Homework 1', skill: 'Speaking', attempts: 1205, difficulty: 'Medium', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
+        { id: 'homework-test-2', title: 'Speaking Homework 2', skill: 'Speaking', attempts: 856, difficulty: 'Medium', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
+        { id: 'homework-test-3', title: 'Speaking Homework 3', skill: 'Speaking', attempts: 642, difficulty: 'Hard', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
+      ];
+      
+      return (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setActiveHomeworkFolder(null)}
+            className="flex items-center gap-2 text-[#1E4DB7] font-semibold hover:text-blue-800 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" /> Back to Homework Folders
+          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tests.map(test => (
+              <div key={test.id} className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
+                <div className="relative h-48 overflow-hidden">
+                  <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-transparent transition-colors z-10"></div>
+                  <img 
+                    src={test.image} 
+                    alt={test.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  />
+                  <div className="absolute top-4 left-4 z-20">
+                    <span className="bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
+                      {test.skill}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="p-6 flex flex-col flex-1">
+                  <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2">{test.title}</h3>
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Users className="w-4 h-4 text-slate-400" /> {test.attempts.toLocaleString()} attempts
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <BarChart className="w-4 h-4 text-[#F4A340]" /> Difficulty: <span className="font-semibold text-slate-800">{test.difficulty}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Clock className="w-4 h-4 text-[#1E4DB7]" /> {test.duration}
+                    </div>
+                  </div>
+                     
+                  <div className="mt-auto">
+                    <Link 
+                      to={`/test/speaking/${test.id}`}
+                      className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Start Test <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     const homeworkFolders: any[] = [
       {
         title: 'Reading Homework',
@@ -114,38 +177,12 @@ export function CourseDetails() {
         icon: <Mic className="w-8 h-8 text-purple-600" />,
         desc: 'Submit your speaking homework.',
         color: 'bg-purple-50 border-purple-600/20 hover:border-purple-600',
+        action: () => setActiveHomeworkFolder('Speaking')
       }
     ];
 
     if (id === 'ielts') {
-      homeworkFolders.push({
-        title: 'April Writing Practice',
-        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the April CD-IELTS writing test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/writing/15'
-      });
-      homeworkFolders.push({
-        title: 'May Writing Practice',
-        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the May CD-IELTS writing test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/writing/19'
-      });
-      homeworkFolders.push({
-        title: 'June Writing Practice',
-        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the June CD-IELTS writing test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/writing/23'
-      });
-      homeworkFolders.push({
-        title: 'July Writing Practice',
-        icon: <PenTool className="w-8 h-8 text-indigo-600" />,
-        desc: 'Take the July CD-IELTS writing test.',
-        color: 'bg-indigo-50 border-indigo-600/20 hover:border-indigo-600',
-        link: '/test/writing/27'
-      });
+      // additional ielts items if any
     }
 
     return (
@@ -181,6 +218,17 @@ export function CourseDetails() {
                 <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
                 <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
               </a>
+            ) : folder.action ? (
+              <button 
+                onClick={folder.action}
+                className={`block w-full text-left h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1 cursor-pointer`}
+              >
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${folder.color}`}>
+                  {folder.icon}
+                </div>
+                <h3 className="text-2xl font-bold text-[#0F172A] mb-3">{folder.title}</h3>
+                <p className="text-[#64748B] text-[15px]">{folder.desc}</p>
+              </button>
             ) : (
               <div 
                 className={`block h-full p-8 rounded-[24px] border shadow-sm hover:shadow-lg transition-all duration-300 bg-white group hover:-translate-y-1 cursor-pointer`}

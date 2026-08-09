@@ -316,7 +316,7 @@ export function PracticeTests() {
                         53: ['The History of the Chicken', 'A study of introvert and extrovert characters', 'Seeing the colour of sounds'],
                         57: ['Passage 1', 'Passage 2', 'Passage 3'],
                         61: ['William Gilbert and Magnetism', 'Tasmanian Tiger', 'Endangered Languages'],
-                        65: ['Passage 1', 'Passage 2', 'Passage 3'],
+                        65: ['Passage 1', 'Making Documentary Films', 'Passage 3'],
                         69: ['Passage 1', 'Passage 2', 'Passage 3']
                       };
                       const titles = readingTitles[test.id] || ['Passage 1', 'Passage 2', 'Passage 3'];
