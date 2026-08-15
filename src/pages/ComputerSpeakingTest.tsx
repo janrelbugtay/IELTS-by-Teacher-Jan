@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { db, storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp, updateDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveSpeakingTestScreen } from '../components/LiveSpeakingTestScreen';
@@ -26,12 +26,54 @@ const SIDEBAR_STEPS = [
 import { saveAudioToIndexedDB } from '../lib/indexedDB';
 
 export function ComputerSpeakingTest() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [customQuestions, setCustomQuestions] = useState<any>(null);
+  const [isLobby, setIsLobby] = useState(false);
+  const [loadingLobby, setLoadingLobby] = useState(true);
+  const [formData, setFormData] = useState<any>(null);
   const { id } = useParams();
   const [stage, setStage] = useState(STAGES.MIC_CHECK);
   const [recordedAudio, setRecordedAudio] = useState<any>(null);
   const [hasRecorded, setHasRecorded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  let testNum = id || '1';
+  const numId = parseInt(testNum, 10);
+  if (!isNaN(numId)) {
+    testNum = Math.ceil(numId / 4).toString();
+  }
+  useEffect(() => {
+    if (testNum === '1') {
+      getDoc(doc(db, 'speaking_tests', '1')).then(docSnap => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCustomQuestions(data.questions);
+          setFormData(data.questions);
+        } else {
+          // Initialize empty
+          const empty = {
+            part1: Array(8).fill({ id: '', topic: '', text: '' }).map((_, i) => ({ id: `p1_${i+1}`, topic: '', text: '' })),
+            part2: { id: 'p2_1', topic: '', bulletPoints: ['', '', '', ''] },
+            part3: Array(5).fill({ id: '', topic: '', text: '' }).map((_, i) => ({ id: `p3_${i+1}`, topic: '', text: '' }))
+          };
+          setFormData(empty);
+        }
+        setLoadingLobby(false);
+      });
+      if (isAdmin) {
+        setIsLobby(true);
+      }
+    } else {
+      setLoadingLobby(false);
+    }
+  }, [testNum, isAdmin]);
+
+  const handleSaveLobby = async () => {
+    await setDoc(doc(db, 'speaking_tests', '1'), { questions: formData });
+    setCustomQuestions(formData);
+    setIsLobby(false);
+  };
+
     
   const navigate = useNavigate();
 
@@ -41,10 +83,77 @@ export function ComputerSpeakingTest() {
 
   const currentIndex = SIDEBAR_STEPS.findIndex(s => s.id === stage);
 
-  let testNum = id || '1';
-  const numId = parseInt(testNum, 10);
-  if (!isNaN(numId)) {
-    testNum = Math.ceil(numId / 4).toString();
+
+
+  if (loadingLobby) {
+    return <div className="min-h-[70vh] flex items-center justify-center">Loading...</div>;
+  }
+
+  if (isLobby && formData) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-6">Admin Lobby: Edit Speaking Test 1</h1>
+        
+        <div className="space-y-8 bg-white p-6 rounded shadow">
+          <div>
+            <h2 className="text-xl font-bold mb-4">Part 1 Questions (8 items)</h2>
+            {formData.part1.map((q: any, i: number) => (
+              <div key={i} className="mb-4 flex gap-4">
+                <input className="border p-2 rounded w-1/3" placeholder="Topic" value={q.topic} onChange={e => {
+                  const newP1 = [...formData.part1];
+                  newP1[i].topic = e.target.value;
+                  setFormData({...formData, part1: newP1});
+                }} />
+                <input className="border p-2 rounded w-2/3" placeholder="Question Text" value={q.text} onChange={e => {
+                  const newP1 = [...formData.part1];
+                  newP1[i].text = e.target.value;
+                  setFormData({...formData, part1: newP1});
+                }} />
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold mb-4">Part 2 Cue Card</h2>
+            <div className="mb-4">
+              <input className="border p-2 rounded w-full mb-2" placeholder="Topic" value={formData.part2.topic} onChange={e => {
+                setFormData({...formData, part2: { ...formData.part2, topic: e.target.value }});
+              }} />
+              {formData.part2.bulletPoints.map((bp: string, i: number) => (
+                <input key={i} className="border p-2 rounded w-full mb-2" placeholder={`Bullet Point ${i+1}`} value={bp} onChange={e => {
+                  const newBps = [...formData.part2.bulletPoints];
+                  newBps[i] = e.target.value;
+                  setFormData({...formData, part2: { ...formData.part2, bulletPoints: newBps }});
+                }} />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold mb-4">Part 3 Questions (5 items)</h2>
+            {formData.part3.map((q: any, i: number) => (
+              <div key={i} className="mb-4 flex gap-4">
+                <input className="border p-2 rounded w-1/3" placeholder="Topic" value={q.topic} onChange={e => {
+                  const newP3 = [...formData.part3];
+                  newP3[i].topic = e.target.value;
+                  setFormData({...formData, part3: newP3});
+                }} />
+                <input className="border p-2 rounded w-2/3" placeholder="Question Text" value={q.text} onChange={e => {
+                  const newP3 = [...formData.part3];
+                  newP3[i].text = e.target.value;
+                  setFormData({...formData, part3: newP3});
+                }} />
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex gap-4">
+            <button onClick={handleSaveLobby} className="bg-blue-600 text-white px-6 py-2 rounded font-bold">Save & Start Test</button>
+            <button onClick={() => setIsLobby(false)} className="bg-gray-400 text-white px-6 py-2 rounded font-bold">Preview Test</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -110,7 +219,7 @@ export function ComputerSpeakingTest() {
               className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
               
-              <LiveSpeakingTestScreen testId={testNum} onComplete={async (responses: Record<string, Blob>) => {
+              <LiveSpeakingTestScreen testId={testNum} customQuestions={customQuestions} onComplete={async (responses: Record<string, Blob>) => {
                 if (responses && Object.keys(responses).length > 0) {
                   setRecordedAudio(responses);
                   

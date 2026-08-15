@@ -84,6 +84,7 @@ export function ViewAssignment() {
       case 'reading': return 'text-accent-green bg-accent-green/10 border-accent-green/20';
       case 'listening': return 'text-accent-blue bg-accent-blue/10 border-accent-blue/20';
       case 'writing': return 'text-accent-orange bg-accent-orange/10 border-accent-orange/20';
+      case 'speaking': return 'text-purple-600 bg-purple-100 border-purple-200';
       default: return 'text-natural-700 bg-natural-100 border-natural-200';
     }
   };
@@ -130,6 +131,15 @@ export function ViewAssignment() {
           <div className={`inline-flex items-center gap-2 mb-6 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest border ${getTypeStyle(assignment.type)}`}>
             {assignment.type}
           </div>
+          
+          {assignment.type === 'speaking' && assignment.speakingParts && (
+            <div className="flex gap-2 mb-6">
+              {assignment.speakingParts.part1 && <span className="text-xs font-semibold px-3 py-1 bg-natural-100 text-natural-700 rounded-full border border-natural-200">Part 1</span>}
+              {assignment.speakingParts.part2 && <span className="text-xs font-semibold px-3 py-1 bg-natural-100 text-natural-700 rounded-full border border-natural-200">Part 2</span>}
+              {assignment.speakingParts.part3 && <span className="text-xs font-semibold px-3 py-1 bg-natural-100 text-natural-700 rounded-full border border-natural-200">Part 3</span>}
+            </div>
+          )}
+
           <h1 className="text-4xl md:text-5xl font-serif text-natural-900 mb-6 leading-tight">{assignment.title}</h1>
           <p className="text-natural-700 text-lg leading-relaxed mb-10 max-w-3xl">{assignment.description}</p>
           

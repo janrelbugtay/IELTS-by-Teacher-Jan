@@ -14,7 +14,8 @@ export function CreateAssignment() {
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<'reading' | 'listening' | 'writing'>('reading');
+  const [type, setType] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
+  const [speakingParts, setSpeakingParts] = useState({ part1: true, part2: true, part3: true });
   const [content, setContent] = useState('');
   
   const [submitting, setSubmitting] = useState(false);
@@ -32,6 +33,7 @@ export function CreateAssignment() {
         title: title.trim(),
         description: description.trim(),
         type,
+        ...(type === 'speaking' ? { speakingParts } : {}),
         content: content.trim(),
         createdBy: user.uid,
         createdAt: serverTimestamp(),
@@ -90,8 +92,44 @@ export function CreateAssignment() {
               <option value="reading">Reading</option>
               <option value="listening">Listening</option>
               <option value="writing">Writing</option>
+              <option value="speaking">Speaking</option>
             </select>
           </div>
+          {type === 'speaking' && (
+            <div>
+              <label className="block text-sm font-bold uppercase tracking-wide text-natural-800 mb-2">Speaking Parts</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={speakingParts.part1}
+                    onChange={(e) => setSpeakingParts(prev => ({ ...prev, part1: e.target.checked }))}
+                    className="w-4 h-4 text-natural-900 border-natural-300 rounded focus:ring-natural-900"
+                  />
+                  <span>Part 1</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={speakingParts.part2}
+                    onChange={(e) => setSpeakingParts(prev => ({ ...prev, part2: e.target.checked }))}
+                    className="w-4 h-4 text-natural-900 border-natural-300 rounded focus:ring-natural-900"
+                  />
+                  <span>Part 2</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={speakingParts.part3}
+                    onChange={(e) => setSpeakingParts(prev => ({ ...prev, part3: e.target.checked }))}
+                    className="w-4 h-4 text-natural-900 border-natural-300 rounded focus:ring-natural-900"
+                  />
+                  <span>Part 3</span>
+                </label>
+              </div>
+            </div>
+          )}
+
 
           <div>
             <label className="block text-sm font-bold uppercase tracking-wide text-natural-800 mb-2">Short Description</label>
@@ -111,6 +149,7 @@ export function CreateAssignment() {
             <p className="text-xs text-natural-700 mb-3">
               For Reading/Writing: Paste the full text or prompt here. 
               For Listening: Provide a link to the audio and the questions.
+              For Speaking: Provide the questions for the selected parts.
             </p>
             <textarea
               required

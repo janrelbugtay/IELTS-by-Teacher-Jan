@@ -31,6 +31,7 @@ export interface Assignment {
   title: string;
   description: string;
   type: AssignmentType;
+  speakingParts?: { part1: boolean; part2: boolean; part3: boolean };
   content: string; // for reading test, etc.
   classId?: string; // Optional if assigned to a specific class
   dueDate?: any;

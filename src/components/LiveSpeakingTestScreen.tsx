@@ -23,10 +23,10 @@ const Waveform = ({ isRecording }: { isRecording: boolean }) => (
   </div>
 );
 
-export const LiveSpeakingTestScreen = ({ onComplete, testId }: { onComplete: (responses: Record<string, Blob>) => void, testId?: string }) => {
+export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: { onComplete: (responses: Record<string, Blob>) => void, testId?: string, customQuestions?: any }) => {
   const navigate = useNavigate();
   const testNum = testId ? testId : '1';
-  const MOCK_QUESTIONS = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
+  const MOCK_QUESTIONS = customQuestions || IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
 
   const [phase, setPhase] = useState('intro'); // intro, p1, p2-prep, p2, p3
   const [qIndex, setQIndex] = useState(0);

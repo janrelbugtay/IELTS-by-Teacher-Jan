@@ -93,9 +93,9 @@ export function CourseDetails() {
   const renderHomework = () => {
     if (activeHomeworkFolder === 'Speaking') {
       const tests = [
-        { id: 'homework-test-1', title: 'Speaking Homework 1', skill: 'Speaking', attempts: 1205, difficulty: 'Medium', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
-        { id: 'homework-test-2', title: 'Speaking Homework 2', skill: 'Speaking', attempts: 856, difficulty: 'Medium', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
-        { id: 'homework-test-3', title: 'Speaking Homework 3', skill: 'Speaking', attempts: 642, difficulty: 'Hard', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
+        { id: 'homework-test-1', title: 'IELTS Speaking Homework 1', skill: 'Speaking', attempts: 1205, difficulty: 'Medium', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
+        { id: 'homework-test-2', title: 'IELTS Speaking Homework 2', skill: 'Speaking', attempts: 856, difficulty: 'Medium', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
+        { id: 'homework-test-3', title: 'IELTS Speaking Homework 3', skill: 'Speaking', attempts: 642, difficulty: 'Hard', duration: '15 mins', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=60' },
       ];
       
       return (
@@ -155,25 +155,25 @@ export function CourseDetails() {
 
     const homeworkFolders: any[] = [
       {
-        title: 'Reading Homework',
+        title: 'IELTS Reading Homework',
         icon: <BookOpen className="w-8 h-8 text-[#1E4DB7]" />,
         desc: 'Complete reading homework.',
         color: 'bg-blue-50 border-[#1E4DB7]/20 hover:border-[#1E4DB7]',
       },
       {
-        title: 'Listening Homework',
+        title: 'IELTS Listening Homework',
         icon: <Headphones className="w-8 h-8 text-teal-600" />,
         desc: 'Listen to audio and answer questions.',
         color: 'bg-teal-50 border-teal-600/20 hover:border-teal-600',
       },
       {
-        title: 'Writing Homework',
+        title: 'IELTS Writing Homework',
         icon: <PenTool className="w-8 h-8 text-[#F4A340]" />,
         desc: 'Submit your writing homework.',
         color: 'bg-orange-50 border-[#F4A340]/20 hover:border-[#F4A340]',
       },
       {
-        title: 'Speaking Homework',
+        title: 'IELTS Speaking Homework',
         icon: <Mic className="w-8 h-8 text-purple-600" />,
         desc: 'Submit your speaking homework.',
         color: 'bg-purple-50 border-purple-600/20 hover:border-purple-600',

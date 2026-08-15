@@ -272,6 +272,24 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   const navigate = useNavigate();
 
   const testId = assignmentId || id;
+
+  let testTitle = 'IELTS Reading Test 1';
+  if (testId) {
+    const numericId = Number(testId);
+    if (!isNaN(numericId) && numericId >= 1) {
+      const monthIndex = Math.floor((numericId - 1) / 4);
+      if (monthIndex >= 0) {
+        testTitle = `IELTS Reading Test ${monthIndex + 1}`;
+      }
+    } else {
+      if (testId === 'IELTS-READING-JAN2026-001') {
+        testTitle = 'IELTS Reading Test 12';
+      } else {
+        testTitle = testId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+      }
+    }
+  }
+
   const testData = getReadingTestData(testId);
   const currentPassagesData = testData ? testData.passages : passagesData;
   const currentAnswerKey = testData ? testData.answers : ANSWER_KEY;
@@ -1207,26 +1225,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     if (user && !submissionId) {
       try {
         const { answers: currentAnswers, timeLeft: currentTimeLeft, studentName: currentStudentName, id: currentId } = stateRef.current;
-        let title = 'IELTS Reading Test 1';
-        if (currentId) {
-          const numericId = Number(currentId);
-          if (!isNaN(numericId) && numericId >= 1) {
-            const months = [
-              'January', 'February', 'March', 'April', 'May', 'June',
-              'July', 'August', 'September', 'October', 'November', 'December'
-            ];
-            const monthIndex = Math.floor((numericId - 1) / 4);
-            if (monthIndex >= 0) {
-              title = `IELTS Reading Test ${monthIndex + 1}`;
-            }
-          } else {
-            if (currentId === 'IELTS-READING-JAN2026-001') {
-              title = 'IELTS Reading Test 12';
-            } else {
-              title = currentId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-            }
-          }
-        }
+        let title = testTitle;
         
         const checkAnswerRef = (qNum: number) => {
           const userAns = (currentAnswers[qNum] || '').toString().trim().toUpperCase();
@@ -1385,7 +1384,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                <Menu size={36} />
              </div>
           </div>
-          <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">IELTS Academic Reading</h1>
+          <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">{testTitle}</h1>
           <p className="text-gray-500 text-center mb-10 font-medium">60 Minutes • 3 Passages • 40 Questions</p>
           
           <div className="space-y-6">
