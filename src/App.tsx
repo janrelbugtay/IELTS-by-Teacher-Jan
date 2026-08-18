@@ -8,6 +8,7 @@ import { CourseDetails } from './pages/CourseDetails';
 import { PracticeTests } from './pages/PracticeTests';
 import { Dashboard } from './pages/ielts/Dashboard';
 import { Dashboard as PetDashboard } from './pages/pet/Dashboard';
+import { Dashboard as KetDashboard } from './pages/ket/Dashboard';
 import { CreateAssignment } from './pages/CreateAssignment';
 import { ViewAssignment } from './pages/ViewAssignment';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -35,6 +36,9 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
   if (adminOnly && !isAdmin) {
     if (userCourse?.toLowerCase() === 'pet') {
       return <Navigate to="/pet/dashboard" replace />;
+    }
+    if (userCourse?.toLowerCase() === 'ket') {
+      return <Navigate to="/ket/dashboard" replace />;
     }
     return <Navigate to="/ielts/dashboard" replace />;
   }
@@ -67,6 +71,7 @@ function AppContent() {
               <Route path="/login" element={<Login />} />
               <Route path="/ielts/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/pet/dashboard" element={<ProtectedRoute><PetDashboard /></ProtectedRoute>} />
+              <Route path="/ket/dashboard" element={<ProtectedRoute><KetDashboard /></ProtectedRoute>} />
               <Route path="/shared/dashboard/:userId" element={<Dashboard isShared={true} />} />
               <Route path="/shared/results/:id" element={<TestResult isShared={true} />} />
               <Route path="/writing-examiner" element={<ProtectedRoute><EraAIIeltsApp /></ProtectedRoute>} />

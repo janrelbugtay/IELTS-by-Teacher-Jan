@@ -43,8 +43,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Home', path: '/' },
   ];
   
-  const dashboardPath = userCourse?.toLowerCase() === 'pet' ? '/pet/dashboard' : '/ielts/dashboard';
+  let dashboardPath = '/ielts/dashboard';
+  if (userCourse?.toLowerCase() === 'pet') dashboardPath = '/pet/dashboard';
+  if (userCourse?.toLowerCase() === 'ket') dashboardPath = '/ket/dashboard';
   navLinks.push({ name: 'Dashboard', path: dashboardPath });
+  if (userCourse?.toLowerCase() === 'ket') {
+    navLinks.push({ name: 'KET Score Calculator', path: '/ket/dashboard' });
+  }
+  if (userCourse?.toLowerCase() === 'pet') {
+    navLinks.push({ name: 'PET Score Calculator', path: '/pet/dashboard' });
+  }
   navLinks.push({ name: 'Practice Test', path: '/practice-tests' });
   if (user) {
     const course = userCourse || 'ielts';
@@ -182,8 +190,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                               <div className="max-h-[250px] overflow-y-auto py-1">
                                 <Link to="/pre-starter/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Pre-starter</Link>
                                 <Link to="/starters/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Starters</Link>
+                                
                                 <Link to="/movers/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Movers</Link>
                                 <Link to="/flyers/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">Flyers</Link>
+                                
                                 <Link to="/ket/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">KET</Link>
                                 <Link to="/pet/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">PET</Link>
                                 <Link to="/ielts/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center px-4 py-2 text-sm text-slate-600 hover:text-[#0F172A] hover:bg-slate-50 transition-colors pl-9">IELTS</Link>
@@ -271,8 +281,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         </div>
                         <Link to="/pre-starter/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Pre-starter</Link>
                         <Link to="/starters/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Starters</Link>
+                        
                         <Link to="/movers/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Movers</Link>
                         <Link to="/flyers/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">Flyers</Link>
+                        
                         <Link to="/ket/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">KET</Link>
                         <Link to="/pet/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">PET</Link>
                         <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">IELTS</Link>
