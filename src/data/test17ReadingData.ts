@@ -1,5 +1,57 @@
 export const test17Passages = [
-  { id: 1, title: "READING PASSAGE 1", subtitle: "Passage 1", content: ["Content here"], questionBlocks: [] },
+  {
+    id: 1,
+    title: "READING PASSAGE 1",
+    subtitle: "Rural transport plan of “Practical action”",
+    content: [
+      "For more than 40 years, Practical Action has worked with poor communities to identify the types of transport that work best, taking into consideration culture, needs and skills. With our technical and practical support, isolated rural communities can design, build and maintain their own solutions.",
+      "A. Whilst the focus of National Development Plans in the transport sector lies heavily in the areas of extending road networks and bridges, there are still major gaps identified in addressing the needs of poorer communities. There is a need to develop and promote the sustainable use of alternative transport systems and intermediate means of transportation (IMTs) that complement the linkages of poor people with road networks and other socio-economic infrastructures to improve their livelihoods.",
+      "B. On the other hand, the development of all weathered roads (only 30 percent of the rural population have access to this so far) and motorable bridges are very costly for a country with a small and stagnant economy. In addition, these interventions are not always favourable in all geographical contexts environmentally, socially and economically. More than 60 percent of the network is concentrated in the lowland areas of the country. Although there are a number of alternative ways by which transportation and mobility needs of rural communities in the hills can be addressed, a lack of clear government focus and policies, lack of fiscal and economic incentives, lack of adequate technical knowledge and manufacturing capacities have led to under-development of this alternative transport sub-sector including the provision of IMTs.",
+      "C. One of the major causes of poverty is isolation. Improving the access and mobility of the isolated poor paves the way for access to markets, services and opportunities. By improving transport poorer people are able to access markets where they can buy or sell goods for income, and make better use of essential services such as health and education. No proper roads or vehicles mean women and children are forced to spend many hours each day attending to their most basic needs, such as collecting water and firewood. This valuable time could be used to tend crops, care for the family, study or develop small business ideas to generate much-needed income.",
+      "Road building\nD. Without roads, rural communities are extremely restricted. Collecting water and firewood, and going to local markets is a huge task, therefore it is understandable that the construction of roads is a major priority for many rural communities. Practical Action is helping to improve rural access/transport infrastructures through the construction and rehabilitation of short rural roads, small bridges, culverts and other transport-related functions. The aim is to use methods that encourage community-driven development. This means villagers can improve their own lives through better access to markets, health care, education and other economic and social opportunities, as well as bringing improved services and supplies to the now-accessible villages.",
+      "Driving forward new ideas\nE. Practical Action and the communities we work with are constantly crafting and honing new ideas to help poor people. Cycle trailers have practical business use too, helping people carry their goods, such as vegetables and charcoal, to markets for sale. Not only that, but those on the poverty-line can earn a decent income by making, maintaining and operating bicycle taxis. With Practical Action’s know-how, Sri Lanka communities have been able to start a bus service and maintain the roads along which it travels. The impact has been remarkable. This service has put an end to rural people’s social isolation. Quick and affordable, it gives them a reliable way to travel to the nearest town; and now their children can get an education, making it far more likely they’ll find a path out of poverty. Practical Action is also an active member of many national and regional networks through which exchange of knowledge and advocating based on action research are carried out and one conspicuous example is the Lanka Organic Agriculture Movement.",
+      "Sky-scraping transport system\nF. For people who live in remote, mountainous areas, getting food to market in order to earn enough money to survive is a serious issue. The hills are so steep that travelling down them is dangerous. A porter can help but they are expensive, and it would still take hours or even a day. The journey can take so long that their goods start to perish and become worthless and less. Practical Action has developed an ingenious solution called an aerial ropeway. It can either operate by gravitation force or with the use of external power. The ropeway consists of two trolleys rolling over support tracks connected to a control cable in the middle which moves in a traditional flywheel system. The trolley at the top is loaded with goods and can take up to 120kg. This is pulled down to the station at the bottom, either by the force of gravity or by an external power. The other trolley at the bottom is, therefore, pulled upwards automatically. The external power can be produced by a micro-hydro system if access to an electricity grid is not an option.",
+      "Bringing people on board\nG. Practical Action developed a two-wheeled iron trailer that can be attached (via a hitch behind the seat) to a bicycle and be used to carry heavy loads (up to around 200 kgs) of food, water or even passengers. People can now carry three times as much as before and still pedal the bicycle. The cycle trailers are used for transporting goods by local producers, as ambulances, as mobile shops, and even as mobile libraries. They are made in small village workshops from iron tubing, which is cut, bent, welded and drilled to make the frame and wheels. Modifications are also carried out to the trailers in these workshops at the request of the buyers. The two-wheeled ‘ambulance’ is made from moulded metal, with standard rubber-tyred wheels. The “bed” section can be padded with cushions to make the patient comfortable, while the “seat” section allows a family member to attend to the patient during transit. A dedicated bicycle is needed to pull the ambulance trailer, so that other community members do not need to go without the bicycles they depend on in their daily lives. A joining mechanism allows for easy removal and attachment. In response to user comments, a cover has been designed that can be added to give protection to the patient and attendant in poor weather. Made of treated cotton, the cover is durable and waterproof."
+    ],
+    questionBlocks: [
+      {
+        title: "Questions 1-4",
+        instruction: "Do the following statements agree with the information given in Reading Passage?\nIn boxes 1-4 on your answer sheet, write\nYES if the statement is true\nNO if the statement is false\nNOT GIVEN if the information is not given in the passage",
+        type: "choice",
+        options: ["YES", "NO", "NOT GIVEN"],
+        questions: [
+          { id: 1, text: "A slow-developing economy often can not afford some road networks, especially for those used regardless of weather conditions." },
+          { id: 2, text: "Rural communities’ officials know how to improve alternative transport technically." },
+          { id: 3, text: "The primary aim for Practical Action to improve rural transport infrastructures is meant to increase the trade among villages." },
+          { id: 4, text: "Lanka Organic Agriculture Movement provided service that Practical Action highly involved in." }
+        ]
+      },
+      {
+        title: "Questions 5-8",
+        instruction: "Choose NO MORE THAN THREE WORDS AND/OR A NUMBER from the passage for each answer.",
+        type: "input",
+        questions: [
+          { id: 5, text: "What is the first duty for many rural communities to reach unrestricted development?" },
+          { id: 6, text: "What was one of the new ideas to help poor people carry their goods, such as vegetables and charcoal, to markets for sale?" },
+          { id: 7, text: "What service has put an end to rural people’s social isolation in Sri Lanka?" },
+          { id: 8, text: "What solution had been applied for people who live in remote mountainous areas getting food to market?" }
+        ]
+      },
+      {
+        title: "Questions 9-13",
+        instruction: "Complete the following summary of the paragraphs of Reading Passage.\nUsing NO MORE THAN TWO WORDS from the Reading Passage for each answer.\nWrite your answers in boxes 9-13 on your answer sheet.",
+        text: "Besides normal transport task, changes are also implemented to the trailers in these workshops at the request of the buyers when it was used on a medical emergency or a moveable {9}. ‘Ambulance’ is made from metal, with rubber wheels and drive-by another bicycle. When put with {10} in the two-wheeled ‘ambulance’, the patient can stay comfortable and which another {11} can sit on caring for the patient in transport journey. In order to dismantle or attach other equipment, and assembling {12} is designed. Later, as users suggest, {13} has also been added to give protection to the patient.",
+        type: "summary-input",
+        questions: [
+          { id: 9, text: "" },
+          { id: 10, text: "" },
+          { id: 11, text: "" },
+          { id: 12, text: "" },
+          { id: 13, text: "" }
+        ]
+      }
+    ]
+  },
   { 
     id: 2, 
     title: "READING PASSAGE 2", 
@@ -127,6 +179,19 @@ export const test17Passages = [
 ];
 
 export const test17Answers: Record<number, any> = {
+  1: "YES",
+  2: "NO",
+  3: "NO",
+  4: "YES",
+  5: "construction of roads",
+  6: "cycle trailers",
+  7: "bus service",
+  8: "aerial ropeway",
+  9: "shops/libraries",
+  10: "cushions",
+  11: "family member",
+  12: "joining mechanism",
+  13: "cover",
   14: "iv",
   15: "vii",
   16: "i",
@@ -143,6 +208,84 @@ export const test17Answers: Record<number, any> = {
 };
 
 export const test17Explanations: Record<number, any> = {
+  1: {
+    passageId: 1,
+    highlights: ["the development of all weathered roads", "are very costly for a country with a small and stagnant economy"],
+    explanation: "The passage notes that building weather-resistant roads is too expensive for poor economies.",
+    detailedExplanation: "Synonyms: slow-developing economy = small and stagnant economy; regardless of weather = all weathered; can not afford = very costly"
+  },
+  2: {
+    passageId: 1,
+    highlights: ["lack of adequate technical knowledge", "have led to under-development of this alternative transport sub-sector"],
+    explanation: "The passage explicitly states that there is a lack of technical knowledge, contradicting the idea that officials know how to improve it.",
+    detailedExplanation: "Synonyms: know how to improve = lack of adequate technical knowledge (contradicts)"
+  },
+  3: {
+    passageId: 1,
+    highlights: ["The aim is to use methods that encourage community-driven development."],
+    explanation: "The primary aim is broad community-driven development, not strictly increasing trade between villages.",
+    detailedExplanation: "Synonyms: primary aim = The aim is. 'Increase trade' is a narrower aspect of the broader 'access to markets, health care, education'."
+  },
+  4: {
+    passageId: 1,
+    highlights: ["Practical Action is also an active member of many national and regional networks", "one conspicuous example is the Lanka Organic Agriculture Movement"],
+    explanation: "Practical Action actively participates in networks like the Lanka Organic Agriculture Movement.",
+    detailedExplanation: "Synonyms: highly involved in = active member of"
+  },
+  5: {
+    passageId: 1,
+    highlights: ["the construction of roads is a major priority for many rural communities."],
+    explanation: "Building roads is the primary need to overcome extreme restrictions in rural areas.",
+    detailedExplanation: "Synonyms: first duty = major priority; unrestricted development = (antonym) extremely restricted"
+  },
+  6: {
+    passageId: 1,
+    highlights: ["Cycle trailers have practical business use too, helping people carry their goods, such as vegetables and charcoal"],
+    explanation: "Cycle trailers were introduced specifically to help transport goods like vegetables and charcoal.",
+    detailedExplanation: "Synonyms: carry their goods = carry their goods"
+  },
+  7: {
+    passageId: 1,
+    highlights: ["Sri Lanka communities have been able to start a bus service", "This service has put an end to rural people’s social isolation."],
+    explanation: "Establishing a bus service ended the isolation of rural people in Sri Lanka.",
+    detailedExplanation: "Synonyms: put an end to = put an end to"
+  },
+  8: {
+    passageId: 1,
+    highlights: ["Practical Action has developed an ingenious solution called an aerial ropeway."],
+    explanation: "This clever system was built to move food safely down steep hills.",
+    detailedExplanation: "Synonyms: solution = solution; applied = developed"
+  },
+  9: {
+    passageId: 1,
+    highlights: ["as ambulances, as mobile shops, and even as mobile libraries."],
+    explanation: "Trailers are adapted into mobile versions of these services.",
+    detailedExplanation: "Synonyms: moveable = mobile"
+  },
+  10: {
+    passageId: 1,
+    highlights: ["The “bed” section can be padded with cushions to make the patient comfortable"],
+    explanation: "These are added to the metal bed section to ensure patient comfort.",
+    detailedExplanation: "Synonyms: put with = padded with"
+  },
+  11: {
+    passageId: 1,
+    highlights: ["while the “seat” section allows a family member to attend to the patient"],
+    explanation: "The design includes a seat so a relative can travel with and care for the patient.",
+    detailedExplanation: "Synonyms: caring for = attend to"
+  },
+  12: {
+    passageId: 1,
+    highlights: ["A joining mechanism allows for easy removal and attachment."],
+    explanation: "This specific part is created to allow equipment to be easily connected or taken apart.",
+    detailedExplanation: "Synonyms: dismantle or attach = removal and attachment"
+  },
+  13: {
+    passageId: 1,
+    highlights: ["In response to user comments, a cover has been designed that can be added to give protection"],
+    explanation: "Feedback led to the addition of this item to shield the patient from bad weather.",
+    detailedExplanation: "Synonyms: users suggest = user comments"
+  },
   14: { 
     passageId: 2, 
     highlights: ["documentaries were frequently ignored by critics", "made some people suspicious.", "even supporters", "could not agree on a precise definition", "concerns about the ethics"], 

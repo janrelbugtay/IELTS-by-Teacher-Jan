@@ -59,6 +59,9 @@ export function ComputerSpeakingTest() {
           setFormData(empty);
         }
         setLoadingLobby(false);
+      }).catch(err => {
+        console.error('Error fetching speaking test:', err);
+        setLoadingLobby(false);
       });
       if (isAdmin) {
         setIsLobby(true);

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import React,
+ { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -170,7 +172,9 @@ export function OctoberListeningTest({ submissionId }: { submissionId?: string }
   const [currentPartIndex, setCurrentPartIndex] = useState(1);
   // --- SETTINGS STATE ---
   const [textSize, setTextSize] = useState('standard'); 
-  const [colorTheme, setColorTheme] = useState('standard');
+  const { theme: globalTheme, setTheme: setGlobalTheme } = useTheme();
+  const colorTheme = globalTheme === 'dark' ? 'white-on-black' : globalTheme === 'picture' ? 'yellow-on-black' : 'standard';
+  const setColorTheme = (val) => setGlobalTheme(val === 'white-on-black' ? 'dark' : val === 'yellow-on-black' ? 'picture' : 'light');
   const [showSettings, setShowSettings] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -307,6 +311,20 @@ export function OctoberListeningTest({ submissionId }: { submissionId?: string }
     }
     return () => clearInterval(timer);
   }, [hasStarted, timeLeft, isSubmitted, isTimePaused]);
+
+  const unmountStateRef = useRef({ hasStarted, isSubmitted, submitTest });
+  useEffect(() => {
+    unmountStateRef.current = { hasStarted, isSubmitted, submitTest };
+  }, [hasStarted, isSubmitted, submitTest]);
+
+  useEffect(() => {
+    return () => {
+      const state = unmountStateRef.current;
+      if (state.hasStarted && !state.isSubmitted) {
+        state.submitTest().catch(console.error);
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');

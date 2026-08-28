@@ -1,11 +1,14 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/pages/CourseDetails.tsx', 'utf8');
 
-const target = `import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award } from 'lucide-react';`;
-const replacement = `import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award, Users, BarChart, Clock, ArrowRight } from 'lucide-react';`;
-
-if (content.includes(target)) {
-    content = content.replace(target, replacement);
-    fs.writeFileSync('src/pages/CourseDetails.tsx', content);
-    console.log('Imports patched');
+function addImport(file) {
+  let content = fs.readFileSync(file, 'utf8');
+  if (!content.includes("import { useTheme } from '../contexts/ThemeContext';")) {
+    content = "import { useTheme } from '../contexts/ThemeContext';\n" + content;
+    fs.writeFileSync(file, content);
+    console.log('Added import to', file);
+  }
 }
+
+addImport('src/pages/ComputerReadingTest.tsx');
+addImport('src/pages/SeptemberListeningTest.tsx');
+addImport('src/pages/OctoberListeningTest.tsx');

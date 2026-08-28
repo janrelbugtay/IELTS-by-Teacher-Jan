@@ -220,6 +220,20 @@ export function JuneListeningTest({ submissionId }: { submissionId?: string }) {
     return () => clearInterval(timer);
   }, [hasStarted, timeLeft, isSubmitted, isTimePaused]);
 
+  const unmountStateRef = useRef({ hasStarted, isSubmitted, submitTest });
+  useEffect(() => {
+    unmountStateRef.current = { hasStarted, isSubmitted, submitTest };
+  }, [hasStarted, isSubmitted, submitTest]);
+
+  useEffect(() => {
+    return () => {
+      const state = unmountStateRef.current;
+      if (state.hasStarted && !state.isSubmitted) {
+        state.submitTest().catch(console.error);
+      }
+    };
+  }, []);
+
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');

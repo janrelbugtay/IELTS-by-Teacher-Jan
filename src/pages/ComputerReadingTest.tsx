@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import React,
+ { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -391,7 +393,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
 
   // --- SETTINGS STATE ---
   const [textSize, setTextSize] = useState('standard'); 
-  const [colorTheme, setColorTheme] = useState('standard');
+  const { theme: globalTheme, setTheme: setGlobalTheme } = useTheme();
+  const colorTheme = globalTheme === 'dark' ? 'white-on-black' : globalTheme === 'picture' ? 'yellow-on-black' : 'standard';
+  const setColorTheme = (val) => setGlobalTheme(val === 'white-on-black' ? 'dark' : val === 'yellow-on-black' ? 'picture' : 'light');
   const [showSettings, setShowSettings] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -555,6 +559,20 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     }
     return () => clearInterval(timer);
   }, [hasStarted, isSubmitted, testMode, isPaused, endTime, submissionId]);
+
+  const unmountStateRef = useRef({ hasStarted, isSubmitted, handleSubmit });
+  useEffect(() => {
+    unmountStateRef.current = { hasStarted, isSubmitted, handleSubmit };
+  }, [hasStarted, isSubmitted, handleSubmit]);
+
+  useEffect(() => {
+    return () => {
+      const state = unmountStateRef.current;
+      if (state.hasStarted && !state.isSubmitted) {
+        state.handleSubmit().catch(console.error);
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -893,7 +911,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
       const newElements: any[] = [];
       elements.forEach((el) => {
         if (typeof el === 'string') {
-          const escapeRegExp = (string: string) => string.replace(/[.*+?^\$\{}()|[\]\\\/]/g, '\\$&');
+          const escapeRegExp = (string: string) => (string || '').replace(/[.*+?^\$\{}()|[\]\\\/]/g, '\\$&');
           const highlightParts = highlightStr.split('...');
           const escapedParts = highlightParts.map(p => escapeRegExp(p.trim())).filter(p => p.length > 0);
           
@@ -1055,7 +1073,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     if (!reviewMode || activeReviewQuestion !== qId) return null;
     const isCorrect = checkAnswer(qId);
     const userAns = answers[qId] || 'No Answer';
-    const correctAns = (currentAnswerKey as any)[qId].replace('/', ' or ');
+    const correctAns = ((currentAnswerKey as any)[qId] || '').toString().replace('/', ' or ');
     const explanation = (currentExplanations as any)[qId]?.explanation || "Explanation not found.";
 
     return (
@@ -1296,7 +1314,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             </span>
             {!isCorrect && (
               <span className={`text-[1.25em] font-bold block mt-1 flex items-center gap-1 ${colorTheme !== 'standard' ? 'text-green-400' : 'text-green-600'}`}>
-                 <CheckCircle2 size={14} /> {(currentAnswerKey as any)[qNum].replace('/', ' or ')}
+                 <CheckCircle2 size={14} /> {((currentAnswerKey as any)[qNum] || '').toString().replace('/', ' or ')}
               </span>
             )}
           </div>
@@ -1607,7 +1625,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                 : (colorTheme !== 'standard' ? 'border-b-4 border-transparent text-gray-400 hover:bg-[#222]' : 'border-b-4 border-transparent text-blue-200 hover:bg-blue-900/50 hover:text-white')
             }`}
           >
-            {p.title.replace('READING ', '')}
+            {(p.title || '').replace('READING ', '')}
           </button>
         ))}
       </div>
@@ -1993,8 +2011,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                               {q.id}
                             </div>
                             <div className="flex-1">
-                              <div className="flex justify-between items-start mb-4 gap-4">
-                                <p className={`leading-relaxed mt-1 whitespace-pre-wrap font-medium text-[1em] ${theme.text}`}>
+                              <div className="flex justify-between items-start gap-4">
                                   {(() => {
                                     
                                     let displayQText = q.text;
@@ -2008,13 +2025,20 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                       });
                                       displayQText = newMainText.join('\n');
                                     }
-                                    if (block.type !== 'input') return displayQText;
-                                    const regex = new RegExp(`(?:\b${q.id}\s*)?_{2,}`, 'g');
+                                    if (displayQText && displayQText.trim() === `Question ${q.id}`) {
+                                      displayQText = "";
+                                    }
+                                    if (block.type !== 'input') {
+                                        return displayQText ? <p className={`leading-relaxed mt-1 whitespace-pre-wrap font-medium text-[1em] mb-4 ${theme.text}`}>{displayQText}</p> : <div className="mb-4"></div>;
+                                    }
+                                    const regex = new RegExp(`(?:\\b${q.id}\\s*)?_{2,}`, 'g');
                                     const parts = displayQText.split(regex);
-                                    if (parts.length <= 1) return displayQText;
+                                    if (parts.length <= 1) {
+                                        return displayQText ? <p className={`leading-relaxed mt-1 whitespace-pre-wrap font-medium text-[1em] mb-4 ${theme.text}`}>{displayQText}</p> : <div className="mb-4"></div>;
+                                    }
                                     
                                     return (
-                                      <>
+                                      <p className={`leading-relaxed mt-1 whitespace-pre-wrap font-medium text-[1em] mb-4 ${theme.text}`}>
                                         {parts.map((part, i) => (
                                           <React.Fragment key={i}>
                                             {part}
@@ -2036,10 +2060,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
                                             )}
                                           </React.Fragment>
                                         ))}
-                                      </>
+                                      </p>
                                     );
                                   })()}
-                                </p>
                                 
                                 {!reviewMode && (
                                   <button 

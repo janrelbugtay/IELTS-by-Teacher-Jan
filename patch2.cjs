@@ -1,12 +1,7 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/components/KETCalculator.tsx', 'utf8');
-content = content.replace(
-  '<Select label="Discourse (0-5)" value={scores.speaking.d} max={5} onChange={(v) => handleScoreChange(\'speaking\', \'d\', v)} theme={activeTheme} />',
-  ''
-);
-content = content.replace(
-  '<div className="grid grid-cols-2 md:grid-cols-3 gap-6">\\n        <Select label="Grammar & Vocab (0-5)" value={scores.speaking.g}',
-  '<div className="grid grid-cols-2 md:grid-cols-4 gap-6">\\n        <Select label="Grammar & Vocab (0-5)" value={scores.speaking.g}'
-);
-fs.writeFileSync('src/components/KETCalculator.tsx', content);
-console.log('done');
+let home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
+home = home.replace('className="p-8 flex flex-col flex-1"', 'className="p-5 sm:p-8 flex flex-col flex-1"');
+home = home.replace('className="text-2xl font-bold text-[#0F172A] mb-3 group-hover:text-[#2563EB]', 'className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-2 sm:mb-3 group-hover:text-[#2563EB]');
+home = home.replace('className="text-[#64748B] text-[15px] leading-relaxed mb-8 flex-1"', 'className="text-[#64748B] text-sm sm:text-[15px] leading-relaxed mb-6 sm:mb-8 flex-1"');
+fs.writeFileSync('src/pages/Home.tsx', home);
+console.log('Patched 2');

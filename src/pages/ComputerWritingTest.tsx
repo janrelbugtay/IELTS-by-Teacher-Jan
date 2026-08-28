@@ -185,7 +185,7 @@ const paragraphCount = (text: string) => {
     return trimmed === "" ? 0 : trimmed.split(/\n+/).filter(p => p.trim().length > 0).length;
 };
 
-const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number) => {
     if (seconds <= 0) return "Time's up";
     const mins = Math.ceil(seconds / 60);
     return `${mins} minutes left`;
@@ -910,6 +910,20 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
             }
         }
     };
+
+  const unmountStateRef = useRef({ examStarted, isSubmitted, handleConfirmSubmit });
+  useEffect(() => {
+    unmountStateRef.current = { examStarted, isSubmitted, handleConfirmSubmit };
+  }, [examStarted, isSubmitted, handleConfirmSubmit]);
+
+  useEffect(() => {
+    return () => {
+      const state = unmountStateRef.current;
+      if (state.examStarted && !state.isSubmitted) {
+        state.handleConfirmSubmit().catch(console.error);
+      }
+    };
+  }, []);
 
     if (!state.examStarted) {
         return <LoginScreen onStart={handleStartTest} initialName={state.studentName} testTitle={testTitle} />;

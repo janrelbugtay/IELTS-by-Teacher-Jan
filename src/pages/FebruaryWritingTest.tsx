@@ -216,12 +216,26 @@ export const FebruaryWritingTest = ({ submissionId }: { submissionId?: string })
         }
     };
 
+  const unmountStateRef = useRef({ examStarted, isSubmitted, handleSubmit });
+  useEffect(() => {
+    unmountStateRef.current = { examStarted, isSubmitted, handleSubmit };
+  }, [examStarted, isSubmitted, handleSubmit]);
+
+  useEffect(() => {
+    return () => {
+      const state = unmountStateRef.current;
+      if (state.examStarted && !state.isSubmitted) {
+        state.handleSubmit().catch(console.error);
+      }
+    };
+  }, []);
+
     const wordCount = (text: string) => {
         const trimmed = text.trim();
         return trimmed === "" ? 0 : trimmed.split(/\s+/).length;
     };
 
-    const formatTime = (seconds: number) => {
+      const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
         return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;

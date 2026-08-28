@@ -18,10 +18,10 @@ export async function createStudentAccount(data: {
   
   const studentId = `${prefix}-${year}-${randomNum}`;
   
-  const baseUsername = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}${lastName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  const baseUsername = `${(firstName || '').toLowerCase().replace(/[^a-z0-9]/g, '')}${(lastName || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
   const username = baseUsername;
   
-  const cleanFirstName = firstName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanFirstName = (firstName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const tempPassword = `${cleanFirstName}${randomNum}`;
   
   // Construct a dummy email if none provided, or just use dummy to ensure login via username works

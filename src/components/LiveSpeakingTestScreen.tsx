@@ -23,7 +23,7 @@ const Waveform = ({ isRecording }: { isRecording: boolean }) => (
   </div>
 );
 
-export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: { onComplete: (responses: Record<string, Blob>) => void, testId?: string, customQuestions?: any }) => {
+export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: { onComplete: (responses: Record<string, Blob>) => Promise<void>, testId?: string, customQuestions?: any }) => {
   const navigate = useNavigate();
   const testNum = testId ? testId : '1';
   const MOCK_QUESTIONS = customQuestions || IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
@@ -36,8 +36,10 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
   const [isPrepTimerRunning, setIsPrepTimerRunning] = useState(false);
   const [notes, setNotes] = useState('');
   const [responses, setResponses] = useState<Record<string, Blob>>({});
+  const responsesRef = useRef<Record<string, Blob>>({});
   const hasSubmittedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSampleAnswer, setShowSampleAnswer] = useState(false);
   
   const playSampleAnswerText = (text) => {
@@ -107,6 +109,18 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
     };
   }, []);
 
+  // Auto-save on unmount (e.g. clicking back)
+  useEffect(() => {
+    return () => {
+      if (!hasSubmittedRef.current && Object.keys(responsesRef.current).length > 0) {
+        hasSubmittedRef.current = true;
+        onComplete(responsesRef.current).catch(err => {
+            console.error("Auto-save on back failed", err);
+        });
+      }
+    };
+  }, [onComplete]);
+
   const getCurrentQId = () => {
     if (phase === 'p1') return MOCK_QUESTIONS.part1[qIndex].id;
     if (phase === 'p2') return MOCK_QUESTIONS.part2.id;
@@ -164,7 +178,8 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                             setQState('reviewing'); // or just leave it
                             if (!hasSubmittedRef.current) {
                                 hasSubmittedRef.current = true;
-                                onComplete(responses);
+                                setIsSubmitting(true);
+                                onComplete(responsesRef.current).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
                             }
                         } else {
                             if (true) {
@@ -204,10 +219,17 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
             }
         } else {
             timer = setTimeout(() => {
-              if (true) {
-                setQState('waiting_to_record');
+              if (phase === 'completed') {
+                  setQState('reviewing');
+                  if (!hasSubmittedRef.current) {
+                      hasSubmittedRef.current = true;
+                      setIsSubmitting(true);
+                      onComplete(responsesRef.current).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
+                  }
+              } else if (phase === 'p2-prep') {
+                  setQState('prep');
               } else {
-                startRecording();
+                  setQState('waiting_to_record');
               }
             }, 3000);
         }
@@ -257,7 +279,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
         const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
         const blob = new Blob(audioChunksRef.current, { type: mimeType });
         const qId = getCurrentQId();
-        setResponses(prev => ({ ...prev, [qId]: blob }));
+        setResponses(prev => { const next = { ...prev, [qId]: blob }; responsesRef.current = next; return next; });
         setQState('reviewing');
       };
       mediaRecorderRef.current.stop();
@@ -333,7 +355,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
   };
 
   return (
-    <div className="flex flex-col bg-transparent text-slate-800 w-full overflow-hidden font-sans selection:bg-[#4F7DFF]/20 relative h-[80vh] md:h-auto md:flex-1">
+    <div className="flex flex-col bg-transparent text-slate-800 w-full overflow-visible font-sans selection:bg-[#4F7DFF]/20 relative flex-1 min-h-[600px] md:min-h-0">
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4F7DFF]/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#6CCB5F]/10 rounded-full blur-[150px] pointer-events-none" />
 
@@ -346,7 +368,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
 
       <div className="flex-1 flex flex-col relative z-10 w-full max-w-5xl mx-auto">
         
-        <div className="flex-1 flex flex-col px-8 pb-32 pt-8 w-full justify-center">
+        <div className="flex-1 flex flex-col px-8 pb-64 pt-8 w-full justify-center">
           
           {phase === 'intro' && (
             <div className="text-center space-y-8 animate-in slide-in-from-bottom-8 duration-700 fade-in">
@@ -376,12 +398,12 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
 
           {phase === 'p2-prep' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-500 fade-in w-full max-w-3xl mx-auto">
-              <div className="flex items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+              <div className="flex flex-col md:flex-row items-center md:justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-200 gap-4 md:gap-0">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900 mb-1">Part 2 Preparation</h2>
                   <p className="text-slate-500 font-medium">You have 1 minute to prepare.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-3">
                   {true && (
                     <button 
                       onClick={() => setIsPrepTimerRunning(!isPrepTimerRunning)}
@@ -391,7 +413,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                       {isPrepTimerRunning ? 'Pause Timer' : 'Start Timer'}
                     </button>
                   )}
-                  <div className="text-3xl font-mono font-bold text-slate-800 flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-full border border-slate-200 shadow-inner">
+                  <div className="text-2xl md:text-3xl font-mono font-bold text-slate-800 flex items-center gap-2 md:gap-3 bg-slate-50 px-4 py-2 md:px-6 md:py-3 rounded-full border border-slate-200 shadow-inner">
                      <Clock size={28} className={!isPrepTimerRunning ? 'text-slate-400' : 'text-[#F7B731] animate-pulse'} />
                      {formatTime(prepTime)}
                   </div>
@@ -496,7 +518,7 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
           )}
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl">
+        <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 w-[90%] max-w-4xl">
           <div className="bg-white/95 backdrop-blur-2xl border border-slate-200 shadow-xl rounded-[2.5rem] px-8 py-5 flex flex-col md:flex-row items-center justify-between w-full mx-auto gap-4">
                  
               {/* Status Indicator */}
@@ -629,12 +651,13 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                 )}
                 {phase === 'completed' && qState !== 'ai_speaking' && (
                   <button 
+                    disabled={isSubmitting}
                     onClick={() => {
                       navigate('/ielts/dashboard?tab=speaking');
                     }}
-                    className="flex items-center gap-2 bg-emerald-600 text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-emerald-700 transition-all shadow-md text-base tracking-wide animate-in fade-in zoom-in duration-300"
+                    className={`flex items-center gap-2 px-8 py-3 h-12 rounded-full font-bold transition-all shadow-md text-base tracking-wide animate-in fade-in zoom-in duration-300 ${isSubmitting ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
                   >
-                    Go back to dashboard
+                    {isSubmitting ? 'Saving Results...' : 'Go back to dashboard'}
                   </button>
                 )}
               </div>

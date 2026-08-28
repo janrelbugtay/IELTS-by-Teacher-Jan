@@ -1,44 +1,22 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/components/KETCalculator.tsx', 'utf8');
 
-const oldMaps = `// Map arrays: [Raw Marks, Cambridge Scale Score]
-const CONVERSION_MAPS = {
-  reading: [[0, 82], [10, 100], [14, 120], [20, 133], [25, 140], [30, 150]],
-  writing: [[0, 82], [10, 100], [14, 120], [20, 133], [25, 140], [30, 150]],
-  listening: [[0, 82], [9, 100], [12, 120], [17, 133], [21, 140], [25, 150]],
-  speaking: [[0, 82], [14, 100], [18, 120], [27, 133], [36, 140], [45, 150]]
-};`;
+let layout = fs.readFileSync('src/components/Layout.tsx', 'utf8');
+layout = layout.replace('className="flex flex-col hidden sm:flex"', 'className="flex flex-col"');
+layout = layout.replace('className="font-bold text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era', 'className="font-bold text-sm sm:text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era');
+layout = layout.replace('className="text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà', 'className="text-[9px] sm:text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà');
+fs.writeFileSync('src/components/Layout.tsx', layout);
 
-const newMaps = `// Map arrays: [Raw Marks, Cambridge Scale Score]
-const CONVERSION_MAPS = {
-  reading: [[0, 82], [13, 100], [20, 120], [25, 133], [28, 140], [30, 150]],
-  writing: [[0, 82], [12, 100], [18, 120], [23, 133], [27, 140], [30, 150]],
-  listening: [[0, 82], [11, 100], [17, 120], [21, 133], [23, 140], [25, 150]],
-  speaking: [[0, 82], [18, 100], [27, 120], [33, 133], [40, 140], [45, 150]]
-};`;
+let home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
+// Fix gap
+home = home.replace('className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"', 'className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8"');
+// Fix padding
+home = home.replace('className={`group relative p-8 rounded-[32px]', 'className={`group relative p-6 sm:p-8 rounded-[24px] sm:rounded-[32px]');
+// Fix icon
+home = home.replace('w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} text-white flex items-center justify-center mb-6', 'w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br ${feature.color} text-white flex items-center justify-center mb-4 sm:mb-6');
+// Fix title
+home = home.replace('className="text-xl font-bold text-[#0F172A] mb-3 group-hover:text-white', 'className="text-lg sm:text-xl font-bold text-[#0F172A] mb-2 sm:mb-3 group-hover:text-white');
+// Fix desc
+home = home.replace('className="text-[#64748B] text-[15px] leading-relaxed group-hover:text-white/90', 'className="text-[#64748B] text-sm sm:text-[15px] leading-relaxed group-hover:text-white/90');
 
-content = content.replace(oldMaps, newMaps);
-
-const oldGrade = `const getGradeInfo = (scaleScore) => {
-  if (scaleScore === null) return { text: "-", color: "text-gray-400" };
-  if (scaleScore < 102) return { text: "Not Reported", color: "text-red-500" };
-  if (scaleScore <= 119) return { text: "Level A1", color: "text-orange-500" };
-  if (scaleScore <= 139) return { text: "Fail - Level A2", color: "text-amber-500" };
-  if (scaleScore <= 152) return { text: "Pass - Grade C (Level A2)", color: "text-emerald-500" };
-  if (scaleScore <= 159) return { text: "Pass - Grade B (Level A2)", color: "text-teal-500" };
-  return { text: "Pass - Grade A (Level B2)", color: "text-blue-500" };
-};`;
-
-const newGrade = `const getGradeInfo = (scaleScore) => {
-  if (scaleScore === null) return { text: "-", color: "text-gray-400" };
-  if (scaleScore < 100) return { text: "Not Reported", color: "text-red-500" };
-  if (scaleScore <= 119) return { text: "Level A1 (Fail)", color: "text-orange-500" };
-  if (scaleScore <= 132) return { text: "Grade C (Level A2)", color: "text-emerald-500" };
-  if (scaleScore <= 139) return { text: "Grade B (Level A2)", color: "text-teal-500" };
-  return { text: "Grade A (Level B1)", color: "text-blue-500" };
-};`;
-
-content = content.replace(oldGrade, newGrade);
-
-fs.writeFileSync('src/components/KETCalculator.tsx', content);
-console.log('done');
+fs.writeFileSync('src/pages/Home.tsx', home);
+console.log('Patched');

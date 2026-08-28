@@ -220,7 +220,7 @@ export function Home() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Cambridge English Courses</h2>
+              <h2 className="text-2xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">Cambridge English Courses</h2>
               <p className="text-[#64748B] text-lg">Comprehensive programs designed to develop all four language skills systematically.</p>
             </div>
             <Link to="/courses" className="px-6 py-3 bg-white text-[#0F172A] border border-[#E2E8F0] rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-2">
@@ -271,11 +271,11 @@ export function Home() {
       <section className="py-24 bg-white border-y border-[#E2E8F0]">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 max-w-3xl mx-auto">
-            <h2 className="text-3xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">The Premium Experience</h2>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-[#0F172A] mb-4 tracking-tight">The Premium Experience</h2>
             <p className="text-[#64748B] text-lg">We combine world-class curriculum with modern technology to deliver the best language education.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
             {features.map((feature, idx) => (
               <motion.div 
                 key={idx}
@@ -284,16 +284,17 @@ export function Home() {
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className={`group relative p-8 rounded-[32px] bg-white border border-[#E2E8F0] overflow-hidden transition-all duration-500 shadow-sm hover:shadow-2xl hover:border-transparent ${feature.shadow}`}
+                className={`group relative p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] bg-white border border-[#E2E8F0] overflow-hidden transition-all duration-500 shadow-sm hover:shadow-2xl hover:border-transparent ${feature.shadow}`}
               >
+                <div className={`absolute top-0 left-0 right-0 h-1 sm:hidden bg-gradient-to-r ${feature.color}`}></div>
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 
                 <div className="relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} text-white flex items-center justify-center mb-6 shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br ${feature.color} text-white flex items-center justify-center mb-4 sm:mb-6 shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-[#0F172A] mb-3 group-hover:text-white transition-colors duration-300">{feature.title}</h3>
-                  <p className="text-[#64748B] text-[15px] leading-relaxed group-hover:text-white/90 transition-colors duration-300">{feature.desc}</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] mb-2 sm:mb-3 group-hover:text-white transition-colors duration-300">{feature.title}</h3>
+                  <p className="text-[#64748B] text-sm sm:text-[15px] leading-relaxed group-hover:text-white/90 transition-colors duration-300">{feature.desc}</p>
                 </div>
                 
                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
@@ -379,7 +380,7 @@ export function Home() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl sm:text-[40px] font-bold mb-6 leading-tight">Trusted by hundreds of successful students.</h2>
+              <h2 className="text-2xl sm:text-[40px] font-bold mb-6 leading-tight">Trusted by hundreds of successful students.</h2>
               <p className="text-slate-300 text-lg mb-12 max-w-lg">
                 Our results speak for themselves. We've helped students achieve their target scores for university admission, immigration, and personal growth.
               </p>
@@ -543,7 +544,7 @@ export function Home() {
                     {post.date}
                   </div>
                 </div>
-                <div className="p-8 flex flex-col flex-1">
+                <div className="p-5 sm:p-8 flex flex-col flex-1">
                   <h3 className="text-xl font-bold text-[#0F172A] mb-4 group-hover:text-[#2563EB] transition-colors">{post.title}</h3>
                   <p className="text-[#64748B] text-[15px] mb-6 flex-1">Discover effective strategies and practical tips to improve your performance and achieve your target score.</p>
                   <span className="inline-flex items-center gap-2 text-[#2563EB] font-bold text-[15px] mt-auto">

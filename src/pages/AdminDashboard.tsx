@@ -60,10 +60,10 @@ export function AdminDashboard() {
       
       const studentId = u.studentId || `${prefix}-${year}-${randomNum}`;
       
-      const baseUsername = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}${lastName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      const baseUsername = `${(firstName || '').toLowerCase().replace(/[^a-z0-9]/g, '')}${(lastName || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
       const username = u.username || (baseUsername || `student${randomNum}`);
       
-      const cleanFirstName = firstName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'student';
+      const cleanFirstName = (firstName || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'student';
       const tempPassword = u.tempPassword || `${cleanFirstName}${randomNum}`;
 
       const userRef = doc(db, 'users', u.id);

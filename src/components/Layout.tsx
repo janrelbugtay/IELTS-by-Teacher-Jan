@@ -27,6 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
 
 
@@ -77,9 +78,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex-shrink-0 flex items-center">
               <Link to="/" className="flex items-center gap-3 group">
                 <EraLogo className="w-10 h-10 rounded-[14px] shadow-[0_8px_16px_rgba(37,99,235,0.2)] group-hover:shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition-all duration-300" />
-                <div className="flex flex-col hidden sm:flex">
-                  <span className="font-bold text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
-                  <span className="text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm sm:text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
+                  <span className="text-[9px] sm:text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
                 </div>
               </Link>
             </div>
@@ -122,28 +123,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <div className="flex items-center gap-4">
-                  <div className="flex bg-slate-100 rounded-full p-1 gap-1">
+                  
+                  <div className="relative">
                     <button 
-                      onClick={() => setTheme('light')}
-                      className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-                      title="Light Mode"
+                      onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                      className="p-2 rounded-full hover:bg-slate-100 text-[#64748B] hover:text-[#0F172A] transition-colors flex items-center justify-center bg-slate-50 border border-slate-200"
+                      title="Theme Settings"
                     >
-                      <Sun className="w-4 h-4" />
+                      {theme === 'light' ? <Sun className="w-5 h-5"/> : theme === 'dark' ? <Moon className="w-5 h-5" /> : <ImageIcon className="w-5 h-5" />}
                     </button>
-                    <button 
-                      onClick={() => setTheme('dark')}
-                      className={`p-1.5 rounded-full transition-colors ${theme === 'dark' ? 'bg-[#0F172A] shadow-sm text-white' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-                      title="Dark Mode"
-                    >
-                      <Moon className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setTheme('picture')}
-                      className={`p-1.5 rounded-full transition-colors ${theme === 'picture' ? 'bg-[#cddbe8] shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-                      title="Picture Theme"
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                    </button>
+                    <AnimatePresence>
+                      {themeMenuOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-40 z-50 overflow-hidden"
+                        >
+                          <button onClick={() => {setTheme('light'); setThemeMenuOpen(false);}} className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm transition-colors ${theme === 'light' ? 'text-[#2563EB] font-medium bg-blue-50/50' : 'text-slate-700'}`}>
+                            <Sun className="w-4 h-4" /> Light Mode
+                          </button>
+                          <button onClick={() => {setTheme('dark'); setThemeMenuOpen(false);}} className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm transition-colors ${theme === 'dark' ? 'text-[#2563EB] font-medium bg-blue-50/50' : 'text-slate-700'}`}>
+                            <Moon className="w-4 h-4" /> Dark Mode
+                          </button>
+                          <button onClick={() => {setTheme('picture'); setThemeMenuOpen(false);}} className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm transition-colors ${theme === 'picture' ? 'text-[#2563EB] font-medium bg-blue-50/50' : 'text-slate-700'}`}>
+                            <ImageIcon className="w-4 h-4" /> Color Mode
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                   <button className="relative p-2 text-[#64748B] hover:text-[#0F172A] transition-colors rounded-full hover:bg-slate-100">
                     <Bell className="w-5 h-5" />
