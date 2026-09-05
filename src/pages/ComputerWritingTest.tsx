@@ -169,6 +169,21 @@ const getCustomPrompt = (id: string | undefined) => {
                 t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
                 t2Raw: "In many modern societies, the gap between the richest and poorest people is increasing. What problems can this situation cause? What can be done to reduce this gap? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
             };
+                case 'ielts-writing-homework-1':
+            return {
+                t1Title: defaultPrompt.t1Title,
+                t1Desc: defaultPrompt.t1Desc,
+                t1Content: defaultPrompt.t1Content,
+                t1Raw: defaultPrompt.t1Raw,
+                t2Prompt: (
+                    <>
+                        <p className="font-bold mb-4">In some cities and towns all over the world, traffic jam is a problem.</p>
+                        <p className="font-bold mb-4">What are the causes of this and what actions can be taken to solve this problem?</p>
+                    </>
+                ),
+                t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
+                t2Raw: "In some cities and towns all over the world, traffic jam is a problem. What are the causes of this and what actions can be taken to solve this problem? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+            };
         default:
             return defaultPrompt;
     }
@@ -191,7 +206,7 @@ const paragraphCount = (text: string) => {
     return `${mins} minutes left`;
 };
 
-const LoginScreen = ({ onStart, initialName, testTitle }: { onStart: (name: string, number: string, testMode: 'practice' | 'mock') => void, initialName: string, testTitle?: string }) => {
+const LoginScreen = ({ onStart, initialName, testTitle, typeLabel }: { onStart: (name: string, number: string, testMode: 'practice' | 'mock') => void, initialName: string, testTitle?: string }) => {
     const [name, setName] = useState(initialName || "");
     const [number, setNumber] = useState("");
     const [testMode, setTestMode] = useState<'practice' | 'mock'>('practice');
@@ -209,44 +224,46 @@ const LoginScreen = ({ onStart, initialName, testTitle }: { onStart: (name: stri
                     </div>
                 </div>
                 <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-purple-700 mb-2 text-center">{testTitle || "IELTS Writing Test"}</h1>
-                <p className="text-gray-500 text-center mb-8 text-sm font-medium">Please select your mode and enter your details to begin.</p>
+                <p className="text-gray-500 text-center mb-8 text-sm font-medium">{typeLabel === 'Homework' ? "Please enter your details to begin." : "Please select your mode and enter your details to begin."}</p>
                 
                 <div className="space-y-4 mb-8">
-                    <div className="grid grid-cols-2 gap-4 mb-2">
-                        <button 
-                            type="button"
-                            onClick={() => setTestMode('practice')}
-                            className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden ${testMode === 'practice' ? 'border-purple-500 bg-purple-50/80 shadow-md' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50 bg-white/50'}`}
-                        >
-                            {testMode === 'practice' && <div className="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>}
-                            <div className="flex justify-between items-start mb-1">
-                                <div className={`font-bold text-[15px] ${testMode === 'practice' ? 'text-purple-700' : 'text-gray-700'}`}>Study Mode</div>
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'practice' ? 'border-purple-500' : 'border-gray-300'}`}>
-                                    {testMode === 'practice' && <div className="w-2 h-2 rounded-full bg-purple-500"></div>}
+                    {typeLabel !== 'Homework' && (
+                        <div className="grid grid-cols-2 gap-4 mb-2">
+                            <button 
+                                type="button"
+                                onClick={() => setTestMode('practice')}
+                                className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden ${testMode === 'practice' ? 'border-purple-500 bg-purple-50/80 shadow-md' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50 bg-white/50'}`}
+                            >
+                                {testMode === 'practice' && <div className="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>}
+                                <div className="flex justify-between items-start mb-1">
+                                    <div className={`font-bold text-[15px] ${testMode === 'practice' ? 'text-purple-700' : 'text-gray-700'}`}>Study Mode</div>
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'practice' ? 'border-purple-500' : 'border-gray-300'}`}>
+                                        {testMode === 'practice' && <div className="w-2 h-2 rounded-full bg-purple-500"></div>}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="text-[11px] text-gray-500 leading-snug pr-2">
-                                Timer can be paused. Ideal for learning and reviewing.
-                            </div>
-                        </button>
+                                <div className="text-[11px] text-gray-500 leading-snug pr-2">
+                                    Timer can be paused. Ideal for learning and reviewing.
+                                </div>
+                            </button>
 
-                        <button 
-                            type="button"
-                            onClick={() => setTestMode('mock')}
-                            className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden ${testMode === 'mock' ? 'border-blue-500 bg-blue-50/80 shadow-md' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 bg-white/50'}`}
-                        >
-                            {testMode === 'mock' && <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>}
-                            <div className="flex justify-between items-start mb-1">
-                                <div className={`font-bold text-[15px] ${testMode === 'mock' ? 'text-blue-700' : 'text-gray-700'}`}>Mock Test Mode</div>
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'mock' ? 'border-blue-500' : 'border-gray-300'}`}>
-                                    {testMode === 'mock' && <div className="w-2 h-2 rounded-full bg-blue-500"></div>}
+                            <button 
+                                type="button"
+                                onClick={() => setTestMode('mock')}
+                                className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden ${testMode === 'mock' ? 'border-blue-500 bg-blue-50/80 shadow-md' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 bg-white/50'}`}
+                            >
+                                {testMode === 'mock' && <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>}
+                                <div className="flex justify-between items-start mb-1">
+                                    <div className={`font-bold text-[15px] ${testMode === 'mock' ? 'text-blue-700' : 'text-gray-700'}`}>Mock Test Mode</div>
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${testMode === 'mock' ? 'border-blue-500' : 'border-gray-300'}`}>
+                                        {testMode === 'mock' && <div className="w-2 h-2 rounded-full bg-blue-500"></div>}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="text-[11px] text-gray-500 leading-snug pr-2">
-                                Strict timed conditions. Timer cannot be paused.
-                            </div>
-                        </button>
-                    </div>
+                                <div className="text-[11px] text-gray-500 leading-snug pr-2">
+                                    Strict timed conditions. Timer cannot be paused.
+                                </div>
+                            </button>
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
@@ -265,7 +282,7 @@ const LoginScreen = ({ onStart, initialName, testTitle }: { onStart: (name: stri
                     onClick={() => onStart(name, number, testMode)}
                     disabled={!name.trim()}
                 >
-                    Start Writing Test
+                    Start
                 </button>
             </div>
         </div>
@@ -312,14 +329,14 @@ const SettingsModal = ({ textSize, setTextSize, onClose }: any) => {
     );
 };
 
-const SubmitModal = ({ onConfirm, onCancel }: any) => (
+const SubmitModal = ({ onConfirm, onCancel, typeLabel = 'Test' }: any) => (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
         <div className="bg-white rounded-xl shadow-2xl w-[400px] overflow-hidden animate-in slide-in-from-bottom-4 p-8 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Submit Test</h3>
-            <p className="text-gray-600 mb-8">Are you sure you want to submit your IELTS Writing test? You will not be able to edit your answers after submitting.</p>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Submit {typeLabel}</h3>
+            <p className="text-gray-600 mb-8">Are you sure you want to submit your IELTS Writing {typeLabel.toLowerCase()}? You will not be able to edit your answers after submitting.</p>
             <div className="flex gap-4 justify-center">
                 <button className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors" onClick={onCancel}>Cancel</button>
                 <button className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 shadow-md transition-colors" onClick={onConfirm}>Submit</button>
@@ -328,7 +345,7 @@ const SubmitModal = ({ onConfirm, onCancel }: any) => (
     </div>
 );
 
-const Header = ({ studentName, candidateNumber, timeLeft, saveStatus, onOpenSettings, onOpenSubmit, isSubmitted, testMode, isTimePaused, onTogglePause }: any) => {
+const Header = ({ studentName, candidateNumber, timeLeft, saveStatus, onOpenSettings, onOpenSubmit, isSubmitted, testMode, isTimePaused, onTogglePause, typeLabel = 'Test' }: any) => {
     const displayName = candidateNumber ? `${studentName} - ${candidateNumber}` : studentName;
     
     return (
@@ -343,7 +360,7 @@ const Header = ({ studentName, candidateNumber, timeLeft, saveStatus, onOpenSett
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center bg-black/20 px-4 py-1.5 rounded-full border border-white/10">
                 <svg className={`w-4 h-4 mr-2 ${timeLeft <= 300 ? 'text-red-400 animate-pulse' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span className={`font-bold tracking-wide ${timeLeft <= 300 ? 'text-red-400' : 'text-white'}`}>
-                    {isSubmitted ? "Test Completed" : formatTime(timeLeft)}
+                    {isSubmitted ? `${typeLabel} Completed` : formatTime(timeLeft)}
                 </span>
                 {testMode === 'practice' && !isSubmitted && (
                     <button 
@@ -367,7 +384,7 @@ const Header = ({ studentName, candidateNumber, timeLeft, saveStatus, onOpenSett
                 </button>
                 {!isSubmitted && (
                     <button className="bg-gradient-to-b from-white to-slate-50 border border-red-200 text-red-600 font-semibold px-4 py-1 text-[13px] rounded shadow-sm hover:translate-y-[-1px] transition-transform flex items-center gap-2" onClick={onOpenSubmit}>
-                        Submit Test
+                        {`Submit ${typeLabel}`}
                     </button>
                 )}
             </div>
@@ -391,10 +408,7 @@ const PromptPanel = ({ activePart, textSize, testId }: any) => {
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-6 rounded-r-lg">
                         {prompt.t2Prompt}
                     </div>
-                    <p className="font-bold mb-8">{prompt.t2Desc}</p>
-                    <p className="text-sm text-gray-500 italic bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        Give reasons for your answer and include any relevant examples from your own knowledge or experience.
-                    </p>
+                    <p className="font-bold mb-8 text-gray-700">{prompt.t2Desc}</p>
                 </div>
             )}
         </div>
@@ -544,14 +558,15 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     const { user, isAdmin } = useAuth();
 
     const testId = id;
-    let testTitle = 'IELTS Writing Test';
+    const typeLabel = testId?.toLowerCase().includes('homework') ? 'Homework' : 'Test';
+    let testTitle = `IELTS Writing ${typeLabel}`;
     if (testId) {
         const numericId = Number(testId);
         if (!isNaN(numericId) && numericId >= 1 && numericId <= 48) {
             const monthIndex = Math.floor((numericId - 1) / 4);
             testTitle = `IELTS Writing Test ${monthIndex + 1}`;
         } else {
-            testTitle = testId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+            testTitle = testId.split('-').map(s => s.toLowerCase() === 'ielts' ? 'IELTS' : s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
         }
     }
 
@@ -887,7 +902,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                         const testNum = Math.ceil(numId / 4);
                         title = `IELTS Writing Test ${testNum}`;
                     } else {
-                        title = currentId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                        title = currentId.split('-').map(s => s.toLowerCase() === 'ielts' ? 'IELTS' : s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                     }
                 }
                 
@@ -911,10 +926,10 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
         }
     };
 
-  const unmountStateRef = useRef({ examStarted, isSubmitted, handleConfirmSubmit });
+  const unmountStateRef = useRef({ examStarted: state.examStarted, isSubmitted: state.isSubmitted, handleConfirmSubmit });
   useEffect(() => {
-    unmountStateRef.current = { examStarted, isSubmitted, handleConfirmSubmit };
-  }, [examStarted, isSubmitted, handleConfirmSubmit]);
+    unmountStateRef.current = { examStarted: state.examStarted, isSubmitted: state.isSubmitted, handleConfirmSubmit };
+  }, [state.examStarted, state.isSubmitted, handleConfirmSubmit]);
 
   useEffect(() => {
     return () => {
@@ -926,7 +941,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
   }, []);
 
     if (!state.examStarted) {
-        return <LoginScreen onStart={handleStartTest} initialName={state.studentName} testTitle={testTitle} />;
+        return <LoginScreen onStart={handleStartTest} initialName={state.studentName} testTitle={testTitle} typeLabel={typeLabel} />;
     }
 
     return (
@@ -941,7 +956,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                 isSubmitted={state.isSubmitted}
                 testMode={state.testMode}
                 isTimePaused={isTimePaused}
-                onTogglePause={() => setIsTimePaused(!isTimePaused)}
+                onTogglePause={() => setIsTimePaused(!isTimePaused)} typeLabel={typeLabel}
             />
 
             <div className="flex-1 flex flex-col mx-3 mt-3 mb-0 bg-white shadow-xl overflow-hidden border border-gray-300 rounded-t-xl z-10 relative">
@@ -965,7 +980,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                             <div className="flex items-center gap-3">
                                 <EraLogo className="w-8 h-8" />
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-800">Test Submitted Successfully</h2>
+                                    <h2 className="text-xl font-bold text-slate-800">{typeLabel} Submitted Successfully</h2>
                                     <p className="text-sm text-slate-500">Timestamp: {new Date(state.submitTime).toLocaleString()}</p>
                                 </div>
                             </div>
@@ -983,7 +998,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                                     }}
                                     className="bg-slate-100 text-slate-700 font-bold py-2 px-5 rounded-lg hover:bg-slate-200 transition border border-slate-300"
                                 >
-                                    Retake Test
+                                    Retake {typeLabel}
                                 </button>
                             </div>
                         </div>
@@ -1137,6 +1152,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                 <SubmitModal 
                     onCancel={() => setShowSubmitModal(false)}
                     onConfirm={handleConfirmSubmit}
+                    typeLabel={typeLabel}
                 />
             )}
         </div>
