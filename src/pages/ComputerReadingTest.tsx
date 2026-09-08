@@ -1236,7 +1236,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
     stateRef.current = { answers, timeLeft, studentName, id };
   }, [answers, timeLeft, studentName, id]);
 
-  const handleSubmit = async () => {
+  async function handleSubmit() {
     setIsSubmitted(true);
     setModalConfig(null);
     

@@ -255,7 +255,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
     submitStateRef.current = { answers, timeLeft, id, studentName };
   }, [answers, timeLeft, id, studentName]);
 
-  const submitTest = async () => {
+  async function submitTest() {
     setIsSubmitted(true);
     if (!user) {
         navigate('/dashboard');

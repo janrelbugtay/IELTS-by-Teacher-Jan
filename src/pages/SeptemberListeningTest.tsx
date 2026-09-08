@@ -409,7 +409,7 @@ export function SeptemberListeningTest({ submissionId }: { submissionId?: string
     }));
   };
 
-  const submitTest = async () => {
+  async function submitTest() {
     setIsSubmitted(true);
     if (!user) {
         navigate('/dashboard');

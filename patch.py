@@ -1,64 +1,26 @@
 import re
 
-# Patch 1: CourseDetails.tsx
-filepath = 'src/pages/CourseDetails.tsx'
-with open(filepath, 'r') as f:
+with open('src/pages/ComputerWritingTest.tsx', 'r') as f:
     content = f.read()
 
-content = content.replace('Start Test <ArrowRight', 'Start <ArrowRight')
+# Add a style block for printing if it doesn't exist
+style_block = """
+            <style>{`
+                .ielts-table th, .ielts-table td { border: 1px solid #a0aec0; padding: 8px 12px; text-align: center; }
+                .ielts-table th { background-color: #f1f5f9; font-weight: bold; }
+                
+                .pdf-generating .print-hidden { display: none !important; }
+                .pdf-generating #result-overlay { background: white !important; padding: 0 !important; overflow: visible !important; position: static !important; }
+                .pdf-generating #result-sheets-container { display: block !important; width: 190mm !important; max-width: 190mm !important; padding: 0 !important; margin: 0 auto !important; }
+                .pdf-generating .answer-sheet { width: 190mm !important; max-width: 190mm !important; min-height: 277mm !important; margin: 0 auto !important; box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-after: always; }
+                .pdf-generating .ai-report { width: 190mm !important; max-width: 190mm !important; margin: 0 auto !important; box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-after: always; }
+            `}</style>
+"""
 
-with open(filepath, 'w') as f:
+# Find return ( and insert style
+if "pdf-generating" not in content:
+    content = content.replace('    return (\n        <div className="flex flex-col h-screen bg-[#c1c5cc] font-sans">', 
+                              '    return (\n        <div className="flex flex-col h-screen bg-[#c1c5cc] font-sans">' + style_block)
+
+with open('src/pages/ComputerWritingTest.tsx', 'w') as f:
     f.write(content)
-
-# Patch 2: ComputerWritingTest.tsx
-filepath = 'src/pages/ComputerWritingTest.tsx'
-with open(filepath, 'r') as f:
-    content = f.read()
-
-# Remove redundant text
-bad_redundant = """                    <p className="font-bold mb-8">{prompt.t2Desc}</p>
-                    <p className="text-sm text-gray-500 italic bg-gray-50 p-4 rounded-lg border border-gray-100">
-                        Give reasons for your answer and include any relevant examples from your own knowledge or experience.
-                    </p>"""
-
-good_redundant = """                    <p className="font-bold mb-8 text-gray-700">{prompt.t2Desc}</p>"""
-
-content = content.replace(bad_redundant, good_redundant)
-
-# Fix LoginScreen Start button
-content = content.replace('Start Writing {typeLabel}', 'Start')
-
-# Fix Header typeLabel prop passing
-bad_header_call = """            <Header 
-                studentName={state.studentName}
-                candidateNumber={state.candidateNumber}
-                timeLeft={timeLeft}
-                saveStatus={saveStatus}
-                onOpenSettings={() => setShowSettings(true)}
-                onOpenSubmit={() => setShowSubmitModal(true)}
-                isSubmitted={state.isSubmitted}
-                testMode={state.testMode}
-                isTimePaused={isTimePaused}
-                onTogglePause={() => setIsTimePaused(!isTimePaused)}
-            />"""
-
-good_header_call = """            <Header 
-                studentName={state.studentName}
-                candidateNumber={state.candidateNumber}
-                timeLeft={timeLeft}
-                saveStatus={saveStatus}
-                onOpenSettings={() => setShowSettings(true)}
-                onOpenSubmit={() => setShowSubmitModal(true)}
-                isSubmitted={state.isSubmitted}
-                testMode={state.testMode}
-                isTimePaused={isTimePaused}
-                onTogglePause={() => setIsTimePaused(!isTimePaused)}
-                typeLabel={typeLabel}
-            />"""
-
-content = content.replace(bad_header_call, good_header_call)
-
-with open(filepath, 'w') as f:
-    f.write(content)
-
-print("Patched.")

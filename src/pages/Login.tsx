@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, KeyRound } from 'lucide-react';
@@ -11,6 +11,20 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const autoLoginId = searchParams.get('autoLoginId');
+    const autoLoginPass = searchParams.get('autoLoginPass');
+    
+    if (autoLoginId && autoLoginPass && !user && !loading && !authLoading) {
+      setLoginId(autoLoginId);
+      setPassword(autoLoginPass);
+      // Clean up URL right away so we don't end up in an infinite loop if something fails
+      window.history.replaceState({}, document.title, window.location.pathname);
+      processLogin(autoLoginId, autoLoginPass);
+    }
+  }, [user, loading]);
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-[70vh]">Loading...</div>;
@@ -37,19 +51,18 @@ export function Login() {
   };
 
   
-  const handleSchoolLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const processLogin = async (idToUse: string, passToUse: string) => {
     setError('');
     setAuthLoading(true);
 
-    if (!loginId || !password) {
+    if (!idToUse || !passToUse) {
       setError('Please enter your Student ID/Username and password.');
       setAuthLoading(false);
       return;
     }
 
     try {
-      const cleanLoginId = loginId.trim();
+      const cleanLoginId = idToUse.trim();
       const lowerLoginId = cleanLoginId.toLowerCase();
       const upperLoginId = cleanLoginId.toUpperCase();
 
@@ -89,7 +102,7 @@ export function Login() {
 
       if (querySnapshot.empty) {
         if (cleanLoginId.includes('@')) {
-          await signInWithEmail(cleanLoginId, password);
+          await signInWithEmail(cleanLoginId, passToUse);
           return;
         }
         throw new Error('User not found. Please check your Student ID or Username.');
@@ -100,16 +113,14 @@ export function Login() {
       
       // If this is a Firebase Auth user (no custom password set), fall back to standard email login
       if (!userData.password && !userData.tempPassword && cleanLoginId.includes('@')) {
-        await signInWithEmail(cleanLoginId, password);
+        await signInWithEmail(cleanLoginId, passToUse);
         return;
       }
       
       // Verify password
-      if (userData.password !== password && userData.tempPassword !== password) {
+      if (userData.password !== passToUse && userData.tempPassword !== passToUse) {
         throw new Error('Invalid password. Please check your credentials.');
       }
-
-      
 
       // Store student ID in local storage to override Firebase Auth UID
       localStorage.setItem('studentUid', userDoc.id);
@@ -125,6 +136,11 @@ export function Login() {
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  const handleSchoolLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await processLogin(loginId, password);
   };
 
   const handleForgotPassword = () => {

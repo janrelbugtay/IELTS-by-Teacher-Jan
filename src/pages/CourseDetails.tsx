@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Headphones, Mic, BookOpen, PenTool, Activity, Trophy, Medal, Star, Flame, Search, ChevronDown, Award, Users, BarChart, Clock, ArrowRight } from 'lucide-react';
 import { HomeLeaderboardDashboard } from '../components/HomeLeaderboardDashboard';

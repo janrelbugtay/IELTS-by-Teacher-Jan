@@ -5,7 +5,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { KETCalculator } from '../../components/KETCalculator';
 
-import { Edit2, X } from 'lucide-react';
+import { Edit2, X, CheckCircle2, Share2 } from 'lucide-react';
 import { BookOpen, PenTool, Headphones, Mic, PlayCircle, Upload, Trash2, Download } from 'lucide-react';
 
 const calculateCambridgeScore = (scores: any) => {
@@ -20,9 +20,10 @@ const getGradeDetails = (score: number) => {
     return { grade: 'Fail', cefr: 'Below A2', status: 'Not Qualified' };
 };
 
-const HeroSection = ({ data, isAdmin, onEditProfile }: { data: any, isAdmin: boolean, onEditProfile: () => void }) => {
+const HeroSection = ({ data, isAdmin, onEditProfile, targetUserId, userProfile }: { data: any, isAdmin: boolean, onEditProfile: () => void, targetUserId?: string, userProfile?: any }) => {
     const overallScore = calculateCambridgeScore(data.scores);
     const gradeInfo = getGradeDetails(overallScore);
+    const [isCopied, setIsCopied] = useState(false);
     
     const percentage = ((overallScore - 120) / (170 - 120)) * 100;
     const clampedPercentage = Math.max(0, Math.min(100, percentage));
@@ -42,17 +43,36 @@ const HeroSection = ({ data, isAdmin, onEditProfile }: { data: any, isAdmin: boo
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-3xl font-bold text-slate-800 mb-1">Welcome back, {data.profile.name}</h1>
-                            <p className="text-slate-500 font-medium">Cambridge KET Candidate • {data.profile.candidateNumber}</p>
+                            <p className="text-slate-500 font-medium mb-3">Cambridge KET Candidate • {data.profile.candidateNumber}</p>
+                            
+                            <div className="flex gap-2">
+                                <a 
+                                    href={(() => {
+                                        let url = `${window.location.origin}/shared/ket/dashboard/${targetUserId}`;
+                                        const up = userProfile as any;
+                                        if (isAdmin && up?.studentId && (up?.tempPassword || up?.password)) {
+                                            url = `${window.location.origin}/login?autoLoginId=${encodeURIComponent(up.studentId)}&autoLoginPass=${encodeURIComponent(up.tempPassword || up.password)}`;
+                                        }
+                                        return url;
+                                    })()}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Right-click to copy link, or click to open"
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl transition-colors text-white text-xs font-bold uppercase tracking-wider shadow-sm bg-blue-600 hover:bg-blue-700"
+                                >
+                                    <Share2 className="w-4 h-4" /> Share Link
+                                </a>
+                                {isAdmin && (
+                                    <button 
+                                        onClick={onEditProfile}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors text-xs font-bold uppercase tracking-wider"
+                                        title="Edit Profile"
+                                    >
+                                        <Edit2 className="w-4 h-4" /> Edit
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        {isAdmin && (
-                            <button 
-                                onClick={onEditProfile}
-                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Edit Profile"
-                            >
-                                <Edit2 className="w-5 h-5" />
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
@@ -516,7 +536,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
             `}</style>
             <main className="p-4 md:p-8 max-w-6xl mx-auto w-full pt-8">
-                <HeroSection data={studentData} isAdmin={isAdmin} onEditProfile={handleOpenEdit} />
+                <HeroSection data={studentData} isAdmin={isAdmin} onEditProfile={handleOpenEdit} targetUserId={targetUserId} userProfile={profileData} />
                 
                 <CambridgeClassicProfile 
                     scores={studentData.scores} 

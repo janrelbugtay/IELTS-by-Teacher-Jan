@@ -73,6 +73,8 @@ function AppContent() {
               <Route path="/pet/dashboard" element={<ProtectedRoute><PetDashboard /></ProtectedRoute>} />
               <Route path="/ket/dashboard" element={<ProtectedRoute><KetDashboard /></ProtectedRoute>} />
               <Route path="/shared/dashboard/:userId" element={<Dashboard isShared={true} />} />
+              <Route path="/shared/pet/dashboard/:userId" element={<PetDashboard isShared={true} />} />
+              <Route path="/shared/ket/dashboard/:userId" element={<KetDashboard isShared={true} />} />
               <Route path="/shared/results/:id" element={<TestResult isShared={true} />} />
               <Route path="/writing-examiner" element={<ProtectedRoute><EraAIIeltsApp /></ProtectedRoute>} />
               <Route path="/results/:id" element={<ProtectedRoute><TestResult /></ProtectedRoute>} />

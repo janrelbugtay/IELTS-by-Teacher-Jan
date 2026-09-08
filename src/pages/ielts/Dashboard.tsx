@@ -91,6 +91,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editTitleValue, setEditTitleValue] = useState<string>('');
   const [uploadingSubmissionId, setUploadingSubmissionId] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleEditTitle = async (subId: string) => {
     if (!editTitleValue) {
@@ -413,16 +414,22 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               <div className="text-xs font-bold uppercase tracking-widest text-blue-200 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-inner">
                 {targetUserName ? 'Viewing Student Profile' : 'Student Profile'}
               </div>
-              <button 
-                onClick={() => {
-                  const url = `${window.location.origin}/shared/dashboard/${targetUserId}`;
-                  navigator.clipboard.writeText(url);
-                  alert('Shareable link copied to clipboard!');
-                }}
+              <a 
+                href={(() => {
+                  let url = `${window.location.origin}/shared/dashboard/${targetUserId}`;
+                  const up = userProfile as any;
+                  if (isAdmin && up?.studentId && (up?.tempPassword || up?.password)) {
+                    url = `${window.location.origin}/login?autoLoginId=${encodeURIComponent(up.studentId)}&autoLoginPass=${encodeURIComponent(up.tempPassword || up.password)}`;
+                  }
+                  return url;
+                })()}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Right-click to copy link, or click to open"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors text-white text-xs font-bold uppercase tracking-wider shadow-sm"
               >
-                <Share2 className="w-3.5 h-3.5" /> Share
-              </button>
+                <Share2 className="w-3.5 h-3.5" /> Share Link
+              </a>
               {(!targetUserId || targetUserId === user?.uid || isAdmin) && (
                 <div className="flex items-center gap-2">
                   {!user?.providerData.some(p => p.providerId === 'google.com') && (!targetUserId || targetUserId === user?.uid) && (
