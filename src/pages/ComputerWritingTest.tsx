@@ -18,6 +18,7 @@ import { JulyWritingTest } from './JulyWritingTest';
 import { AugustWritingTest } from './AugustWritingTest';
 import { SeptemberWritingTest } from './SeptemberWritingTest';
 import { OctoberWritingTest } from './OctoberWritingTest';
+import { Homework1WritingTest } from './Homework1WritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -591,6 +592,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     }
     if (id === '35' && !submissionId) {
         return <SeptemberWritingTest />;
+    }
+    if (id === 'ielts-writing-homework-1' && !submissionId) {
+        return <Homework1WritingTest />;
     }
     if (id === '39' && !submissionId) {
         return <OctoberWritingTest />;

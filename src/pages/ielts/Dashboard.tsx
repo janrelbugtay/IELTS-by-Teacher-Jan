@@ -29,7 +29,7 @@ const getFallbackTitle = (id: any, currentTitle?: string) => {
   const strId = String(id);
   const numId = parseInt(strId, 10);
   
-  if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 60) {
+  if (/^\d+$/.test(strId) && !isNaN(numId) && numId >= 1 && numId <= 100) {
     const testNum = Math.ceil(numId / 4);
     let skill = 'Practice';
     if (numId % 4 === 1) skill = 'Reading';

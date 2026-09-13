@@ -49,6 +49,7 @@ import { JulyWritingTest } from './JulyWritingTest';
 import { AugustWritingTest } from './AugustWritingTest';
 import { SeptemberWritingTest } from './SeptemberWritingTest';
 import { OctoberWritingTest } from './OctoberWritingTest';
+import { Homework1WritingTest } from './Homework1WritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -214,6 +215,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '27') return <JulyWritingTest submissionId={id} />;
       if (aId === '31') return <AugustWritingTest submissionId={id} />;
       if (aId === '35') return <SeptemberWritingTest submissionId={id} />;
+      if (aId === 'ielts-writing-homework-1') return <Homework1WritingTest submissionId={id} />;
       if (aId === '39') return <OctoberWritingTest submissionId={id} />;
 
 
