@@ -127,9 +127,39 @@
         }
       },
       "required": []
+    },
+    "Folder": {
+      "title": "Folder",
+      "description": "A subfolder inside a course or parent folder",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "course": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "course",
+        "createdAt"
+      ]
     }
   },
   "firestore": {
+    "/folders/{folderId}": {
+      "schema": {
+        "$ref": "#/entities/Folder"
+      },
+      "description": "Folders for organizing students within courses"
+    },
     "/assignments/{assignmentId}": {
       "schema": {
         "$ref": "#/entities/Assignment"

@@ -79,3 +79,16 @@ export interface ClassMember {
   joinedAt: any;
 }
 
+export interface CourseFolder {
+  id: string;
+  name: string;
+  course: string;
+  parentId?: string | null;
+  description?: string;
+  color?: string;
+  createdBy?: string;
+  createdAt: any;
+  isDeleted?: boolean;
+  deletedAt?: any;
+}
+

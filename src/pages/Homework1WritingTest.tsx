@@ -130,7 +130,7 @@ export const Homework1WritingTest = ({ submissionId }: { submissionId?: string }
     const sheetsContainerRef = useRef<HTMLDivElement>(null);
 
     const prompt1Raw = "The table and the chart below provide a breakdown of the total expenditure and the average amount of money spent by students per week while studying abroad in 4 countries. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.";
-    const prompt2Raw = "Nowadays it is easy to apply for and be given a credit card. However, some people experience problems when they are not able to pay their debt back. In your opinion, do the advantages of credit cards outweigh the disadvantages? Give reasons for your answer and include any relevant examples from your own knowledge or experience.";
+    const prompt2Raw = "In some cities and towns all over the world, traffic jam is a problem.\n\nWhat are the causes of this and what actions can be taken to solve this problem?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.";
 
     useEffect(() => {
         text1Ref.current = text1;

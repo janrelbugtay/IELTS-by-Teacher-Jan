@@ -5,10 +5,15 @@ import { Assignment, OperationType, Submission } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import { handleFirestoreError } from '../lib/errorHandler';
-import { Plus, Users, FileText, LayoutDashboard, Activity, Clock, Globe, Edit2, X, Camera, Folder, Trophy, Search, Calendar, Star, Flame, BookOpen, Target, TrendingUp, BarChart2, Medal, ChevronRight, UserPlus, Key, Copy, CheckCircle2 } from 'lucide-react';
+import { Plus, Users, FileText, LayoutDashboard, Activity, Clock, Globe, Edit2, X, Camera, Folder, Trophy, Search, Calendar, Star, Flame, BookOpen, Target, TrendingUp, BarChart2, Medal, ChevronRight, UserPlus, Key, Copy, CheckCircle2, FolderInput, Layers, Shield, Trash2, ArrowRight } from 'lucide-react';
 import { format, subDays, subMinutes } from 'date-fns';
 
 import { CreateStudentModal } from '../components/CreateStudentModal';
+import { CourseFolderSection } from '../components/CourseFolderSection';
+import { CreateFolderModal } from '../components/CreateFolderModal';
+import { MoveStudentModal } from '../components/MoveStudentModal';
+import { TrashBinModal } from '../components/TrashBinModal';
+import { CourseFolder } from '../types';
 
 interface UserStats {
   total: number;
@@ -22,6 +27,21 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const [isCreateStudentModalOpen, setIsCreateStudentModalOpen] = useState(false);
   const [selectedCourseForCreation, setSelectedCourseForCreation] = useState<string | undefined>(undefined);
+  const [selectedFolderIdForCreation, setSelectedFolderIdForCreation] = useState<string | null>(null);
+  const [selectedFolderNameForCreation, setSelectedFolderNameForCreation] = useState<string | null>(null);
+  const [isCourseLockedForCreation, setIsCourseLockedForCreation] = useState(false);
+
+  // Folder management state
+  const [folders, setFolders] = useState<CourseFolder[]>([]);
+  const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+  const [folderCourseTarget, setFolderCourseTarget] = useState<string>('IELTS');
+  const [folderParentTarget, setFolderParentTarget] = useState<CourseFolder | null>(null);
+
+  // Move student modal state
+  const [studentToMove, setStudentToMove] = useState<any | null>(null);
+  const [studentsToBatchMove, setStudentsToBatchMove] = useState<any[] | null>(null);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +65,50 @@ export function AdminDashboard() {
   const [editMotto, setEditMotto] = useState('');
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isTrashBinModalOpen, setIsTrashBinModalOpen] = useState(false);
 
   const [generatedCredentials, setGeneratedCredentials] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+
+  const handleOpenCreateStudent = (courseName?: string, folderId?: string | null, folderName?: string | null, lock: boolean = false) => {
+    setSelectedCourseForCreation(courseName || 'IELTS');
+    setSelectedFolderIdForCreation(folderId || null);
+    setSelectedFolderNameForCreation(folderName || null);
+    setIsCourseLockedForCreation(lock);
+    setIsCreateStudentModalOpen(true);
+  };
+
+  const handleOpenCreateFolder = (courseName: string, parentFolder?: CourseFolder | null) => {
+    setFolderCourseTarget(courseName);
+    setFolderParentTarget(parentFolder || null);
+    setIsCreateFolderModalOpen(true);
+  };
+
+  const handleOpenMoveStudent = (student: any) => {
+    setStudentToMove(student);
+    setStudentsToBatchMove(null);
+    setIsMoveModalOpen(true);
+  };
+
+  const handleOpenBatchMoveStudents = (students: any[]) => {
+    setStudentsToBatchMove(students);
+    setStudentToMove(null);
+    setIsMoveModalOpen(true);
+  };
+
+  const handleStudentsMoved = (studentIds: string[], newCourse: string, newFolderId: string | null, newFolderName: string | null) => {
+    setUsersList(prev => prev.map(u => {
+      if (studentIds.includes(u.id)) {
+        return {
+          ...u,
+          course: newCourse,
+          folderId: newFolderId,
+          folderName: newFolderName
+        };
+      }
+      return u;
+    }));
+  };
 
   const handleGenerateCredentials = async (u: any) => {
     try {
@@ -128,14 +189,23 @@ Please log in and change your password immediately.
   };
 
   const handleUpdateUserCourse = async (userId: string, newCourse: string) => {
+    const targetUser = usersList.find(u => u.id === userId);
+    if (targetUser?.course === 'IELTS' && newCourse !== 'IELTS') {
+      alert('IELTS students can only be moved within the IELTS folder.');
+      return;
+    }
     try {
       await setDoc(doc(db, 'users', userId), {
-        course: newCourse
+        course: newCourse,
+        folderId: null,
+        folderName: null
       }, { merge: true });
       
       setUsersList(prev => prev.map(u => u.id === userId ? {
         ...u,
-        course: newCourse
+        course: newCourse,
+        folderId: null,
+        folderName: null
       } : u));
     } catch (err: any) {
       console.error("Error updating user course", err);
@@ -180,24 +250,35 @@ Please log in and change your password immediately.
       setSubmissions(data);
     });
 
-    // Fetch user stats
-    const fetchUserStats = async () => {
-      try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        let total = 0, onlineNow = 0, activeToday = 0, activeThisWeek = 0, newThisMonth = 0;
-        const fetchedUsers: any[] = [];
-        
-        const now = new Date();
-        const fiveMinsAgo = subMinutes(now, 5);
-        const startOfDay = new Date(now.setHours(0,0,0,0));
-        const startOfWeek = subDays(startOfDay, 7);
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Listen to Folders in real-time
+    const unsubFolders = onSnapshot(collection(db, 'folders'), (snapshot) => {
+      const data: CourseFolder[] = [];
+      snapshot.forEach((doc) => {
+        data.push({ id: doc.id, ...doc.data() } as CourseFolder);
+      });
+      setFolders(data);
+    }, (err) => {
+      console.warn("Error listening to folders", err);
+    });
 
-        usersSnap.forEach(doc => {
+    // Listen to Users in real-time
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      let total = 0, onlineNow = 0, activeToday = 0, activeThisWeek = 0, newThisMonth = 0;
+      const fetchedUsers: any[] = [];
+      
+      const now = new Date();
+      const fiveMinsAgo = subMinutes(now, 5);
+      const startOfDay = new Date(now.setHours(0,0,0,0));
+      const startOfWeek = subDays(startOfDay, 7);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        fetchedUsers.push({ id: doc.id, ...data });
+
+        // Only count active users in platform stats
+        if (!data.isDeleted) {
           total++;
-          const data = doc.data();
-          fetchedUsers.push({ id: doc.id, ...data });
-          
           const lastActive = data.lastActive?.toDate ? data.lastActive.toDate() : (typeof data.lastActive === 'number' ? new Date(data.lastActive) : null);
           const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : (typeof data.createdAt === 'number' ? new Date(data.createdAt) : null);
 
@@ -209,23 +290,20 @@ Please log in and change your password immediately.
           if (createdAt && createdAt >= startOfMonth) {
             newThisMonth++;
           }
-        });
+        }
+      });
 
-        setUserStats({ total, onlineNow, activeToday, activeThisWeek, newThisMonth });
-        setUsersList(fetchedUsers);
-      } catch (err) {
-        console.error("Error fetching user stats", err);
-      }
-    }
-    
-    // Poll stats more frequently or just fetch once
-    fetchUserStats();
-    const statInterval = setInterval(fetchUserStats, 60000);
+      setUserStats({ total, onlineNow, activeToday, activeThisWeek, newThisMonth });
+      setUsersList(fetchedUsers);
+    }, (err) => {
+      console.warn("Error listening to users", err);
+    });
 
     return () => {
       unsubscribe();
       subUnsubscribe();
-      clearInterval(statInterval);
+      unsubFolders();
+      unsubUsers();
     };
   }, [user]);
 
@@ -240,13 +318,66 @@ Please log in and change your password immediately.
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
     try {
-      await deleteDoc(doc(db, 'users', userToDelete));
-      setUsersList(prev => prev.filter(u => u.id !== userToDelete));
+      // Soft-delete to Trash Bin
+      await setDoc(doc(db, 'users', userToDelete), {
+        isDeleted: true,
+        deletedAt: Date.now()
+      }, { merge: true });
       setUserToDelete(null);
     } catch (err) {
-      console.error("Error deleting user", err);
-      // fallback in case of error
+      console.error("Error moving user to trash", err);
       setUserToDelete(null);
+    }
+  };
+
+  const handleRestoreStudent = async (studentId: string) => {
+    try {
+      await setDoc(doc(db, 'users', studentId), {
+        isDeleted: false,
+        deletedAt: null
+      }, { merge: true });
+    } catch (err) {
+      console.error('Failed to restore student', err);
+    }
+  };
+
+  const handleRestoreFolder = async (folderId: string) => {
+    try {
+      await setDoc(doc(db, 'folders', folderId), {
+        isDeleted: false,
+        deletedAt: null
+      }, { merge: true });
+    } catch (err) {
+      console.error('Failed to restore folder', err);
+    }
+  };
+
+  const handlePermanentDeleteStudent = async (studentId: string) => {
+    try {
+      await deleteDoc(doc(db, 'users', studentId));
+    } catch (err) {
+      console.error('Failed to permanently delete student', err);
+    }
+  };
+
+  const handlePermanentDeleteFolder = async (folderId: string) => {
+    try {
+      await deleteDoc(doc(db, 'folders', folderId));
+    } catch (err) {
+      console.error('Failed to permanently delete folder', err);
+    }
+  };
+
+  const handleEmptyTrash = async () => {
+    try {
+      const deletedStudents = usersList.filter(u => u.isDeleted);
+      const deletedFolders = folders.filter(f => f.isDeleted);
+      await Promise.all([
+        ...deletedStudents.map(s => deleteDoc(doc(db, 'users', s.id))),
+        ...deletedFolders.map(f => deleteDoc(doc(db, 'folders', f.id)))
+      ]);
+    } catch (err) {
+      console.error('Failed to empty trash', err);
     }
   };
 
@@ -413,144 +544,100 @@ Please log in and change your password immediately.
       <section>
         <div className="flex items-end justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-serif text-natural-900">Courses</h2>
-            <p className="text-natural-700 mt-1">Manage Cambridge English courses.</p>
+            <h2 className="text-3xl font-serif text-natural-900">Courses & Folders</h2>
+            <p className="text-natural-700 mt-1">Manage Cambridge English courses, subfolders, and student folder assignments.</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 items-stretch">
           {['Pre-Starter', 'Starter', 'Movers', 'Flyers', 'KET', 'PET', 'IELTS'].map((courseName) => {
-            const courseUsers = usersList.filter(u => u.course === courseName);
+            const courseUsers = usersList.filter(u => !u.isDeleted && u.course === courseName);
             const isExpanded = expandedCourse === courseName;
             
             return (
-            <div 
-              key={courseName} 
-              className="bg-white border-t-8 border-t-blue-500 border border-natural-200 rounded-2xl rounded-tl-sm shadow-sm hover:shadow-md transition-shadow flex flex-col relative mb-4"
-            >
-              <div 
-                className="p-5 cursor-pointer"
-                onClick={() => setExpandedCourse(isExpanded ? null : courseName)}
-              >
-                <div className="absolute top-[-10px] left-0 bg-blue-500 h-[10px] w-1/3 rounded-t-lg"></div>
-                <div className="flex items-center justify-between mb-2 mt-2">
-                  <div className="flex items-center gap-2">
-                    <Folder className="w-6 h-6 text-blue-500" />
-                    <h3 className="text-xl font-bold text-natural-900">{courseName}</h3>
-                  </div>
-                  <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => {
-                        setSelectedCourseForCreation(courseName);
-                        setIsCreateStudentModalOpen(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E4DB7] hover:bg-blue-800 text-white font-bold text-xs rounded-xl transition-colors shadow-sm cursor-pointer"
-                      title={`Create new student for ${courseName}`}
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      Create Student
-                    </button>
-                    <span className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold">
-                      {courseUsers.length}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-natural-500 font-medium">{courseUsers.length} Student{courseUsers.length !== 1 ? 's' : ''}</p>
-              </div>
-              
-              {isExpanded && (
-                <div className="border-t border-natural-200">
-                  {courseUsers.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-natural-50 text-natural-600 text-[10px] uppercase tracking-wider border-b border-natural-200">
-                            <th className="px-4 py-3 font-bold">Name / Email</th>
-                            <th className="px-4 py-3 font-bold">Joined</th>
-                            <th className="px-4 py-3 font-bold">Last Active</th>
-                            <th className="px-4 py-3 font-bold text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-natural-200">
-                          {courseUsers.map(u => {
-                            const createdStr = u.createdAt?.toDate ? format(u.createdAt.toDate(), 'MMM d, yyyy') : (typeof u.createdAt === 'number' ? format(new Date(u.createdAt), 'MMM d, yyyy') : 'N/A');
-                            const activeStr = u.lastActive?.toDate ? format(u.lastActive.toDate(), 'MMM d, yyyy HH:mm') : (typeof u.lastActive === 'number' ? format(new Date(u.lastActive), 'MMM d, yyyy HH:mm') : 'N/A');
-                            return (
-                              <tr key={u.id} className="hover:bg-natural-50 transition-colors text-sm">
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    {u.photoURL ? (
-                                      <img src={u.photoURL || undefined} alt={u.firstName || u.name?.split(' ')[0] || u.nickname || 'User'} className="w-6 h-6 rounded-full object-cover border border-natural-200 shrink-0" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
-                                    ) : (
-                                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center font-bold text-[10px] border border-blue-200 shadow-sm shrink-0">
-                                        {(u.firstName || u.name?.split(' ')[0] || u.nickname || u.displayName || u.email || 'U')[0].toUpperCase()}
-                                      </div>
-                                    )}
-                                    <div>
-                                      <div className="font-bold text-natural-900">
-                                        {u.firstName || u.name?.split(' ')[0] || u.displayName || 'Unknown'}
-                                        {u.nickname && <span className="text-blue-600 ml-1 italic font-normal">"{u.nickname}"</span>}
-                                      </div>
-                                      <div className="text-xs text-natural-500">{u.email || 'No email'}</div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-xs text-natural-600">{createdStr}</td>
-                                <td className="px-4 py-3 text-xs text-natural-600">{activeStr}</td>
-                                <td className="px-4 py-3 text-right">
-                                  <div className="flex flex-col xl:flex-row items-end xl:items-center justify-end gap-2">
+              <CourseFolderSection
+                key={courseName}
+                courseName={courseName}
+                courseUsers={courseUsers}
+                allFolders={folders.filter(f => !f.isDeleted)}
+                isExpanded={isExpanded}
+                onToggleExpand={() => setExpandedCourse(isExpanded ? null : courseName)}
+                onOpenCreateStudent={handleOpenCreateStudent}
+                onOpenMoveStudent={handleOpenMoveStudent}
+                onOpenBatchMoveStudents={handleOpenBatchMoveStudents}
+                onGenerateCredentials={handleGenerateCredentials}
+                onOpenCreateFolder={handleOpenCreateFolder}
+              />
+            );
+          })}
 
-                                  <div className="flex items-center justify-end gap-2 mt-1 xl:mt-0">
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleGenerateCredentials(u);
-                                      }}
-                                      title="Generate Student Credentials"
-                                      className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-sm shrink-0"
-                                    >
-                                      <Key className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Credentials</span><span className="sm:hidden">Creds</span>
-                                    </button>
-                                    <Link 
-                                      to={u.course === 'PET' ? `/pet/dashboard?userId=${u.uid || u.id}` : `/ielts/dashboard?userId=${u.uid || u.id}`}
-                                      className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors inline-flex items-center gap-1 shadow-sm shrink-0"
-                                      onClick={(e) => e.stopPropagation()}
-                                      title="View Dashboard"
-                                    >
-                                      <LayoutDashboard className="w-3.5 h-3.5 shrink-0" /> View
-                                    </Link>
-                                  </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="p-8 flex flex-col items-center justify-center gap-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-natural-400">No Students Yet</span>
-                      <button
-                        onClick={() => {
-                          setSelectedCourseForCreation(courseName);
-                          setIsCreateStudentModalOpen(true);
-                        }}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#1E4DB7] hover:bg-blue-800 text-white font-bold text-xs rounded-xl transition-colors shadow-sm cursor-pointer"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Create Student
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Trash Bin Card - Positioned right next to IELTS */}
+          <div 
+            onClick={() => setIsTrashBinModalOpen(true)}
+            className="group relative flex flex-col justify-between bg-white rounded-3xl border border-rose-200/90 hover:border-rose-400 shadow-sm hover:shadow-xl hover:shadow-rose-100 transition-all duration-300 -translate-y-0 hover:-translate-y-1.5 cursor-pointer overflow-hidden p-6 select-none"
+          >
+            {/* Physical Folder Top Tab Ear */}
+            <div className="absolute top-0 left-6 flex items-center">
+              <div className="h-2.5 w-24 rounded-b-lg bg-rose-500 shadow-xs"></div>
             </div>
-          )})}
+
+            {/* Ambient Top Glow */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br from-rose-500 to-red-600 opacity-[0.08] group-hover:opacity-[0.16] transition-opacity blur-2xl pointer-events-none"></div>
+
+            {/* Card Content Top */}
+            <div>
+              <div className="flex items-start justify-between gap-3 mb-4 mt-1">
+                {/* Tactile Trash Icon */}
+                <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300">
+                  <Trash2 className="w-8 h-8 text-rose-600 transition-transform group-hover:scale-110" />
+                </div>
+
+                {/* Recycle Bin Tag */}
+                <div className="flex flex-col items-end gap-1">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200 shadow-2xs">
+                    Recycle Bin
+                  </span>
+                </div>
+              </div>
+
+              {/* Title & Info */}
+              <div className="mb-4">
+                <h3 className="text-2xl font-extrabold text-slate-900 group-hover:text-rose-700 transition-colors tracking-tight flex items-center gap-2">
+                  Trash Bin
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Restore or Delete Permanently
+                </p>
+              </div>
+            </div>
+
+            {/* Stats & Folder Metadata Badges */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Student Count Pill */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200/70 group-hover:bg-rose-50 group-hover:text-rose-700 group-hover:border-rose-200 transition-colors">
+                  <Users className="w-3.5 h-3.5 text-slate-500 group-hover:text-rose-600" />
+                  <span>{usersList.filter(u => u.isDeleted).length}</span>
+                  <span className="font-normal text-slate-500 text-[11px]">students</span>
+                </span>
+
+                {/* Folders Count Pill */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200/70 group-hover:bg-slate-200/60 transition-colors">
+                  <Layers className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{folders.filter(f => f.isDeleted).length}</span>
+                  <span className="font-normal text-slate-500 text-[11px]">folders</span>
+                </span>
+              </div>
+
+              {/* Interactive Arrow Indicator */}
+              <div className="flex items-center gap-1 text-xs font-bold text-slate-400 group-hover:text-rose-600 transition-all pl-2 shrink-0">
+                <span className="hidden sm:inline text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">Open</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
-
-
 
       {/* User Management */}
       <section>
@@ -560,8 +647,8 @@ Please log in and change your password immediately.
             <p className="text-natural-700 mt-1">Manage platform users, view details, and create new student accounts.</p>
           </div>
           <button 
-            onClick={() => setIsCreateStudentModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1E4DB7] text-white font-bold rounded-xl shadow-sm hover:bg-blue-800 transition-colors"
+            onClick={() => handleOpenCreateStudent('IELTS', null, null, false)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1E4DB7] text-white font-bold rounded-xl shadow-sm hover:bg-blue-800 transition-colors cursor-pointer"
           >
             <UserPlus className="w-5 h-5" />
             Create Student
@@ -575,15 +662,19 @@ Please log in and change your password immediately.
                 <tr className="bg-natural-50 text-natural-600 text-xs uppercase tracking-wider border-b border-natural-200">
                   <th className="px-6 py-4 font-bold">Name / Email</th>
                   <th className="px-6 py-4 font-bold">Course</th>
+                  <th className="px-6 py-4 font-bold">Folder</th>
                   <th className="px-6 py-4 font-bold">Joined</th>
                   <th className="px-6 py-4 font-bold">Last Active</th>
                   <th className="px-6 py-4 font-bold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-natural-200">
-                {usersList.map((u) => {
+                {usersList.filter(u => !u.isDeleted).map((u) => {
                   const createdStr = u.createdAt?.toDate ? format(u.createdAt.toDate(), 'MMM d, yyyy') : (typeof u.createdAt === 'number' ? format(new Date(u.createdAt), 'MMM d, yyyy') : 'N/A');
                   const activeStr = u.lastActive?.toDate ? format(u.lastActive.toDate(), 'MMM d, yyyy HH:mm') : (typeof u.lastActive === 'number' ? format(new Date(u.lastActive), 'MMM d, yyyy HH:mm') : 'N/A');
+                  const isUserIelts = u.course === 'IELTS';
+                  const assignedFolderName = u.folderName || (u.folderId ? folders.find(f => f.id === u.folderId)?.name : null) || 'Main Folder';
+
                   return (
                     <tr key={u.id} className="hover:bg-natural-50 transition-colors">
                       <td className="px-6 py-4">
@@ -594,24 +685,48 @@ Please log in and change your password immediately.
                         <div className="text-sm text-natural-500">{u.email || 'No email'}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <select
-                          value={u.course || ''}
-                          onChange={(e) => handleUpdateUserCourse(u.id, e.target.value)}
-                          className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
-                        >
-                          <option value="">None</option>
-                          <option value="Pre-Starter">Pre-Starter</option>
-                          <option value="Starter">Starter</option>
-                          <option value="Movers">Movers</option>
-                          <option value="Flyers">Flyers</option>
-                          <option value="KET">KET</option>
-                          <option value="PET">PET</option>
-                          <option value="IELTS">IELTS</option>
-                        </select>
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={u.course || ''}
+                            onChange={(e) => handleUpdateUserCourse(u.id, e.target.value)}
+                            className={`bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 ${
+                              isUserIelts ? 'font-bold text-blue-700 bg-blue-50/50' : ''
+                            }`}
+                            title={isUserIelts ? 'IELTS students can only be moved within the IELTS folder' : undefined}
+                          >
+                            <option value="" disabled={isUserIelts}>None</option>
+                            <option value="Pre-Starter" disabled={isUserIelts}>Pre-Starter</option>
+                            <option value="Starter" disabled={isUserIelts}>Starter</option>
+                            <option value="Movers" disabled={isUserIelts}>Movers</option>
+                            <option value="Flyers" disabled={isUserIelts}>Flyers</option>
+                            <option value="KET" disabled={isUserIelts}>KET</option>
+                            <option value="PET" disabled={isUserIelts}>PET</option>
+                            <option value="IELTS">IELTS</option>
+                          </select>
+                          {isUserIelts && (
+                            <span title="IELTS students are locked to IELTS" className="text-blue-600">
+                              <Shield className="w-4 h-4" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+                          <Folder className="w-3.5 h-3.5 text-blue-500" />
+                          <span className="truncate max-w-[130px]">{assignedFolderName}</span>
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-natural-600">{createdStr}</td>
                       <td className="px-6 py-4 text-sm text-natural-600">{activeStr}</td>
                       <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                        {/* Move Student Button */}
+                        <button
+                          onClick={() => handleOpenMoveStudent(u)}
+                          className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg border border-blue-200 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                          title="Move student to folder"
+                        >
+                          <FolderInput className="w-3.5 h-3.5" /> Move
+                        </button>
                         <button 
                           onClick={() => {
                             setEditingUser(u);
@@ -619,13 +734,13 @@ Please log in and change your password immediately.
                             setEditPhotoURL(u.photoURL || '');
                             setEditMotto(u.motto || '');
                           }}
-                          className="text-amber-600 hover:text-amber-800 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-amber-200 hover:bg-amber-50 transition-all flex items-center gap-1"
+                          className="text-amber-600 hover:text-amber-800 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-amber-200 hover:bg-amber-50 transition-all flex items-center gap-1 cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5" /> Edit
                         </button>
                         <button 
                           onClick={() => setUserToDelete(u.id)}
-                          className="text-red-500 hover:text-red-700 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-red-200 hover:bg-red-50 transition-all"
+                          className="text-red-500 hover:text-red-700 font-bold text-sm px-3 py-1 rounded border border-transparent hover:border-red-200 hover:bg-red-50 transition-all cursor-pointer"
                         >
                           Delete
                         </button>
@@ -635,7 +750,7 @@ Please log in and change your password immediately.
                 })}
               </tbody>
             </table>
-            {usersList.length === 0 && (
+            {usersList.filter(u => !u.isDeleted).length === 0 && (
               <div className="p-8 text-center text-natural-500">No users found.</div>
             )}
           </div>
@@ -781,14 +896,49 @@ Please log in and change your password immediately.
       {isCreateStudentModalOpen && (
         <CreateStudentModal 
           defaultCourse={selectedCourseForCreation}
+          defaultFolderId={selectedFolderIdForCreation}
+          defaultFolderName={selectedFolderNameForCreation}
+          lockCourse={isCourseLockedForCreation}
+          folders={folders.filter(f => !f.isDeleted)}
           onClose={() => {
             setIsCreateStudentModalOpen(false);
             setSelectedCourseForCreation(undefined);
+            setSelectedFolderIdForCreation(null);
+            setSelectedFolderNameForCreation(null);
+            setIsCourseLockedForCreation(false);
           }}
           onSuccess={() => {
-            // The user will be created and added to the users list in real-time or on next fetch
-            // Let's just close the modal when they click Done in the success state (handled by modal)
+            // Updated via real-time onSnapshot listener
           }}
+        />
+      )}
+
+      {isCreateFolderModalOpen && (
+        <CreateFolderModal
+          course={folderCourseTarget}
+          parentFolder={folderParentTarget}
+          availableFolders={folders.filter(f => !f.isDeleted)}
+          onClose={() => {
+            setIsCreateFolderModalOpen(false);
+            setFolderParentTarget(null);
+          }}
+          onCreated={(newFolder) => {
+            setFolders(prev => [...prev.filter(f => f.id !== newFolder.id), newFolder]);
+          }}
+        />
+      )}
+
+      {isMoveModalOpen && (studentToMove || (studentsToBatchMove && studentsToBatchMove.length > 0)) && (
+        <MoveStudentModal
+          student={studentToMove}
+          students={studentsToBatchMove || undefined}
+          folders={folders.filter(f => !f.isDeleted)}
+          onClose={() => {
+            setIsMoveModalOpen(false);
+            setStudentToMove(null);
+            setStudentsToBatchMove(null);
+          }}
+          onMoved={handleStudentsMoved}
         />
       )}
 
@@ -839,25 +989,40 @@ Please log in and change your password immediately.
       {userToDelete && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete User</h3>
-            <p className="text-slate-600 mb-6">Are you sure you want to delete this user? This will remove their profile from the database.</p>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Move Student to Trash</h3>
+            <p className="text-slate-600 mb-6 text-sm">
+              Are you sure you want to move this student to the Trash Bin? You can restore them anytime or permanently delete them from the Trash Bin.
+            </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setUserToDelete(null)}
-                className="flex-1 py-2 text-slate-700 font-bold hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+                className="flex-1 py-2 text-slate-700 font-bold hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 cursor-pointer"
               >
                 Cancel
               </button>
               <button 
                 onClick={confirmDeleteUser}
-                className="flex-1 py-2 bg-red-600 text-white font-bold hover:bg-red-700 rounded-lg transition-colors"
+                className="flex-1 py-2 bg-rose-600 text-white font-bold hover:bg-rose-700 rounded-lg transition-colors cursor-pointer shadow-sm"
               >
-                Delete
+                Move to Trash
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Trash Bin Modal for Restoring and Permanently Deleting */}
+      <TrashBinModal
+        isOpen={isTrashBinModalOpen}
+        onClose={() => setIsTrashBinModalOpen(false)}
+        deletedStudents={usersList.filter(u => u.isDeleted)}
+        deletedFolders={folders.filter(f => f.isDeleted)}
+        onRestoreStudent={handleRestoreStudent}
+        onRestoreFolder={handleRestoreFolder}
+        onPermanentDeleteStudent={handlePermanentDeleteStudent}
+        onPermanentDeleteFolder={handlePermanentDeleteFolder}
+        onEmptyTrash={handleEmptyTrash}
+      />
     </div>
   );
 }

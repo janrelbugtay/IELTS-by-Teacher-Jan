@@ -1,17 +1,31 @@
 import React, { useState } from 'react';
-import { X, Copy, CheckCircle2, UserPlus, Upload, ShieldAlert, FileText, Smartphone, Mail, Settings } from 'lucide-react';
+import { X, Copy, CheckCircle2, UserPlus, Upload, ShieldAlert, FileText, Smartphone, Mail, Settings, Folder } from 'lucide-react';
 import { createStudentAccount } from '../lib/authUtils';
+import { CourseFolder } from '../types';
 
 interface CreateStudentModalProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultCourse?: string;
+  defaultFolderId?: string | null;
+  defaultFolderName?: string | null;
+  lockCourse?: boolean;
+  folders?: CourseFolder[];
 }
 
-export function CreateStudentModal({ onClose, onSuccess, defaultCourse }: CreateStudentModalProps) {
+export function CreateStudentModal({ 
+  onClose, 
+  onSuccess, 
+  defaultCourse,
+  defaultFolderId,
+  defaultFolderName,
+  lockCourse,
+  folders = []
+}: CreateStudentModalProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [course, setCourse] = useState(defaultCourse || 'IELTS');
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(defaultFolderId || '');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   
@@ -19,6 +33,10 @@ export function CreateStudentModal({ onClose, onSuccess, defaultCourse }: Create
   const [error, setError] = useState('');
   const [createdCredentials, setCreatedCredentials] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+
+  // Folders for the selected course (excluding deleted)
+  const courseFolders = folders.filter((f) => f.course === course && !f.isDeleted);
+  const selectedFolderObj = courseFolders.find((f) => f.id === selectedFolderId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +49,17 @@ export function CreateStudentModal({ onClose, onSuccess, defaultCourse }: Create
     setError('');
     
     try {
+      const folderId = selectedFolderId || defaultFolderId || null;
+      const folderName = selectedFolderObj?.name || defaultFolderName || null;
+
       const credentials = await createStudentAccount({
         firstName,
         lastName,
         course,
         email,
-        phone
+        phone,
+        folderId,
+        folderName
       });
       setCreatedCredentials(credentials);
       onSuccess();
@@ -107,18 +130,58 @@ Please log in and change your password immediately.
                 </div>
               </div>
 
+              {/* Location / Folder notice */}
+              {defaultFolderName && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs">
+                  <span className="font-semibold text-blue-900">Assigned Folder:</span>
+                  <span className="font-bold text-blue-700 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">
+                    📁 {defaultFolderName}
+                  </span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700">Course <span className="text-red-500">*</span></label>
-                  <select value={course} onChange={e => setCourse(e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
-                    <option value="Pre-Starter">Pre-Starter</option>
-                    <option value="Starter">Starter</option>
-                    <option value="Movers">Movers</option>
-                    <option value="Flyers">Flyers</option>
-                    <option value="KET">KET</option>
-                    <option value="PET">PET</option>
-                    <option value="IELTS">IELTS</option>
-                  </select>
+                  <label className="text-sm font-bold text-slate-700">
+                    Course <span className="text-red-500">*</span>
+                    {lockCourse && <span className="text-xs text-blue-600 font-normal ml-2">(Locked)</span>}
+                  </label>
+                  {lockCourse ? (
+                    <div className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 text-sm font-bold flex items-center justify-between cursor-not-allowed">
+                      <span>{course} Course</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase">Locked</span>
+                    </div>
+                  ) : (
+                    <select value={course} onChange={e => setCourse(e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+                      <option value="Pre-Starter">Pre-Starter</option>
+                      <option value="Starter">Starter</option>
+                      <option value="Movers">Movers</option>
+                      <option value="Flyers">Flyers</option>
+                      <option value="KET">KET</option>
+                      <option value="PET">PET</option>
+                      <option value="IELTS">IELTS</option>
+                    </select>
+                  )}
+                  {courseFolders.length > 0 && (
+                    <div className="space-y-1.5 mt-3">
+                      <label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                        <Folder className="w-4 h-4 text-blue-500" />
+                        <span>Folder Assignment <span className="text-slate-400 font-normal">(Optional)</span></span>
+                      </label>
+                      <select
+                        value={selectedFolderId}
+                        onChange={(e) => setSelectedFolderId(e.target.value)}
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium text-sm"
+                      >
+                        <option value="">{course} Main / Root Folder</option>
+                        {courseFolders.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            📁 {f.name} {f.parentId ? '(Subfolder)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700">Status</label>

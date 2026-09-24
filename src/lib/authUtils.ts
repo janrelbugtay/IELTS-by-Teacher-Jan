@@ -8,8 +8,10 @@ export async function createStudentAccount(data: {
   course: string;
   email?: string;
   phone?: string;
+  folderId?: string | null;
+  folderName?: string | null;
 }) {
-  const { firstName, lastName, course, email, phone } = data;
+  const { firstName, lastName, course, email, phone, folderId, folderName } = data;
   
   // Generate random digits for the ID
   const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -38,6 +40,8 @@ export async function createStudentAccount(data: {
     studentId,
     username,
     course,
+    folderId: folderId || null,
+    folderName: folderName || null,
     email: email || '',
     phone: phone || '',
     status: 'active',

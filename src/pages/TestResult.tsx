@@ -229,6 +229,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (title.includes('august')) return <AugustWritingTest submissionId={id} />;
       if (title.includes('september')) return <SeptemberWritingTest submissionId={id} />;
       if (title.includes('october')) return <OctoberWritingTest submissionId={id} />;
+      if (title.includes('homework')) return <Homework1WritingTest submissionId={id} />;
 
       
       return <ComputerWritingTest submissionId={id} />;

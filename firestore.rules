@@ -114,5 +114,8 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+    match /folders/{folderId} {
+      allow read, write: if true;
+    }
   }
 }
