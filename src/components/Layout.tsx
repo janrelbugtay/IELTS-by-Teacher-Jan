@@ -27,7 +27,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
 
 
@@ -123,36 +122,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <div className="flex items-center gap-4">
-                  
-                  <div className="relative">
-                    <button 
-                      onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-                      className="p-2 rounded-full hover:bg-slate-100 text-[#64748B] hover:text-[#0F172A] transition-colors flex items-center justify-center bg-slate-50 border border-slate-200"
-                      title="Theme Settings"
-                    >
-                      {theme === 'light' ? <Sun className="w-5 h-5"/> : theme === 'dark' ? <Moon className="w-5 h-5" /> : <ImageIcon className="w-5 h-5" />}
-                    </button>
-                    <AnimatePresence>
-                      {themeMenuOpen && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-40 z-50 overflow-hidden"
-                        >
-                          <button onClick={() => {setTheme('light'); setThemeMenuOpen(false);}} className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm transition-colors ${theme === 'light' ? 'text-[#2563EB] font-medium bg-blue-50/50' : 'text-slate-700'}`}>
-                            <Sun className="w-4 h-4" /> Light Mode
-                          </button>
-                          <button onClick={() => {setTheme('dark'); setThemeMenuOpen(false);}} className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm transition-colors ${theme === 'dark' ? 'text-[#2563EB] font-medium bg-blue-50/50' : 'text-slate-700'}`}>
-                            <Moon className="w-4 h-4" /> Dark Mode
-                          </button>
-                          <button onClick={() => {setTheme('picture'); setThemeMenuOpen(false);}} className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-sm transition-colors ${theme === 'picture' ? 'text-[#2563EB] font-medium bg-blue-50/50' : 'text-slate-700'}`}>
-                            <ImageIcon className="w-4 h-4" /> Color Mode
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
                   <button className="relative p-2 text-[#64748B] hover:text-[#0F172A] transition-colors rounded-full hover:bg-slate-100">
                     <Bell className="w-5 h-5" />
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F59E0B] rounded-full border-2 border-white"></span>
@@ -161,7 +130,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <div className="relative">
                     <button 
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-3 p-1.5 pr-3 rounded-full hover:bg-slate-50 border border-transparent hover:border-[#E2E8F0] transition-all"
+                      className="flex items-center gap-3 p-1.5 pr-3 rounded-full hover:bg-slate-50 border border-transparent hover:border-[#E2E8F0] transition-all cursor-pointer"
                     >
                       <div className="w-9 h-9 rounded-full bg-[#E2E8F0] overflow-hidden flex items-center justify-center text-[#64748B]">
                         <User className="w-5 h-5" />
@@ -179,7 +148,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
                           transition={{ duration: 0.2 }}
-                          className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.08)] border border-[#E2E8F0] py-2 overflow-hidden"
+                          className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-[0_12px_24px_rgba(0,0,0,0.08)] border border-[#E2E8F0] py-2 overflow-hidden z-50"
                         >
                           {isAdmin && (
                             <Link to="/admin" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#0F172A] hover:bg-slate-50 transition-colors">
@@ -208,10 +177,54 @@ export function Layout({ children }: { children: React.ReactNode }) {
                               </div>
                             </>
                           )}
+
+                          {/* Theme Modes between My Dashboard and Sign Out */}
                           <div className="h-px bg-[#E2E8F0] my-1"></div>
+                          
+                          <button 
+                            type="button"
+                            onClick={() => setTheme('light')} 
+                            className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center justify-between text-sm transition-colors cursor-pointer ${
+                              theme === 'light' ? 'text-[#2563EB] font-semibold bg-blue-50/60' : 'text-slate-700'
+                            }`}
+                          >
+                            <span className="flex items-center gap-3">
+                              <Sun className={`w-4 h-4 ${theme === 'light' ? 'text-[#2563EB]' : 'text-[#64748B]'}`} /> Light Mode
+                            </span>
+                            {theme === 'light' && <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />}
+                          </button>
+                          
+                          <button 
+                            type="button"
+                            onClick={() => setTheme('dark')} 
+                            className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center justify-between text-sm transition-colors cursor-pointer ${
+                              theme === 'dark' ? 'text-[#2563EB] font-semibold bg-blue-50/60' : 'text-slate-700'
+                            }`}
+                          >
+                            <span className="flex items-center gap-3">
+                              <Moon className={`w-4 h-4 ${theme === 'dark' ? 'text-[#2563EB]' : 'text-[#64748B]'}`} /> Dark Mode
+                            </span>
+                            {theme === 'dark' && <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />}
+                          </button>
+                          
+                          <button 
+                            type="button"
+                            onClick={() => setTheme('picture')} 
+                            className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center justify-between text-sm transition-colors cursor-pointer ${
+                              theme === 'picture' ? 'text-[#2563EB] font-semibold bg-blue-50/60' : 'text-slate-700'
+                            }`}
+                          >
+                            <span className="flex items-center gap-3">
+                              <ImageIcon className={`w-4 h-4 ${theme === 'picture' ? 'text-[#2563EB]' : 'text-[#64748B]'}`} /> Color Mode
+                            </span>
+                            {theme === 'picture' && <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />}
+                          </button>
+
+                          <div className="h-px bg-[#E2E8F0] my-1"></div>
+                          
                           <button 
                             onClick={() => { signOut(); setUserMenuOpen(false); }}
-                            className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                            className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium cursor-pointer"
                           >
                             <LogOut className="w-4 h-4" /> Sign Out
                           </button>
@@ -298,6 +311,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <Link to="/ielts/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 text-[15px] text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 pl-11 rounded-lg">IELTS</Link>
                       </div>
                     )}
+                    {/* Theme Modes between Dashboard and Sign Out */}
+                    <div className="py-2 border-y border-[#E2E8F0] flex flex-col gap-1 my-1">
+                      <button 
+                        type="button"
+                        onClick={() => setTheme('light')}
+                        className={`px-4 py-2.5 rounded-xl text-[15px] font-medium text-left flex items-center justify-between transition-colors ${
+                          theme === 'light' ? 'bg-blue-50 text-[#2563EB] font-semibold' : 'text-[#64748B] hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-3"><Sun className="w-5 h-5" /> Light Mode</span>
+                        {theme === 'light' && <span className="w-2 h-2 rounded-full bg-[#2563EB]" />}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setTheme('dark')}
+                        className={`px-4 py-2.5 rounded-xl text-[15px] font-medium text-left flex items-center justify-between transition-colors ${
+                          theme === 'dark' ? 'bg-blue-50 text-[#2563EB] font-semibold' : 'text-[#64748B] hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-3"><Moon className="w-5 h-5" /> Dark Mode</span>
+                        {theme === 'dark' && <span className="w-2 h-2 rounded-full bg-[#2563EB]" />}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setTheme('picture')}
+                        className={`px-4 py-2.5 rounded-xl text-[15px] font-medium text-left flex items-center justify-between transition-colors ${
+                          theme === 'picture' ? 'bg-blue-50 text-[#2563EB] font-semibold' : 'text-[#64748B] hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-3"><ImageIcon className="w-5 h-5" /> Color Mode</span>
+                        {theme === 'picture' && <span className="w-2 h-2 rounded-full bg-[#2563EB]" />}
+                      </button>
+                    </div>
+
                     <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="px-4 py-3 rounded-xl text-[15px] font-medium text-red-600 hover:bg-red-50 text-left flex items-center gap-3">
                       <LogOut className="w-5 h-5" /> Sign Out
                     </button>

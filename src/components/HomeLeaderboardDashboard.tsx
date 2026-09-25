@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Flame, Search, ChevronDown, Users, ChevronRight, Book, CheckCircle2, TrendingUp, Star, Calendar, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, limit } from 'firebase/firestore';
 
 const courses = [
   { id: 'Pre-Starter', name: 'Pre-Starters', age: 'Ages 4–6', image: 'https://drive.google.com/thumbnail?id=1h_In0NTl7lPBaZwLl1vKFz-O4dAs8m0E&sz=w1000', color: 'bg-blue-500 text-white' },
@@ -26,9 +26,11 @@ export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { de
   }, [defaultCourse]);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchUsers = async () => {
       try {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersSnapshot = await getDocs(query(collection(db, 'users'), limit(80)));
+        if (!isMounted) return;
         const fetchedUsers: any[] = [];
         usersSnapshot.forEach(doc => {
           fetchedUsers.push({ id: doc.id, ...doc.data() });
@@ -40,16 +42,20 @@ export function HomeLeaderboardDashboard({ defaultCourse, hideCourseTabs }: { de
     };
     fetchUsers();
 
-    const subQ = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'));
+    const subQ = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'), limit(100));
     const subUnsubscribe = onSnapshot(subQ, (snapshot) => {
+      if (!isMounted) return;
       const data: any[] = [];
       snapshot.forEach((doc) => {
         data.push({ id: doc.id, ...doc.data() });
       });
       setSubmissions(data);
+    }, (err) => {
+      console.warn("Submissions query skipped on home:", err);
     });
 
     return () => {
+      isMounted = false;
       subUnsubscribe();
     };
   }, []);

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, getRedirectResult } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { doc, getDocFromServer, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   userCourse: string | null;
@@ -32,44 +32,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userCourse, setUserCourse] = useState<string | null>(null);
 
   useEffect(() => {
-    // Validate connection
-    async function testConnection() {
-      try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error: any) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration.");
-        }
-      }
-    }
-    testConnection();
+    // Safety fallback: ensure loading state never hangs indefinitely
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 1200);
 
-    // Handle redirect result
+    // Handle redirect result if any
     getRedirectResult(auth).then(async (result) => {
       if (result?.user) {
         try {
-          // Admins can log in freely
           if (result.user.email === 'janrelbugtay03@gmail.com' || result.user.email === 'khaisangschool.edu.vn@gmail.com') {
-            await setDoc(doc(db, 'users', result.user.uid), {
+            setDoc(doc(db, 'users', result.user.uid), {
               name: result.user.displayName || 'Admin',
               email: result.user.email,
               lastLogin: serverTimestamp(),
               lastActive: serverTimestamp(),
-            }, { merge: true });
+            }, { merge: true }).catch(console.warn);
             return;
           }
 
-          const docSnap = await getDocFromServer(doc(db, 'users', result.user.uid));
+          const docSnap = await getDoc(doc(db, 'users', result.user.uid));
           if (!docSnap.exists()) {
-            // Not linked/created!
             await firebaseSignOut(auth);
-            // Optionally delete the user if possible, but signOut is enough to stop them
             alert("Your Google account is not linked to any student account. Please contact your teacher.");
           } else {
-            await setDoc(doc(db, 'users', result.user.uid), {
+            setDoc(doc(db, 'users', result.user.uid), {
               lastLogin: serverTimestamp(),
               lastActive: serverTimestamp(),
-            }, { merge: true });
+            }, { merge: true }).catch(console.warn);
           }
         } catch (e) {
           console.error('Error handling redirect user data:', e);
@@ -81,19 +71,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkUser = async (currentUser: FirebaseUser | null) => {
       let activeUser = currentUser as any;
+      let detectedCourse: string | null = null;
       const studentUid = localStorage.getItem('studentUid');
       
       if (studentUid) {
         // We have a student logged in via custom auth
         try {
-          const userDoc = await getDocFromServer(doc(db, 'users', studentUid));
+          const userDoc = await getDoc(doc(db, 'users', studentUid));
           if (userDoc.exists()) {
             const data = userDoc.data();
+            detectedCourse = data.course || null;
             activeUser = {
               uid: studentUid,
               email: data.email || data.authEmail || null,
-              displayName: data.name || null,
-              photoURL: null,
+              displayName: data.name || data.nickname || null,
+              photoURL: data.photoURL || null,
               isAnonymous: true,
               getIdToken: async () => '',
               providerData: [],
@@ -107,43 +99,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (currentUser) {
         activeUser = currentUser;
+        try {
+          const ud = await getDoc(doc(db, 'users', currentUser.uid));
+          if (ud.exists() && ud.data().course) {
+            detectedCourse = ud.data().course;
+          }
+        } catch (e) { }
       }
       
       setUser(activeUser);
-      if (['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(activeUser?.email || '') || (currentUser && ['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(currentUser.email || ''))) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
+      setUserCourse(detectedCourse);
       
-      if (activeUser) {
-        // Track the user activity in Firestore
-        try {
-          const ud = await getDocFromServer(doc(db, 'users', activeUser.uid));
-          if (ud.exists() && ud.data().course) {
-            setUserCourse(ud.data().course);
-          } else {
-            setUserCourse(null);
-          }
-        } catch(e) {}
-
-        try {
-          const userRef = doc(db, 'users', activeUser.uid);
-          const updateData: any = {
-            lastActive: serverTimestamp(),
-          };
-          if (activeUser.displayName) updateData.name = activeUser.displayName;
-          if (activeUser.email) updateData.email = activeUser.email;
-          if (activeUser.photoURL) updateData.photoURL = activeUser.photoURL;
-          if (['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'].includes(activeUser.email || '')) updateData.role = 'admin';
-          
-          await setDoc(userRef, updateData, { merge: true });
-        } catch (e) {
-          console.warn("Failed to update user activity (likely rules propagating):", e);
-        }
-      }
+      const adminEmails = ['janrelbugtay03@gmail.com', 'khaisangschool.edu.vn@gmail.com'];
+      const isUserAdmin = adminEmails.includes(activeUser?.email || '') || (currentUser && adminEmails.includes(currentUser.email || ''));
+      setIsAdmin(!!isUserAdmin);
       
+      // Release loading state immediately so UI renders without delay
       setLoading(false);
+      clearTimeout(safetyTimer);
+
+      if (activeUser) {
+        // Track the user activity in Firestore asynchronously
+        const userRef = doc(db, 'users', activeUser.uid);
+        const updateData: any = {
+          lastActive: serverTimestamp(),
+        };
+        if (activeUser.displayName) updateData.name = activeUser.displayName;
+        if (activeUser.email) updateData.email = activeUser.email;
+        if (activeUser.photoURL) updateData.photoURL = activeUser.photoURL;
+        if (isUserAdmin) updateData.role = 'admin';
+        
+        setDoc(userRef, updateData, { merge: true }).catch((e) => {
+          console.warn("Failed to update user activity:", e);
+        });
+      }
     };
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -192,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          const docSnap = await getDocFromServer(doc(db, 'users', result.user.uid));
+          const docSnap = await getDoc(doc(db, 'users', result.user.uid));
           if (!docSnap.exists()) {
             await firebaseSignOut(auth);
             throw new Error("Your Google account is not linked to any student account. Please contact your teacher.");
