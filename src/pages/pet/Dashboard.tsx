@@ -5,8 +5,9 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { PETCalculator } from '../../components/PETCalculator';
 
-import { Edit2, X, CheckCircle2, Share2 } from 'lucide-react';
+import { Edit2, X, CheckCircle2, Share2, Key, Eye, EyeOff } from 'lucide-react';
 import { BookOpen, PenTool, Headphones, Mic, PlayCircle, Upload, Trash2, Download } from 'lucide-react';
+import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
 
 const calculateCambridgeScore = (scores: any) => {
     return Math.round((scores.reading + scores.writing + scores.listening + scores.speaking) / 4);
@@ -24,6 +25,7 @@ const HeroSection = ({ data, isAdmin, onEditProfile, targetUserId, userProfile }
     const overallScore = calculateCambridgeScore(data.scores);
     const gradeInfo = getGradeDetails(overallScore);
     const [isCopied, setIsCopied] = useState(false);
+    const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     
     const percentage = ((overallScore - 120) / (170 - 120)) * 100;
     const clampedPercentage = Math.max(0, Math.min(100, percentage));
@@ -46,29 +48,23 @@ const HeroSection = ({ data, isAdmin, onEditProfile, targetUserId, userProfile }
                             <p className="text-slate-500 font-medium mb-3">Cambridge PET Candidate • {data.profile.candidateNumber}</p>
                             
                             <div className="flex gap-2">
-                                <a 
-                                    href={(() => {
-                                        let url = `${window.location.origin}/shared/pet/dashboard/${targetUserId}`;
-                                        const up = userProfile as any;
-                                        if (isAdmin && up?.studentId && (up?.tempPassword || up?.password)) {
-                                            url = `${window.location.origin}/login?autoLoginId=${encodeURIComponent(up.studentId)}&autoLoginPass=${encodeURIComponent(up.tempPassword || up.password)}`;
-                                        }
-                                        return url;
-                                    })()}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title="Right-click to copy link, or click to open"
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl transition-colors text-white text-xs font-bold uppercase tracking-wider shadow-sm bg-blue-600 hover:bg-blue-700"
-                                >
-                                    <Share2 className="w-4 h-4" /> Share Link
-                                </a>
                                 {isAdmin && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCredentialsModal(true)}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all text-white text-xs font-bold uppercase tracking-wider shadow-sm bg-amber-500 hover:bg-amber-600 active:scale-95 cursor-pointer"
+                                        title="View & copy student credentials and login password"
+                                    >
+                                        <Key className="w-4 h-4" /> Credentials
+                                    </button>
+                                )}
+                                {(isAdmin || !targetUserId) && (
                                     <button 
                                         onClick={onEditProfile}
-                                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors text-xs font-bold uppercase tracking-wider"
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer"
                                         title="Edit Profile"
                                     >
-                                        <Edit2 className="w-4 h-4" /> Edit
+                                        <Edit2 className="w-4 h-4" /> Edit Profile
                                     </button>
                                 )}
                             </div>
@@ -100,6 +96,16 @@ const HeroSection = ({ data, isAdmin, onEditProfile, targetUserId, userProfile }
                     <p className="text-xl font-bold text-slate-800">{gradeInfo.status}</p>
                 </div>
             </div>
+
+            {showCredentialsModal && (
+                <StudentCredentialsModal
+                    isOpen={showCredentialsModal}
+                    onClose={() => setShowCredentialsModal(false)}
+                    userId={targetUserId || ''}
+                    userProfile={userProfile}
+                    course="PET"
+                />
+            )}
         </div>
     );
 };
@@ -351,6 +357,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [editName, setEditName] = useState('');
+    const [editUsername, setEditUsername] = useState('');
+    const [editPassword, setEditPassword] = useState('');
+    const [showEditPassword, setShowEditPassword] = useState(false);
+    const [editMotto, setEditMotto] = useState('');
     const [editPhotoURL, setEditPhotoURL] = useState('');
     const [profileData, setProfileData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -434,11 +444,25 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
     const handleSaveProfile = async () => {
         if (!targetUserId) return;
         try {
-            await updateDoc(doc(db, 'users', targetUserId), {
+            const updates: any = {
                 name: editName,
-                photoURL: editPhotoURL
-            });
-            setProfileData((prev: any) => ({ ...prev, name: editName, photoURL: editPhotoURL }));
+                nickname: editName,
+                motto: editMotto,
+            };
+            if (editUsername.trim()) {
+                const cleanUser = editUsername.trim().toLowerCase().replace(/\s+/g, '');
+                updates.username = cleanUser;
+                updates.authEmail = `${cleanUser}@student.era.edu`;
+            }
+            if (editPassword.trim()) {
+                updates.tempPassword = editPassword.trim();
+                updates.password = editPassword.trim();
+            }
+            if (isAdmin) {
+                updates.photoURL = editPhotoURL;
+            }
+            await updateDoc(doc(db, 'users', targetUserId), updates);
+            setProfileData((prev: any) => ({ ...prev, ...updates }));
             setIsEditingProfile(false);
         } catch (err) {
             console.error("Error updating profile", err);
@@ -447,7 +471,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
     };
 
     const handleOpenEdit = () => {
-        setEditName(profileData?.name || profileData?.username || "Student");
+        setEditName(profileData?.nickname || profileData?.name || profileData?.username || "Student");
+        setEditUsername(profileData?.username || "");
+        setEditPassword(profileData?.tempPassword || profileData?.password || "");
+        setEditMotto(profileData?.motto || "");
+        setShowEditPassword(false);
         setEditPhotoURL(profileData?.photoURL || "");
         setIsEditingProfile(true);
     };
@@ -649,7 +677,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                         <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl relative animate-[slideUp_0.3s_ease-out_forwards]">
                             <button 
                                 onClick={() => setIsEditingProfile(false)}
-                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -658,38 +686,84 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Student Name</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Student Name / Nickname</label>
                                     <input 
                                         type="text"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Full Name"
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="Full Name or Nickname"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Profile Image URL</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Username</label>
                                     <input 
                                         type="text"
-                                        value={editPhotoURL}
-                                        onChange={(e) => setEditPhotoURL(e.target.value)}
-                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="https://example.com/photo.jpg"
+                                        value={editUsername}
+                                        onChange={(e) => setEditUsername(e.target.value)}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                                        placeholder="e.g. username"
                                     />
-                                    <p className="text-xs text-slate-500 mt-1">Paste a link to an image to update the profile picture.</p>
                                 </div>
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-sm font-semibold text-slate-700">Password</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEditPassword(!showEditPassword)}
+                                            className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                                        >
+                                            {showEditPassword ? 'Hide' : 'Show'}
+                                        </button>
+                                    </div>
+                                    <input 
+                                        type={showEditPassword ? 'text' : 'password'}
+                                        value={editPassword}
+                                        onChange={(e) => setEditPassword(e.target.value)}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                                        placeholder="Password"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Motto</label>
+                                    <textarea 
+                                        value={editMotto}
+                                        onChange={(e) => setEditMotto(e.target.value)}
+                                        rows={2}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                                        placeholder="Track your progress and continue your journey..."
+                                    />
+                                </div>
+                                {isAdmin && (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="block text-sm font-semibold text-slate-700">Profile Image URL</label>
+                                            <span className="text-[10px] uppercase font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                                                Admin Only
+                                            </span>
+                                        </div>
+                                        <input 
+                                            type="text"
+                                            value={editPhotoURL}
+                                            onChange={(e) => setEditPhotoURL(e.target.value)}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            placeholder="https://example.com/photo.jpg"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-1">Paste a link to an image to update the profile picture.</p>
+                                    </div>
+                                )}
                             </div>
                             
                             <div className="mt-8 flex justify-end gap-3">
                                 <button 
                                     onClick={() => setIsEditingProfile(false)}
-                                    className="px-5 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-colors"
+                                    className="px-5 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     onClick={handleSaveProfile}
-                                    className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                    className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer text-sm"
                                 >
                                     Save Changes
                                 </button>

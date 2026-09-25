@@ -7,7 +7,8 @@ import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight } from 'lucide-react';
+import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff } from 'lucide-react';
+import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
 import { format } from 'date-fns';
 
 import { linkWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
@@ -92,6 +93,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [editTitleValue, setEditTitleValue] = useState<string>('');
   const [uploadingSubmissionId, setUploadingSubmissionId] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
 
   const handleEditTitle = async (subId: string) => {
     if (!editTitleValue) {
@@ -185,9 +187,14 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [userProfile, setUserProfile] = useState<{nickname?: string, motto?: string, photoURL?: string, name?: string, needsPasswordReset?: boolean, email?: string, phone?: string, course?: string} | null>(null);
+  const [userProfile, setUserProfile] = useState<{nickname?: string, motto?: string, photoURL?: string, name?: string, needsPasswordReset?: boolean, email?: string, phone?: string, course?: string, username?: string, tempPassword?: string, password?: string, studentId?: string} | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editNickname, setEditNickname] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const [editMotto, setEditMotto] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
 
@@ -295,18 +302,58 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
   const handleSaveProfile = async () => {
     if (!targetUserId) return;
+    setProfileSaving(true);
+    setProfileError('');
     try {
-      await setDoc(doc(db, 'users', targetUserId), {
-        nickname: editNickname,
-        motto: editMotto,
-        photoURL: editPhotoURL
-      }, { merge: true });
-      if (user && targetUserId === user.uid && !(user as any).customAuth) {
-        await updateProfile(user as any, { displayName: editNickname || user.displayName, photoURL: editPhotoURL || user.photoURL });
+      const updateData: any = {
+        nickname: editNickname.trim(),
+        motto: editMotto.trim()
+      };
+
+      if (editUsername.trim()) {
+        const cleanUser = editUsername.trim().toLowerCase().replace(/\s+/g, '');
+        // Check uniqueness if username changed
+        if (cleanUser !== (userProfile?.username || '').toLowerCase()) {
+          const checkQ = query(collection(db, 'users'), where('username', '==', cleanUser));
+          const checkSnap = await getDocs(checkQ);
+          const conflict = checkSnap.docs.find(d => d.id !== targetUserId);
+          if (conflict) {
+            setProfileError('This username is already taken. Please choose another.');
+            setProfileSaving(false);
+            return;
+          }
+        }
+        updateData.username = cleanUser;
+        updateData.authEmail = `${cleanUser}@student.era.edu`;
       }
+
+      if (editPassword.trim()) {
+        updateData.tempPassword = editPassword.trim();
+        updateData.password = editPassword.trim();
+      }
+
+      // Profile photo ONLY updated if admin
+      if (isAdmin) {
+        updateData.photoURL = editPhotoURL.trim();
+      }
+
+      await setDoc(doc(db, 'users', targetUserId), updateData, { merge: true });
+      setUserProfile((prev: any) => prev ? ({ ...prev, ...updateData }) : updateData);
+
+      if (user && targetUserId === user.uid && !(user as any).customAuth) {
+        const authUpdates: any = { displayName: editNickname.trim() || user.displayName };
+        if (isAdmin && editPhotoURL.trim()) {
+          authUpdates.photoURL = editPhotoURL.trim();
+        }
+        await updateProfile(user as any, authUpdates).catch(console.error);
+      }
+
       setIsEditingProfile(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile", error);
+      setProfileError(error.message || 'Failed to update profile.');
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -414,28 +461,23 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               <div className="text-xs font-bold uppercase tracking-widest text-blue-200 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-inner">
                 {targetUserName ? 'Viewing Student Profile' : 'Student Profile'}
               </div>
-              <a 
-                href={(() => {
-                  let url = `${window.location.origin}/shared/dashboard/${targetUserId}`;
-                  const up = userProfile as any;
-                  if (isAdmin && up?.studentId && (up?.tempPassword || up?.password)) {
-                    url = `${window.location.origin}/login?autoLoginId=${encodeURIComponent(up.studentId)}&autoLoginPass=${encodeURIComponent(up.tempPassword || up.password)}`;
-                  }
-                  return url;
-                })()}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Right-click to copy link, or click to open"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors text-white text-xs font-bold uppercase tracking-wider shadow-sm"
-              >
-                <Share2 className="w-3.5 h-3.5" /> Share Link
-              </a>
+              {/* Credentials button: ONLY visible to admin */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowCredentialsModal(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full transition-all text-white text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+                  title="View & copy student credentials and login password"
+                >
+                  <Key className="w-3.5 h-3.5" /> Credentials
+                </button>
+              )}
               {(!targetUserId || targetUserId === user?.uid || isAdmin) && (
                 <div className="flex items-center gap-2">
                   {!user?.providerData.some(p => p.providerId === 'google.com') && (!targetUserId || targetUserId === user?.uid) && (
                     <button 
                       onClick={handleLinkGoogle}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
                     >
                       <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" xmlns="http://www.w0.org/2000/svg">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -446,19 +488,21 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       Link Google
                     </button>
                   )}
-                  {isAdmin && (
-                    <button 
-                      onClick={() => {
-                        setEditNickname(userProfile?.nickname || firstName);
-                        setEditMotto(userProfile?.motto || '');
-                        setEditPhotoURL(userProfile?.photoURL || '');
-                        setIsEditingProfile(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" /> Edit Profile
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => {
+                      setEditNickname(userProfile?.nickname || firstName || '');
+                      setEditUsername(userProfile?.username || '');
+                      setEditPassword(userProfile?.tempPassword || userProfile?.password || '');
+                      setShowEditPassword(false);
+                      setProfileError('');
+                      setEditMotto(userProfile?.motto || '');
+                      setEditPhotoURL(userProfile?.photoURL || '');
+                      setIsEditingProfile(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" /> Edit Profile
+                  </button>
                 </div>
               )}
             </div>
@@ -1917,87 +1961,152 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
       {isEditingProfile && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 my-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <h3 className="text-2xl font-bold text-slate-900">Edit Profile</h3>
-              <button onClick={() => setIsEditingProfile(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+              <button 
+                type="button"
+                onClick={() => setIsEditingProfile(false)} 
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
+
+            {profileError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl">
+                {profileError}
+              </div>
+            )}
             
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Nickname</label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Nickname</label>
                 <input 
                   type="text" 
                   value={editNickname} 
                   onChange={e => setEditNickname(e.target.value)}
-                  placeholder="e.g. Test Master"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
+                  placeholder="e.g. Suzie"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-900"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Profile Photo URL</label>
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Camera className="h-5 w-5 text-slate-400" />
-                    </div>
-                    <input 
-                      type="text" 
-                      value={editPhotoURL} 
-                      onChange={e => {
-                        let val = e.target.value;
-                        if (val.includes('drive.google.com/file/d/')) {
-                          const match = val.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                          if (match && match[1]) {
-                            val = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-                          }
-                        }
-                        setEditPhotoURL(val);
-                      }}
-                      placeholder="https://example.com/photo.jpg"
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900"
-                    />
-                  </div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Username</label>
+                <input 
+                  type="text" 
+                  value={editUsername} 
+                  onChange={e => setEditUsername(e.target.value)}
+                  placeholder="e.g. airflavorburger"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm text-slate-900"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Used to log into your account.</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-bold text-slate-700">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
+                  >
+                    {showEditPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showEditPassword ? 'Hide' : 'Show'}</span>
+                  </button>
                 </div>
-                {editPhotoURL && (
-                  <div className="mt-4 flex items-center justify-center">
-                    <div className="w-20 h-20 rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-50">
-                      <img src={editPhotoURL || undefined} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
-                    </div>
-                  </div>
-                )}
+                <input 
+                  type={showEditPassword ? 'text' : 'password'} 
+                  value={editPassword} 
+                  onChange={e => setEditPassword(e.target.value)}
+                  placeholder="Enter account password"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm text-slate-900"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Used to log into your account.</p>
               </div>
               
+              {/* Profile Photo URL - ONLY VISIBLE TO THE ADMIN */}
+              {isAdmin && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-bold text-slate-700">Profile Photo URL</label>
+                    <span className="text-[10px] uppercase font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                      Admin Only
+                    </span>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Camera className="h-5 w-5 text-slate-400" />
+                      </div>
+                      <input 
+                        type="text" 
+                        value={editPhotoURL} 
+                        onChange={e => {
+                          let val = e.target.value;
+                          if (val.includes('drive.google.com/file/d/')) {
+                            const match = val.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                            if (match && match[1]) {
+                              val = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+                            }
+                          }
+                          setEditPhotoURL(val);
+                        }}
+                        placeholder="https://example.com/photo.jpg"
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900"
+                      />
+                    </div>
+                  </div>
+                  {editPhotoURL && (
+                    <div className="mt-3 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full border-2 border-slate-200 shadow-sm overflow-hidden bg-slate-50">
+                        <img src={editPhotoURL || undefined} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Motto</label>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Motto</label>
                 <textarea 
                   value={editMotto} 
                   onChange={e => setEditMotto(e.target.value)}
                   placeholder="e.g. Track your progress and continue your journey to Band 7.5. You're doing great!"
-                  rows={3}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900 resize-none"
+                  rows={2}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-slate-900 resize-none"
                 ></textarea>
               </div>
               
-              <div className="pt-4 flex gap-4">
+              <div className="pt-3 flex gap-3">
                 <button 
+                  type="button"
                   onClick={() => setIsEditingProfile(false)} 
-                  className="flex-1 py-3.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+                  className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 cursor-pointer text-sm"
                 >
                   Cancel
                 </button>
                 <button 
+                  type="button"
+                  disabled={profileSaving}
                   onClick={handleSaveProfile} 
-                  className="flex-1 py-3.5 bg-[#1E4DB7] text-white font-bold hover:bg-blue-800 rounded-xl transition-colors shadow-lg shadow-blue-500/30"
+                  className="flex-1 py-3 bg-[#1E4DB7] text-white font-bold hover:bg-blue-800 rounded-xl transition-colors shadow-lg shadow-blue-500/30 cursor-pointer disabled:opacity-50 text-sm"
                 >
-                  Save Changes
+                  {profileSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {showCredentialsModal && (
+        <StudentCredentialsModal
+          isOpen={showCredentialsModal}
+          onClose={() => setShowCredentialsModal(false)}
+          userId={targetUserId || user?.uid || ''}
+          userProfile={userProfile}
+          course={userProfile?.course || 'IELTS'}
+        />
       )}
 
     </div>

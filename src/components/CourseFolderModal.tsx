@@ -8,7 +8,6 @@ import {
   ArrowLeft, 
   UserPlus, 
   Key, 
-  LayoutDashboard, 
   Trash2, 
   Edit2, 
   Check, 
@@ -17,7 +16,6 @@ import {
   Layers
 } from 'lucide-react';
 import { Link } from 'react-router';
-import { format } from 'date-fns';
 import { doc, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { CourseFolder } from '../types';
@@ -471,60 +469,48 @@ export function CourseFolderModal({
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 text-[10px] uppercase tracking-wider border-b border-slate-200">
                       <th className="px-4 py-3 font-bold">Student Name / Account</th>
-                      <th className="px-4 py-3 font-bold">Assigned Folder</th>
-                      <th className="px-4 py-3 font-bold">Joined</th>
                       <th className="px-4 py-3 font-bold text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
                     {displayedStudents.map((u) => {
-                      const createdStr = u.createdAt?.toDate
-                        ? format(u.createdAt.toDate(), 'MMM d, yyyy')
-                        : typeof u.createdAt === 'number'
-                        ? format(new Date(u.createdAt), 'MMM d, yyyy')
-                        : 'N/A';
-
-                      const assignedFolderName = u.folderName || (u.folderId ? allFolders.find((f) => f.id === u.folderId)?.name : null) || 'Main Folder';
+                      const studentName = u.firstName || u.name?.split(' ')[0] || u.displayName || 'Unknown';
+                      const viewUrl = u.course === 'PET' ? `/pet/dashboard?userId=${u.uid || u.id}` : `/ielts/dashboard?userId=${u.uid || u.id}`;
 
                       return (
                         <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2.5">
+                            <Link
+                              to={viewUrl}
+                              className="inline-flex items-center gap-2.5 group/student hover:opacity-90 transition-all cursor-pointer"
+                              title={`Click to view ${studentName}'s dashboard`}
+                            >
                               {u.photoURL ? (
                                 <img
                                   src={u.photoURL}
-                                  alt={u.firstName || u.name}
-                                  className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
+                                  alt={studentName}
+                                  className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 group-hover/student:border-blue-500 group-hover/student:ring-2 group-hover/student:ring-blue-100 transition-all"
                                 />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200 shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200 shrink-0 group-hover/student:bg-blue-600 group-hover/student:text-white transition-all">
                                   {(u.firstName || u.name || 'U')[0].toUpperCase()}
                                 </div>
                               )}
                               <div>
-                                <div className="font-bold text-slate-900 leading-snug">
-                                  {u.firstName || u.name?.split(' ')[0] || u.displayName || 'Unknown'}
+                                <div className="font-bold text-slate-900 leading-snug group-hover/student:text-[#1E4DB7] group-hover/student:underline transition-colors flex items-center gap-1.5">
+                                  <span>{studentName}</span>
                                   {u.nickname && (
-                                    <span className="text-blue-600 ml-1.5 italic font-normal text-xs">
+                                    <span className="text-blue-600 italic font-normal text-xs no-underline">
                                       "{u.nickname}"
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs text-slate-500 font-medium">
+                                <div className="text-xs text-slate-500 font-medium group-hover/student:text-slate-600">
                                   {u.email || u.studentId || u.username || 'No email'}
                                 </div>
                               </div>
-                            </div>
+                            </Link>
                           </td>
-
-                          <td className="px-4 py-3">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
-                              <Folder className="w-3.5 h-3.5 text-blue-500" />
-                              <span className="truncate max-w-[140px]">{assignedFolderName}</span>
-                            </span>
-                          </td>
-
-                          <td className="px-4 py-3 text-xs text-slate-600">{createdStr}</td>
 
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
@@ -547,16 +533,6 @@ export function CourseFolderModal({
                                 <Key className="w-3.5 h-3.5 text-amber-600" />
                                 <span className="hidden sm:inline">Creds</span>
                               </button>
-
-                              {/* View Dashboard */}
-                              <Link
-                                to={u.course === 'PET' ? `/pet/dashboard?userId=${u.uid || u.id}` : `/ielts/dashboard?userId=${u.uid || u.id}`}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-lg transition-colors border border-slate-200 shadow-2xs"
-                                title="View Dashboard"
-                              >
-                                <LayoutDashboard className="w-3.5 h-3.5 text-slate-500" />
-                                <span className="hidden sm:inline">View</span>
-                              </Link>
 
                               {/* Delete Student Button */}
                               <button
