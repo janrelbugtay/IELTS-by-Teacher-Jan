@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export function Login() {
-  const { user, userCourse, loading, signIn, signInWithEmail } = useAuth();
+  const { user, userCourse, loading, signInWithEmail } = useAuth();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,20 +36,6 @@ export function Login() {
     }
     return <Navigate to="/ielts/dashboard" replace />;
   }
-
-  const handleGoogleLogin = async () => {
-    setError('');
-    try {
-      await signIn();
-    } catch (err: any) {
-      if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Failed to sign in with Google. If popups are blocked, please open the app in a new tab.");
-      }
-    }
-  };
-
   
   const processLogin = async (idToUse: string, passToUse: string) => {
     setError('');
@@ -171,22 +157,7 @@ export function Login() {
             </div>
           )}
 
-                    <button 
-            onClick={handleGoogleLogin} 
-            disabled={authLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-            Sign in with Google
-          </button>
-          
-          <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink-0 mx-4 text-slate-400 text-sm font-medium">or login with student ID</span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
-          
-          {/* Option 2: School Account */}
+          {/* School Account Login */}
           <form onSubmit={handleSchoolLogin} className="space-y-4">
             <div>
               <input
