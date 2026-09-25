@@ -7,6 +7,7 @@ import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown
 import { motion, AnimatePresence } from 'motion/react';
 import { EraLogo } from './EraLogo';
 import { ChatBox } from './ChatBox';
+import { NotificationDropdown } from './NotificationDropdown';
 import { useTheme } from '../contexts/ThemeContext';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
@@ -122,10 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               ) : (
                 <div className="flex items-center gap-4">
-                  <button className="relative p-2 text-[#64748B] hover:text-[#0F172A] transition-colors rounded-full hover:bg-slate-100">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#F59E0B] rounded-full border-2 border-white"></span>
-                  </button>
+                  <NotificationDropdown />
                   
                   <div className="relative">
                     <button 
@@ -237,7 +235,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Mobile menu button */}
-            <div className="xl:hidden flex items-center">
+            <div className="xl:hidden flex items-center gap-2">
+              {user && <NotificationDropdown />}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-xl text-[#64748B] hover:bg-slate-100 transition-colors"

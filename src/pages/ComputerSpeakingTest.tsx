@@ -10,6 +10,7 @@ import { SpeakingPerformanceReport } from '../components/SpeakingPerformanceRepo
 import { SpeakingRecordingsReview } from '../components/SpeakingRecordingsReview';
 import { Mic, Camera, Wifi, MessageSquare, BarChart, FileText, CheckCircle2, ChevronRight, UploadCloud, Play, Square, Volume2 } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { createSubmissionNotification } from '../lib/notificationService';
 
 const STAGES = {
   MIC_CHECK: 'MIC_CHECK',
@@ -243,6 +244,18 @@ export function ComputerSpeakingTest() {
                       answers: {},
                       status: 'processing' // indicate it's still uploading
                     });
+
+                    if (user) {
+                      createSubmissionNotification({
+                        userId: user.uid,
+                        studentName: user.displayName || 'Student',
+                        assignmentTitle: assignmentTitle,
+                        type: 'practice_test',
+                        testType: 'speaking',
+                        bandScore: 7,
+                        submissionId: docRef.id
+                      }).catch(console.warn);
+                    }
                     
                     // Navigate AFTER uploads
                     const uploadPromises = Object.entries(responses).map(async ([qId, blob]) => {

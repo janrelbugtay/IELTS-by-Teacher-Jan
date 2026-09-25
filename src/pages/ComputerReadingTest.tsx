@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
+import { createSubmissionNotification } from '../lib/notificationService';
 
 // --- CUSTOM STYLES ---
 const CustomStyles = () => (
@@ -1260,7 +1261,7 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
         const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswerRef(qNum)).length;
         const bandScoreNum = parseFloat(getBandScore(score));
         
-        await addDoc(collection(db, 'submissions'), {
+        const docRef = await addDoc(collection(db, 'submissions'), {
           userId: user.uid,
           studentName: currentStudentName || user.displayName || 'Student',
           assignmentId: currentId,
@@ -1274,6 +1275,17 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           timeSpent: 3600 - currentTimeLeft,
           requiresEvaluation: false
         });
+
+        createSubmissionNotification({
+          userId: user.uid,
+          studentName: currentStudentName || user.displayName || 'Student',
+          assignmentTitle: title,
+          type: 'practice_test',
+          testType: 'reading',
+          bandScore: bandScoreNum,
+          score: score,
+          submissionId: docRef.id
+        }).catch(console.warn);
       } catch (err) {
         console.error("Failed to save score", err);
       }

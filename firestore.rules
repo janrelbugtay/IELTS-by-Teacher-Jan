@@ -117,5 +117,8 @@ service cloud.firestore {
     match /folders/{folderId} {
       allow read, write: if true;
     }
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
   }
 }

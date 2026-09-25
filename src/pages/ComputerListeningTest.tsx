@@ -7,6 +7,7 @@ import { CheckCircle2, ArrowLeft, Info, Menu } from 'lucide-react';
 import { CustomAudioPlayer } from '../components/CustomAudioPlayer';
 import { FebruaryListeningTest } from './FebruaryListeningTest';
 import { JanuaryListeningTest } from './JanuaryListeningTest';
+import { createSubmissionNotification } from '../lib/notificationService';
 
 const CustomStyles = () => (
   <style>{`
@@ -315,7 +316,7 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
 
 
 
-      await addDoc(collection(db, 'submissions'), {
+      const docRef = await addDoc(collection(db, 'submissions'), {
         userId: user.uid,
         studentName: currentState.studentName || user.displayName || 'Student',
         assignmentId: currentState.id,
@@ -329,6 +330,17 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
         timeSpent: (40 * 60) - currentState.timeLeft,
         requiresEvaluation: false
       });
+
+      createSubmissionNotification({
+        userId: user.uid,
+        studentName: currentState.studentName || user.displayName || 'Student',
+        assignmentTitle: title,
+        type: 'practice_test',
+        testType: 'listening',
+        bandScore: bandScore,
+        score: score,
+        submissionId: docRef.id
+      }).catch(console.warn);
 
     } catch (err) {
       console.error("Failed to save score", err);

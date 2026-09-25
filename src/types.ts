@@ -92,3 +92,21 @@ export interface CourseFolder {
   deletedAt?: any;
 }
 
+export interface NotificationItem {
+  id?: string;
+  userId: string;
+  userName: string;
+  userNickname?: string;
+  userPhotoURL?: string;
+  course: string;
+  folderId?: string | null;
+  folderName?: string | null;
+  type: 'homework' | 'practice_test';
+  testType?: 'writing' | 'speaking' | 'reading' | 'listening' | 'general';
+  title: string;
+  bandScore?: number | string;
+  score?: number | string;
+  submissionId?: string;
+  createdAt: any;
+}
+

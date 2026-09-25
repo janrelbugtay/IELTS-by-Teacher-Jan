@@ -7,6 +7,7 @@ import { renderMarkdown } from '../lib/markdown';
 import { Award, CheckCircle2 } from 'lucide-react';
 import { EraLogo } from '../components/EraLogo';
 import { WritingPerformanceReport } from '../components/WritingPerformanceReport';
+import { createSubmissionNotification } from '../lib/notificationService';
 
 import { JanuaryWritingTest } from './JanuaryWritingTest';
 import { FebruaryWritingTest } from './FebruaryWritingTest';
@@ -964,7 +965,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                     }
                 }
                 
-                await addDoc(collection(db, 'submissions'), {
+                const docRef = await addDoc(collection(db, 'submissions'), {
                     userId: user.uid,
                     studentName: currentState.studentName,
                     assignmentId: currentId,
@@ -978,6 +979,15 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                     timeSpent: TEST_DURATION - currentTimeLeft,
                     requiresEvaluation: false 
                 });
+
+                createSubmissionNotification({
+                    userId: user.uid,
+                    studentName: currentState.studentName,
+                    assignmentTitle: title,
+                    type: typeLabel.toLowerCase() === 'homework' ? 'homework' : 'practice_test',
+                    testType: 'writing',
+                    submissionId: docRef.id
+                }).catch(console.warn);
             } catch (error) {
                 console.error("Failed to save submission to database", error);
             }

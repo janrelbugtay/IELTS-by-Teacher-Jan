@@ -10,6 +10,7 @@ import { handleFirestoreError } from '../../lib/errorHandler';
 import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff } from 'lucide-react';
 import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
 import { format } from 'date-fns';
+import { createSubmissionNotification } from '../../lib/notificationService';
 
 import { updateProfile } from 'firebase/auth';
 
@@ -1908,12 +1909,22 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                         if (offlineForm.id) {
                             await updateDoc(doc(db, 'submissions', offlineForm.id), payload);
                         } else {
-                            await addDoc(collection(db, 'submissions'), {
+                            const newDoc = await addDoc(collection(db, 'submissions'), {
                               ...payload,
                               assignmentId: 'offline_speaking',
                               assignmentType: 'speaking',
                               userId: targetUserId,
                             });
+
+                            createSubmissionNotification({
+                              userId: targetUserId,
+                              studentName: userProfile?.name || targetUserName || 'Student',
+                              assignmentTitle: offlineForm.name || 'Offline Speaking Assignment',
+                              type: 'practice_test',
+                              testType: 'speaking',
+                              bandScore: isNaN(bandScore) ? undefined : bandScore,
+                              submissionId: newDoc.id
+                            }).catch(console.warn);
                         }
                         setShowAddOffline(false);
                       } catch (err) {

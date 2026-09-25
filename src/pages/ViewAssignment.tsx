@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { handleFirestoreError } from '../lib/errorHandler';
 import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 import { Link } from 'react-router';
+import { createSubmissionNotification } from '../lib/notificationService';
 
 export function ViewAssignment() {
   const { id } = useParams<{ id: string }>();
@@ -70,6 +71,15 @@ export function ViewAssignment() {
       
       const docRef = await addDoc(collection(db, 'submissions'), submissionData);
       setSubmission({ id: docRef.id, ...submissionData } as Submission);
+
+      createSubmissionNotification({
+        userId: user.uid,
+        studentName: user.displayName || 'Student',
+        assignmentTitle: assignment?.title || 'Homework Assignment',
+        type: 'homework',
+        testType: assignment?.type || 'general',
+        submissionId: docRef.id
+      }).catch(console.warn);
     } catch (err) {
       console.error(err);
       handleFirestoreError(err, OperationType.CREATE, 'submissions');
