@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { EraLogo } from './EraLogo';
 import { ChatBox } from './ChatBox';
 import { NotificationDropdown } from './NotificationDropdown';
+import { AdminStudentSearch } from './AdminStudentSearch';
 import { useTheme } from '../contexts/ThemeContext';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
@@ -122,7 +123,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </>
               ) : (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  {isAdmin && <AdminStudentSearch />}
                   <NotificationDropdown />
                   
                   <div className="relative">
@@ -236,6 +238,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile menu button */}
             <div className="xl:hidden flex items-center gap-2">
+              {user && isAdmin && <AdminStudentSearch isMobile />}
               {user && <NotificationDropdown />}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

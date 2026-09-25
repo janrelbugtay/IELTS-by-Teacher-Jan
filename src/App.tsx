@@ -75,6 +75,7 @@ function AppContent() {
                 <Route path="/courses/:id" element={<CourseDetails />} />
                 <Route path="/practice-tests" element={<PracticeTests />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/ielts/dashboard" replace /></ProtectedRoute>} />
                 <Route path="/ielts/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/pet/dashboard" element={<ProtectedRoute><PetDashboard /></ProtectedRoute>} />
                 <Route path="/ket/dashboard" element={<ProtectedRoute><KetDashboard /></ProtectedRoute>} />
