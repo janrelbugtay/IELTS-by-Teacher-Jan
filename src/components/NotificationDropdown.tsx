@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Bell, Check, ExternalLink, BookOpen, PenTool, Mic, Headphones, 
-  FileText, Folder, CheckCheck, Sparkles, Filter, X 
+  Bell, ExternalLink, BookOpen, PenTool, Mic, Headphones, 
+  FileText, Folder, CheckCheck, Sparkles, X, ChevronRight 
 } from 'lucide-react';
-import { Link } from 'react-router';
-import { collection, query, orderBy, limit, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router';
+import { 
+  collection, query, orderBy, limit, onSnapshot, doc, getDoc, 
+  getDocs, deleteDoc 
+} from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationItem } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { isTeacherOrAdmin, formatStudentNameWithNickname } from '../lib/notificationService';
 
 export function NotificationDropdown() {
   const { user, isAdmin, userCourse } = useAuth();
+  const navigate = useNavigate();
+
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [userFolder, setUserFolder] = useState<{ id: string | null; name: string | null; course: string | null } | null>(null);
@@ -64,30 +70,41 @@ export function NotificationDropdown() {
     return () => { isMounted = false; };
   }, [user, userCourse]);
 
-  // Listen to Firestore notifications
+  // Listen to Firestore notifications & filter out invalid teacher test records
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
-    // Listen to real-time notifications
     const notifQ = query(
       collection(db, 'notifications'),
       orderBy('createdAt', 'desc'),
-      limit(60)
+      limit(50)
     );
 
     const unsubscribe = onSnapshot(notifQ, async (snapshot) => {
       if (!isMounted) return;
       
       const firestoreItems: NotificationItem[] = [];
+      
       snapshot.forEach((docSnap) => {
-        firestoreItems.push({ id: docSnap.id, ...docSnap.data() } as NotificationItem);
+        const d = docSnap.data();
+        const item = { id: docSnap.id, ...d } as NotificationItem;
+
+        // Auto-clean & exclude teacher/admin internal testing attempts
+        if (isTeacherOrAdmin(item.userId, undefined, item.userName, item.userNickname)) {
+          if (docSnap.id) {
+            deleteDoc(doc(db, 'notifications', docSnap.id)).catch(console.warn);
+          }
+          return;
+        }
+
+        firestoreItems.push(item);
       });
 
-      // If few/zero records exist in the notifications collection, bootstrap with recent submissions
-      if (firestoreItems.length < 5) {
+      // If very few notifications exist in collection, check recent student submissions
+      if (firestoreItems.length < 3) {
         try {
-          const subQ = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'), limit(25));
+          const subQ = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'), limit(20));
           const subSnap = await getDocs(subQ);
           const userCache: Record<string, any> = {};
 
@@ -95,7 +112,13 @@ export function NotificationDropdown() {
           for (const sDoc of subSnap.docs) {
             const sData = sDoc.data();
             const sUserId = sData.userId;
-            
+            const sStudentName = sData.studentName || '';
+
+            // STRICT: Skip any teacher/admin submissions
+            if (isTeacherOrAdmin(sUserId, undefined, sStudentName)) {
+              continue;
+            }
+
             // Check if already in firestoreItems
             if (firestoreItems.some(item => item.submissionId === sDoc.id || item.id === sDoc.id)) {
               continue;
@@ -111,13 +134,24 @@ export function NotificationDropdown() {
             }
 
             const uInfo = userCache[sUserId] || {};
+
+            // STRICT: Skip if user document is teacher/admin
+            if (
+              uInfo.role === 'admin' || 
+              uInfo.isAdmin === true || 
+              isTeacherOrAdmin(sUserId, uInfo.email || uInfo.authEmail, uInfo.name || uInfo.displayName, uInfo.nickname)
+            ) {
+              continue;
+            }
+
             const isHw = (sData.assignmentId && String(sData.assignmentId).toLowerCase().includes('homework')) ||
-                         (sData.assignmentTitle && String(sData.assignmentTitle).toLowerCase().includes('homework'));
+                         (sData.assignmentTitle && String(sData.assignmentTitle).toLowerCase().includes('homework')) ||
+                         sData.assignmentType === 'homework';
 
             fallbackItems.push({
               id: `sub_${sDoc.id}`,
               userId: sUserId,
-              userName: sData.studentName || uInfo.name || uInfo.nickname || 'Student',
+              userName: sStudentName || uInfo.name || uInfo.displayName || 'Student',
               userNickname: uInfo.nickname || '',
               userPhotoURL: uInfo.photoURL || '',
               course: uInfo.course || 'IELTS',
@@ -134,7 +168,6 @@ export function NotificationDropdown() {
           }
 
           const combined = [...firestoreItems, ...fallbackItems];
-          // sort by createdAt
           combined.sort((a, b) => {
             const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (typeof a.createdAt === 'number' ? a.createdAt : 0);
             const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (typeof b.createdAt === 'number' ? b.createdAt : 0);
@@ -146,7 +179,7 @@ export function NotificationDropdown() {
           }
           return;
         } catch (e) {
-          console.warn('Error fetching fallback notifications:', e);
+          console.warn('Error fetching fallback student submissions:', e);
         }
       }
 
@@ -164,9 +197,14 @@ export function NotificationDropdown() {
   }, [user]);
 
   // RESTRICTED FILTER LOGIC:
-  // Admin sees all notifications.
-  // Regular users ONLY see notifications for users who share the SAME CLASS FOLDER.
+  // Admin sees all student notifications.
+  // Regular students ONLY see notifications for students in the SAME CLASS FOLDER.
   const filteredNotifications = notifications.filter((item) => {
+    // 0. Double protection: Never display teacher/admin self-notifications
+    if (isTeacherOrAdmin(item.userId, undefined, item.userName, item.userNickname)) {
+      return false;
+    }
+
     // 1. Role-based folder restriction
     if (!isAdmin) {
       if (!userFolder) return false;
@@ -181,7 +219,7 @@ export function NotificationDropdown() {
 
       // Check folder matching
       if (userFolder.id) {
-        // User is inside a specific folder (e.g. "IELTS 1")
+        // Student is inside a specific folder (e.g. "IELTS 1")
         const isSameFolderId = item.folderId && item.folderId === userFolder.id;
         const isSameFolderName = item.folderName && userFolder.name && 
           item.folderName.trim().toLowerCase() === userFolder.name.trim().toLowerCase();
@@ -190,7 +228,7 @@ export function NotificationDropdown() {
           return false;
         }
       } else {
-        // User is in Main Folder / Root (no subfolder assigned)
+        // Student is in Main Folder / Root (no subfolder assigned)
         const itemHasNoFolder = !item.folderId || !item.folderName || item.folderName === 'Main Folder';
         if (!itemHasNoFolder) {
           return false;
@@ -223,6 +261,32 @@ export function NotificationDropdown() {
     setReadIds(updated);
     if (user) {
       localStorage.setItem(`era_read_notifications_${user.uid}`, JSON.stringify(updated));
+    }
+  };
+
+  // Click on a notification: Navigate directly to that student's dashboard!
+  const handleNotificationClick = (item: NotificationItem) => {
+    if (item.id) {
+      markOneAsRead(item.id);
+    }
+    setIsOpen(false);
+
+    // If Admin: direct to the student's dashboard
+    if (isAdmin && item.userId) {
+      const course = (item.course || 'IELTS').toLowerCase();
+      let path = `/ielts/dashboard?userId=${item.userId}`;
+      if (course === 'pet') {
+        path = `/pet/dashboard?userId=${item.userId}`;
+      } else if (course === 'ket') {
+        path = `/ket/dashboard?userId=${item.userId}`;
+      }
+      navigate(path);
+      return;
+    }
+
+    // If student clicked their own submission:
+    if (item.userId === user?.uid) {
+      navigate('/dashboard');
     }
   };
 
@@ -260,8 +324,8 @@ export function NotificationDropdown() {
             ? 'bg-blue-100 text-[#1E4DB7]' 
             : 'text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100'
         }`}
-        title="Activity Notifications"
-        aria-label="Activity Notifications"
+        title="Student Activity Notifications"
+        aria-label="Student Activity Notifications"
       >
         <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
         {unreadCount > 0 ? (
@@ -291,7 +355,7 @@ export function NotificationDropdown() {
               <p className="text-[11px] font-medium text-slate-500 mt-0.5 flex items-center gap-1.5">
                 {isAdmin ? (
                   <span className="text-blue-600 font-semibold flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Admin View: All Courses & Folders
+                    <Sparkles className="w-3 h-3" /> Admin View: Student Submissions
                   </span>
                 ) : (
                   <span className="text-slate-600 flex items-center gap-1">
@@ -368,10 +432,10 @@ export function NotificationDropdown() {
                 <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-3">
                   <Bell className="w-6 h-6" />
                 </div>
-                <h4 className="text-sm font-bold text-slate-700 mb-1">No notifications yet</h4>
+                <h4 className="text-sm font-bold text-slate-700 mb-1">No student notifications</h4>
                 <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
                   {isAdmin 
-                    ? "Submissions from practice tests and homework will show up here."
+                    ? "Student submissions from practice tests and homework will appear here."
                     : `When classmates in ${userFolder?.name || 'your class folder'} submit tests or homework, you'll be notified here.`
                   }
                 </p>
@@ -379,15 +443,17 @@ export function NotificationDropdown() {
             ) : (
               filteredNotifications.map((item) => {
                 const isRead = item.id ? readIds.includes(item.id) : false;
-                const firstName = item.userName?.split(' ')[0] || 'Student';
-                const initial = firstName.charAt(0).toUpperCase();
+                
+                // Formatted display name and deduplicated nickname
+                const { name: displayName, nickname: displayNickname } = formatStudentNameWithNickname(item.userName, item.userNickname);
+                const initial = displayName.charAt(0).toUpperCase();
 
                 return (
                   <div
                     key={item.id}
-                    onClick={() => markOneAsRead(item.id)}
-                    className={`px-4 py-3.5 transition-colors flex items-start gap-3 relative hover:bg-slate-50/80 cursor-pointer ${
-                      !isRead ? 'bg-blue-50/30' : 'bg-white'
+                    onClick={() => handleNotificationClick(item)}
+                    className={`group px-4 py-3.5 transition-colors flex items-start gap-3 relative hover:bg-slate-50 cursor-pointer ${
+                      !isRead ? 'bg-blue-50/25' : 'bg-white'
                     }`}
                   >
                     {/* Unread Indicator Bar */}
@@ -400,7 +466,7 @@ export function NotificationDropdown() {
                       {item.userPhotoURL ? (
                         <img 
                           src={item.userPhotoURL} 
-                          alt={item.userName} 
+                          alt={displayName} 
                           className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
@@ -417,10 +483,13 @@ export function NotificationDropdown() {
                     {/* Notification Details */}
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-slate-800 leading-snug">
-                        <span className="font-bold text-slate-900">{item.userName}</span>
-                        {item.userNickname && (
+                        {/* Properly formatted name and nickname without duplicates */}
+                        <span className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                          {displayName}
+                        </span>
+                        {displayNickname && (
                           <span className="text-blue-600 font-semibold italic ml-1">
-                            &quot;{item.userNickname}&quot;
+                            &quot;{displayNickname}&quot;
                           </span>
                         )}
                         <span className="text-slate-600 ml-1">
@@ -463,6 +532,13 @@ export function NotificationDropdown() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Admin arrow click hint */}
+                    {isAdmin && (
+                      <div className="self-center text-slate-300 group-hover:text-blue-600 transition-colors">
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -472,7 +548,7 @@ export function NotificationDropdown() {
           {/* Footer */}
           <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <span>
-              {isAdmin ? "Admin view shows all student submissions" : "Group notifications are live in real-time"}
+              {isAdmin ? "Click any student to view their dashboard" : "Group notifications are live in real-time"}
             </span>
             <Link 
               to="/dashboard" 

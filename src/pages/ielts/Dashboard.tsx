@@ -60,7 +60,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
   const { userId: urlUserId } = useParams();
   const searchParams = new URLSearchParams(location.search);
-  const currentTab = searchParams.get('tab') || 'overview';
+  const rawTab = searchParams.get('tab') || 'overview';
+  const currentTab = isAdmin ? rawTab : 'overview';
   
   let targetUserId = (isAdmin && searchParams.get('userId')) ? searchParams.get('userId') : user?.uid;
   if (isShared && urlUserId) {
@@ -489,83 +490,174 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
         </div>
         
-        <div className="relative z-10 flex gap-4 w-full md:w-auto">
-          <div className="text-left bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 min-w-[200px] shadow-xl hover:bg-white/20 transition-colors duration-300 w-full md:w-auto flex flex-col justify-center">
-            <div className="text-sm font-bold text-blue-200 uppercase tracking-widest mb-2 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-blue-300" /> {userProfile?.course === 'PET' ? 'Overall Grade' : 'Overall Band'}
+        {/* Overall Band Card - Redesigned to be IDENTICAL to the Skill Score design */}
+        <div className="relative z-10 flex gap-4 w-full md:w-auto shrink-0">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-red-100/90 shadow-[0_12px_35px_rgba(0,0,0,0.18)] hover:shadow-[0_16px_45px_rgba(239,68,68,0.22)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-4 group min-w-[260px] sm:min-w-[290px]">
+            {/* Subtle ambient red background tint */}
+            <div className="absolute -top-12 -right-12 w-28 h-28 bg-red-100/40 rounded-full blur-2xl pointer-events-none group-hover:bg-red-100/60 transition-colors"></div>
+
+            {/* Left Column: Squircle icon + Title/Subtitle */}
+            <div className="flex items-center gap-3.5 min-w-0 relative z-10">
+              {/* Squircle Icon Container */}
+              <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-b from-white to-red-50/80 border border-red-100 shadow-[0_4px_16px_rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 32 32" className="w-7 h-7 sm:w-8 sm:h-8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 4L19.5 11.5L27.5 12.5L21.5 18L23 26L16 22L9 26L10.5 18L4.5 12.5L12.5 11.5L16 4Z" fill="#D8001B" />
+                  <circle cx="16" cy="15" r="4" fill="white" />
+                  <circle cx="16" cy="15" r="2.2" fill="#D8001B" />
+                </svg>
+              </div>
+
+              {/* Text column */}
+              <div className="flex flex-col min-w-0">
+                <span className="text-base sm:text-lg font-black uppercase tracking-tight text-[#D8001B] whitespace-nowrap leading-tight">
+                  {userProfile?.course === 'PET' ? 'OVERALL GRADE' : 'OVERALL BAND'}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-500 whitespace-nowrap mt-0.5">
+                  Skill Score
+                </span>
+              </div>
             </div>
-            <div className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-md">
-              {userProfile?.course === 'PET' ? Math.round(overallBand()) : overallBand().toFixed(1)}
+
+            {/* Circular Score Disc */}
+            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-gradient-to-br from-white via-white to-red-50/50 border border-red-100 shadow-[0_6px_20px_rgba(239,68,68,0.08)] flex items-center justify-center shrink-0 relative z-10">
+              <span className="text-3xl sm:text-4xl font-black text-[#B90014] tracking-tight">
+                {userProfile?.course === 'PET' ? Math.round(overallBand()) : overallBand().toFixed(1)}
+              </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Dashboard Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-4 border-b-2 border-slate-100 scrollbar-hide pt-4">
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=overview` : `/ielts/dashboard?tab=overview${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'overview' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Dashboard</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : `/ielts/dashboard?tab=reading${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'reading' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Reading</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
-        <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
-      </div>
+      {/* Dashboard Tabs - Only visible to Admin */}
+      {isAdmin && (
+        <div className="flex gap-2 overflow-x-auto pb-4 border-b-2 border-slate-100 scrollbar-hide pt-4">
+          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=overview` : `/ielts/dashboard?tab=overview${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'overview' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Dashboard</Link>
+          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : `/ielts/dashboard?tab=reading${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'reading' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Reading</Link>
+          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening</Link>
+          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
+          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
+          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
+        </div>
+      )}
 
       {currentTab === 'overview' && (
       <>
-        {/* Statistics Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-lg flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-[#1E4DB7] group-hover:opacity-[0.06] transition-opacity transform group-hover:-rotate-12 duration-500">
-            <Book className="w-24 h-24" />
-          </div>
-          <div className="flex justify-between items-center mb-8 relative z-10">
-            <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-[#1E4DB7] bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">Reading</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{rScore > 0 ? (userProfile?.course === 'PET' ? Math.round(rScore) : rScore.toFixed(1)) : '-'}</span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(rScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-lg flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-teal-600 group-hover:opacity-[0.06] transition-opacity transform group-hover:rotate-12 duration-500">
-            <Headphones className="w-24 h-24" />
-          </div>
-          <div className="flex justify-between items-center mb-8 relative z-10">
-            <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-teal-600 bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100">Listening</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{lScore > 0 ? (userProfile?.course === 'PET' ? Math.round(lScore) : lScore.toFixed(1)) : '-'}</span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-teal-500 to-emerald-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(lScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-lg flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-[#F4A340] group-hover:opacity-[0.06] transition-opacity transform group-hover:-rotate-12 duration-500">
-            <PenTool className="w-24 h-24" />
-          </div>
-          <div className="flex justify-between items-center mb-8 relative z-10">
-            <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-[#F4A340] bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100">Writing</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{wScore > 0 ? (userProfile?.course === 'PET' ? Math.round(wScore) : wScore.toFixed(1)) : '-'}</span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-orange-400 to-amber-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(wScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
-          </div>
-        </div>
+        {/* Statistics Grid - Colored according to Progress: Reading Blue, Listening Green, Writing Orange, Speaking Purple */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+        {[
+          {
+            title: 'READING',
+            score: rScore,
+            cardBg: 'bg-gradient-to-b from-white via-blue-50/30 to-blue-50/70 border-blue-200/80 shadow-[0_8px_25px_rgba(37,99,235,0.08)] hover:shadow-[0_16px_38px_rgba(37,99,235,0.16)]',
+            ambientGlow: 'bg-blue-200/40 group-hover:bg-blue-200/60',
+            squircleBg: 'from-white to-blue-100/90 border-blue-200 shadow-[0_4px_16px_rgba(37,99,235,0.14)]',
+            titleColor: 'text-[#1E4DB7]',
+            discBg: 'from-white via-white to-blue-50/80 border-blue-200 shadow-[0_4px_16px_rgba(30,77,183,0.10)]',
+            scoreColor: 'text-[#1E4DB7]',
+            icon: (
+              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 7.5C6 6.39543 6.89543 5.5 8 5.5C10.5 5.5 13.5 6.5 15 8.2V24.5C13.5 23 10.5 22 8 22C6.89543 22 6 22.8954 6 24V7.5Z" fill="#1E4DB7" />
+                <path d="M26 7.5C26 6.39543 25.1046 5.5 24 5.5C21.5 5.5 18.5 6.5 17 8.2V24.5C18.5 23 21.5 22 24 22C25.1046 22 26 22.8954 26 24V7.5Z" fill="#2563EB" />
+                <path d="M16 8V24.5" stroke="#1D4ED8" strokeWidth="1" />
+                <line x1="19.5" y1="10.5" x2="23.5" y2="10.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+                <line x1="19.5" y1="14" x2="23.5" y2="14" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+                <line x1="19.5" y1="17.5" x2="22.5" y2="17.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            )
+          },
+          {
+            title: 'LISTENING',
+            score: lScore,
+            cardBg: 'bg-gradient-to-b from-white via-emerald-50/30 to-emerald-50/70 border-emerald-200/80 shadow-[0_8px_25px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_38px_rgba(16,185,129,0.16)]',
+            ambientGlow: 'bg-emerald-200/40 group-hover:bg-emerald-200/60',
+            squircleBg: 'from-white to-emerald-100/90 border-emerald-200 shadow-[0_4px_16px_rgba(16,185,129,0.14)]',
+            titleColor: 'text-[#059669]',
+            discBg: 'from-white via-white to-emerald-50/80 border-emerald-200 shadow-[0_4px_16px_rgba(5,150,105,0.10)]',
+            scoreColor: 'text-[#047857]',
+            icon: (
+              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 16C6 10.4772 10.4772 6 16 6C21.5228 6 26 10.4772 26 16V22C26 24.2091 24.2091 26 22 26H21C19.8954 26 19 25.1046 19 24V18C19 16.8954 19.8954 16 21 16H23V16C23 12.134 19.866 9 16 9C12.134 9 9 12.134 9 16V16H11C12.1046 16 13 16.8954 13 18V24C13 25.1046 12.1046 26 11 26H10C7.79086 26 6 24.2091 6 22V16Z" fill="#059669" />
+                <circle cx="21" cy="20" r="1.5" fill="white" />
+                <circle cx="11" cy="20" r="1.5" fill="white" />
+              </svg>
+            )
+          },
+          {
+            title: 'WRITING',
+            score: wScore,
+            cardBg: 'bg-gradient-to-b from-white via-orange-50/30 to-orange-50/70 border-orange-200/80 shadow-[0_8px_25px_rgba(249,115,22,0.08)] hover:shadow-[0_16px_38px_rgba(249,115,22,0.16)]',
+            ambientGlow: 'bg-orange-200/40 group-hover:bg-orange-200/60',
+            squircleBg: 'from-white to-orange-100/90 border-orange-200 shadow-[0_4px_16px_rgba(249,115,22,0.14)]',
+            titleColor: 'text-[#EA580C]',
+            discBg: 'from-white via-white to-orange-50/80 border-orange-200 shadow-[0_4px_16px_rgba(234,88,12,0.10)]',
+            scoreColor: 'text-[#C2410C]',
+            icon: (
+              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.8 5.7C23.6 4.9 24.9 4.9 25.7 5.7C26.5 6.5 26.5 7.8 25.7 8.6L13.8 20.5C13.5 20.8 13.1 21.0 12.7 21.1L7.5 22.5C6.9 22.7 6.3 22.1 6.5 21.5L7.9 16.3C8.0 15.9 8.2 15.5 8.5 15.2L20.4 3.3" fill="#EA580C" />
+                <path d="M19 8L23 12" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="7" y1="26" x2="25" y2="26" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            )
+          },
+          {
+            title: 'SPEAKING',
+            score: sScore,
+            cardBg: 'bg-gradient-to-b from-white via-purple-50/30 to-purple-50/70 border-purple-200/80 shadow-[0_8px_25px_rgba(168,85,247,0.08)] hover:shadow-[0_16px_38px_rgba(168,85,247,0.16)]',
+            ambientGlow: 'bg-purple-200/40 group-hover:bg-purple-200/60',
+            squircleBg: 'from-white to-purple-100/90 border-purple-200 shadow-[0_4px_16px_rgba(168,85,247,0.14)]',
+            titleColor: 'text-[#9333EA]',
+            discBg: 'from-white via-white to-purple-50/80 border-purple-200 shadow-[0_4px_16px_rgba(147,51,234,0.10)]',
+            scoreColor: 'text-[#7E22CE]',
+            icon: (
+              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="11.5" y="5" width="9" height="14" rx="4.5" fill="#9333EA" />
+                <line x1="14" y1="9" x2="18" y2="9" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="14" y1="12" x2="18" y2="12" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M8 14.5C8 18.9183 11.5817 22.5 16 22.5C20.4183 22.5 24 18.9183 24 14.5" stroke="#9333EA" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M16 22.5V27M11 27H21" stroke="#9333EA" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            )
+          }
+        ].map((card, idx) => {
+          const displayScore = card.score > 0 
+            ? (userProfile?.course === 'PET' ? Math.round(card.score) : card.score.toFixed(1)) 
+            : '-';
 
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-lg flex flex-col hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.03] text-purple-600 group-hover:opacity-[0.06] transition-opacity transform group-hover:rotate-12 duration-500">
-            <Mic className="w-24 h-24" />
-          </div>
-          <div className="flex justify-between items-center mb-8 relative z-10">
-            <span className="text-[0.9rem] font-extrabold uppercase tracking-widest text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">Speaking</span>
-            <span className="text-4xl font-extrabold text-slate-900 tracking-tighter">{sScore > 0 ? (userProfile?.course === 'PET' ? Math.round(sScore) : sScore.toFixed(1)) : '-'}</span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-3 mt-auto overflow-hidden relative z-10">
-            <div className="bg-gradient-to-r from-purple-500 to-fuchsia-400 h-3 rounded-full transition-all duration-1000 ease-out shadow-inner" style={{ width: `${(sScore/(userProfile?.course === 'PET' ? 170 : 9))*100}%` }}></div>
-          </div>
-        </div>
+          return (
+            <div 
+              key={idx}
+              className={`rounded-3xl p-4 sm:p-5 xl:p-4 2xl:p-6 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-2.5 sm:gap-3 group ${card.cardBg}`}
+            >
+              {/* Subtle ambient background glow */}
+              <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl pointer-events-none transition-colors ${card.ambientGlow}`}></div>
+
+              {/* Left Column: Squircle icon + Title/Subtitle (flex-1 min-w-0 to prevent any overlap) */}
+              <div className="flex items-center gap-2.5 sm:gap-3 xl:gap-2.5 2xl:gap-3.5 min-w-0 flex-1 relative z-10">
+                {/* Squircle Icon Container */}
+                <div className={`w-11 h-11 sm:w-13 sm:h-13 xl:w-11 xl:h-11 2xl:w-14 2xl:h-14 rounded-2xl bg-gradient-to-b flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.squircleBg}`}>
+                  {card.icon}
+                </div>
+
+                {/* Text column - properly flexible with no risk of collision */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className={`text-xs sm:text-base xl:text-xs 2xl:text-base font-black uppercase tracking-tight truncate leading-tight ${card.titleColor}`}>
+                    {card.title}
+                  </span>
+                  <span className="text-[10px] sm:text-xs xl:text-[10px] 2xl:text-xs font-semibold text-slate-500 truncate mt-0.5">
+                    Skill Score
+                  </span>
+                </div>
+              </div>
+
+              {/* Circular Score Disc - Dedicated shrink-0 container that NEVER overlaps */}
+              <div className={`w-13 h-13 sm:w-16 sm:h-16 xl:w-13 xl:h-13 2xl:w-16 2xl:h-16 rounded-full bg-gradient-to-br flex items-center justify-center shrink-0 relative z-10 ${card.discBg}`}>
+                <span className={`text-xl sm:text-3xl xl:text-xl 2xl:text-3xl font-black tracking-tight ${card.scoreColor}`}>
+                  {displayScore}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       {/* Progress Section */}
@@ -574,14 +666,19 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           <h2 className="text-2xl font-bold text-slate-900">Progress</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Reading</h3>
-            <div className="flex items-end gap-2 h-32">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-blue-600 flex items-center justify-between">
+              <span>Reading</span>
+            </h3>
+            <div className="flex items-end gap-2.5 h-36 pt-7">
               {getSubmissionsByType('reading').slice(0, 5).reverse().map((sub, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
-                  <div className="w-full bg-blue-100 rounded-t-sm relative transition-all group-hover:bg-blue-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {sub.bandScore?.toFixed(1)}
+                <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
+                  <div 
+                    className="w-full bg-blue-600 rounded-t-lg relative transition-all duration-300 hover:bg-blue-700 shadow-xs" 
+                    style={{ height: `${Math.max(12, ((sub.bandScore || 0) / 9) * 100)}%` }}
+                  >
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-black text-blue-600 whitespace-nowrap">
+                      {sub.bandScore ? (sub.bandScore % 1 === 0 ? sub.bandScore.toFixed(1) : sub.bandScore) : '-'}
                     </div>
                   </div>
                 </div>
@@ -589,14 +686,20 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               {getSubmissionsByType('reading').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No reading data yet</div>}
             </div>
           </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Listening</h3>
-            <div className="flex items-end gap-2 h-32">
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-emerald-600 flex items-center justify-between">
+              <span>Listening</span>
+            </h3>
+            <div className="flex items-end gap-2.5 h-36 pt-7">
               {getSubmissionsByType('listening').slice(0, 5).reverse().map((sub, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
-                  <div className="w-full bg-teal-100 rounded-t-sm relative transition-all group-hover:bg-teal-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {sub.bandScore?.toFixed(1)}
+                <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
+                  <div 
+                    className="w-full bg-emerald-500 rounded-t-lg relative transition-all duration-300 hover:bg-emerald-600 shadow-xs" 
+                    style={{ height: `${Math.max(12, ((sub.bandScore || 0) / 9) * 100)}%` }}
+                  >
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-black text-emerald-600 whitespace-nowrap">
+                      {sub.bandScore ? (sub.bandScore % 1 === 0 ? sub.bandScore.toFixed(1) : sub.bandScore) : '-'}
                     </div>
                   </div>
                 </div>
@@ -605,14 +708,19 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </div>
           </div>
         
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Writing</h3>
-            <div className="flex items-end gap-2 h-32">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-orange-600 flex items-center justify-between">
+              <span>Writing</span>
+            </h3>
+            <div className="flex items-end gap-2.5 h-36 pt-7">
               {getSubmissionsByType('writing').slice(0, 5).reverse().map((sub, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
-                  <div className="w-full bg-orange-100 rounded-t-sm relative transition-all group-hover:bg-orange-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {sub.bandScore?.toFixed(1)}
+                <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
+                  <div 
+                    className="w-full bg-orange-500 rounded-t-lg relative transition-all duration-300 hover:bg-orange-600 shadow-xs" 
+                    style={{ height: `${Math.max(12, ((sub.bandScore || 0) / 9) * 100)}%` }}
+                  >
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-black text-orange-600 whitespace-nowrap">
+                      {sub.bandScore ? (sub.bandScore % 1 === 0 ? sub.bandScore.toFixed(1) : sub.bandScore) : '-'}
                     </div>
                   </div>
                 </div>
@@ -620,14 +728,20 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               {getSubmissionsByType('writing').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No writing data yet</div>}
             </div>
           </div>
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-4 text-sm uppercase tracking-widest text-slate-500">Speaking</h3>
-            <div className="flex items-end gap-2 h-32">
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-purple-600 flex items-center justify-between">
+              <span>Speaking</span>
+            </h3>
+            <div className="flex items-end gap-2.5 h-36 pt-7">
               {speakingSubs.slice(0, 5).reverse().map((sub, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end group relative h-full">
-                  <div className="w-full bg-purple-100 rounded-t-sm relative transition-all group-hover:bg-purple-500" style={{ height: `${(sub.bandScore || 0) / 9 * 100}%` }}>
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {sub.bandScore?.toFixed(1)}
+                <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
+                  <div 
+                    className="w-full bg-purple-500 rounded-t-lg relative transition-all duration-300 hover:bg-purple-600 shadow-xs" 
+                    style={{ height: `${Math.max(12, ((sub.bandScore || 0) / 9) * 100)}%` }}
+                  >
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-black text-purple-600 whitespace-nowrap">
+                      {sub.bandScore ? (sub.bandScore % 1 === 0 ? sub.bandScore.toFixed(1) : sub.bandScore) : '-'}
                     </div>
                   </div>
                 </div>
