@@ -170,9 +170,9 @@ export function ChatBox() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center text-white z-50 hover:shadow-[0_8px_40px_rgb(59,130,246,0.3)] transition-all"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-13 h-13 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.18)] flex items-center justify-center text-white z-40 hover:shadow-[0_8px_40px_rgb(59,130,246,0.3)] transition-all cursor-pointer"
           >
-            <MessageCircle size={32} />
+            <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8" />
           </motion.button>
         )}
       </AnimatePresence>

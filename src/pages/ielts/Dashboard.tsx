@@ -7,7 +7,7 @@ import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, Play, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff, ExternalLink, Award } from 'lucide-react';
 import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
 import { format } from 'date-fns';
 import { createSubmissionNotification } from '../../lib/notificationService';
@@ -48,6 +48,63 @@ const getFallbackTitle = (id: any, currentTitle?: string) => {
   return currentTitle || null;
 };
 
+// Extracts thumbnail or iframe preview details from Google Drive, YouTube, or direct video/audio links
+const getSubmissionThumbnailInfo = (url?: string) => {
+  if (!url) return null;
+  const clean = url.trim();
+
+  // YouTube match
+  if (clean.includes('youtube.com/watch') || clean.includes('youtu.be/')) {
+    let videoId = '';
+    if (clean.includes('youtube.com/watch')) {
+      const urlParams = new URL(clean).searchParams;
+      videoId = urlParams.get('v') || '';
+    } else {
+      const match = clean.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+      if (match) videoId = match[1];
+    }
+    if (videoId) {
+      return {
+        type: 'image' as const,
+        imageUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
+      };
+    }
+  }
+
+  // Google Drive match
+  if (clean.includes('drive.google.com')) {
+    let driveId = '';
+    const matchD = clean.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchD && matchD[1]) {
+      driveId = matchD[1];
+    } else {
+      const matchId = clean.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (matchId && matchId[1]) driveId = matchId[1];
+    }
+    if (driveId) {
+      return {
+        type: 'drive' as const,
+        driveId,
+        // High-res Google Drive thumbnail generator
+        imageUrl: `https://drive.google.com/thumbnail?id=${driveId}&sz=w800`,
+        embedUrl: `https://drive.google.com/file/d/${driveId}/preview`,
+      };
+    }
+  }
+
+  // Direct image URL
+  if (/\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(clean)) {
+    return {
+      type: 'image' as const,
+      imageUrl: clean,
+      embedUrl: null,
+    };
+  }
+
+  return null;
+};
+
 
 export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const { user, isAdmin } = useAuth();
@@ -85,6 +142,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [uploadingSubmissionId, setUploadingSubmissionId] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [activeVideoModal, setActiveVideoModal] = useState<{ title: string; embedUrl?: string | null; directUrl?: string | null } | null>(null);
 
   const handleEditTitle = async (subId: string) => {
     if (!editTitleValue) {
@@ -369,7 +427,19 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   };
   
   // Analytics Calculations
-  const getSubmissionsByType = (type: string) => submissions.filter((s) => (s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || getFallbackType(s.assignmentId)) === type);
+  const getSubmissionsByType = (type: string) => submissions.filter((s) => {
+    const directType = s.assignmentType || assignments.find(a => a.id === s.assignmentId)?.type || getFallbackType(s.assignmentId);
+    if (directType === type) return true;
+    
+    // Skill title fallback
+    const title = (s.assignmentTitle || (s as any).title || '').toLowerCase();
+    if (type === 'speaking' && (title.includes('speaking') || s.assignmentId === 'offline_speaking')) return true;
+    if (type === 'reading' && (title.includes('reading') || s.assignmentId === 'offline_reading')) return true;
+    if (type === 'listening' && (title.includes('listening') || s.assignmentId === 'offline_listening')) return true;
+    if (type === 'writing' && (title.includes('writing') || s.assignmentId === 'offline_writing')) return true;
+    
+    return false;
+  });
 
   const averageScore = (subs: Submission[]) => {
     const scored = subs.filter(s => s.bandScore !== undefined);
@@ -406,11 +476,12 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const writingSubs = getSubmissionsByType('writing');
   const speakingSubs = getSubmissionsByType('speaking').filter(s => s.assignmentId !== 'offline_speaking' && !(s.assignmentTitle || '').toLowerCase().includes('offline'));
   const offlineSpeakingSubs = getSubmissionsByType('speaking').filter(s => s.assignmentId === 'offline_speaking' || (s.assignmentTitle || '').toLowerCase().includes('offline'));
+  const allSpeakingSubs = [...speakingSubs, ...offlineSpeakingSubs].sort((a, b) => (b.createdAt as number) - (a.createdAt as number));
 
   const rScore = averageScore(readingSubs);
   const lScore = averageScore(listeningSubs);
   const wScore = averageScore(writingSubs);
-  const sScore = averageScore([...speakingSubs, ...offlineSpeakingSubs]);
+  const sScore = averageScore(allSpeakingSubs);
 
   const overallBand = () => {
     let scores = [rScore, lScore, wScore, sScore].filter(s => s > 0);
@@ -423,7 +494,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const firstName = targetUserName ? targetUserName.split(' ')[0] : (user?.displayName?.split(' ')[0] || 'Student');
 
   return (
-    <div className="space-y-12 pb-16 max-w-7xl mx-auto">
+    <div className="space-y-8 sm:space-y-12 pb-24 sm:pb-16 max-w-7xl mx-auto px-1 sm:px-0">
       
       {isAdmin && targetUserName && (
         <div className="bg-blue-50 border border-blue-200 text-blue-800 px-6 py-4 rounded-2xl flex items-center gap-3">
@@ -436,10 +507,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {/* Welcome area */}
       {/* Welcome Section */}
-      <section className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-6 bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white p-6 md:p-12 rounded-[2rem] shadow-2xl relative overflow-hidden group text-center md:text-left">
+      <section className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-6 bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl relative overflow-hidden group text-center md:text-left">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-indigo-500 rounded-full blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 w-full">
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 w-full min-w-0">
           <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 border-4 border-white/20 shadow-2xl overflow-hidden flex items-center justify-center shrink-0 mx-auto md:mx-0">
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL || undefined} alt="Profile" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
@@ -447,9 +518,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               <span className="text-3xl md:text-5xl font-bold text-white">{firstName.charAt(0)}</span>
             )}
           </div>
-          <div className="flex flex-col items-center md:items-start w-full">
+          <div className="flex flex-col items-center md:items-start w-full min-w-0">
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mb-3">
-              <div className="text-xs font-bold uppercase tracking-widest text-blue-200 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-inner">
+              <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-blue-200 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-inner">
                 {targetUserName ? 'Viewing Student Profile' : 'Student Profile'}
               </div>
               {/* Credentials button: ONLY visible to admin */}
@@ -457,7 +528,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 <button
                   type="button"
                   onClick={() => setShowCredentialsModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full transition-all text-white text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 rounded-full transition-all text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
                   title="View & copy student credentials and login password"
                 >
                   <Key className="w-3.5 h-3.5" /> Credentials
@@ -475,32 +546,32 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     setEditPhotoURL(userProfile?.photoURL || '');
                     setIsEditingProfile(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider cursor-pointer"
                 >
                   <Edit2 className="w-3.5 h-3.5" /> Edit Profile
                 </button>
               )}
             </div>
-            <h1 className="text-2xl md:text-5xl font-extrabold text-white leading-tight mb-2 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-white leading-tight mb-2 tracking-tight break-words max-w-full">
               {targetUserName ? `Viewing ${userProfile?.nickname || firstName}'s Dashboard` : `Welcome back, ${userProfile?.nickname || firstName}`}
             </h1>
-            <p className="text-blue-100 text-base md:text-xl font-medium max-w-lg">
+            <p className="text-blue-100 text-sm sm:text-base md:text-xl font-medium max-w-lg">
               {userProfile?.motto || (targetUserName ? `Tracking progress for ${targetUserName}.` : `Track your progress and continue your journey to Band 7.5. You're doing great!`)}
             </p>
           </div>
         </div>
         
-        {/* Overall Band Card - Redesigned to be IDENTICAL to the Skill Score design */}
-        <div className="relative z-10 flex gap-4 w-full md:w-auto shrink-0">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-red-100/90 shadow-[0_12px_35px_rgba(0,0,0,0.18)] hover:shadow-[0_16px_45px_rgba(239,68,68,0.22)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-4 group min-w-[260px] sm:min-w-[290px]">
+        {/* Overall Band Card - Fluid on mobile, prevents overflow and overlapping */}
+        <div className="relative z-10 w-full sm:w-auto shrink-0 flex justify-center">
+          <div className="bg-white rounded-3xl p-4 sm:p-5 md:p-6 border border-red-100/90 shadow-[0_12px_35px_rgba(0,0,0,0.18)] hover:shadow-[0_16px_45px_rgba(239,68,68,0.22)] transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-3 sm:gap-4 group w-full sm:w-auto sm:min-w-[280px]">
             {/* Subtle ambient red background tint */}
             <div className="absolute -top-12 -right-12 w-28 h-28 bg-red-100/40 rounded-full blur-2xl pointer-events-none group-hover:bg-red-100/60 transition-colors"></div>
 
             {/* Left Column: Squircle icon + Title/Subtitle */}
-            <div className="flex items-center gap-3.5 min-w-0 relative z-10">
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 relative z-10">
               {/* Squircle Icon Container */}
-              <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-b from-white to-red-50/80 border border-red-100 shadow-[0_4px_16px_rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <svg viewBox="0 0 32 32" className="w-7 h-7 sm:w-8 sm:h-8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-b from-white to-red-50/80 border border-red-100 shadow-[0_4px_16px_rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M16 4L19.5 11.5L27.5 12.5L21.5 18L23 26L16 22L9 26L10.5 18L4.5 12.5L12.5 11.5L16 4Z" fill="#D8001B" />
                   <circle cx="16" cy="15" r="4" fill="white" />
                   <circle cx="16" cy="15" r="2.2" fill="#D8001B" />
@@ -509,18 +580,18 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
               {/* Text column */}
               <div className="flex flex-col min-w-0">
-                <span className="text-base sm:text-lg font-black uppercase tracking-tight text-[#D8001B] whitespace-nowrap leading-tight">
+                <span className="text-sm sm:text-base font-black uppercase tracking-tight text-[#D8001B] truncate leading-tight">
                   {userProfile?.course === 'PET' ? 'OVERALL GRADE' : 'OVERALL BAND'}
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-slate-500 whitespace-nowrap mt-0.5">
+                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap mt-0.5">
                   Skill Score
                 </span>
               </div>
             </div>
 
             {/* Circular Score Disc */}
-            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-gradient-to-br from-white via-white to-red-50/50 border border-red-100 shadow-[0_6px_20px_rgba(239,68,68,0.08)] flex items-center justify-center shrink-0 relative z-10">
-              <span className="text-3xl sm:text-4xl font-black text-[#B90014] tracking-tight">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 rounded-full bg-gradient-to-br from-white via-white to-red-50/50 border border-red-100 shadow-[0_6px_20px_rgba(239,68,68,0.08)] flex items-center justify-center shrink-0 relative z-10">
+              <span className="text-2xl sm:text-3xl md:text-4xl font-black text-[#B90014] tracking-tight">
                 {userProfile?.course === 'PET' ? Math.round(overallBand()) : overallBand().toFixed(1)}
               </span>
             </div>
@@ -548,11 +619,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           {
             title: 'READING',
             score: rScore,
-            cardBg: 'bg-gradient-to-b from-white via-blue-50/30 to-blue-50/70 border-blue-200/80 shadow-[0_8px_25px_rgba(37,99,235,0.08)] hover:shadow-[0_16px_38px_rgba(37,99,235,0.16)]',
+            cardBg: 'bg-gradient-to-b from-white via-blue-50/30 to-blue-50/70 border-2 border-blue-300/80 shadow-[0_8px_25px_rgba(37,99,235,0.08)] hover:shadow-[0_16px_38px_rgba(37,99,235,0.16)] hover:border-blue-400',
             ambientGlow: 'bg-blue-200/40 group-hover:bg-blue-200/60',
-            squircleBg: 'from-white to-blue-100/90 border-blue-200 shadow-[0_4px_16px_rgba(37,99,235,0.14)]',
+            squircleBg: 'from-white to-blue-100/90 border border-blue-200 shadow-[0_4px_16px_rgba(37,99,235,0.14)]',
             titleColor: 'text-[#1E4DB7]',
-            discBg: 'from-white via-white to-blue-50/80 border-blue-200 shadow-[0_4px_16px_rgba(30,77,183,0.10)]',
+            discBg: 'from-white via-white to-blue-50/80 border-2 border-blue-200 shadow-[0_4px_16px_rgba(30,77,183,0.10)]',
             scoreColor: 'text-[#1E4DB7]',
             icon: (
               <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -568,11 +639,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           {
             title: 'LISTENING',
             score: lScore,
-            cardBg: 'bg-gradient-to-b from-white via-emerald-50/30 to-emerald-50/70 border-emerald-200/80 shadow-[0_8px_25px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_38px_rgba(16,185,129,0.16)]',
+            cardBg: 'bg-gradient-to-b from-white via-emerald-50/30 to-emerald-50/70 border-2 border-emerald-300/80 shadow-[0_8px_25px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_38px_rgba(16,185,129,0.16)] hover:border-emerald-400',
             ambientGlow: 'bg-emerald-200/40 group-hover:bg-emerald-200/60',
-            squircleBg: 'from-white to-emerald-100/90 border-emerald-200 shadow-[0_4px_16px_rgba(16,185,129,0.14)]',
+            squircleBg: 'from-white to-emerald-100/90 border border-emerald-200 shadow-[0_4px_16px_rgba(16,185,129,0.14)]',
             titleColor: 'text-[#059669]',
-            discBg: 'from-white via-white to-emerald-50/80 border-emerald-200 shadow-[0_4px_16px_rgba(5,150,105,0.10)]',
+            discBg: 'from-white via-white to-emerald-50/80 border-2 border-emerald-200 shadow-[0_4px_16px_rgba(5,150,105,0.10)]',
             scoreColor: 'text-[#047857]',
             icon: (
               <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -585,11 +656,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           {
             title: 'WRITING',
             score: wScore,
-            cardBg: 'bg-gradient-to-b from-white via-orange-50/30 to-orange-50/70 border-orange-200/80 shadow-[0_8px_25px_rgba(249,115,22,0.08)] hover:shadow-[0_16px_38px_rgba(249,115,22,0.16)]',
+            cardBg: 'bg-gradient-to-b from-white via-orange-50/30 to-orange-50/70 border-2 border-orange-300/80 shadow-[0_8px_25px_rgba(249,115,22,0.08)] hover:shadow-[0_16px_38px_rgba(249,115,22,0.16)] hover:border-orange-400',
             ambientGlow: 'bg-orange-200/40 group-hover:bg-orange-200/60',
-            squircleBg: 'from-white to-orange-100/90 border-orange-200 shadow-[0_4px_16px_rgba(249,115,22,0.14)]',
+            squircleBg: 'from-white to-orange-100/90 border border-orange-200 shadow-[0_4px_16px_rgba(249,115,22,0.14)]',
             titleColor: 'text-[#EA580C]',
-            discBg: 'from-white via-white to-orange-50/80 border-orange-200 shadow-[0_4px_16px_rgba(234,88,12,0.10)]',
+            discBg: 'from-white via-white to-orange-50/80 border-2 border-orange-200 shadow-[0_4px_16px_rgba(234,88,12,0.10)]',
             scoreColor: 'text-[#C2410C]',
             icon: (
               <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -602,11 +673,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           {
             title: 'SPEAKING',
             score: sScore,
-            cardBg: 'bg-gradient-to-b from-white via-purple-50/30 to-purple-50/70 border-purple-200/80 shadow-[0_8px_25px_rgba(168,85,247,0.08)] hover:shadow-[0_16px_38px_rgba(168,85,247,0.16)]',
+            cardBg: 'bg-gradient-to-b from-white via-purple-50/30 to-purple-50/70 border-2 border-purple-300/80 shadow-[0_8px_25px_rgba(168,85,247,0.08)] hover:shadow-[0_16px_38px_rgba(168,85,247,0.16)] hover:border-purple-400',
             ambientGlow: 'bg-purple-200/40 group-hover:bg-purple-200/60',
-            squircleBg: 'from-white to-purple-100/90 border-purple-200 shadow-[0_4px_16px_rgba(168,85,247,0.14)]',
+            squircleBg: 'from-white to-purple-100/90 border border-purple-200 shadow-[0_4px_16px_rgba(168,85,247,0.14)]',
             titleColor: 'text-[#9333EA]',
-            discBg: 'from-white via-white to-purple-50/80 border-purple-200 shadow-[0_4px_16px_rgba(147,51,234,0.10)]',
+            discBg: 'from-white via-white to-purple-50/80 border-2 border-purple-200 shadow-[0_4px_16px_rgba(147,51,234,0.10)]',
             scoreColor: 'text-[#7E22CE]',
             icon: (
               <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -734,7 +805,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               <span>Speaking</span>
             </h3>
             <div className="flex items-end gap-2.5 h-36 pt-7">
-              {speakingSubs.slice(0, 5).reverse().map((sub, i) => (
+              {allSpeakingSubs.slice(0, 5).reverse().map((sub, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
                   <div 
                     className="w-full bg-purple-500 rounded-t-lg relative transition-all duration-300 hover:bg-purple-600 shadow-xs" 
@@ -746,7 +817,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                 </div>
               ))}
-              {speakingSubs.length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
+              {allSpeakingSubs.length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
             </div>
           </div>
         </div>
@@ -754,39 +825,42 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {/* Independent Sections for Skills */}
       <div className="space-y-12 mt-12">
-        {/* Speaking Recordings */}
+        {/* Speaking Recordings - Immersive Purple Theme */}
         <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Mic className="w-6 h-6 text-purple-600" /> Online Speaking Tests
-            </h2>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : '/ielts/dashboard?tab=speaking')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <div className="flex items-center justify-between border-b border-purple-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs">
+                <Mic className="w-5 h-5 text-purple-600" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">Online Speaking Tests</h2>
+            </div>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : '/ielts/dashboard?tab=speaking')} className="text-sm font-bold text-purple-600 hover:text-purple-800 transition-colors uppercase tracking-widest flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-purple-50/20 to-purple-50/40 rounded-[2rem] border border-purple-200/80 shadow-[0_10px_30px_rgba(168,85,247,0.08)] overflow-hidden">
             <div 
-              className="p-6 flex items-center justify-between bg-slate-50 border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
+              className="p-6 flex items-center justify-between bg-gradient-to-r from-purple-50 via-purple-100/40 to-fuchsia-50/30 border-b border-purple-100 cursor-pointer hover:bg-purple-100/50 transition-colors"
               onClick={() => setSpeakingFolderOpen(!speakingFolderOpen)}
             >
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <Folder className="w-6 h-6 text-purple-600" />
+                <div className="p-3 bg-purple-600 text-white rounded-xl shadow-xs">
+                  <Folder className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900">IELTS Speaking</h3>
+                  <h3 className="font-black text-lg text-slate-900">IELTS Speaking</h3>
                   <p className="text-sm text-slate-500">Your online speaking test submissions</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <span className="bg-purple-100 text-purple-700 font-bold px-4 py-1.5 rounded-full text-sm">
+                <span className="bg-purple-600 text-white font-black px-4 py-1.5 rounded-full text-xs shadow-xs tracking-wide">
                   {speakingSubs.length} items
                 </span>
-                {speakingFolderOpen ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+                {speakingFolderOpen ? <ChevronDown className="w-5 h-5 text-purple-600" /> : <ChevronRight className="w-5 h-5 text-purple-600" />}
               </div>
             </div>
             {speakingFolderOpen && (
-              <div className="p-6 bg-slate-50/50">
+              <div className="p-6 bg-purple-50/30">
                 <div className="space-y-4">
                   {speakingSubs.slice(0, 4).map(sub => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
@@ -795,20 +869,20 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       <div 
                         key={sub.id} 
                         onClick={() => navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)}
-                        className="bg-white rounded-[1.25rem] border border-slate-200 shadow-sm p-4 hover:border-slate-300 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer"
+                        className="bg-white rounded-[1.25rem] border border-purple-100/90 shadow-xs hover:border-purple-300 hover:shadow-md hover:bg-purple-50/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 cursor-pointer"
                       >
                         <div className="flex flex-col">
                           <h3 className="font-bold text-slate-900 mb-1">{title}</h3>
                           
                           <div className="flex items-center gap-2 text-sm">
                             <span className="text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m 0s'}</span>
-                            <span className="text-slate-300">•</span>
+                            <span className="text-purple-300">•</span>
                             <span className="text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <button className="bg-slate-100/70 hover:bg-slate-200 text-[#1e293b] text-sm font-bold py-2.5 px-6 rounded-xl transition-colors text-center pointer-events-none">
+                          <button className="bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-bold py-2.5 px-6 rounded-xl transition-colors text-center pointer-events-none">
                             Feedback
                           </button>
                           {isAdmin && (
@@ -821,7 +895,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     );
                   })}
                   {speakingSubs.length === 0 && (
-                    <div className="py-12 text-center text-slate-500 bg-white rounded-[1.5rem] border border-slate-200 border-dashed">
+                    <div className="py-12 text-center text-slate-500 bg-white rounded-[1.5rem] border border-purple-200 border-dashed">
                       No online speaking tests yet.
                     </div>
                   )}
@@ -831,62 +905,143 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
         </section>
 
-        {/* Offline Speaking Assignments */}
+        {/* Offline Speaking Assignments - Immersive Purple Theme */}
         {offlineSpeakingSubs.length > 0 && (
           <section className="space-y-6 mt-12">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <Mic className="w-6 h-6 text-emerald-600" /> Offline Speaking Assignments
-              </h2>
+            <div className="flex items-center justify-between border-b border-purple-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs">
+                  <Mic className="w-5 h-5 text-purple-600" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-900">Offline Speaking Assignments</h2>
+              </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {offlineSpeakingSubs.slice(0, 4).map(sub => {
                 const title = sub.assignmentTitle || 'Offline Speaking Assignment';
+                const thumbInfo = getSubmissionThumbnailInfo(sub.audioUrl);
+                const feedbackContent = (sub as any).feedback || sub.teacherComment || sub.aiFeedback || (sub.answers as any)?.feedback || (sub.answers as any)?.teacherComment || '';
+                const viContent = sub.vietnameseTranslation || sub.teacherCommentVi || (sub.answers as any)?.vietnameseTranslation || (sub.answers as any)?.teacherCommentVi || '';
+
+                const handlePlayVideo = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (thumbInfo?.embedUrl || sub.audioUrl) {
+                    setActiveVideoModal({
+                      title,
+                      embedUrl: thumbInfo?.embedUrl,
+                      directUrl: sub.audioUrl,
+                    });
+                  } else {
+                    navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
+                  }
+                };
+
+                const handleOpenFeedback = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  setViewFeedbackItem({
+                    title,
+                    bandScore: sub.bandScore,
+                    date: sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : '',
+                    feedback: feedbackContent,
+                    vietnameseTranslation: viContent,
+                    subId: sub.id,
+                  });
+                };
+
                 return (
-                  <div key={sub.id} onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col sm:flex-row hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer">
-                    <div className="sm:w-[45%] relative bg-slate-800 group flex items-center justify-center min-h-[160px]">
-                      <Mic className="w-12 h-12 text-emerald-400 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+                  <div key={sub.id} className="bg-white rounded-3xl border border-purple-200/80 shadow-[0_8px_25px_rgba(168,85,247,0.07)] overflow-hidden flex flex-col sm:flex-row hover:shadow-xl hover:border-purple-400 transition-all group">
+                    {/* Thumbnail Side - click opens video directly in-page modal */}
+                    <div 
+                      onClick={handlePlayVideo}
+                      className="sm:w-[46%] relative bg-slate-950 flex items-center justify-center min-h-[175px] overflow-hidden cursor-pointer"
+                      title="Watch video"
+                    >
+                      {thumbInfo?.imageUrl ? (
+                        <>
+                          <img 
+                            src={thumbInfo.imageUrl} 
+                            alt={title}
+                            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 group-hover:from-black/70 transition-all"></div>
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-950 to-purple-900">
+                          <div className="absolute inset-0 bg-purple-500/10 backdrop-blur-xs"></div>
+                        </div>
+                      )}
+
+                      {/* Video / Mic Play Overlay Badge */}
+                      <div className="relative z-10 flex flex-col items-center gap-1.5">
+                        <div className="w-13 h-13 rounded-2xl bg-purple-600/90 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-xl group-hover:scale-115 group-hover:bg-purple-600 transition-all duration-300">
+                          <Play className="w-6 h-6 text-white ml-0.5" fill="currentColor" />
+                        </div>
+                        <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-xs shadow-xs">
+                          Watch Video
+                        </span>
+                      </div>
+
+                      {/* Top Corner Badge */}
+                      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20 text-white text-[11px] font-semibold">
+                        <Video className="w-3.5 h-3.5 text-purple-300" />
+                        <span>Offline Test</span>
+                      </div>
                     </div>
-                    <div className="p-5 sm:w-[55%] flex flex-col">
-                      <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-bold text-slate-900 line-clamp-1">{title}</h3>
-                        {isAdmin && (
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                setOfflineForm({
-                                    id: sub.id,
-                                    name: sub.assignmentTitle || 'Offline Speaking Assignment',
-                                    link: sub.audioUrl || '',
-                                    score: sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toString() : '',
-                                    date: sub.createdAt ? new Date(sub.createdAt.seconds ? sub.createdAt.seconds * 1000 : sub.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                                    feedback: (sub as any).feedback || sub.teacherComment || sub.aiFeedback || (sub.answers as any)?.feedback || (sub.answers as any)?.teacherComment || '',
-                                    vietnameseTranslation: sub.vietnameseTranslation || sub.teacherCommentVi || (sub.answers as any)?.vietnameseTranslation || (sub.answers as any)?.teacherCommentVi || ''
-                                });
-                                setShowAddOffline(true);
-                            }} className="text-slate-400 hover:text-blue-600 p-1">
-                                <Edit2 className="w-4 h-4" />
-                            </button>
-                        )}
+
+                    {/* Information Side */}
+                    <div className="p-5 sm:w-[54%] flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-1 gap-2">
+                          <h3 
+                            onClick={handleOpenFeedback}
+                            className="font-black text-slate-900 line-clamp-2 text-base hover:text-purple-700 transition-colors cursor-pointer"
+                          >
+                            {title}
+                          </h3>
+                          {isAdmin && (
+                              <button onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOfflineForm({
+                                      id: sub.id,
+                                      name: sub.assignmentTitle || 'Offline Speaking Assignment',
+                                      link: sub.audioUrl || '',
+                                      score: sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toString() : '',
+                                      date: sub.createdAt ? new Date(sub.createdAt.seconds ? sub.createdAt.seconds * 1000 : sub.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                      feedback: feedbackContent,
+                                      vietnameseTranslation: viContent
+                                  });
+                                  setShowAddOffline(true);
+                              }} className="text-slate-400 hover:text-purple-600 p-1 shrink-0" title="Edit Entry">
+                                  <Edit2 className="w-4 h-4" />
+                              </button>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-3 mt-1.5 flex-wrap">
+                          {sub.bandScore !== undefined && sub.bandScore !== null ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-black text-xs shadow-xs">Band {sub.bandScore.toFixed(1)}</span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-extrabold text-xs">Pending</span>
+                          )}
+                          <span className="text-purple-300">•</span>
+                          <span className="text-xs font-medium text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '15m'}</span>
+                          <span className="text-purple-300">•</span>
+                          <span className="text-xs font-medium text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
+                        </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 mb-3 mt-1">
-                        {sub.bandScore !== undefined && sub.bandScore !== null ? (
-                          <span className="text-sm font-bold text-slate-900">Band {sub.bandScore.toFixed(1)}</span>
-                        ) : (
-                          <span className="text-sm font-bold text-slate-900">Pending</span>
-                        )}
-                        <span className="text-slate-300">•</span>
-                        <span className="text-sm text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : 'N/A'}</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-sm text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
-                      </div>
-                      
-                      <div className="mt-auto flex gap-2 flex-wrap sm:flex-nowrap">
-                        <button onClick={(e) => { e.stopPropagation(); navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors text-center whitespace-nowrap">
+                      <div className="mt-3 flex gap-2 flex-wrap sm:flex-nowrap">
+                        <button 
+                          onClick={handleOpenFeedback} 
+                          className="flex-1 bg-purple-100 hover:bg-purple-600 hover:text-white text-purple-800 text-xs font-black py-2.5 px-3 rounded-xl transition-all text-center whitespace-nowrap shadow-xs cursor-pointer"
+                        >
                           Feedback
                         </button>
                         {sub.audioUrl && (
-                          <a href={sub.audioUrl} onClick={(e) => e.stopPropagation()} target="_blank" rel="noopener noreferrer" className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Download">
+                          <a href={sub.audioUrl} onClick={(e) => e.stopPropagation()} target="_blank" rel="noopener noreferrer" className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center border border-purple-200/60" title="Open Original Video Link">
                             <Upload className="w-3.5 h-3.5" />
                           </a>
                         )}
@@ -903,29 +1058,34 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </div>
           </section>
         )}
+
+        {/* Reading Activity - Immersive Blue Theme */}
         <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Book className="w-6 h-6 text-[#1E4DB7]" /> Reading Activity
-            </h2>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : '/ielts/dashboard?tab=reading')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <div className="flex items-center justify-between border-b border-blue-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shadow-xs">
+                <Book className="w-5 h-5 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">Reading Activity</h2>
+            </div>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : '/ielts/dashboard?tab=reading')} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-blue-50/20 to-blue-50/40 rounded-[2rem] border border-blue-200/80 shadow-[0_10px_30px_rgba(37,99,235,0.08)] overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-slate-50">
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Correct</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Time</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Date</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gradient-to-r from-blue-50 via-blue-100/50 to-indigo-50/30 border-b border-blue-100">
+                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest">Test Name</th>
+                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest hidden sm:table-cell">Correct</th>
+                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest hidden sm:table-cell">Time</th>
+                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-blue-100/60 bg-white/70 backdrop-blur-xs">
                   {getSubmissionsByType('reading').length === 0 ? (
                     <tr>
                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No reading activity yet.</td>
@@ -934,12 +1094,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
-                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                      <tr key={sub.id} className="hover:bg-blue-50/60 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
-                        <td className="px-6 py-4 font-bold text-[#1E4DB7]">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}</td>
-                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-500 text-right text-sm">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 font-black text-sm">
+                            {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 font-semibold hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-500 text-right text-sm font-medium">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
                         <td className="px-6 py-4 text-right">
                           {isAdmin && (
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
@@ -956,30 +1120,33 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
         </section>
 
-        {/* Listening Activity */}
+        {/* Listening Activity - Immersive Green Theme */}
         <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Headphones className="w-6 h-6 text-teal-600" /> Listening Activity
-            </h2>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : '/ielts/dashboard?tab=listening')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <div className="flex items-center justify-between border-b border-emerald-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shadow-xs">
+                <Headphones className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">Listening Activity</h2>
+            </div>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : '/ielts/dashboard?tab=listening')} className="text-sm font-bold text-emerald-600 hover:text-emerald-800 transition-colors uppercase tracking-widest flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-emerald-50/20 to-emerald-50/40 rounded-[2rem] border border-emerald-200/80 shadow-[0_10px_30px_rgba(16,185,129,0.08)] overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-slate-50">
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Correct</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Time</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Date</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gradient-to-r from-emerald-50 via-emerald-100/50 to-teal-50/30 border-b border-emerald-100">
+                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest">Test Name</th>
+                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest hidden sm:table-cell">Correct</th>
+                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest hidden sm:table-cell">Time</th>
+                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-emerald-100/60 bg-white/70 backdrop-blur-xs">
                   {getSubmissionsByType('listening').length === 0 ? (
                     <tr>
                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No listening activity yet.</td>
@@ -988,12 +1155,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
-                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                      <tr key={sub.id} className="hover:bg-emerald-50/60 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
-                        <td className="px-6 py-4 font-bold text-teal-600">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}</td>
-                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-500 text-right text-sm">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 font-black text-sm">
+                            {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 font-semibold hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-500 text-right text-sm font-medium">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
                         <td className="px-6 py-4 text-right">
                           {isAdmin && (
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
@@ -1010,30 +1181,33 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           </div>
         </section>
 
-        {/* Writing Activity */}
+        {/* Writing Activity - Immersive Orange Theme */}
         <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <PenTool className="w-6 h-6 text-[#F4A340]" /> Writing Activity
-            </h2>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : '/ielts/dashboard?tab=writing')} className="text-sm font-bold text-[#1E4DB7] hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
+          <div className="flex items-center justify-between border-b border-orange-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shadow-xs">
+                <PenTool className="w-5 h-5 text-orange-600" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">Writing Activity</h2>
+            </div>
+            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : '/ielts/dashboard?tab=writing')} className="text-sm font-bold text-orange-600 hover:text-orange-800 transition-colors uppercase tracking-widest flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-orange-50/20 to-orange-50/40 rounded-[2rem] border border-orange-200/80 shadow-[0_10px_30px_rgba(249,115,22,0.08)] overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-slate-50">
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Test Name</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Score</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Words</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:table-cell">Time</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Date</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right"></th>
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gradient-to-r from-orange-50 via-orange-100/50 to-amber-50/30 border-b border-orange-100">
+                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest">Test Name</th>
+                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest hidden sm:table-cell">Words</th>
+                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest hidden sm:table-cell">Time</th>
+                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest text-right">Date</th>
+                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-orange-100/60 bg-white/70 backdrop-blur-xs">
                   {getSubmissionsByType('writing').length === 0 ? (
                     <tr>
                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No writing activity yet.</td>
@@ -1052,12 +1226,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     
                     return (
-                      <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
+                      <tr key={sub.id} className="hover:bg-orange-50/60 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
                         <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
-                        <td className="px-6 py-4 font-bold text-[#F4A340]">{sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}</td>
-                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{wordCount}</td>
-                        <td className="px-6 py-4 text-slate-600 hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-500 text-right text-sm">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700 font-black text-sm">
+                            {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 font-semibold hidden sm:table-cell">{wordCount}</td>
+                        <td className="px-6 py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-6 py-4 text-slate-500 text-right text-sm font-medium">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
                         <td className="px-6 py-4 text-right">
                           {isAdmin && (
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
@@ -1814,12 +1992,20 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                               </div>
                             ) : (
                               <div className="flex items-center gap-3">
-                                {type === 'speaking' && (
-                                  <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
-                                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
-                                    <PlayCircle className="w-4 h-4 text-white/90 z-10" />
-                                  </div>
-                                )}
+                                {type === 'speaking' && (() => {
+                                  const thumb = getSubmissionThumbnailInfo(sub.audioUrl);
+                                  return (
+                                    <div className="relative w-12 h-8 bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-2 ring-purple-400 transition-all" title="View Video">
+                                      {thumb?.imageUrl ? (
+                                        <img src={thumb.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                                      ) : (
+                                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-950 to-purple-900 opacity-80"></div>
+                                      )}
+                                      <div className="absolute inset-0 bg-black/30"></div>
+                                      <PlayCircle className="w-4 h-4 text-white/95 relative z-10 drop-shadow" />
+                                    </div>
+                                  );
+                                })()}
                                 <p className="text-sm font-bold text-slate-900">{title}</p>
                                 {isAdmin && (
                                   <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
@@ -1834,6 +2020,45 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           </td>
                           <td className="px-6 py-5">
                              <div className="flex items-center gap-2">
+                               {sub.audioUrl && (
+                                 <button
+                                   type="button"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     const thumb = getSubmissionThumbnailInfo(sub.audioUrl);
+                                     setActiveVideoModal({
+                                       title,
+                                       embedUrl: thumb?.embedUrl,
+                                       directUrl: sub.audioUrl,
+                                     });
+                                   }}
+                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-lg transition-colors border border-purple-200/60 shadow-xs"
+                                   title="Watch Video"
+                                 >
+                                   <Play className="w-3.5 h-3.5" fill="currentColor" />
+                                   <span>Video</span>
+                                 </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const feedbackText = (sub as any).feedback || sub.teacherComment || sub.aiFeedback || (sub.answers as any)?.feedback || (sub.answers as any)?.teacherComment || '';
+                                    const viText = sub.vietnameseTranslation || sub.teacherCommentVi || (sub.answers as any)?.vietnameseTranslation || (sub.answers as any)?.teacherCommentVi || '';
+                                    setViewFeedbackItem({
+                                      title,
+                                      bandScore: sub.bandScore,
+                                      date: sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : '',
+                                      feedback: feedbackText,
+                                      vietnameseTranslation: viText,
+                                      subId: sub.id,
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-purple-600 hover:text-white text-slate-700 font-bold text-xs rounded-lg transition-colors shadow-xs"
+                                  title="View Feedback"
+                                >
+                                  <span>Feedback</span>
+                                </button>
                              </div>
                           </td>
                           <td className="px-6 py-5 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
@@ -2205,6 +2430,154 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           userProfile={userProfile}
           course={userProfile?.course || 'IELTS'}
         />
+      )}
+
+      {/* Direct In-Page Video Player Modal (No external popup) */}
+      {activeVideoModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-[2rem] w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <Video className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-white text-base truncate max-w-md">{activeVideoModal.title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeVideoModal.directUrl && (
+                  <a 
+                    href={activeVideoModal.directUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-xs font-semibold text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+                    title="Open original link"
+                  >
+                    <span>Open Link</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <button 
+                  onClick={() => setActiveVideoModal(null)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative w-full bg-black aspect-video flex items-center justify-center">
+              {activeVideoModal.embedUrl ? (
+                <iframe 
+                  src={activeVideoModal.embedUrl}
+                  title={activeVideoModal.title}
+                  className="absolute inset-0 w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allowFullScreen
+                ></iframe>
+              ) : activeVideoModal.directUrl ? (
+                <div className="p-8 text-center space-y-4">
+                  <PlayCircle className="w-16 h-16 text-purple-400 mx-auto" />
+                  <p className="text-slate-300 text-sm max-w-md">This file link can be accessed directly:</p>
+                  <a 
+                    href={activeVideoModal.directUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg"
+                  >
+                    Watch Speaking Video <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Feedback Modal (Landscape Widescreen Mode occupying the screen, two-column layout for Feedback & Vietnamese translation so nothing gets cut) */}
+      {viewFeedbackItem && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 lg:p-8 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] max-w-7xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header (Sticky top) */}
+            <div className="px-6 sm:px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 backdrop-blur-xs shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center shadow-xs">
+                  <Mic className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{viewFeedbackItem.title}</h3>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 font-semibold">
+                    {viewFeedbackItem.bandScore !== undefined && viewFeedbackItem.bandScore !== null && (
+                      <span className="px-2.5 py-0.5 bg-purple-600 text-white rounded-md font-black">
+                        Band {Number(viewFeedbackItem.bandScore).toFixed(1)}
+                      </span>
+                    )}
+                    {viewFeedbackItem.date && <span>• {viewFeedbackItem.date}</span>}
+                    <span className="hidden sm:inline text-purple-400 font-medium">• Speaking Evaluation Report</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setViewFeedbackItem(null)} 
+                className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 rounded-full transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Landscape Body - 2 Columns on desktop (English Assessment | Vietnamese Translation) or responsive stacked */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-slate-50/30">
+              <div className={`grid gap-6 ${viewFeedbackItem.vietnameseTranslation ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+                {/* Column 1: Teacher Assessment & Feedback */}
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
+                      <Award className="w-4 h-4 text-purple-600" />
+                      Examiner / Teacher Assessment
+                    </h4>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-white px-2 py-0.5 rounded-md border border-slate-200/80">English</span>
+                  </div>
+                  <div className="bg-white border border-purple-100 rounded-2xl p-6 sm:p-7 shadow-xs text-slate-800 text-[14.5px] sm:text-base leading-relaxed font-sans whitespace-pre-wrap flex-1">
+                    {viewFeedbackItem.feedback ? viewFeedbackItem.feedback : (
+                      <span className="text-slate-400 italic">No feedback provided yet.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Column 2: Vietnamese Translation */}
+                {viewFeedbackItem.vietnameseTranslation && (
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-xs font-black text-blue-900 uppercase tracking-widest flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-blue-600" />
+                        Bản Dịch Tiếng Việt (Translation)
+                      </h4>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-white px-2 py-0.5 rounded-md border border-slate-200/80">Tiếng Việt</span>
+                    </div>
+                    <div className="bg-white border border-blue-100 rounded-2xl p-6 sm:p-7 shadow-xs text-slate-800 text-[14.5px] sm:text-base leading-relaxed font-sans whitespace-pre-wrap flex-1">
+                      {viewFeedbackItem.vietnameseTranslation}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer (Sticky bottom) */}
+            <div className="px-6 sm:px-8 py-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
+              <span className="text-xs font-medium text-slate-400">
+                EraEnglish Assessment Feedback
+              </span>
+              <button 
+                type="button"
+                onClick={() => setViewFeedbackItem(null)} 
+                className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-md text-sm cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
