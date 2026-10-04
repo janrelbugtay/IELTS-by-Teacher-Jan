@@ -86,6 +86,103 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Speaking Recordings Storage
+  const SPEAKING_DIR = path.join(process.cwd(), "uploads", "speaking");
+  if (!fs.existsSync(SPEAKING_DIR)) {
+    fs.mkdirSync(SPEAKING_DIR, { recursive: true });
+  }
+
+  // Upload speaking recording from student test or admin manual upload
+  app.post("/api/speaking/upload", upload.single("audio"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No audio file uploaded" });
+      }
+
+      const { submissionId, qId } = req.body;
+      const originalExt = path.extname(req.file.originalname) || ".webm";
+      const safeSubmissionId = (submissionId || "sub").replace(/[^a-zA-Z0-9_-]/g, "_");
+      const safeQId = (qId || "rec").replace(/[^a-zA-Z0-9_-]/g, "_");
+      const filename = `${safeSubmissionId}_${safeQId}${originalExt}`;
+      const filePath = path.join(SPEAKING_DIR, filename);
+
+      fs.writeFileSync(filePath, req.file.buffer);
+
+      const audioUrl = `/api/speaking/audio/${filename}`;
+      return res.json({
+        success: true,
+        url: audioUrl,
+        filename,
+        size: req.file.size
+      });
+    } catch (err: any) {
+      console.error("Error saving speaking audio:", err);
+      return res.status(500).json({ error: err.message || "Failed to save audio" });
+    }
+  });
+
+  // Check if a speaking recording exists on server
+  app.get("/api/speaking/check/:filename", (req, res) => {
+    const filename = req.params.filename.replace(/[^a-zA-Z0-9_.-]/g, "_");
+    const filePath = path.join(SPEAKING_DIR, filename);
+    const exists = fs.existsSync(filePath);
+    return res.json({ exists });
+  });
+
+  // Stream speaking recording with range support for audio playback/seeking
+  app.get("/api/speaking/audio/:filename", (req, res) => {
+    try {
+      const filename = req.params.filename.replace(/[^a-zA-Z0-9_.-]/g, "_");
+      const filePath = path.join(SPEAKING_DIR, filename);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Recording not found on server" });
+      }
+
+      const stat = fs.statSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      let contentType = "audio/webm";
+      if (ext === ".mp3") contentType = "audio/mpeg";
+      else if (ext === ".m4a" || ext === ".mp4") contentType = "audio/mp4";
+      else if (ext === ".ogg") contentType = "audio/ogg";
+      else if (ext === ".wav") contentType = "audio/wav";
+
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+
+        if (start >= stat.size) {
+          res.status(416).send("Requested range not satisfiable\n" + start + " >= " + stat.size);
+          return;
+        }
+
+        const chunksize = (end - start) + 1;
+        const fileStream = fs.createReadStream(filePath, { start, end });
+        res.writeHead(206, {
+          "Content-Range": `bytes ${start}-${end}/${stat.size}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunksize,
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=86400"
+        });
+        fileStream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          "Content-Length": stat.size,
+          "Content-Type": contentType,
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=86400"
+        });
+        fs.createReadStream(filePath).pipe(res);
+      }
+    } catch (err: any) {
+      console.error("Error streaming speaking audio:", err);
+      res.status(500).send("Error streaming audio");
+    }
+  });
+
   app.get("/api/audio", async (req, res) => {
     try {
       const { id } = req.query;

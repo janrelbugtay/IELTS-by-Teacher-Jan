@@ -6,6 +6,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
 import { getAudioFromIndexedDB } from '../lib/indexedDB';
+import { SpeakingAudioItem } from './SpeakingAudioItem';
 
 export interface PerformanceReportData {
   overallScore: number;
@@ -204,12 +205,67 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
               if (blob) {
                 url = URL.createObjectURL(blob);
                 foundBlob = true;
+
+                // Auto-sync local blob to backend server & update submission
+                if (submissionId) {
+                  try {
+                    const formData = new FormData();
+                    formData.append("audio", blob, `${submissionId}_${id}.webm`);
+                    formData.append("submissionId", submissionId);
+                    formData.append("qId", id);
+                    fetch("/api/speaking/upload", { method: "POST", body: formData }).then(async (res) => {
+                      if (res.ok) {
+                        const json = await res.json();
+                        if (json.url) {
+                          updateDoc(doc(db, 'submissions', submissionId), {
+                            [`answers.${id}.audioUrl`]: json.url
+                          }).catch(console.warn);
+                        }
+                      }
+                    }).catch(console.warn);
+                  } catch (syncErr) {
+                    console.warn("Background audio sync failed:", syncErr);
+                  }
+                }
               }
             } catch(e) {
               console.error(e);
             }
             if (!foundBlob) {
-              url = ''; // Prevent idb url from being used
+              // Check if already stored on server
+              let foundOnServer = false;
+              if (submissionId) {
+                try {
+                  const checkRes = await fetch(`/api/speaking/check/${submissionId}_${id}.webm`);
+                  if (checkRes.ok) {
+                    const checkJson = await checkRes.json();
+                    if (checkJson.exists) {
+                      url = `/api/speaking/audio/${submissionId}_${id}.webm`;
+                      foundOnServer = true;
+                    }
+                  }
+                } catch (cErr) {}
+
+                // Also check subcollection
+                if (!foundOnServer) {
+                  try {
+                    const docSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', id));
+                    if (docSnap.exists()) {
+                      const dData = docSnap.data();
+                      if (dData.serverUrl) {
+                        url = dData.serverUrl;
+                        foundOnServer = true;
+                      } else if (dData.audioUrl) {
+                        url = dData.audioUrl;
+                        foundOnServer = true;
+                      }
+                    }
+                  } catch (scErr) {}
+                }
+              }
+              if (!foundOnServer) {
+                url = ''; // Will fall back to LOCAL_ONLY
+              }
             }
           } else if (url.startsWith('subcollection:') && submissionId) {
              const subId = url.split(':')[1];
@@ -235,7 +291,11 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
              }
           }
           
-          if (url && !url.startsWith('idb:')) urls[id] = url; else if (url.startsWith('idb:')) urls[id] = 'LOCAL_ONLY';
+          if (url && !url.startsWith('idb:')) {
+            urls[id] = url;
+          } else {
+            urls[id] = 'LOCAL_ONLY';
+          }
         }
         setResponseUrls(urls);
       }
@@ -466,13 +526,16 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                         )}
                         <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
                         
-                        {getAudioUrl(q.id) === 'LOCAL_ONLY' ? (
-                            <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200 mt-2">Recording saved locally on student's device.</div>
-                        ) : getAudioUrl(q.id) ? (
-                          <audio controls src={getAudioUrl(q.id) as string} className="w-full max-w-sm mt-2" />
-                        ) : (
-                          <div className="text-slate-400 text-sm italic">No recording</div>
-                        )}
+                        <SpeakingAudioItem
+                          qId={q.id}
+                          submissionId={submissionId}
+                          audioUrl={getAudioUrl(q.id)}
+                          defaultDurationStr="0:30"
+                          isAdmin={isAdmin}
+                          onAudioUpdated={(updatedQId, newUrl) => {
+                            setResponseUrls(prev => ({ ...prev, [updatedQId]: newUrl }));
+                          }}
+                        />
                       </div>
                     );
                   })}
@@ -496,13 +559,16 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                     ))}
                   </div>
                   
-                  {getAudioUrl(testQuestions.part2.id) === 'LOCAL_ONLY' ? (
-                      <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200 mt-2">Recording saved locally on student's device.</div>
-                  ) : getAudioUrl(testQuestions.part2.id) ? (
-                    <audio controls src={getAudioUrl(testQuestions.part2.id) as string} className="w-full max-w-sm mt-2" />
-                  ) : (
-                    <div className="text-slate-400 text-sm italic">No recording</div>
-                  )}
+                  <SpeakingAudioItem
+                    qId={testQuestions.part2.id}
+                    submissionId={submissionId}
+                    audioUrl={getAudioUrl(testQuestions.part2.id)}
+                    defaultDurationStr="2:00"
+                    isAdmin={isAdmin}
+                    onAudioUpdated={(updatedQId, newUrl) => {
+                      setResponseUrls(prev => ({ ...prev, [updatedQId]: newUrl }));
+                    }}
+                  />
                 </div>
               </div>
 
@@ -522,13 +588,16 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                         )}
                         <p className="text-slate-700 font-medium mb-3">{idx + 1}. {q.text}</p>
                         
-                        {getAudioUrl(q.id) === 'LOCAL_ONLY' ? (
-                            <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200 mt-2">Recording saved locally on student's device.</div>
-                        ) : getAudioUrl(q.id) ? (
-                          <audio controls src={getAudioUrl(q.id) as string} className="w-full max-w-sm mt-2" />
-                        ) : (
-                          <div className="text-slate-400 text-sm italic">No recording</div>
-                        )}
+                        <SpeakingAudioItem
+                          qId={q.id}
+                          submissionId={submissionId}
+                          audioUrl={getAudioUrl(q.id)}
+                          defaultDurationStr="1:00"
+                          isAdmin={isAdmin}
+                          onAudioUpdated={(updatedQId, newUrl) => {
+                            setResponseUrls(prev => ({ ...prev, [updatedQId]: newUrl }));
+                          }}
+                        />
                       </div>
                     );
                   })}

@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'fireba
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router';
 import { createSubmissionNotification } from '../lib/notificationService';
+import { generateReadingExplanationPDF, downloadExplanationPDF } from '../lib/pdfGenerator';
 
 // --- CUSTOM STYLES ---
 const CustomStyles = () => (
@@ -50,6 +51,11 @@ const Eraser = (p: any) => <Icon {...p}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l
 const ArrowLeft = (p: any) => <Icon {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>;
 const Info = (p: any) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></Icon>;
 const Copy = (p: any) => <Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+const Download = (p: any) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
+const ExternalLink = (p: any) => <Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Icon>;
+const XIcon = (p: any) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+const Eye = (p: any) => <Icon {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Icon>;
+const Printer = (p: any) => <Icon {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Icon>;
 
 // --- APPLICATION DATA ---
 const passagesData = [
@@ -387,6 +393,9 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionIdState, setSubmissionIdState] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pdfModalData, setPdfModalData] = useState<{ htmlContent: string; filename: string } | null>(null);
   
   // --- REVIEW MODE STATE ---
   const [reviewMode, setReviewMode] = useState(false);
@@ -1305,6 +1314,31 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
   // -------------------------------------------------------------
   if (isSubmitted && !reviewMode) {
     const score = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+    const bandScore = getBandScore(score);
+
+    const handleDownloadExplanationPDF = async (openInGoogleDocs: boolean = true) => {
+      try {
+        setIsGeneratingPdf(true);
+        const result = await generateReadingExplanationPDF({
+          testTitle,
+          candidateName: studentName || 'Candidate',
+          score,
+          bandScore,
+          passages: currentPassagesData,
+          userAnswers: answers,
+          answerKey: currentAnswerKey,
+          explanations: currentExplanations,
+          openInGoogleDocs,
+        });
+        if (result && result.htmlContent) {
+          setPdfModalData({ htmlContent: result.htmlContent, filename: result.filename });
+        }
+      } catch (err) {
+        console.error("Failed to generate PDF", err);
+      } finally {
+        setIsGeneratingPdf(false);
+      }
+    };
 
     const renderGradedRow = (qNum: number) => {
       const isCorrect = checkAnswer(qNum);
@@ -1350,9 +1384,28 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
              <ArrowLeft size={18} /> Back to Dashboard
           </button>
 
-          <div className={`flex items-center justify-center gap-3 mb-8 py-3 mt-4 rounded-xl border ${colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-400 border-green-800' : 'bg-green-50 text-green-600 border-green-200'}`}>
-            <CheckCircle2 size={24} />
-            <span className="text-[1.25em] font-bold">Test Submitted Successfully</span>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8 mt-4">
+            <div className={`flex items-center justify-center gap-3 py-3 px-6 rounded-xl border flex-1 w-full sm:w-auto shadow-xs ${colorTheme !== 'standard' ? 'bg-[#1a2e1a] text-green-400 border-green-800' : 'bg-green-50 text-green-600 border-green-200'}`}>
+              <CheckCircle2 size={24} />
+              <span className="text-[1.25em] font-bold">Test Submitted Successfully</span>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => handleDownloadExplanationPDF(true)}
+                disabled={isGeneratingPdf}
+                className={`flex items-center justify-center gap-2 py-3 px-5 rounded-xl border font-bold text-[1.05em] transition-all cursor-pointer shadow-sm hover:shadow-md flex-1 sm:flex-initial ${
+                  isGeneratingPdf 
+                    ? 'bg-blue-100 text-blue-400 border-blue-200 cursor-wait' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700 active:scale-95'
+                }`}
+                title="View complete explanation document with highlights, answers, and synonyms"
+              >
+                <Eye size={18} />
+                <span>{isGeneratingPdf ? 'Opening Document...' : 'View Explanation Document'}</span>
+              </button>
+            </div>
           </div>
 
           <h1 className={`text-[2.25em] font-bold text-center mb-10 font-serif ${theme.heading}`}>IELTS Reading Results</h1>
@@ -1395,6 +1448,117 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             </div>
           </div>
         </div>
+
+        {/* Embedded Interactive Document Viewer Modal */}
+        {pdfModalData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[94vh] flex flex-col overflow-hidden border border-gray-300">
+              {/* Header Bar */}
+              <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-sm">
+                    PDF
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base leading-tight">Document Viewer • {pdfModalData.filename}</h3>
+                    <p className="text-xs text-slate-400">Accurate 2-column landscape layout with highlighted passage clues & full explanations</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const printWin = window.open('', '_blank');
+                      if (printWin) {
+                        printWin.document.write(`
+                          <!DOCTYPE html>
+                          <html>
+                            <head>
+                              <title>${pdfModalData.filename}</title>
+                              <style>
+                                * {
+                                  -webkit-print-color-adjust: exact !important;
+                                  print-color-adjust: exact !important;
+                                  color-adjust: exact !important;
+                                }
+                                @page { size: landscape; margin: 6mm 8mm; }
+                                body { margin: 0; padding: 0; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+                              </style>
+                            </head>
+                            <body>
+                              ${pdfModalData.htmlContent}
+                              <script>
+                                window.onload = () => {
+                                  setTimeout(() => {
+                                    window.print();
+                                  }, 500);
+                                };
+                              </script>
+                            </body>
+                          </html>
+                        `);
+                        printWin.document.close();
+                      }
+                    }}
+                    className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg transition-all border border-slate-700 cursor-pointer"
+                    title="Print directly or save as PDF via system dialog"
+                  >
+                    <Printer size={14} />
+                    <span>Print</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isDownloadingPdf}
+                    onClick={async () => {
+                      try {
+                        setIsDownloadingPdf(true);
+                        await downloadExplanationPDF(pdfModalData.htmlContent, pdfModalData.filename);
+                      } catch (err) {
+                        console.error("PDF download error", err);
+                      } finally {
+                        setIsDownloadingPdf(false);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    <Download size={14} />
+                    <span>{isDownloadingPdf ? 'Generating...' : 'Save PDF'}</span>
+                  </button>
+
+                  <a
+                    href="https://docs.google.com/document/u/0/?ec=wgc-docs-[module]-goto"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg transition-all border border-slate-700"
+                    title="Open Google Docs"
+                  >
+                    <span>Google Docs</span>
+                    <ExternalLink size={14} />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => setPdfModalData(null)}
+                    className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer ml-1"
+                    title="Close Document"
+                  >
+                    <XIcon size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Direct Pristine Document View (Never Blocked by Chrome) */}
+              <div className="flex-1 w-full bg-slate-200/70 p-4 sm:p-6 overflow-y-auto">
+                <div 
+                  className="max-w-[1240px] mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                  dangerouslySetInnerHTML={{ __html: pdfModalData.htmlContent }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       </>
     );
@@ -1535,12 +1699,45 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
             <div className="bg-gradient-to-b from-[#4a4a4a] to-[#1a1a1a] text-white flex justify-between items-center px-4 py-1.5 text-sm shadow-md z-20 shrink-0">
           <div className="text-xs text-gray-300 font-bold tracking-wide flex items-center gap-4">
             {reviewMode ? (
-              <button 
-                onClick={() => setReviewMode(false)}
-                className="flex items-center gap-2 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer pointer-events-auto"
-              >
-                <ArrowLeft size={16} /> Back to Results
-              </button>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setReviewMode(false)}
+                  className="flex items-center gap-2 hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer pointer-events-auto"
+                >
+                  <ArrowLeft size={16} /> Back to Results
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      setIsGeneratingPdf(true);
+                      const sc = Array.from({ length: 40 }, (_, i) => i + 1).filter(qNum => checkAnswer(qNum)).length;
+                      const res = await generateReadingExplanationPDF({
+                        testTitle,
+                        candidateName: studentName || 'Candidate',
+                        score: sc,
+                        bandScore: getBandScore(sc),
+                        passages: currentPassagesData,
+                        userAnswers: answers,
+                        answerKey: currentAnswerKey,
+                        explanations: currentExplanations,
+                      });
+                      if (res && res.htmlContent) {
+                        setPdfModalData({ htmlContent: res.htmlContent, filename: res.filename });
+                      }
+                    } catch (err) {
+                      console.error("PDF error", err);
+                    } finally {
+                      setIsGeneratingPdf(false);
+                    }
+                  }}
+                  disabled={isGeneratingPdf}
+                  className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all shadow-sm cursor-pointer"
+                  title="View full explanation document with highlighted passage clues"
+                >
+                  <Eye size={14} />
+                  <span>{isGeneratingPdf ? 'Opening...' : 'View Document'}</span>
+                </button>
+              </div>
             ) : (
               <>
                 <Menu size={20} className="cursor-pointer hover:text-gray-100 transition-colors" />
@@ -2351,6 +2548,117 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
               >
                 {modalConfig.confirmText || "Confirm"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embedded Interactive Document Viewer Modal in Review Mode */}
+      {pdfModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[94vh] flex flex-col overflow-hidden border border-gray-300">
+            {/* Header Bar */}
+            <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-sm">
+                  PDF
+                </div>
+                <div>
+                  <h3 className="font-bold text-base leading-tight">Document Viewer • {pdfModalData.filename}</h3>
+                  <p className="text-xs text-slate-400">Accurate 2-column landscape layout with highlighted passage clues & full explanations</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const printWin = window.open('', '_blank');
+                    if (printWin) {
+                      printWin.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                          <head>
+                            <title>${pdfModalData.filename}</title>
+                            <style>
+                              * {
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                color-adjust: exact !important;
+                              }
+                              @page { size: landscape; margin: 6mm 8mm; }
+                              body { margin: 0; padding: 0; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+                            </style>
+                          </head>
+                          <body>
+                            ${pdfModalData.htmlContent}
+                            <script>
+                              window.onload = () => {
+                                setTimeout(() => {
+                                  window.print();
+                                }, 500);
+                              };
+                            </script>
+                          </body>
+                        </html>
+                      `);
+                      printWin.document.close();
+                    }
+                  }}
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg transition-all border border-slate-700 cursor-pointer"
+                  title="Print directly or save as PDF via system dialog"
+                >
+                  <Printer size={14} />
+                  <span>Print</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isDownloadingPdf}
+                  onClick={async () => {
+                    try {
+                      setIsDownloadingPdf(true);
+                      await downloadExplanationPDF(pdfModalData.htmlContent, pdfModalData.filename);
+                    } catch (err) {
+                      console.error("PDF download error", err);
+                    } finally {
+                      setIsDownloadingPdf(false);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  <Download size={14} />
+                  <span>{isDownloadingPdf ? 'Generating...' : 'Save PDF'}</span>
+                </button>
+
+                <a
+                  href="https://docs.google.com/document/u/0/?ec=wgc-docs-[module]-goto"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg transition-all border border-slate-700"
+                  title="Open Google Docs"
+                >
+                  <span>Google Docs</span>
+                  <ExternalLink size={14} />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setPdfModalData(null)}
+                  className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer ml-1"
+                  title="Close Document"
+                >
+                  <XIcon size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Direct Pristine Document View (Never Blocked by Chrome) */}
+            <div className="flex-1 w-full bg-slate-200/70 p-4 sm:p-6 overflow-y-auto">
+              <div 
+                className="max-w-[1240px] mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                dangerouslySetInnerHTML={{ __html: pdfModalData.htmlContent }}
+              />
             </div>
           </div>
         </div>

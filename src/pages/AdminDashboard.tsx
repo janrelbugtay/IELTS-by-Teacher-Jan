@@ -1,11 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, getDocs, deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Assignment, OperationType, Submission } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router';
 import { handleFirestoreError } from '../lib/errorHandler';
-import { Plus, Users, FileText, LayoutDashboard, Activity, Clock, Globe, Edit2, X, Camera, Folder, Trophy, Search, Calendar, Star, Flame, BookOpen, Target, TrendingUp, BarChart2, Medal, ChevronRight, UserPlus, Key, Copy, CheckCircle2, FolderInput, Layers, Shield, Trash2, ArrowRight } from 'lucide-react';
+import { 
+  Users, 
+  Activity, 
+  Clock, 
+  Globe, 
+  Edit2, 
+  X, 
+  Camera, 
+  Folder, 
+  Flame, 
+  Target, 
+  TrendingUp, 
+  BarChart2, 
+  UserPlus, 
+  Copy, 
+  CheckCircle2, 
+  FolderInput, 
+  Layers, 
+  Shield, 
+  Trash2, 
+  ArrowRight,
+  Sparkles,
+  Award,
+  BookOpen,
+  CheckCheck,
+  ExternalLink,
+  Radio,
+  FileText
+} from 'lucide-react';
 import { format, subDays, subMinutes } from 'date-fns';
 
 import { CreateStudentModal } from '../components/CreateStudentModal';
@@ -386,158 +414,336 @@ Please log in and change your password immediately.
   return (
     <div className="space-y-12 pb-16 max-w-7xl mx-auto">
       
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 bg-natural-900 text-white p-8 md:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
-        <div>
-          <div className="text-accent-green uppercase font-bold tracking-widest text-sm mb-2">Classroom & Analytics</div>
-          <h1 className="text-4xl md:text-5xl font-serif leading-tight">Welcome, {firstName}</h1>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link 
-            to="/image-generator" 
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-natural-900 font-bold rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap shadow-sm"
-          >
-            <Camera className="w-5 h-5" /> Image Generator
-          </Link>
-          <Link 
-            to="/classes/create" 
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent-green text-white font-bold rounded-xl hover:bg-accent-green/90 transition-colors whitespace-nowrap shadow-sm"
-          >
-            <Plus className="w-5 h-5" /> New Assignment
-          </Link>
-        </div>
-      </div>
-
-      
-      {/* User Tracking System */}
-      <section>
-         <h2 className="text-2xl font-bold text-natural-900 mb-6 flex items-center gap-2">
-           <Activity className="w-6 h-6 text-[#1E4DB7]" /> User Tracking Analytics
-         </h2>
-         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center">
-              <Users className="w-6 h-6 text-natural-400 mb-2"/>
-              <div className="text-3xl font-black text-natural-900">{formatStat(userStats.total)}</div>
-              <div className="text-xs font-bold text-natural-500 uppercase tracking-widest mt-1">Total Students</div>
-            </div>
-            <div 
-              className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden cursor-pointer hover:border-green-300 hover:shadow-md transition-all"
-              onClick={() => setShowOnlineUsersModal(true)}
-            >
-               <div className="absolute top-0 inset-x-0 h-1 bg-green-500"></div>
-              <div className="relative">
-                 <span className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                 <div className="text-3xl font-black text-natural-900">{formatStat(userStats.onlineNow)}</div>
-              </div>
-              <div className="text-xs font-bold text-natural-500 uppercase tracking-widest mt-1">Online Now</div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center">
-              <Clock className="w-6 h-6 text-natural-400 mb-2"/>
-              <div className="text-3xl font-black text-natural-900">{formatStat(userStats.activeToday)}</div>
-              <div className="text-xs font-bold text-natural-500 uppercase tracking-widest mt-1">Active Today</div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center">
-              <Activity className="w-6 h-6 text-natural-400 mb-2"/>
-              <div className="text-3xl font-black text-natural-900">{formatStat(userStats.activeThisWeek)}</div>
-              <div className="text-xs font-bold text-natural-500 uppercase tracking-widest mt-1">Active This Week</div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-natural-200 shadow-sm flex flex-col justify-center items-center text-center">
-               <Globe className="w-6 h-6 text-natural-400 mb-2"/>
-              <div className="text-3xl font-black text-[#1E4DB7]">{formatStat(userStats.newThisMonth)}</div>
-              <div className="text-xs font-bold text-natural-500 uppercase tracking-widest mt-1">New this Month</div>
-            </div>
-         </div>
-      </section>
-
-      {/* Test Performance & Submission Stats */}
-      <section>
-         <h2 className="text-2xl font-bold text-natural-900 mb-6 flex items-center gap-2">
-           <LayoutDashboard className="w-6 h-6 text-[#1E4DB7]" /> Platform Engagement
-         </h2>
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-8 rounded-3xl border border-natural-200 shadow-sm flex flex-col items-center text-center">
-               <div className="p-4 bg-blue-50 rounded-full mb-4"><FileText className="w-8 h-8 text-blue-600"/></div>
-               <div className="text-4xl font-black text-slate-900 mb-2">{submissions.filter(s => s.assignmentType === 'writing').length}</div>
-               <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Essays Submitted</div>
-            </div>
-            <div className="bg-white p-8 rounded-3xl border border-natural-200 shadow-sm flex flex-col items-center text-center">
-               <div className="p-4 bg-purple-50 rounded-full mb-4"><Activity className="w-8 h-8 text-purple-600"/></div>
-               <div className="text-4xl font-black text-slate-900 mb-2">{submissions.length}</div>
-               <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Tests Completed</div>
-            </div>
-            <div className="bg-white p-8 rounded-3xl border border-natural-200 shadow-sm flex flex-col items-center text-center">
-               <div className="p-4 bg-orange-50 rounded-full mb-4"><Users className="w-8 h-8 text-orange-600"/></div>
-               <div className="text-4xl font-black text-slate-900 mb-2">
-                 {(() => {
-                    const graded = submissions.filter(s => typeof s.bandScore === 'number' && s.bandScore > 0);
-                    if (graded.length === 0) return 'N/A';
-                    const avg = graded.reduce((acc, curr) => acc + (curr.bandScore || 0), 0) / graded.length;
-                    return avg.toFixed(1);
-                 })()}
-               </div>
-               <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">Avg Platform Band</div>
-            </div>
-         </div>
-      </section>
-
-      {/* Assignment Library */}
-      <section>
-        <div className="flex items-end justify-between mb-6">
+      {/* Redesigned Tracking & Analytics Suite */}
+      <section className="space-y-6">
+        {/* Analytics Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-natural-200">
           <div>
-            <h2 className="text-3xl font-serif text-natural-900">Assignment Library</h2>
-            <p className="text-natural-700 mt-1">Manage tests and review student submissions.</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#1E4DB7]/10 text-[#1E4DB7] border border-[#1E4DB7]/20">
+                <BarChart2 className="w-3.5 h-3.5" /> Platform Intelligence
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Live Telemetry Active
+              </span>
+            </div>
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight font-serif">
+              Tracking & Student Analytics
+            </h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Real-time learner activity, performance telemetry, and course progression.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowOnlineUsersModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Online Roster ({userStats.onlineNow})
+            </button>
+            <button
+              onClick={() => handleOpenCreateStudent('IELTS', null, null, false)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1E4DB7] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-blue-800 transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              New Student
+            </button>
           </div>
         </div>
-        
-        {assignments.length === 0 ? (
-          <div className="text-center py-16 bg-white border border-natural-200 rounded-3xl shadow-sm">
-            <FileText className="w-12 h-12 text-natural-300 mx-auto mb-4" />
-            <p className="text-natural-500 text-lg">No assignments created yet.</p>
-            <Link 
-              to="/classes/create" 
-              className="inline-block mt-4 px-6 py-2 bg-natural-900 text-white rounded-lg font-bold"
-            >
-              Create First Assignment
-            </Link>
+
+        {/* Primary KPI Metric Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* Card 1: Total Students */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Enrolled Students</span>
+              <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="my-2">
+              <div className="text-3xl font-black text-slate-900 tracking-tight">{formatStat(userStats.total)}</div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="inline-flex items-center text-emerald-600 font-bold">
+                <TrendingUp className="w-3.5 h-3.5 mr-0.5" /> +{userStats.newThisMonth}
+              </span>
+              <span>joined this month</span>
+            </div>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {assignments.map(assignment => {
-              const assignmentSubmissions = submissions.filter(s => s.assignmentId === assignment.id);
-              
-              return (
-                <div 
-                  key={assignment.id} 
-                  className="bg-white border border-natural-200 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-6"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                       <span className="bg-natural-100 text-natural-900 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded">
-                         {assignment.type}
-                       </span>
-                       <span className="text-natural-500 text-sm">{assignment.createdAt ? format(assignment.createdAt, 'MMM d, yyyy') : 'N/A'}</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-natural-900 mb-2">{assignment.title}</h3>
-                    <p className="text-natural-600 line-clamp-2 text-sm">{assignment.description}</p>
+
+          {/* Card 2: Online Now (Interactive) */}
+          <div 
+            onClick={() => setShowOnlineUsersModal(true)}
+            className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between cursor-pointer relative overflow-hidden group"
+          >
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Online Right Now</span>
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
+                <Radio className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="my-2 flex items-baseline gap-2">
+              <div className="text-3xl font-black text-slate-900 tracking-tight">{formatStat(userStats.onlineNow)}</div>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-emerald-600 group-hover:text-emerald-700">
+              <span>View Active Users</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* Card 3: 7-Day Active Engagement */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Weekly Active Rate</span>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+                <Flame className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="my-2">
+              <div className="text-3xl font-black text-slate-900 tracking-tight">
+                {userStats.total > 0 ? Math.min(100, Math.round((userStats.activeThisWeek / userStats.total) * 100)) : 0}%
+              </div>
+            </div>
+            <div className="text-xs text-slate-500">
+              <span className="font-bold text-slate-800">{formatStat(userStats.activeThisWeek)}</span> students active past 7d
+            </div>
+          </div>
+
+          {/* Card 4: Assessment Throughput */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Test Submissions</span>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+                <BookOpen className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="my-2">
+              <div className="text-3xl font-black text-slate-900 tracking-tight">{formatStat(submissions.length)}</div>
+            </div>
+            <div className="text-xs text-slate-500 truncate">
+              <span className="font-semibold text-purple-700">{submissions.filter(s => s.assignmentType === 'writing').length} Essays</span>
+              {' · '}
+              <span className="font-semibold text-blue-700">{submissions.filter(s => s.assignmentType === 'speaking').length} Speaking</span>
+            </div>
+          </div>
+
+          {/* Card 5: Platform Band / Mastery */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between col-span-2 sm:col-span-1">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mean IELTS Band</span>
+              <div className="p-2 rounded-xl bg-teal-50 text-teal-600">
+                <Award className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="my-2">
+              {(() => {
+                const graded = submissions.filter(s => typeof s.bandScore === 'number' && s.bandScore > 0);
+                if (graded.length === 0) return <div className="text-3xl font-black text-slate-400 tracking-tight">—</div>;
+                const avg = graded.reduce((acc, curr) => acc + (curr.bandScore || 0), 0) / graded.length;
+                return (
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-black text-slate-900 tracking-tight">Band {avg.toFixed(1)}</span>
                   </div>
-                  
-                  <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-natural-200 pt-4 md:pt-0 md:pl-6 min-w-[200px]">
-                    <div className="text-center w-24">
-                       <div className="text-2xl font-black text-natural-900">{assignmentSubmissions.length}</div>
-                       <div className="text-[10px] font-bold text-natural-500 uppercase tracking-widest">Submissions</div>
-                    </div>
-                    <Link 
-                      to={`/assignment/${assignment.id}`}
-                      className="flex-1 py-2 px-4 bg-natural-50 hover:bg-natural-100 text-natural-900 font-bold rounded-xl transition-colors text-center text-sm border border-natural-200"
-                    >
-                      Manage
-                    </Link>
-                  </div>
+                );
+              })()}
+            </div>
+            <div className="text-xs text-slate-500">
+              <span className="font-bold text-teal-700">
+                {submissions.filter(s => typeof s.bandScore === 'number' && s.bandScore >= 7.0).length}
+              </span>{' '}
+              achieved Band 7.0+
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Analytical Breakdown Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: Course Level Distribution Matrix */}
+          <div className="lg:col-span-7 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-[#1E4DB7]" />
+                    Student Enrollment by Level
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Distribution across Cambridge English tiers and IELTS
+                  </p>
                 </div>
-              );
-            })}
+                <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-600">
+                  7 Active Tiers
+                </span>
+              </div>
+
+              {/* Course Progress Rows */}
+              <div className="space-y-3.5 mt-5">
+                {[
+                  { name: 'IELTS', label: 'IELTS Academic & General', barColor: 'bg-blue-600', badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
+                  { name: 'PET', label: 'B1 Preliminary (PET)', barColor: 'bg-indigo-600', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                  { name: 'KET', label: 'A2 Key (KET)', barColor: 'bg-cyan-600', badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+                  { name: 'Flyers', label: 'A2 Flyers', barColor: 'bg-emerald-600', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                  { name: 'Movers', label: 'A1 Movers', barColor: 'bg-amber-500', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
+                  { name: 'Starter', label: 'Pre-A1 Starters', barColor: 'bg-orange-500', badgeColor: 'bg-orange-50 text-orange-700 border-orange-200' },
+                  { name: 'Pre-Starter', label: 'Foundation Pre-Starter', barColor: 'bg-rose-500', badgeColor: 'bg-rose-50 text-rose-700 border-rose-200' },
+                ].map((tier) => {
+                  const activeTotal = usersList.filter(u => !u.isDeleted).length;
+                  const tierUsers = usersList.filter(u => !u.isDeleted && u.course === tier.name);
+                  const count = tierUsers.length;
+                  const pct = activeTotal > 0 ? Math.round((count / activeTotal) * 100) : 0;
+
+                  return (
+                    <div 
+                      key={tier.name}
+                      onClick={() => setExpandedCourse(expandedCourse === tier.name ? null : tier.name)}
+                      className="group p-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] border ${tier.badgeColor}`}>
+                            {tier.name}
+                          </span>
+                          <span className="text-slate-600 font-medium hidden sm:inline">{tier.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="font-bold text-slate-900">{count}</span>
+                          <span className="text-slate-400 text-[11px]">({pct}%)</span>
+                        </div>
+                      </div>
+                      
+                      {/* Meter Bar */}
+                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-500 ${tier.barColor}`}
+                          style={{ width: `${Math.max(pct, count > 0 ? 4 : 0)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quick Metrics Footer */}
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-4">
+                <span>Active Today: <strong className="text-slate-800">{userStats.activeToday}</strong></span>
+                <span>Active 7d: <strong className="text-slate-800">{userStats.activeThisWeek}</strong></span>
+              </div>
+              <span className="text-slate-400 font-mono text-[11px]">Auto-refreshed live</span>
+            </div>
           </div>
-        )}
+
+          {/* Right Column: Live Submissions & Assessment Stream */}
+          <div className="lg:col-span-5 bg-white p-6 md:p-7 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-emerald-600" />
+                    Recent Submissions
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Latest completed student assessments
+                  </p>
+                </div>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Live Feed
+                </span>
+              </div>
+
+              {/* Submissions Stream List */}
+              <div className="space-y-3 mt-4">
+                {submissions.slice(0, 5).length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 flex flex-col items-center justify-center">
+                    <BookOpen className="w-10 h-10 text-slate-300 mb-2" />
+                    <p className="text-sm font-medium">No recent submissions recorded yet.</p>
+                    <p className="text-xs text-slate-400 mt-1">Student submissions will appear here in real time.</p>
+                  </div>
+                ) : (
+                  submissions.slice(0, 5).map((sub) => {
+                    const student = usersList.find(u => u.id === sub.userId);
+                    const studentName = sub.studentName || student?.firstName || student?.name || student?.nickname || 'Student';
+                    const timeStr = sub.createdAt ? format(new Date(sub.createdAt), 'MMM d, h:mm a') : 'Recently';
+                    const isWriting = sub.assignmentType === 'writing';
+                    const isSpeaking = sub.assignmentType === 'speaking';
+
+                    return (
+                      <div 
+                        key={sub.id}
+                        className="p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-50 hover:border-slate-200 transition-all flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                            isWriting ? 'bg-purple-100 text-purple-700' : isSpeaking ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {studentName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="text-xs font-bold text-slate-900 truncate max-w-[120px] sm:max-w-[160px]">
+                                {studentName}
+                              </h4>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                isWriting ? 'bg-purple-100/80 text-purple-700' : isSpeaking ? 'bg-blue-100/80 text-blue-700' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {sub.assignmentType || 'Test'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                              {sub.assignmentTitle || timeStr}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {typeof sub.bandScore === 'number' && sub.bandScore > 0 ? (
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Band {sub.bandScore}
+                            </span>
+                          ) : typeof sub.percentage === 'number' ? (
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              {sub.percentage}%
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-600">
+                              Submitted
+                            </span>
+                          )}
+                          <Link 
+                            to={`/results/${sub.id}`}
+                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                            title="View submission details"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Assessment Telemetry Footer */}
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span className="font-semibold text-slate-700">Total Assessments: {submissions.length}</span>
+              <span className="text-slate-400 text-[11px]">Real-time review</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Course Management */}

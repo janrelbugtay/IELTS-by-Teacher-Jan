@@ -124,8 +124,8 @@ const generateMockTests = (courseName: string) => {
 
   
   if (courseName === 'IELTS') {
-    let readingIds = [49, 53, 57, 61, 65, 69];
-    for (let i = 13; i <= 18; i++) {
+    let readingIds = [49, 53, 57, 61, 65, 69, 73, 77, 81];
+    for (let i = 13; i <= 21; i++) {
         tests.push({
             id: readingIds[i - 13] as any,
             title: `IELTS Reading Test ${i}`,
@@ -317,7 +317,10 @@ export function PracticeTests() {
                         57: ['Passage 1', 'Passage 2', 'Passage 3'],
                         61: ['William Gilbert and Magnetism', 'Tasmanian Tiger', 'Endangered Languages'],
                         65: ['Rural transport plan of “Practical action”', 'Making Documentary Films', 'Passage 3'],
-                        69: ['Passage 1', 'Passage 2', 'Passage 3']
+                        69: ['Passage 1', 'Passage 2', 'Passage 3'],
+                        73: ['Nutmeg - a valuable spice', 'Driverless cars', 'What is exploration?'],
+                        77: ['Passage 1', 'Passage 2', 'Passage 3'],
+                        81: ['Passage 1', 'Passage 2', 'Passage 3']
                       };
                       const titles = readingTitles[test.id] || ['Passage 1', 'Passage 2', 'Passage 3'];
                       return (
@@ -345,7 +348,7 @@ export function PracticeTests() {
               </div>
               
               <div className="mt-auto">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 34, 35, 37, 39, 41, 45, 49, 53, 57, 61, 65, 69, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 34, 35, 37, 39, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
                   <Link 
                     to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                     className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"

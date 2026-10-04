@@ -261,49 +261,71 @@ export function ComputerSpeakingTest() {
                     const uploadPromises = Object.entries(responses).map(async ([qId, blob]) => {
                       if (blob.size === 0) return { qId, url: "" };
                       
+                      const localId = `${docRef.id}_${qId}`;
+                      // 1. Always cache locally to IndexedDB as an immediate safeguard
                       try {
-                        const localId = `${docRef.id}_${qId}`;
-                        
-                        try {
-                            const audioRef = ref(storage, `speaking_tests/${user?.uid}/${Date.now()}_${qId}.webm`);
-                            const uploadPromise = uploadBytes(audioRef, blob);
-                            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
-                            const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as any;
-                            const url = await getDownloadURL(uploadResult.ref);
-                            return { qId, url };
-                        } catch (err) {
-                            console.warn("Storage upload failed, attempting to save to Firestore subcollection...", err);
-                            try {
-                                const reader = new FileReader();
-                                const base64Promise = new Promise<string>((resolve, reject) => {
-                                  reader.onloadend = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(blob);
-                                });
-                                const base64 = await base64Promise;
-                                if (base64.length < 900000) { // Keep under ~1MB Firestore limit
-                                    await setDoc(doc(db, 'submissions', docRef.id, 'recordings', qId), { audioUrl: base64 });
-                                    return { qId, url: `subcollection:${qId}` };
-                                } else {
-                                    const chunkSize = 800000;
-                                    const chunks = Math.ceil(base64.length / chunkSize);
-                                    for (let i = 0; i < chunks; i++) {
-                                        const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
-                                        await setDoc(doc(db, 'submissions', docRef.id, 'recordings', `${qId}_chunk_${i}`), { audioUrl: chunkData });
-                                    }
-                                    await setDoc(doc(db, 'submissions', docRef.id, 'recordings', qId), { chunks });
-                                    return { qId, url: `subcollection:${qId}` };
-                                }
-                            } catch (fbErr) {
-                                console.warn("Firestore save failed, falling back to IndexedDB", fbErr);
-                                await saveAudioToIndexedDB(localId, blob);
-                                return { qId, url: `idb:${localId}` };
-                            }
-                        }
-                      } catch (err) {
-                        console.error("Upload and fallback both failed", err);
-                        return { qId, url: "" };
+                        await saveAudioToIndexedDB(localId, blob);
+                      } catch (idbErr) {
+                        console.warn("IndexedDB local cache failed", idbErr);
                       }
+
+                      let finalUrl = "";
+
+                      // 2. Upload to backend server for streaming
+                      try {
+                        const formData = new FormData();
+                        formData.append("audio", blob, `${docRef.id}_${qId}.webm`);
+                        formData.append("submissionId", docRef.id);
+                        formData.append("qId", qId);
+                        const res = await fetch("/api/speaking/upload", {
+                          method: "POST",
+                          body: formData
+                        });
+                        if (res.ok) {
+                          const json = await res.json();
+                          if (json.url) {
+                            finalUrl = json.url;
+                          }
+                        }
+                      } catch (serverErr) {
+                        console.warn("Server upload failed, falling back to Firestore subcollection", serverErr);
+                      }
+
+                      // 3. Save to Firestore subcollection as cloud backup
+                      try {
+                        const reader = new FileReader();
+                        const base64Promise = new Promise<string>((resolve, reject) => {
+                          reader.onloadend = () => resolve(reader.result as string);
+                          reader.onerror = reject;
+                        });
+                        reader.readAsDataURL(blob);
+                        const base64 = await base64Promise;
+                        if (base64.length < 900000) {
+                          await setDoc(doc(db, "submissions", docRef.id, "recordings", qId), {
+                            audioUrl: base64,
+                            serverUrl: finalUrl || null,
+                            mimeType: blob.type || "audio/webm"
+                          });
+                          if (!finalUrl) finalUrl = `subcollection:${qId}`;
+                        } else {
+                          const chunkSize = 800000;
+                          const chunks = Math.ceil(base64.length / chunkSize);
+                          for (let i = 0; i < chunks; i++) {
+                            const chunkData = base64.slice(i * chunkSize, (i + 1) * chunkSize);
+                            await setDoc(doc(db, "submissions", docRef.id, "recordings", `${qId}_chunk_${i}`), { audioUrl: chunkData });
+                          }
+                          await setDoc(doc(db, "submissions", docRef.id, "recordings", qId), {
+                            chunks,
+                            serverUrl: finalUrl || null,
+                            mimeType: blob.type || "audio/webm"
+                          });
+                          if (!finalUrl) finalUrl = `subcollection:${qId}`;
+                        }
+                      } catch (fbErr) {
+                        console.warn("Firestore subcollection save failed", fbErr);
+                      }
+
+                      return { qId, url: finalUrl || `idb:${localId}` };
                     });
 
                     const uploadedItems = await Promise.all(uploadPromises);

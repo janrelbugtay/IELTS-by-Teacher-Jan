@@ -259,17 +259,38 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
     setRecordingTime(0);
     if (!streamRef.current) return;
     try {
-      const mediaRecorder = new MediaRecorder(streamRef.current);
+      let options: MediaRecorderOptions = {};
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 48000 };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm', audioBitsPerSecond: 48000 };
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options = { mimeType: 'audio/mp4', audioBitsPerSecond: 48000 };
+        }
+      }
+      const mediaRecorder = new MediaRecorder(streamRef.current, options);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
           audioChunksRef.current.push(e.data);
         }
       };
-      mediaRecorder.start();
+      mediaRecorder.start(500);
     } catch (e) {
-      console.warn('Could not start recorder', e);
+      console.warn('Could not start recorder with options, falling back to default', e);
+      try {
+        const fallbackRecorder = new MediaRecorder(streamRef.current);
+        mediaRecorderRef.current = fallbackRecorder;
+        audioChunksRef.current = [];
+        fallbackRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+        fallbackRecorder.start(500);
+      } catch (err2) {
+        console.error('Failed to start fallback recorder', err2);
+      }
     }
   };
 
@@ -664,6 +685,16 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
           </div>
         </div>
       </div>
+
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white p-6">
+          <div className="bg-white text-slate-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
+            <h3 className="text-xl font-bold mb-2 text-slate-900">Uploading Recordings</h3>
+            <p className="text-sm text-slate-600">Please do not close this window while your speaking test audio is being saved to the cloud...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

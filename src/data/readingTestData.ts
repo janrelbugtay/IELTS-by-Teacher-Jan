@@ -15,6 +15,9 @@ import { test15Passages, test15Answers, test15Explanations } from './test15Readi
 import { test16Passages, test16Answers, test16Explanations } from './test16ReadingData';
 import { test17Passages, test17Answers, test17Explanations } from './test17ReadingData';
 import { test18Passages, test18Answers, test18Explanations } from './test18ReadingData';
+import { test19Passages, test19Answers, test19Explanations } from './test19ReadingData';
+import { test20Passages, test20Answers, test20Explanations } from './test20ReadingData';
+import { test21Passages, test21Answers, test21Explanations } from './test21ReadingData';
 
 export const getReadingTestData = (id: string | undefined) => {
   // Return null for January (id === '1') or any unknown ID (e.g. old submissions)
@@ -78,11 +81,20 @@ export const getReadingTestData = (id: string | undefined) => {
   if (id === '61') {
     return { passages: test16Passages, answers: test16Answers, explanations: test16Explanations };
   }
-  if (id === '65') {
+  if (id === '65' || id === '17' || id?.toLowerCase()?.includes('test-17') || id?.toLowerCase()?.includes('test 17')) {
     return { passages: test17Passages, answers: test17Answers, explanations: test17Explanations };
   }
-  if (id === '69') {
+  if (id === '69' || id === '18' || id?.toLowerCase()?.includes('test-18') || id?.toLowerCase()?.includes('test 18') || id?.toLowerCase()?.includes('reading-18')) {
     return { passages: test18Passages, answers: test18Answers, explanations: test18Explanations };
+  }
+  if (id === '73' || id === '19' || id?.toLowerCase()?.includes('test-19') || id?.toLowerCase()?.includes('test 19') || id?.toLowerCase()?.includes('reading-19')) {
+    return { passages: test19Passages, answers: test19Answers, explanations: test19Explanations };
+  }
+  if (id === '77' || id === '20' || id?.toLowerCase()?.includes('test-20') || id?.toLowerCase()?.includes('test 20') || id?.toLowerCase()?.includes('reading-20')) {
+    return { passages: test20Passages, answers: test20Answers, explanations: test20Explanations };
+  }
+  if (id === '81' || id === '21' || id?.toLowerCase()?.includes('test-21') || id?.toLowerCase()?.includes('test 21') || id?.toLowerCase()?.includes('reading-21')) {
+    return { passages: test21Passages, answers: test21Answers, explanations: test21Explanations };
   }
   
   // Default to January/original content for backwards compatibility with old submissions

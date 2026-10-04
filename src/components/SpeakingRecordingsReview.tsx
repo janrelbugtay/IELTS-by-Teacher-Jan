@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Play, Pause, Video, ExternalLink } from 'lucide-react';
 import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAudioFromIndexedDB } from '../lib/indexedDB';
+import { SpeakingAudioItem } from './SpeakingAudioItem';
 
 export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { src: string | null, defaultDurationStr: string, isRealAudio?: boolean }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -155,12 +156,67 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
               if (blob) {
                 url = URL.createObjectURL(blob);
                 foundBlob = true;
+
+                // Auto-sync local blob to backend server & update submission
+                if (submissionId) {
+                  try {
+                    const formData = new FormData();
+                    formData.append("audio", blob, `${submissionId}_${id}.webm`);
+                    formData.append("submissionId", submissionId);
+                    formData.append("qId", id);
+                    fetch("/api/speaking/upload", { method: "POST", body: formData }).then(async (res) => {
+                      if (res.ok) {
+                        const json = await res.json();
+                        if (json.url) {
+                          updateDoc(doc(db, 'submissions', submissionId), {
+                            [`answers.${id}.audioUrl`]: json.url
+                          }).catch(console.warn);
+                        }
+                      }
+                    }).catch(console.warn);
+                  } catch (syncErr) {
+                    console.warn("Background audio sync failed:", syncErr);
+                  }
+                }
               }
             } catch (e) {
               console.error("Failed to fetch recording from IndexedDB:", e);
             }
             if (!foundBlob) {
-              url = 'LOCAL_ONLY';
+              // Check if already stored on server
+              let foundOnServer = false;
+              if (submissionId) {
+                try {
+                  const checkRes = await fetch(`/api/speaking/check/${submissionId}_${id}.webm`);
+                  if (checkRes.ok) {
+                    const checkJson = await checkRes.json();
+                    if (checkJson.exists) {
+                      url = `/api/speaking/audio/${submissionId}_${id}.webm`;
+                      foundOnServer = true;
+                    }
+                  }
+                } catch (cErr) {}
+
+                // Also check subcollection
+                if (!foundOnServer) {
+                  try {
+                    const docSnap = await getDoc(doc(db, 'submissions', submissionId, 'recordings', id));
+                    if (docSnap.exists()) {
+                      const dData = docSnap.data();
+                      if (dData.serverUrl) {
+                        url = dData.serverUrl;
+                        foundOnServer = true;
+                      } else if (dData.audioUrl) {
+                        url = dData.audioUrl;
+                        foundOnServer = true;
+                      }
+                    }
+                  } catch (scErr) {}
+                }
+              }
+              if (!foundOnServer) {
+                url = 'LOCAL_ONLY';
+              }
             }
           }
           urls[id] = url;
@@ -273,12 +329,15 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                       <p className="text-[#4F7DFF] font-semibold mb-3 text-sm tracking-wide">Let's talk about {q.topic.toLowerCase()}</p>
                     )}
                     <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                    {(responseUrls[q.id] === 'LOCAL_ONLY' || (!responseUrls[q.id] && audioUrl && audioUrl.startsWith('idb:'))) ? (
-                        <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200">Recording saved locally on student's device.</div>
-                    ) : (responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                      <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="0:30" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
-                    ) : null}
-                    
+                    <SpeakingAudioItem 
+                      qId={q.id} 
+                      submissionId={submissionId} 
+                      audioUrl={responseUrls[q.id] || (Object.keys(responseUrls).length === 0 ? audioUrl : null)} 
+                      defaultDurationStr="0:30"
+                      onAudioUpdated={(updatedQId, newUrl) => {
+                        setResponseUrls(prev => ({ ...prev, [updatedQId]: newUrl }));
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -295,11 +354,15 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                   You should say:{"\n"}
                   {testQuestions.part2.bulletPoints.map(bp => `• ${bp}`).join("\n")}
                 </p>
-                {(responseUrls[testQuestions.part2.id] === 'LOCAL_ONLY' || (!responseUrls[testQuestions.part2.id] && audioUrl && audioUrl.startsWith('idb:'))) ? (
-                  <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200">Recording saved locally on student's device.</div>
-                ) : (responseUrls[testQuestions.part2.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                  <SimpleAudioPlayer src={responseUrls[testQuestions.part2.id] || audioUrl} defaultDurationStr="2:00" isRealAudio={!!responseUrls[testQuestions.part2.id] || !!audioUrl} />
-                ) : null}
+                <SpeakingAudioItem 
+                  qId={testQuestions.part2.id} 
+                  submissionId={submissionId} 
+                  audioUrl={responseUrls[testQuestions.part2.id] || (Object.keys(responseUrls).length === 0 ? audioUrl : null)} 
+                  defaultDurationStr="2:00"
+                  onAudioUpdated={(updatedQId, newUrl) => {
+                    setResponseUrls(prev => ({ ...prev, [updatedQId]: newUrl }));
+                  }}
+                />
               </div>
             </div>
           </section>
@@ -316,12 +379,15 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
                       <p className="text-[#4F7DFF] font-semibold mb-3 text-sm tracking-wide">Let's discuss {q.topic.toLowerCase()}</p>
                     )}
                     <p className="text-[17px] text-[#1c2b4d] font-medium mb-3">{q.text}</p>
-                    {(responseUrls[q.id] === 'LOCAL_ONLY' || (!responseUrls[q.id] && audioUrl && audioUrl.startsWith('idb:'))) ? (
-                        <div className="text-amber-600 text-sm italic bg-amber-50 p-2 rounded border border-amber-200">Recording saved locally on student's device.</div>
-                    ) : (responseUrls[q.id] || (audioUrl && Object.keys(responseUrls).length === 0)) ? (
-                      <SimpleAudioPlayer src={responseUrls[q.id] || audioUrl} defaultDurationStr="1:00" isRealAudio={!!responseUrls[q.id] || !!audioUrl} />
-                    ) : null}
-                    
+                    <SpeakingAudioItem 
+                      qId={q.id} 
+                      submissionId={submissionId} 
+                      audioUrl={responseUrls[q.id] || (Object.keys(responseUrls).length === 0 ? audioUrl : null)} 
+                      defaultDurationStr="1:00"
+                      onAudioUpdated={(updatedQId, newUrl) => {
+                        setResponseUrls(prev => ({ ...prev, [updatedQId]: newUrl }));
+                      }}
+                    />
                   </div>
                 );
               })}
