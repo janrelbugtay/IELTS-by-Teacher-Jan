@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams, Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
-import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard, Edit3 } from 'lucide-react';
 
 const generateMockTests = (courseName: string) => {
   if (courseName === 'PET') {
@@ -347,8 +347,17 @@ export function PracticeTests() {
                 </div>
               </div>
               
-              <div className="mt-auto">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 34, 35, 37, 39, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
+              <div className="mt-auto flex flex-col gap-2">
+                {test.skill === 'Speaking' && isAdmin && (
+                  <Link 
+                    to={`/test/speaking/${test.id}?lobby=true`}
+                    className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold rounded-xl border border-slate-300 transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+                  >
+                    <Edit3 className="w-4 h-4 text-[#1E4DB7]" /> Edit Speaking Test
+                  </Link>
+                )}
+
+                {test.skill === 'Speaking' || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 53, 57, 61, 65, 69, 73, 77, 81, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
                   <Link 
                     to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                     className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"

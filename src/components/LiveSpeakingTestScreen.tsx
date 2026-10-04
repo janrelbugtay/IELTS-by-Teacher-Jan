@@ -408,12 +408,17 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
           {phase === 'p1' && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full text-center">
               <div className="inline-block bg-[#4F7DFF]/10 text-[#4F7DFF] px-6 py-2.5 rounded-full text-base font-bold mb-4 border border-[#4F7DFF]/20 backdrop-blur-sm tracking-wide shadow-sm">
-                Part 1: Let's talk about {MOCK_QUESTIONS.part1[qIndex].topic}
+                Part 1: Let's talk about {MOCK_QUESTIONS.part1[qIndex]?.topic || 'General'}
               </div>
               <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4">
-                {MOCK_QUESTIONS.part1[qIndex].text}
+                {MOCK_QUESTIONS.part1[qIndex]?.text}
               </h2>
-
+              {showSampleAnswer && (MOCK_QUESTIONS.part1[qIndex] as any)?.sampleAnswer && (
+                <div className="mt-8 mx-auto max-w-2xl text-left p-6 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
+                   <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
+                   {(MOCK_QUESTIONS.part1[qIndex] as any).sampleAnswer}
+                </div>
+              )}
             </div>
           )}
 
@@ -555,22 +560,28 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                      <span className="font-bold text-sm uppercase tracking-wider">Ready to Submit</span>
                   </div>
                 ) : qState === 'waiting_to_record' && phase !== 'intro' && phase !== 'p2-prep' ? (
-                  phase === 'p3' ? (
-                    <button 
-                      onClick={() => {
-                        const arr = MOCK_QUESTIONS.part3;
-                        const sample = (arr[qIndex] as any).sampleAnswer;
-                        if (sample) {
-                            playSampleAnswerText(sample);
-                        } else {
-                            alert('Sample answer not available yet.');
-                        }
-                      }}
-                      className="flex items-center gap-3 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm transition-colors cursor-pointer"
-                    >
-                       <Play size={18} className="text-[#4F7DFF]" />
-                       <span className="font-bold text-sm uppercase tracking-wider">Play Sample Answer</span>
-                    </button>
+                  (phase === 'p3' || phase === 'p1') && ((phase === 'p1' ? MOCK_QUESTIONS.part1[qIndex] : MOCK_QUESTIONS.part3[qIndex]) as any)?.sampleAnswer ? (
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => {
+                          const currentItem = phase === 'p1' ? MOCK_QUESTIONS.part1[qIndex] : MOCK_QUESTIONS.part3[qIndex];
+                          const sample = (currentItem as any)?.sampleAnswer;
+                          if (sample) {
+                              playSampleAnswerText(sample);
+                          } else {
+                              alert('Sample answer not available yet.');
+                          }
+                        }}
+                        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm transition-colors cursor-pointer"
+                      >
+                         <Play size={18} className="text-[#4F7DFF]" />
+                         <span className="font-bold text-sm uppercase tracking-wider">Play Sample Answer</span>
+                      </button>
+                      <div className="flex items-center gap-3 text-slate-600 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
+                         <Mic size={20} />
+                         <span className="font-bold text-sm uppercase tracking-wider">Ready to Record</span>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-3 text-slate-600 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
                        <Mic size={20} />

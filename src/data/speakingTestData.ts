@@ -129,33 +129,55 @@ export const IELTS_SPEAKING_QUESTIONS = {
     ]
   },
 
-'4': {
+  '4': {
     part1: [
-      { id: 'p1_1', topic: '', text: '' },
-      { id: 'p1_2', topic: '', text: '' },
-      { id: 'p1_3', topic: '', text: '' },
-      { id: 'p1_4', topic: '', text: '' },
-      { id: 'p1_5', topic: '', text: '' },
-      { id: 'p1_6', topic: '', text: '' },
-      { id: 'p1_7', topic: '', text: '' },
-      { id: 'p1_8', topic: '', text: '' },
-      { id: 'p1_9', topic: '', text: '' }
+      { id: 'p1_1', topic: 'Weather', text: 'What is the weather like today in your city?' },
+      { id: 'p1_2', topic: 'Weather', text: 'Do you prefer hot or cold weather? Why?' },
+      { id: 'p1_3', topic: 'Weather', text: 'Does the weather ever affect your mood or daily plans?' },
+      { id: 'p1_4', topic: 'Weather', text: 'What is your favorite season of the year?' },
+      { id: 'p1_5', topic: 'Books', text: 'Do you enjoy reading books in your free time?' },
+      { id: 'p1_6', topic: 'Books', text: 'What kinds of books did you read when you were younger?' },
+      { id: 'p1_7', topic: 'Books', text: 'Do you prefer reading printed paper books or digital e-books?' },
+      { id: 'p1_8', topic: 'Books', text: 'Have you ever given a book to someone as a gift?' }
     ],
     part2: {
       id: 'p2_1',
-      topic: '',
+      topic: 'Describe an interesting conversation you had with a stranger.',
       bulletPoints: [
-        '',
-        '',
-        '',
-        ''
-      ]
+        'who this person was',
+        'where and when the conversation took place',
+        'what you talked about',
+        'and explain why you found this conversation interesting.'
+      ],
+      sampleAnswer: `I would like to talk about a memorable chat I had with an elderly gentleman while traveling on a cross-country train journey about six months ago.
+
+I was traveling alone from Hanoi to Da Nang, and the trip took over fourteen hours. He was sitting opposite me by the window, sketching the landscapes passing by in a leather-bound notebook. Out of curiosity, I complimented his artwork, which led into a lively and warm conversation.
+
+It turned out he was a retired landscape architect who had spent his career working on historic preservation projects. He shared fascinating stories about how traditional architecture harmonizes with nature, and how modern urbanization is transforming cityscapes.
+
+What made the conversation truly captivating was his perspective on life. Rather than lamenting modernization, he emphasized the value of finding beauty in quiet everyday moments. His warmth and optimism left a lasting impression on me.`
     },
     part3: [
-      { id: 'p3_1', topic: '', text: '' },
-      { id: 'p3_2', topic: '', text: '' },
-      { id: 'p3_3', topic: '', text: '' },
-      { id: 'p3_4', topic: '', text: '' }
+      { 
+        id: 'p3_1', 
+        topic: 'Communication', 
+        text: 'Do you think modern technology has made people communicate more or less effectively?' 
+      },
+      { 
+        id: 'p3_2', 
+        topic: 'Communication', 
+        text: 'Why do some people find it difficult to talk to strangers?' 
+      },
+      { 
+        id: 'p3_3', 
+        topic: 'Communication', 
+        text: 'What are the benefits of talking to people from diverse backgrounds?' 
+      },
+      { 
+        id: 'p3_4', 
+        topic: 'Communication', 
+        text: 'How do communication styles differ between younger and older generations?' 
+      }
     ]
   },
   '3': {
@@ -247,31 +269,58 @@ Link : So yeah, even when the problems are the same, the legal solutions don't a
   },
   '1': {
     part1: [
-      { id: 'p1_1', topic: '', text: '' },
-      { id: 'p1_2', topic: '', text: '' },
-      { id: 'p1_3', topic: '', text: '' },
-      { id: 'p1_4', topic: '', text: '' },
-      { id: 'p1_5', topic: '', text: '' },
-      { id: 'p1_6', topic: '', text: '' },
-      { id: 'p1_7', topic: '', text: '' },
-      { id: 'p1_8', topic: '', text: '' }
+      { id: 'p1_1', topic: 'Hometown', text: 'Where is your hometown located?' },
+      { id: 'p1_2', topic: 'Hometown', text: 'What do you like most about living there?' },
+      { id: 'p1_3', topic: 'Hometown', text: 'Is your hometown a good place for young people to live?' },
+      { id: 'p1_4', topic: 'Hometown', text: 'Has your hometown changed much over the last ten years?' },
+      { id: 'p1_5', topic: 'Work & Studies', text: 'Do you currently work or are you a student?' },
+      { id: 'p1_6', topic: 'Work & Studies', text: 'Why did you choose this particular field of study or work?' },
+      { id: 'p1_7', topic: 'Work & Studies', text: 'What is your daily study or work routine like?' },
+      { id: 'p1_8', topic: 'Work & Studies', text: 'Do you plan to continue in this career path in the future?' }
     ],
     part2: {
       id: 'p2_1',
-      topic: '',
+      topic: 'Describe an important decision you made that changed your life for the better.',
       bulletPoints: [
-        '',
-        '',
-        '',
-        ''
-      ]
+        'what the decision was',
+        'when and why you made it',
+        'what difficulties or challenges you faced',
+        'and explain how this decision positively influenced your life.'
+      ],
+      sampleAnswer: `An important decision that marked a major turning point in my life occurred about three years ago, when I decided to switch my academic major to computer engineering.
+
+At that time, I was halfway through my second year of business studies. Although I was achieving good grades, I felt uninspired and lacked genuine enthusiasm for financial accounting. After attending a weekend tech hackathon, I discovered the immense thrill of digital development.
+
+Making the change was not easy. My parents initially expressed deep concern about throwing away two years of coursework, and I had to spend months of intense independent study catching up on programming fundamentals and calculus.
+
+Ultimately, this decision proved to be the most rewarding choice I have ever made. It restored my motivation, allowed me to secure exciting internships, and taught me that taking calculated risks to follow your true passion is always worth the effort.`
     },
     part3: [
-      { id: 'p3_1', topic: '', text: '' },
-      { id: 'p3_2', topic: '', text: '' },
-      { id: 'p3_3', topic: '', text: '' },
-      { id: 'p3_4', topic: '', text: '' },
-      { id: 'p3_5', topic: '', text: '' }
+      { 
+        id: 'p3_1', 
+        topic: 'Decision Making', 
+        text: 'Do you believe that young people find it harder to make decisions today than in the past?' 
+      },
+      { 
+        id: 'p3_2', 
+        topic: 'Decision Making', 
+        text: 'Should parents make major life decisions for their teenage children?' 
+      },
+      { 
+        id: 'p3_3', 
+        topic: 'Decision Making', 
+        text: "How does advice from friends influence people's important choices?" 
+      },
+      { 
+        id: 'p3_4', 
+        topic: 'Technology & Choices', 
+        text: 'How has modern technology altered the way we make everyday choices?' 
+      },
+      { 
+        id: 'p3_5', 
+        topic: 'Technology & Choices', 
+        text: 'Are there any disadvantages to relying heavily on algorithms for decision-making?' 
+      }
     ]
   },
   'fallback': {
