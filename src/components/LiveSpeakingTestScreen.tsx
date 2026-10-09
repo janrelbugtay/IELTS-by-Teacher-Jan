@@ -23,7 +23,19 @@ const Waveform = ({ isRecording }: { isRecording: boolean }) => (
   </div>
 );
 
-export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: { onComplete: (responses: Record<string, Blob>) => Promise<void>, testId?: string, customQuestions?: any }) => {
+export const LiveSpeakingTestScreen = ({ 
+  onComplete, 
+  testId, 
+  customQuestions,
+  isAdmin = false,
+  onEditTest
+}: { 
+  onComplete: (responses: Record<string, Blob>) => Promise<void>, 
+  testId?: string, 
+  customQuestions?: any,
+  isAdmin?: boolean,
+  onEditTest?: () => void
+}) => {
   const navigate = useNavigate();
   const testNum = testId ? testId : '1';
   const MOCK_QUESTIONS = customQuestions || IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
@@ -402,43 +414,80 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                   You will now interact with the AI examiner. The test consists of 3 parts and will take approximately 11-14 minutes.
                 </p>
               </div>
+
+              {/* Admin shortcut button right on intro card */}
+              {isAdmin && onEditTest && (
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={onEditTest}
+                    className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-6 py-2.5 rounded-full font-bold transition-all text-sm shadow-sm cursor-pointer"
+                  >
+                    <Edit3 size={16} />
+                    Edit Speaking Test (Admin)
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {phase === 'p1' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full text-center">
-              <div className="inline-block bg-[#4F7DFF]/10 text-[#4F7DFF] px-6 py-2.5 rounded-full text-base font-bold mb-4 border border-[#4F7DFF]/20 backdrop-blur-sm tracking-wide shadow-sm">
-                Part 1: Let's talk about {MOCK_QUESTIONS.part1[qIndex]?.topic || 'General'}
+            <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full max-w-3xl mx-auto">
+              <div className="text-center">
+                <div className="inline-block bg-[#4F7DFF]/10 text-[#4F7DFF] px-6 py-2 rounded-full text-sm font-bold border border-[#4F7DFF]/20 backdrop-blur-sm tracking-wide shadow-sm">
+                  Part 1 &bull; {MOCK_QUESTIONS.part1[qIndex]?.topic || 'General'}
+                </div>
               </div>
-              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4">
-                {MOCK_QUESTIONS.part1[qIndex]?.text}
-              </h2>
-              {showSampleAnswer && (MOCK_QUESTIONS.part1[qIndex] as any)?.sampleAnswer && (
-                <div className="mt-8 mx-auto max-w-2xl text-left p-6 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
-                   <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
-                   {(MOCK_QUESTIONS.part1[qIndex] as any).sampleAnswer}
+
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-md text-center">
+                <div className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">
+                  Question {qIndex + 1} of {MOCK_QUESTIONS.part1?.length || 1}
+                </div>
+                <h2 className="text-2xl md:text-4xl font-bold text-slate-900 leading-snug">
+                  {MOCK_QUESTIONS.part1[qIndex]?.text}
+                </h2>
+              </div>
+
+              {/* Sample Answer placed directly below the question */}
+              {(MOCK_QUESTIONS.part1[qIndex] as any)?.sampleAnswer && (
+                <div className="bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
+                  <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
+                      <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
+                      Sample Model Answer
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => playSampleAnswerText((MOCK_QUESTIONS.part1[qIndex] as any).sampleAnswer)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#4F7DFF] bg-slate-50 hover:bg-blue-50 px-3.5 py-1.5 rounded-full border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      <Volume2 size={14} className="text-[#4F7DFF]" />
+                      Listen
+                    </button>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed text-base font-normal whitespace-pre-wrap">
+                    {(MOCK_QUESTIONS.part1[qIndex] as any).sampleAnswer}
+                  </p>
                 </div>
               )}
             </div>
           )}
 
           {phase === 'p2-prep' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-500 fade-in w-full max-w-3xl mx-auto">
+            <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500 fade-in w-full max-w-3xl mx-auto">
               <div className="flex flex-col md:flex-row items-center md:justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-200 gap-4 md:gap-0">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900 mb-1">Part 2 Preparation</h2>
-                  <p className="text-slate-500 font-medium">You have 1 minute to prepare.</p>
+                  <p className="text-slate-500 font-medium">You have 1 minute to prepare your notes.</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  {true && (
-                    <button 
-                      onClick={() => setIsPrepTimerRunning(!isPrepTimerRunning)}
-                      className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold transition-colors text-sm border border-slate-200"
-                    >
-                      {isPrepTimerRunning ? <Pause size={16} /> : <Play size={16} />}
-                      {isPrepTimerRunning ? 'Pause Timer' : 'Start Timer'}
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => setIsPrepTimerRunning(!isPrepTimerRunning)}
+                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold transition-colors text-sm border border-slate-200 cursor-pointer"
+                  >
+                    {isPrepTimerRunning ? <Pause size={16} /> : <Play size={16} />}
+                    {isPrepTimerRunning ? 'Pause Timer' : 'Start Timer'}
+                  </button>
                   <div className="text-2xl md:text-3xl font-mono font-bold text-slate-800 flex items-center gap-2 md:gap-3 bg-slate-50 px-4 py-2 md:px-6 md:py-3 rounded-full border border-slate-200 shadow-inner">
                      <Clock size={28} className={!isPrepTimerRunning ? 'text-slate-400' : 'text-[#F7B731] animate-pulse'} />
                      {formatTime(prepTime)}
@@ -446,27 +495,33 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                 </div>
               </div>
                  
-              <div className="bg-white backdrop-blur-xl border border-slate-200 shadow-lg p-8 rounded-3xl">
+              <div className="bg-white border border-slate-200 shadow-md p-8 rounded-3xl">
+                <div className="text-xs uppercase tracking-wider font-bold text-[#4F7DFF] mb-2">Candidate Task Card</div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">{MOCK_QUESTIONS.part2.topic}</h3>
                 <p className="text-slate-600 mb-4 font-medium text-lg">You should say:</p>
                 <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light mb-6">
-                  {MOCK_QUESTIONS.part2.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
+                  {MOCK_QUESTIONS.part2.bulletPoints.map((pt: string, i: number) => <li key={i}>{pt}</li>)}
                 </ul>
+
+                {/* Sample Answer below question topic and bullets */}
                 {(MOCK_QUESTIONS.part2 as any).sampleAnswer && (
-                  <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-4">
-                    <button 
-                      onClick={() => playSampleAnswerText((MOCK_QUESTIONS.part2 as any).sampleAnswer)}
-                      className="flex items-center gap-2 px-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full font-medium transition-colors border border-slate-200 shadow-sm"
-                    >
-                      <Play size={18} className="text-[#4F7DFF]" />
-                      Play Sample Answer
-                    </button>
-                    {showSampleAnswer && (
-                      <div className="mt-4 p-6 bg-slate-50 border border-slate-200 rounded-2xl w-full text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
-                        <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
-                        {(MOCK_QUESTIONS.part2 as any).sampleAnswer}
+                  <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
+                        <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
+                        Sample Model Answer
                       </div>
-                    )}
+                      <button 
+                        onClick={() => playSampleAnswerText((MOCK_QUESTIONS.part2 as any).sampleAnswer)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#4F7DFF] bg-slate-50 hover:bg-blue-50 px-3.5 py-1.5 rounded-full border border-slate-200 transition-colors cursor-pointer"
+                      >
+                        <Volume2 size={14} className="text-[#4F7DFF]" />
+                        Listen
+                      </button>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed text-base font-normal whitespace-pre-wrap">
+                      {(MOCK_QUESTIONS.part2 as any).sampleAnswer}
+                    </p>
                   </div>
                 )}
               </div>
@@ -486,24 +541,46 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
           )}
 
           {phase === 'p2' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-500 fade-in w-full max-w-3xl mx-auto">
+            <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500 fade-in w-full max-w-3xl mx-auto">
                <div className="flex justify-center">
-                 <div className="inline-block bg-[#4F7DFF]/10 text-[#4F7DFF] px-8 py-3 rounded-full text-base font-bold border border-[#4F7DFF]/20 shadow-sm mb-4 tracking-wide">
+                 <div className="inline-block bg-[#4F7DFF]/10 text-[#4F7DFF] px-8 py-2.5 rounded-full text-base font-bold border border-[#4F7DFF]/20 shadow-sm tracking-wide">
                     Part 2: Long Turn
                   </div>
                </div>
-               <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg">
+
+               <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-md">
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight text-center mb-6">{MOCK_QUESTIONS.part2.topic}</h3>
                 <p className="text-slate-600 mb-4 font-medium text-lg">You should say:</p>
                 <ul className="list-disc pl-8 space-y-3 text-slate-700 text-lg font-light mb-6">
-                  {MOCK_QUESTIONS.part2.bulletPoints.map((pt, i) => <li key={i}>{pt}</li>)}
+                  {MOCK_QUESTIONS.part2.bulletPoints.map((pt: string, i: number) => <li key={i}>{pt}</li>)}
                 </ul>
-                
 
+                {/* Sample Answer below question topic and bullets */}
+                {(MOCK_QUESTIONS.part2 as any).sampleAnswer && (
+                  <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
+                        <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
+                        Sample Model Answer
+                      </div>
+                      <button 
+                        onClick={() => playSampleAnswerText((MOCK_QUESTIONS.part2 as any).sampleAnswer)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#4F7DFF] bg-slate-50 hover:bg-blue-50 px-3.5 py-1.5 rounded-full border border-slate-200 transition-colors cursor-pointer"
+                      >
+                        <Volume2 size={14} className="text-[#4F7DFF]" />
+                        Listen
+                      </button>
+                    </div>
+                    <p className="text-slate-700 leading-relaxed text-base font-normal whitespace-pre-wrap">
+                      {(MOCK_QUESTIONS.part2 as any).sampleAnswer}
+                    </p>
+                  </div>
+                )}
               </div>
+
               {notes && (
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-slate-700 whitespace-pre-wrap font-mono text-lg shadow-inner">
-                  <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Your Notes</div>
+                <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-100 text-slate-700 whitespace-pre-wrap font-mono text-base shadow-xs">
+                  <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Your Preparation Notes</div>
                   {notes}
                 </div>
               )}
@@ -511,17 +588,42 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
           )}
 
           {phase === 'p3' && (
-            <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full text-center">
-              <div className="inline-block bg-[#6CCB5F]/10 text-[#6CCB5F] px-6 py-2.5 rounded-full text-base font-bold mb-4 border border-[#6CCB5F]/20 backdrop-blur-sm tracking-wide shadow-sm">
-                Part 3: Let's discuss {MOCK_QUESTIONS.part3[qIndex].topic}
+            <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full max-w-3xl mx-auto">
+              <div className="text-center">
+                <div className="inline-block bg-[#6CCB5F]/15 text-emerald-700 px-6 py-2 rounded-full text-sm font-bold border border-emerald-200 backdrop-blur-sm tracking-wide shadow-sm">
+                  Part 3 &bull; {MOCK_QUESTIONS.part3[qIndex]?.topic || 'Discussion'}
+                </div>
               </div>
-              <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight drop-shadow-sm px-4">
-                {MOCK_QUESTIONS.part3[qIndex].text}
-              </h2>
-              {showSampleAnswer && (MOCK_QUESTIONS.part3[qIndex] as any).sampleAnswer && (
-                <div className="mt-8 mx-auto max-w-2xl text-left p-6 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-medium whitespace-pre-wrap leading-relaxed shadow-sm">
-                   <div className="text-xs text-[#4F7DFF] mb-2 uppercase tracking-wider font-bold">Sample Answer</div>
-                   {(MOCK_QUESTIONS.part3[qIndex] as any).sampleAnswer}
+
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-md text-center">
+                <div className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">
+                  Question {qIndex + 1} of {MOCK_QUESTIONS.part3?.length || 1}
+                </div>
+                <h2 className="text-2xl md:text-4xl font-bold text-slate-900 leading-snug">
+                  {MOCK_QUESTIONS.part3[qIndex]?.text}
+                </h2>
+              </div>
+
+              {/* Sample Answer placed directly below the question */}
+              {(MOCK_QUESTIONS.part3[qIndex] as any)?.sampleAnswer && (
+                <div className="bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
+                  <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
+                      <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
+                      Sample Model Answer
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => playSampleAnswerText((MOCK_QUESTIONS.part3[qIndex] as any).sampleAnswer)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#4F7DFF] bg-slate-50 hover:bg-blue-50 px-3.5 py-1.5 rounded-full border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      <Volume2 size={14} className="text-[#4F7DFF]" />
+                      Listen
+                    </button>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed text-base font-normal whitespace-pre-wrap">
+                    {(MOCK_QUESTIONS.part3[qIndex] as any).sampleAnswer}
+                  </p>
                 </div>
               )}
             </div>
@@ -560,34 +662,10 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
                      <span className="font-bold text-sm uppercase tracking-wider">Ready to Submit</span>
                   </div>
                 ) : qState === 'waiting_to_record' && phase !== 'intro' && phase !== 'p2-prep' ? (
-                  (phase === 'p3' || phase === 'p1') && ((phase === 'p1' ? MOCK_QUESTIONS.part1[qIndex] : MOCK_QUESTIONS.part3[qIndex]) as any)?.sampleAnswer ? (
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => {
-                          const currentItem = phase === 'p1' ? MOCK_QUESTIONS.part1[qIndex] : MOCK_QUESTIONS.part3[qIndex];
-                          const sample = (currentItem as any)?.sampleAnswer;
-                          if (sample) {
-                              playSampleAnswerText(sample);
-                          } else {
-                              alert('Sample answer not available yet.');
-                          }
-                        }}
-                        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm transition-colors cursor-pointer"
-                      >
-                         <Play size={18} className="text-[#4F7DFF]" />
-                         <span className="font-bold text-sm uppercase tracking-wider">Play Sample Answer</span>
-                      </button>
-                      <div className="flex items-center gap-3 text-slate-600 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
-                         <Mic size={20} />
-                         <span className="font-bold text-sm uppercase tracking-wider">Ready to Record</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 text-slate-600 bg-slate-50 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
-                       <Mic size={20} />
-                       <span className="font-bold text-sm uppercase tracking-wider">Ready to Record</span>
-                    </div>
-                  )
+                  <div className="flex items-center gap-2 text-slate-500 font-semibold text-xs uppercase tracking-wider px-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    Your Turn to Speak
+                  </div>
                 ) : qState === 'recording' && phase !== 'intro' && phase !== 'p2-prep' ? (
                   <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 px-5 py-2.5 rounded-full shadow-sm">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />
@@ -622,13 +700,25 @@ export const LiveSpeakingTestScreen = ({ onComplete, testId, customQuestions }: 
               {/* Action Buttons */}
               <div className="w-full md:w-1/3 flex justify-center md:justify-end gap-3">
                 {phase === 'intro' && (
-                   <button 
-                      onClick={handleNext}
-                      className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-slate-800 transition-all hover:pr-6 group shadow-md text-base tracking-wide"
-                    >
-                      Start Test
-                      <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
+                   <div className="flex items-center gap-3">
+                     {isAdmin && onEditTest && (
+                       <button 
+                         type="button"
+                         onClick={onEditTest}
+                         className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-6 py-3 h-12 rounded-full font-bold transition-all shadow-sm text-sm tracking-wide cursor-pointer"
+                       >
+                         <Edit3 size={16} />
+                         Edit Speaking Test
+                       </button>
+                     )}
+                     <button 
+                        onClick={handleNext}
+                        className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 h-12 rounded-full font-bold hover:bg-slate-800 transition-all hover:pr-6 group shadow-md text-base tracking-wide cursor-pointer"
+                      >
+                        Start Test
+                        <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
+                   </div>
                 )}
                 {phase === 'p2-prep' && (
                   <button 

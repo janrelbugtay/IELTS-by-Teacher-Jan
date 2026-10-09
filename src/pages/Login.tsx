@@ -51,42 +51,91 @@ export function Login() {
       const cleanLoginId = idToUse.trim();
       const lowerLoginId = cleanLoginId.toLowerCase();
       const upperLoginId = cleanLoginId.toUpperCase();
+      const cleanPass = passToUse.trim();
 
       // Look up user by username, studentId, or authEmail
       const usersRef = collection(db, 'users');
+      let matchingDocs: any[] = [];
       
-      // Try lowercase username
-      let q = query(usersRef, where('username', '==', lowerLoginId), limit(1));
-      let querySnapshot = await getDocs(q);
+      // 1. Try lowercase username
+      const qUser = query(usersRef, where('username', '==', lowerLoginId));
+      const snapUser = await getDocs(qUser);
+      matchingDocs.push(...snapUser.docs);
 
-      if (querySnapshot.empty) {
-        // Try exact studentId
-        q = query(usersRef, where('studentId', '==', cleanLoginId), limit(1));
-        querySnapshot = await getDocs(q);
+      // 2. Try exact studentId
+      if (matchingDocs.length === 0) {
+        const qId = query(usersRef, where('studentId', '==', cleanLoginId));
+        const snapId = await getDocs(qId);
+        matchingDocs.push(...snapId.docs);
       }
       
-      if (querySnapshot.empty) {
-        // Try uppercase studentId
-        q = query(usersRef, where('studentId', '==', upperLoginId), limit(1));
-        querySnapshot = await getDocs(q);
+      // 3. Try uppercase studentId
+      if (matchingDocs.length === 0) {
+        const qUpper = query(usersRef, where('studentId', '==', upperLoginId));
+        const snapUpper = await getDocs(qUpper);
+        matchingDocs.push(...snapUpper.docs);
       }
 
-      if (querySnapshot.empty && cleanLoginId.includes('@')) {
-         // Try lowercase email
-         q = query(usersRef, where('email', '==', lowerLoginId), limit(1));
-         querySnapshot = await getDocs(q);
-      }
-      if (querySnapshot.empty && cleanLoginId.includes('@')) {
-         // Try exact email just in case
-         q = query(usersRef, where('email', '==', cleanLoginId), limit(1));
-         querySnapshot = await getDocs(q);
-      }
-      if (querySnapshot.empty && cleanLoginId.includes('@')) {
-         q = query(usersRef, where('authEmail', '==', lowerLoginId), limit(1));
-         querySnapshot = await getDocs(q);
+      // 4. Try altUsernames array
+      if (matchingDocs.length === 0) {
+        try {
+          const qAlt = query(usersRef, where('altUsernames', 'array-contains', lowerLoginId));
+          const snapAlt = await getDocs(qAlt);
+          matchingDocs.push(...snapAlt.docs);
+        } catch {
+          // ignore if index not available
+        }
       }
 
-      if (querySnapshot.empty) {
+      // 5. Try email fields if input contains @
+      if (matchingDocs.length === 0 && cleanLoginId.includes('@')) {
+        const qEmail = query(usersRef, where('email', '==', lowerLoginId));
+        const snapEmail = await getDocs(qEmail);
+        matchingDocs.push(...snapEmail.docs);
+
+        if (matchingDocs.length === 0) {
+          const qAuthEmail = query(usersRef, where('authEmail', '==', lowerLoginId));
+          const snapAuthEmail = await getDocs(qAuthEmail);
+          matchingDocs.push(...snapAuthEmail.docs);
+        }
+      }
+
+      // 6. Broad fallback for inputs like "tracy", "tracy ielts 2", "tracy era"
+      if (matchingDocs.length === 0) {
+        const allUsersSnap = await getDocs(usersRef);
+        const searchTerms = lowerLoginId.split(/\s+/).filter(Boolean);
+        
+        allUsersSnap.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.isDeleted) return;
+          const uName = (data.username || '').toLowerCase();
+          const fName = (data.firstName || '').toLowerCase();
+          const fullName = (data.name || '').toLowerCase();
+          const sId = (data.studentId || '').toLowerCase();
+          const fld = (data.folderName || '').toLowerCase();
+          const alts: string[] = (data.altUsernames || []).map((a: string) => a.toLowerCase());
+
+          // Check if every search term matches something in the student's profile
+          const allTermsMatch = searchTerms.every(term => 
+            uName.includes(term) || 
+            fName.includes(term) || 
+            fullName.includes(term) || 
+            sId.includes(term) ||
+            fld.includes(term) ||
+            alts.some(a => a.includes(term))
+          );
+
+          if (allTermsMatch) {
+            matchingDocs.push(docSnap);
+          }
+        });
+      }
+
+      // Filter out deleted accounts and prioritize active ones
+      const nonDeleted = matchingDocs.filter(d => !d.data().isDeleted && d.data().status !== 'deleted');
+      const activeDoc = nonDeleted.length > 0 ? nonDeleted[0] : matchingDocs[0];
+
+      if (!activeDoc) {
         if (cleanLoginId.includes('@')) {
           await signInWithEmail(cleanLoginId, passToUse);
           return;
@@ -94,7 +143,7 @@ export function Login() {
         throw new Error('User not found. Please check your Student ID or Username.');
       }
 
-      const userDoc = querySnapshot.docs[0];
+      const userDoc = activeDoc;
       const userData = userDoc.data();
       
       // If this is a Firebase Auth user (no custom password set), fall back to standard email login
@@ -103,8 +152,20 @@ export function Login() {
         return;
       }
       
-      // Verify password
-      if (userData.password !== passToUse && userData.tempPassword !== passToUse) {
+      // Verify password (supports primary password, tempPassword, altPasswords, trimmed and case-insensitive)
+      const allowedPasswords: string[] = [
+        userData.password,
+        userData.tempPassword,
+        ...(Array.isArray(userData.altPasswords) ? userData.altPasswords : [])
+      ].filter(Boolean);
+
+      const isPasswordValid = allowedPasswords.some(p => 
+        p === passToUse || 
+        p === cleanPass || 
+        p.toLowerCase() === cleanPass.toLowerCase()
+      );
+
+      if (!isPasswordValid) {
         throw new Error('Invalid password. Please check your credentials.');
       }
 

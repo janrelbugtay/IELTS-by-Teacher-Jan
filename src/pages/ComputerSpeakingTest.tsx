@@ -183,7 +183,12 @@ export function ComputerSpeakingTest() {
               className="relative flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
             >
               
-              <LiveSpeakingTestScreen testId={testNum} customQuestions={customQuestions} onComplete={async (responses: Record<string, Blob>) => {
+              <LiveSpeakingTestScreen 
+                testId={testNum} 
+                customQuestions={customQuestions} 
+                isAdmin={isAdmin}
+                onEditTest={() => setIsLobby(true)}
+                onComplete={async (responses: Record<string, Blob>) => {
                 if (responses && Object.keys(responses).length > 0) {
                   setRecordedAudio(responses);
                   

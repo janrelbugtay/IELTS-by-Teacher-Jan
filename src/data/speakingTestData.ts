@@ -269,14 +269,54 @@ Link : So yeah, even when the problems are the same, the legal solutions don't a
   },
   '1': {
     part1: [
-      { id: 'p1_1', topic: 'Hometown', text: 'Where is your hometown located?' },
-      { id: 'p1_2', topic: 'Hometown', text: 'What do you like most about living there?' },
-      { id: 'p1_3', topic: 'Hometown', text: 'Is your hometown a good place for young people to live?' },
-      { id: 'p1_4', topic: 'Hometown', text: 'Has your hometown changed much over the last ten years?' },
-      { id: 'p1_5', topic: 'Work & Studies', text: 'Do you currently work or are you a student?' },
-      { id: 'p1_6', topic: 'Work & Studies', text: 'Why did you choose this particular field of study or work?' },
-      { id: 'p1_7', topic: 'Work & Studies', text: 'What is your daily study or work routine like?' },
-      { id: 'p1_8', topic: 'Work & Studies', text: 'Do you plan to continue in this career path in the future?' }
+      { 
+        id: 'p1_1', 
+        topic: 'Hometown', 
+        text: 'Where is your hometown located?',
+        sampleAnswer: 'I was born and raised in Da Nang, a vibrant coastal city in central Vietnam, renowned for its sandy beaches and scenic mountain ranges.'
+      },
+      { 
+        id: 'p1_2', 
+        topic: 'Hometown', 
+        text: 'What do you like most about living there?',
+        sampleAnswer: 'What I appreciate most is the balanced pace of life combined with modern amenities, genuinely friendly locals, and delicious fresh seafood.'
+      },
+      { 
+        id: 'p1_3', 
+        topic: 'Hometown', 
+        text: 'Is your hometown a good place for young people to live?',
+        sampleAnswer: 'Definitely yes. Over the past few years, it has transformed into a thriving economic and educational hub with numerous opportunities in tech and tourism.'
+      },
+      { 
+        id: 'p1_4', 
+        topic: 'Hometown', 
+        text: 'Has your hometown changed much over the last ten years?',
+        sampleAnswer: 'Immensely. Large-scale infrastructure investments have brought iconic bridges, modern high-rises, and international travel connections.'
+      },
+      { 
+        id: 'p1_5', 
+        topic: 'Work & Studies', 
+        text: 'Do you currently work or are you a student?',
+        sampleAnswer: 'Currently, I am in my final undergraduate year studying Information Systems while interning part-time at a local software startup.'
+      },
+      { 
+        id: 'p1_6', 
+        topic: 'Work & Studies', 
+        text: 'Why did you choose this particular field of study or work?',
+        sampleAnswer: 'I have had a passion for computing since childhood. I love the creative problem-solving process of building practical digital solutions.'
+      },
+      { 
+        id: 'p1_7', 
+        topic: 'Work & Studies', 
+        text: 'What is your daily study or work routine like?',
+        sampleAnswer: 'My days start early around 7 AM. I attend morning lectures, spend the afternoon coding and collaborating with my teammates, and revise in the evening.'
+      },
+      { 
+        id: 'p1_8', 
+        topic: 'Work & Studies', 
+        text: 'Do you plan to continue in this career path in the future?',
+        sampleAnswer: 'Without a doubt. The tech field continues to expand rapidly, especially with AI, and I aspire to become a senior solutions architect.'
+      }
     ],
     part2: {
       id: 'p2_1',
@@ -299,27 +339,32 @@ Ultimately, this decision proved to be the most rewarding choice I have ever mad
       { 
         id: 'p3_1', 
         topic: 'Decision Making', 
-        text: 'Do you believe that young people find it harder to make decisions today than in the past?' 
+        text: 'Do you believe that young people find it harder to make decisions today than in the past?',
+        sampleAnswer: 'Yes, largely because young people today face information overload and a paradox of choice. Constant exposure to contrasting lifestyles on social media often sparks analysis paralysis.'
       },
       { 
         id: 'p3_2', 
         topic: 'Decision Making', 
-        text: 'Should parents make major life decisions for their teenage children?' 
+        text: 'Should parents make major life decisions for their teenage children?',
+        sampleAnswer: 'In my view, parents should provide guidance and wisdom rather than dictating choices, allowing teenagers to build confidence and independence by learning from their own decisions.'
       },
       { 
         id: 'p3_3', 
         topic: 'Decision Making', 
-        text: "How does advice from friends influence people's important choices?" 
+        text: "How does advice from friends influence people's important choices?",
+        sampleAnswer: 'Peers offer relatable perspectives because they share similar generational values, though one must remain objective and avoid simple conformity.'
       },
       { 
         id: 'p3_4', 
         topic: 'Technology & Choices', 
-        text: 'How has modern technology altered the way we make everyday choices?' 
+        text: 'How has modern technology altered the way we make everyday choices?',
+        sampleAnswer: 'Technology simplifies routine choices through algorithms and customer reviews, from ride-hailing to online meal deliveries.'
       },
       { 
         id: 'p3_5', 
         topic: 'Technology & Choices', 
-        text: 'Are there any disadvantages to relying heavily on algorithms for decision-making?' 
+        text: 'Are there any disadvantages to relying heavily on algorithms for decision-making?',
+        sampleAnswer: 'Excessive reliance can erode critical thinking skills and keep users confined in cognitive echo chambers where alternative choices are never encountered.'
       }
     ]
   },

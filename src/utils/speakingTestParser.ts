@@ -123,9 +123,9 @@ export function parsePart1Text(rawText: string, defaultTopic: string = 'General'
     const rawLine = lines[i];
     const line = rawLine.trim();
 
-    if (!line) {
-      // Empty line could separate paragraphs of answer
-      if (inAnswerMode && currentAnsText.length > 0) {
+    if (!line || /^(\-{3,}|\={3,}|\*{3,})$/.test(line)) {
+      // Empty line or divider could separate paragraphs of answer
+      if (inAnswerMode && currentAnsText.length > 0 && !/^(\-{3,}|\={3,}|\*{3,})$/.test(line)) {
         currentAnsText.push('');
       }
       continue;
@@ -242,8 +242,8 @@ export function parsePart2Text(rawText: string): {
     const rawLine = lines[i];
     const line = rawLine.trim();
 
-    if (!line) {
-      if (inAnswerMode && sampleAnswerLines.length > 0) {
+    if (!line || /^(\-{3,}|\={3,}|\*{3,})$/.test(line)) {
+      if (inAnswerMode && sampleAnswerLines.length > 0 && !/^(\-{3,}|\={3,}|\*{3,})$/.test(line)) {
         sampleAnswerLines.push('');
       }
       continue;
@@ -372,8 +372,8 @@ export function parsePart3Text(rawText: string, defaultTopic: string = 'Discussi
     const rawLine = lines[i];
     const line = rawLine.trim();
 
-    if (!line) {
-      if (inAnswerMode && currentAnsText.length > 0) {
+    if (!line || /^(\-{3,}|\={3,}|\*{3,})$/.test(line)) {
+      if (inAnswerMode && currentAnsText.length > 0 && !/^(\-{3,}|\={3,}|\*{3,})$/.test(line)) {
         currentAnsText.push('');
       }
       continue;
@@ -468,10 +468,21 @@ export function parseFullTestText(fullText: string): {
   rawParts: { part1: string; part2: string; part3: string };
   stats: ParseStats;
 } {
-  // Regex to split into parts
-  const p1Match = fullText.search(/(^|\n)\s*(PART\s*1\b|Part\s*1\b|Part\s*One\b|TASK\s*1\b)/i);
-  const p2Match = fullText.search(/(^|\n)\s*(PART\s*2\b|Part\s*2\b|Part\s*Two\b|TASK\s*2\b|Cue\s*Card\b)/i);
-  const p3Match = fullText.search(/(^|\n)\s*(PART\s*3\b|Part\s*3\b|Part\s*Three\b|TASK\s*3\b|Discussion\b)/i);
+  // Intelligent detection for Part 1, Part 2, and Part 3
+  let p1Match = fullText.search(/(^|\n)\s*(#*\s*)?(PART\s*1\b|Part\s*1\b|Part\s*One\b|TASK\s*1\b|Part\s*I\b)/i);
+  let p2Match = fullText.search(/(^|\n)\s*(#*\s*)?(PART\s*2\b|Part\s*2\b|Part\s*Two\b|TASK\s*2\b|Cue\s*Card\b|Part\s*II\b|Candidate\s*Task\s*Card\b)/i);
+  let p3Match = fullText.search(/(^|\n)\s*(#*\s*)?(PART\s*3\b|Part\s*3\b|Part\s*Three\b|TASK\s*3\b|Discussion\b|Part\s*III\b)/i);
+
+  // Fallback: If no explicit Part 2 header, check for "You should say:"
+  if (p2Match === -1) {
+    const cueMatch = fullText.search(/(^|\n)\s*(You\s*should\s*say|You\s*should\s*mention)\s*[\:\-]/i);
+    if (cueMatch !== -1) {
+      // Find the start of the topic line before "You should say:"
+      const beforeCue = fullText.substring(0, cueMatch);
+      const lastLineBreak = beforeCue.lastIndexOf('\n\n');
+      p2Match = lastLineBreak !== -1 ? lastLineBreak + 2 : cueMatch;
+    }
+  }
 
   let p1Raw = '';
   let p2Raw = '';
@@ -488,7 +499,7 @@ export function parseFullTestText(fullText: string): {
     p1Raw = p1Match !== -1 ? fullText.substring(p1Match, p3Match).trim() : fullText.substring(0, p3Match).trim();
     p3Raw = fullText.substring(p3Match).trim();
   } else {
-    // If headers are missing, consider whole text as Part 1
+    // If headers are missing, treat as Part 1
     p1Raw = fullText;
   }
 
