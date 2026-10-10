@@ -240,14 +240,54 @@ Link : So yeah, even when the problems are the same, the legal solutions don't a
 
   '2': {
     part1: [
-      { id: 'p1_1', topic: 'Where You Live', text: 'What do you like most about the place where you live?' },
-      { id: 'p1_2', topic: 'Where You Live', text: 'Is it a good place for young people? Why or why not?' },
-      { id: 'p1_3', topic: 'Where You Live', text: 'Would you like to move to another place in the future? Why?' },
-      { id: 'p1_4', topic: 'Study', text: 'What do you enjoy most about your work or studies?' },
-      { id: 'p1_5', topic: 'Study', text: 'What subject or part of your work do you find the most challenging?' },
-      { id: 'p1_6', topic: 'Singing', text: 'When do you usually sing?' },
-      { id: 'p1_7', topic: 'Singing', text: 'Did you enjoy singing when you were a child?' },
-      { id: 'p1_8', topic: 'Singing', text: 'Is singing a popular activity in your country?' }
+      { 
+        id: 'p1_1', 
+        topic: 'Where You Live', 
+        text: 'What do you like most about the place where you live?',
+        sampleAnswer: 'What I enjoy most is the peaceful ambiance and close sense of community in my neighborhood, along with convenient access to parks and public transit.'
+      },
+      { 
+        id: 'p1_2', 
+        topic: 'Where You Live', 
+        text: 'Is it a good place for young people? Why or why not?',
+        sampleAnswer: 'I would say it is very suitable. There are several coffee shops, study spaces, sports facilities, and good job hubs within easy commuting distance.'
+      },
+      { 
+        id: 'p1_3', 
+        topic: 'Where You Live', 
+        text: 'Would you like to move to another place in the future? Why?',
+        sampleAnswer: 'Eventually, I might consider living abroad for a few years to experience different cultures and advance my career, although I will always consider this city my true home.'
+      },
+      { 
+        id: 'p1_4', 
+        topic: 'Study', 
+        text: 'What do you enjoy most about your work or studies?',
+        sampleAnswer: 'I really love the collaborative atmosphere and the opportunity to tackle real-world case studies that challenge my analytical thinking.'
+      },
+      { 
+        id: 'p1_5', 
+        topic: 'Study', 
+        text: 'What subject or part of your work do you find the most challenging?',
+        sampleAnswer: 'Time management and balancing multiple project deadlines simultaneously is definitely the most demanding aspect.'
+      },
+      { 
+        id: 'p1_6', 
+        topic: 'Singing', 
+        text: 'When do you usually sing?',
+        sampleAnswer: 'I mostly sing casually while listening to music in the shower, or occasionally at karaoke gatherings with close friends on weekends.'
+      },
+      { 
+        id: 'p1_7', 
+        topic: 'Singing', 
+        text: 'Did you enjoy singing when you were a child?',
+        sampleAnswer: 'Yes, I was quite enthusiastic about singing during primary school music classes and would often sing along to nursery rhymes.'
+      },
+      { 
+        id: 'p1_8', 
+        topic: 'Singing', 
+        text: 'Is singing a popular activity in your country?',
+        sampleAnswer: 'Singing and karaoke culture are immensely popular in Vietnam across all age groups, especially during family reunions and festivals.'
+      }
     ],
     part2: {
       id: 'p2_1',
@@ -257,14 +297,46 @@ Link : So yeah, even when the problems are the same, the legal solutions don't a
         'what it looks like',
         'why you visited it or know about it',
         'and explain why you like or dislike this building.'
-      ]
+      ],
+      sampleAnswer: `I would like to describe Landmark 81, which is the tallest skyscraper in Ho Chi Minh City and an iconic modern landmark in Vietnam.
+
+Located right along the scenic Saigon River in Binh Thanh District, this architectural marvel features a sleek tiered glass structure inspired by traditional bundles of bamboo, symbolizing resilience and collective unity.
+
+I visited the building last year with my friends to check out the sky observation deck on the top floors. From up there, you get a breathtaking panoramic view of the entire metropolis, especially as the sun sets and the city lights flicker on.
+
+I genuinely admire Landmark 81 not only for its stunning modern aesthetics, but also because it stands as a proud symbol of rapid technological and economic progress in Vietnam.`
     },
     part3: [
-      { id: 'p3_1', topic: 'Skyscrapers', text: 'Why are cities building more skyscrapers nowadays?' },
-      { id: 'p3_2', topic: 'Skyscrapers', text: 'What are the advantages of tall buildings?' },
-      { id: 'p3_3', topic: 'Skyscrapers', text: 'Which do you think is better: living in a high-rise apartment or in a traditional house? Why?' },
-      { id: 'p3_4', topic: 'Skyscrapers', text: 'Do you think cities should preserve old buildings instead of constructing new ones?' },
-      { id: 'p3_5', topic: 'Skyscrapers', text: 'How do you think buildings will change in the future?' }
+      { 
+        id: 'p3_1', 
+        topic: 'Skyscrapers', 
+        text: 'Why are cities building more skyscrapers nowadays?',
+        sampleAnswer: 'Due to severe land scarcity and high population densities in metropolitan centers, building upward maximizes urban efficiency and accommodates commercial and residential needs.'
+      },
+      { 
+        id: 'p3_2', 
+        topic: 'Skyscrapers', 
+        text: 'What are the advantages of tall buildings?',
+        sampleAnswer: 'Skyscrapers offer vertical integration, reducing daily commuting times when offices, retail, and living quarters are located within the same complex, while also preserving open green space at ground level.'
+      },
+      { 
+        id: 'p3_3', 
+        topic: 'Skyscrapers', 
+        text: 'Which do you think is better: living in a high-rise apartment or in a traditional house? Why?',
+        sampleAnswer: 'Both have distinct merits. High-rise apartments provide 24/7 security, elevated views, and integrated amenities, whereas traditional houses offer private land ownership and greater autonomy.'
+      },
+      { 
+        id: 'p3_4', 
+        topic: 'Skyscrapers', 
+        text: 'Do you think cities should preserve old buildings instead of constructing new ones?',
+        sampleAnswer: 'Striking a balance is paramount. Historic heritage structures preserve cultural identity and attract tourism, so they should be restored alongside modern construction.'
+      },
+      { 
+        id: 'p3_5', 
+        topic: 'Skyscrapers', 
+        text: 'How do you think buildings will change in the future?',
+        sampleAnswer: 'Future architecture will prioritize sustainability, integrating solar facades, vertical hanging gardens, rainwater harvesting, and smart energy-saving automation.'
+      }
     ]
   },
   '1': {

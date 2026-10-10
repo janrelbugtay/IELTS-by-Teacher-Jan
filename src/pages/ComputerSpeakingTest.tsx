@@ -328,17 +328,6 @@ export function ComputerSpeakingTest() {
 
         </AnimatePresence>
       </div>
-
-      {isAdmin && (
-        <button
-          type="button"
-          onClick={() => setIsLobby(true)}
-          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-full font-bold shadow-2xl border border-slate-700 transition-all text-sm cursor-pointer hover:scale-105"
-        >
-          <Edit3 size={16} className="text-blue-400" />
-          <span>Admin Lobby: Edit Speaking Test {testNum}</span>
-        </button>
-      )}
     </div>
   );
 }
