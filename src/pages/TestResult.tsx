@@ -148,7 +148,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
     return <div className="p-10 text-center">Result not found.</div>;
   }
 
-  const title = getFallbackTitle(submission.assignmentId) || submission.assignmentTitle || assignment?.title || 'Test Submission';
+  const title = submission.assignmentTitle || getFallbackTitle(submission.assignmentId) || assignment?.title || 'Test Submission';
   const rawType = submission.assignmentType || assignment?.type || 'unknown';
   let type = rawType.toLowerCase();
   if (type === 'unknown' && submission.assignmentTitle) {

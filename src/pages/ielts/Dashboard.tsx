@@ -28,6 +28,10 @@ const getFallbackType = (id) => {
 };
 
 const getFallbackTitle = (id: any, currentTitle?: string) => {
+  if (currentTitle && isNaN(Number(currentTitle)) && !currentTitle.toLowerCase().startsWith('unknown')) {
+    return currentTitle;
+  }
+  
   const strId = String(id);
   const numId = parseInt(strId, 10);
   
@@ -41,10 +45,6 @@ const getFallbackTitle = (id: any, currentTitle?: string) => {
     return `IELTS ${skill} Test ${testNum}`;
   }
 
-  if (currentTitle && isNaN(Number(currentTitle))) {
-      return currentTitle;
-  }
-  
   return currentTitle || null;
 };
 

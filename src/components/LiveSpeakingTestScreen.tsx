@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Clock, Edit3, Volume2, RotateCcw, ChevronRight, Square, Play, Pause, CheckCircle2 } from 'lucide-react';
-import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
+import { Mic, Clock, Edit3, Volume2, RotateCcw, ChevronRight, Square, Play, Pause, CheckCircle2, ShieldAlert, AlertCircle, BookOpen, Sparkles, Check, X, User } from 'lucide-react';
+import { IELTS_SPEAKING_QUESTIONS, getSpeakingTestQuestions } from '../data/speakingTestData';
 
 const Waveform = ({ isRecording }: { isRecording: boolean }) => (
   <div className="flex items-center justify-center h-12 gap-1.5 overflow-hidden">
@@ -28,21 +28,30 @@ export const LiveSpeakingTestScreen = ({
   testId, 
   customQuestions,
   isAdmin = false,
-  onEditTest
+  onEditTest,
+  initialMode = 'practice',
+  initialCandidateName = ''
 }: { 
-  onComplete: (responses: Record<string, Blob>) => Promise<void>, 
+  onComplete: (responses: Record<string, Blob>, testMode?: 'practice' | 'mock', candidateName?: string) => Promise<void>, 
   testId?: string, 
   customQuestions?: any,
   isAdmin?: boolean,
-  onEditTest?: () => void
+  onEditTest?: () => void,
+  initialMode?: 'practice' | 'mock',
+  initialCandidateName?: string
 }) => {
   const navigate = useNavigate();
   const testNum = testId ? testId : '1';
-  const MOCK_QUESTIONS = customQuestions || IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
+  const MOCK_QUESTIONS = customQuestions || getSpeakingTestQuestions(testNum) || IELTS_SPEAKING_QUESTIONS['1'];
 
-  const [phase, setPhase] = useState('intro'); // intro, p1, p2-prep, p2, p3
+  const [phase, setPhase] = useState<'p1' | 'p2-prep' | 'p2' | 'p3' | 'completed'>('p1');
+  const [testMode, setTestMode] = useState<'practice' | 'mock'>(initialMode);
+  const [candidateName, setCandidateName] = useState(initialCandidateName || '');
+  const [mockTimeLeft, setMockTimeLeft] = useState(40);
+  const [mockTotalTime, setMockTotalTime] = useState(40);
+  const [autoStartCount, setAutoStartCount] = useState(2);
   const [qIndex, setQIndex] = useState(0);
-  const [qState, setQState] = useState<'ai_speaking' | 'recording' | 'reviewing' | 'prep' | 'waiting_to_record'>('ai_speaking');
+  const [qState, setQState] = useState<'ai_speaking' | 'auto_starting' | 'recording' | 'reviewing' | 'prep' | 'waiting_to_record' | 'auto_saving'>('ai_speaking');
   const [recordingTime, setRecordingTime] = useState(0);
   const [prepTime, setPrepTime] = useState(60);
   const [isPrepTimerRunning, setIsPrepTimerRunning] = useState(false);
@@ -53,9 +62,20 @@ export const LiveSpeakingTestScreen = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSampleAnswer, setShowSampleAnswer] = useState(false);
-  const [introSampleTab, setIntroSampleTab] = useState<'p1' | 'p2' | 'p3'>('p1');
   const [isPlayingSample, setIsPlayingSample] = useState(false);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialMode) {
+      setTestMode(initialMode);
+    }
+  }, [initialMode]);
+
+  useEffect(() => {
+    if (initialCandidateName && !candidateName) {
+      setCandidateName(initialCandidateName);
+    }
+  }, [initialCandidateName]);
 
   const stopSampleAnswerAudio = () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -176,14 +196,13 @@ export const LiveSpeakingTestScreen = ({
     if (phase === 'p1') return MOCK_QUESTIONS.part1[qIndex].id;
     if (phase === 'p2') return MOCK_QUESTIONS.part2.id;
     if (phase === 'p3') return MOCK_QUESTIONS.part3[qIndex].id;
-    return 'intro';
+    return 'p1_1';
   };
 
   // Simulated AI reading and then auto-start recording
   useEffect(() => {
     let timer: any;
-    if (phase !== 'intro') {
-      if (qState === 'ai_speaking') {
+    if (qState === 'ai_speaking') {
         let textToRead = '';
         if (phase === 'p1') {
             textToRead = MOCK_QUESTIONS.part1[qIndex].text;
@@ -225,18 +244,22 @@ export const LiveSpeakingTestScreen = ({
                         recordingStarted = true;
                         if (phase === 'p2-prep') {
                             setQState('prep');
+                            if (testMode === 'mock') {
+                              setIsPrepTimerRunning(true);
+                            }
                         } else if (phase === 'completed') {
                             setQState('reviewing'); // or just leave it
                             if (!hasSubmittedRef.current) {
                                 hasSubmittedRef.current = true;
                                 setIsSubmitting(true);
-                                onComplete(responsesRef.current).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
+                                onComplete(responsesRef.current, testMode).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
                             }
                         } else {
-                            if (true) {
-                                setQState('waiting_to_record');
+                            if (testMode === 'mock') {
+                                setQState('auto_starting');
+                                setAutoStartCount(2);
                             } else {
-                                startRecording();
+                                setQState('waiting_to_record');
                             }
                         }
                     }
@@ -248,7 +271,7 @@ export const LiveSpeakingTestScreen = ({
                     }, 500);
                 };
                 
-                // Fallback timeout in case onend doesn't fire reliably
+                // Fallback duration timeout in case onend doesn't fire reliably
                 const fallbackDuration = textToRead.length * 80 + 2000;
                 timer = setTimeout(() => {
                     startRec();
@@ -275,12 +298,20 @@ export const LiveSpeakingTestScreen = ({
                   if (!hasSubmittedRef.current) {
                       hasSubmittedRef.current = true;
                       setIsSubmitting(true);
-                      onComplete(responsesRef.current).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
+                      onComplete(responsesRef.current, testMode).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
                   }
               } else if (phase === 'p2-prep') {
                   setQState('prep');
+                  if (testMode === 'mock') {
+                    setIsPrepTimerRunning(true);
+                  }
               } else {
-                  setQState('waiting_to_record');
+                  if (testMode === 'mock') {
+                    setQState('auto_starting');
+                    setAutoStartCount(2);
+                  } else {
+                    setQState('waiting_to_record');
+                  }
               }
             }, 3000);
         }
@@ -295,7 +326,6 @@ export const LiveSpeakingTestScreen = ({
           }, 1000);
         }
       }
-    }
     return () => { 
         clearTimeout(timer); 
         clearInterval(timer); 
@@ -303,7 +333,52 @@ export const LiveSpeakingTestScreen = ({
             window.speechSynthesis.cancel();
         }
     };
-  }, [phase, qState, qIndex]);
+  }, [phase, qState, qIndex, testMode]);
+
+  // Mock Mode: Auto-starting countdown
+  useEffect(() => {
+    let timer: any;
+    if (testMode === 'mock' && qState === 'auto_starting') {
+      timer = setInterval(() => {
+        setAutoStartCount(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            let limit = 40; // Part 1 limit: 40s
+            if (phase === 'p2') limit = 120; // Part 2 limit: 120s (2 mins)
+            if (phase === 'p3') limit = 60; // Part 3 limit: 60s (1 min)
+            setMockTotalTime(limit);
+            setMockTimeLeft(limit);
+            startRecording();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [testMode, qState, phase]);
+
+  // Mock Mode: Strict countdown timer during recording
+  useEffect(() => {
+    let timer: any;
+    if (testMode === 'mock' && qState === 'recording') {
+      timer = setInterval(() => {
+        setMockTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            stopRecording();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [testMode, qState]);
 
   const startRecording = () => {
     setQState('recording');
@@ -352,11 +427,25 @@ export const LiveSpeakingTestScreen = ({
         const blob = new Blob(audioChunksRef.current, { type: mimeType });
         const qId = getCurrentQId();
         setResponses(prev => { const next = { ...prev, [qId]: blob }; responsesRef.current = next; return next; });
-        setQState('reviewing');
+        if (testMode === 'mock') {
+          setQState('auto_saving');
+          setTimeout(() => {
+            handleNext();
+          }, 1200);
+        } else {
+          setQState('reviewing');
+        }
       };
       mediaRecorderRef.current.stop();
     } else {
-      setQState('reviewing');
+      if (testMode === 'mock') {
+        setQState('auto_saving');
+        setTimeout(() => {
+          handleNext();
+        }, 1200);
+      } else {
+        setQState('reviewing');
+      }
     }
   };
 
@@ -392,12 +481,7 @@ export const LiveSpeakingTestScreen = ({
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-    if (phase === 'intro') {
-      await initAudio();
-      if (!streamRef.current) return;
-      setPhase('p1');
-      setQState('ai_speaking');
-    } else if (phase === 'p1') {
+    if (phase === 'p1') {
       if (qIndex < MOCK_QUESTIONS.part1.length - 1) {
         setQIndex(qIndex + 1);
         setQState('ai_speaking');
@@ -426,278 +510,33 @@ export const LiveSpeakingTestScreen = ({
     return `${m}:${s}`;
   };
 
-  const introP1Sample = (MOCK_QUESTIONS.part1?.[0] as any)?.sampleAnswer;
-  const introP2Sample = (MOCK_QUESTIONS.part2 as any)?.sampleAnswer;
-  const introP3Sample = (MOCK_QUESTIONS.part3?.[0] as any)?.sampleAnswer;
-
   return (
     <div className="flex flex-col bg-transparent text-slate-800 w-full overflow-visible font-sans selection:bg-[#4F7DFF]/20 relative flex-1 min-h-[600px] md:min-h-0">
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4F7DFF]/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#6CCB5F]/10 rounded-full blur-[150px] pointer-events-none" />
 
+      {/* Top Status Bar */}
       <div className="relative z-20 p-6 flex justify-between items-center w-full max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 bg-red-50 px-4 py-2 rounded-full border border-red-100 shadow-sm">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.4)]" />
-          <span className="text-xs font-bold tracking-widest text-red-600 uppercase">Live Exam</span>
+        <div className="text-xs text-slate-600 font-bold tracking-wide flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200 shadow-xs">
+          <User size={14} className="text-slate-400" />
+          <span>CANDIDATE NAME - <span className="text-slate-900 font-extrabold">{candidateName.toUpperCase() || 'CANDIDATE'}</span></span>
         </div>
+
+        {testMode === 'mock' ? (
+          <div className="flex items-center gap-3 bg-amber-50 px-4 py-2 rounded-full border border-amber-200 shadow-sm">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+            <span className="text-xs font-bold tracking-widest text-amber-800 uppercase">Mock Exam Mode &bull; Timed Simulation</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 bg-purple-50 px-4 py-2 rounded-full border border-purple-200 shadow-sm">
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+            <span className="text-xs font-bold tracking-widest text-purple-800 uppercase">Practice Study Mode &bull; Interactive</span>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col relative z-10 w-full max-w-5xl mx-auto">
-        
-        <div className={`flex-1 flex flex-col px-4 md:px-8 pt-4 md:pt-8 w-full justify-center ${phase === 'intro' ? 'pb-12' : 'pb-44'}`}>
-          
-          {phase === 'intro' && (
-            <div className="w-full max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-6 duration-600 fade-in">
-              {/* Main Test Simulator Window */}
-              <div className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200/90 shadow-xl text-center space-y-6 relative overflow-hidden">
-                <div className="w-20 h-20 bg-blue-50 text-[#4F7DFF] rounded-2xl flex items-center justify-center mx-auto shadow-sm border border-blue-100">
-                  <Mic size={38} />
-                </div>
-
-                <div>
-                  <div className="inline-flex items-center gap-2 bg-blue-50 text-[#4F7DFF] text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-blue-100 mb-3">
-                    IELTS Speaking Test {testNum}
-                  </div>
-                  <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight drop-shadow-sm">
-                    Speaking Test Simulator
-                  </h2>
-                  <p className="text-slate-600 max-w-2xl mx-auto text-base md:text-lg mt-3 leading-relaxed">
-                    You will now interact with the AI examiner in an authentic 3-part exam format (11–14 minutes). You can start the test directly below or preview model sample answers.
-                  </p>
-                </div>
-
-                {/* START TEST BUTTON DIRECTLY PART OF THE WINDOW */}
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#4F7DFF] hover:bg-[#3D63CC] text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/35 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                  >
-                    <Play size={20} fill="currentColor" />
-                    <span>Start Speaking Test</span>
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-
-                {/* 3 Parts overview breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-left">
-                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
-                    <div className="text-xs font-bold uppercase tracking-wider text-[#4F7DFF] mb-1">Part 1</div>
-                    <div className="font-bold text-slate-900 text-sm">Introduction & Interview</div>
-                    <div className="text-xs text-slate-500 mt-1">4–5 minutes &bull; {MOCK_QUESTIONS.part1?.length || 8} Questions</div>
-                  </div>
-                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
-                    <div className="text-xs font-bold uppercase tracking-wider text-[#4F7DFF] mb-1">Part 2</div>
-                    <div className="font-bold text-slate-900 text-sm">Individual Long Turn</div>
-                    <div className="text-xs text-slate-500 mt-1">1 min prep &bull; 2 min response</div>
-                  </div>
-                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
-                    <div className="text-xs font-bold uppercase tracking-wider text-[#4F7DFF] mb-1">Part 3</div>
-                    <div className="font-bold text-slate-900 text-sm">Two-way Discussion</div>
-                    <div className="text-xs text-slate-500 mt-1">4–5 minutes &bull; Analytical debate</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* MODEL SAMPLE ANSWER & AUDIO LISTENING SECTION */}
-              <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/90 shadow-lg text-left space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#4F7DFF] flex items-center justify-center border border-blue-100">
-                      <Volume2 size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">Model Sample Answers & Audio Guide</h3>
-                      <p className="text-xs text-slate-500">Listen to high-scoring Band 8–9 model answers with native pronunciation</p>
-                    </div>
-                  </div>
-
-                  {/* Part Selector Tabs */}
-                  <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => setIntroSampleTab('p1')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${introSampleTab === 'p1' ? 'bg-white text-[#4F7DFF] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      Part 1
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIntroSampleTab('p2')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${introSampleTab === 'p2' ? 'bg-white text-[#4F7DFF] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      Part 2 (Cue Card)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIntroSampleTab('p3')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${introSampleTab === 'p3' ? 'bg-white text-[#4F7DFF] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      Part 3
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sample Answer Content & Audio Button */}
-                <div className="space-y-4">
-                  {introSampleTab === 'p1' && (
-                    <div className="space-y-3">
-                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                          Question 1: {MOCK_QUESTIONS.part1?.[0]?.topic || 'Topic'}
-                        </div>
-                        <div className="text-base font-bold text-slate-900">
-                          {MOCK_QUESTIONS.part1?.[0]?.text || 'Tell me about yourself.'}
-                        </div>
-                      </div>
-
-                      {introP1Sample ? (
-                        <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100/80 space-y-3">
-                          <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[#4F7DFF] flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
-                              Band 8.5 Model Answer
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => playSampleAnswerText(introP1Sample, 'intro-p1')}
-                              className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer ${
-                                isPlayingSample && playingSampleId === 'intro-p1'
-                                  ? 'bg-red-500 text-white hover:bg-red-600'
-                                  : 'bg-[#4F7DFF] text-white hover:bg-[#3D63CC]'
-                              }`}
-                            >
-                              {isPlayingSample && playingSampleId === 'intro-p1' ? (
-                                <>
-                                  <Square size={13} fill="currentColor" />
-                                  <span>Stop Audio</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 size={14} />
-                                  <span>Listen to Sample Answer</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <p className="text-slate-700 leading-relaxed text-sm md:text-base font-normal whitespace-pre-wrap">
-                            {introP1Sample}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-slate-500 italic p-3">No sample answer available for this question.</div>
-                      )}
-                    </div>
-                  )}
-
-                  {introSampleTab === 'p2' && (
-                    <div className="space-y-3">
-                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Candidate Task Card</div>
-                        <div className="text-base font-bold text-slate-900 mb-2">
-                          {MOCK_QUESTIONS.part2?.topic}
-                        </div>
-                        {MOCK_QUESTIONS.part2?.bulletPoints && (
-                          <ul className="list-disc pl-5 text-xs text-slate-600 space-y-1">
-                            {MOCK_QUESTIONS.part2.bulletPoints.map((b: string, i: number) => (
-                              <li key={i}>{b}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-
-                      {introP2Sample ? (
-                        <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100/80 space-y-3">
-                          <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[#4F7DFF] flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
-                              Band 8.5 Cue Card Model Answer
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => playSampleAnswerText(introP2Sample, 'intro-p2')}
-                              className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer ${
-                                isPlayingSample && playingSampleId === 'intro-p2'
-                                  ? 'bg-red-500 text-white hover:bg-red-600'
-                                  : 'bg-[#4F7DFF] text-white hover:bg-[#3D63CC]'
-                              }`}
-                            >
-                              {isPlayingSample && playingSampleId === 'intro-p2' ? (
-                                <>
-                                  <Square size={13} fill="currentColor" />
-                                  <span>Stop Audio</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 size={14} />
-                                  <span>Listen to Sample Answer</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <p className="text-slate-700 leading-relaxed text-sm md:text-base font-normal whitespace-pre-wrap">
-                            {introP2Sample}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-slate-500 italic p-3">No sample answer available for Part 2.</div>
-                      )}
-                    </div>
-                  )}
-
-                  {introSampleTab === 'p3' && (
-                    <div className="space-y-3">
-                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                          Part 3 Discussion: {MOCK_QUESTIONS.part3?.[0]?.topic || 'Discussion'}
-                        </div>
-                        <div className="text-base font-bold text-slate-900">
-                          {MOCK_QUESTIONS.part3?.[0]?.text || 'Discussion question'}
-                        </div>
-                      </div>
-
-                      {introP3Sample ? (
-                        <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100/80 space-y-3">
-                          <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[#4F7DFF] flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-[#4F7DFF]" />
-                              Band 8.5 Discussion Model Answer
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => playSampleAnswerText(introP3Sample, 'intro-p3')}
-                              className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer ${
-                                isPlayingSample && playingSampleId === 'intro-p3'
-                                  ? 'bg-red-500 text-white hover:bg-red-600'
-                                  : 'bg-[#4F7DFF] text-white hover:bg-[#3D63CC]'
-                              }`}
-                            >
-                              {isPlayingSample && playingSampleId === 'intro-p3' ? (
-                                <>
-                                  <Square size={13} fill="currentColor" />
-                                  <span>Stop Audio</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 size={14} />
-                                  <span>Listen to Sample Answer</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <p className="text-slate-700 leading-relaxed text-sm md:text-base font-normal whitespace-pre-wrap">
-                            {introP3Sample}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-slate-500 italic p-3">No sample answer available for Part 3.</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="flex-1 flex flex-col px-4 md:px-8 pt-4 md:pt-8 w-full justify-center pb-44">
 
           {phase === 'p1' && (
             <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 fade-in w-full max-w-3xl mx-auto">
@@ -716,8 +555,8 @@ export const LiveSpeakingTestScreen = ({
                 </h2>
               </div>
 
-              {/* Sample Answer placed directly below the question */}
-              {(MOCK_QUESTIONS.part1[qIndex] as any)?.sampleAnswer && (
+              {/* Sample Answer placed directly below the question (Practice Mode Only) */}
+              {testMode === 'practice' && (MOCK_QUESTIONS.part1[qIndex] as any)?.sampleAnswer && (
                 <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
                   <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100 flex-wrap">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
@@ -762,13 +601,22 @@ export const LiveSpeakingTestScreen = ({
                   <p className="text-slate-500 font-medium">You have 1 minute to prepare your notes.</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <button 
-                    onClick={() => setIsPrepTimerRunning(!isPrepTimerRunning)}
-                    className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold transition-colors text-sm border border-slate-200 cursor-pointer"
-                  >
-                    {isPrepTimerRunning ? <Pause size={16} /> : <Play size={16} />}
-                    {isPrepTimerRunning ? 'Pause Timer' : 'Start Timer'}
-                  </button>
+                  {testMode === 'practice' ? (
+                    <button 
+                      onClick={() => setIsPrepTimerRunning(!isPrepTimerRunning)}
+                      className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold transition-colors text-sm border border-slate-200 cursor-pointer"
+                    >
+                      {isPrepTimerRunning ? <Pause size={16} /> : <Play size={16} />}
+                      {isPrepTimerRunning ? 'Pause Timer' : 'Start Timer'}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => { setPrepTime(0); }}
+                      className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-full font-bold transition-colors text-sm cursor-pointer shadow-sm"
+                    >
+                      <ChevronRight size={16} /> Ready to Speak Early
+                    </button>
+                  )}
                   <div className="text-2xl md:text-3xl font-mono font-bold text-slate-800 flex items-center gap-2 md:gap-3 bg-slate-50 px-4 py-2 md:px-6 md:py-3 rounded-full border border-slate-200 shadow-inner">
                      <Clock size={28} className={!isPrepTimerRunning ? 'text-slate-400' : 'text-[#F7B731] animate-pulse'} />
                      {formatTime(prepTime)}
@@ -784,8 +632,8 @@ export const LiveSpeakingTestScreen = ({
                   {MOCK_QUESTIONS.part2.bulletPoints.map((pt: string, i: number) => <li key={i}>{pt}</li>)}
                 </ul>
 
-                {/* Sample Answer below question topic and bullets */}
-                {(MOCK_QUESTIONS.part2 as any).sampleAnswer && (
+                {/* Sample Answer below question topic and bullets (Practice Mode Only) */}
+                {testMode === 'practice' && (MOCK_QUESTIONS.part2 as any).sampleAnswer && (
                   <div className="mt-8 pt-6 border-t border-slate-100">
                     <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100 flex-wrap">
                       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
@@ -849,8 +697,8 @@ export const LiveSpeakingTestScreen = ({
                   {MOCK_QUESTIONS.part2.bulletPoints.map((pt: string, i: number) => <li key={i}>{pt}</li>)}
                 </ul>
 
-                {/* Sample Answer below question topic and bullets */}
-                {(MOCK_QUESTIONS.part2 as any).sampleAnswer && (
+                {/* Sample Answer below question topic and bullets (Practice Mode Only) */}
+                {testMode === 'practice' && (MOCK_QUESTIONS.part2 as any).sampleAnswer && (
                   <div className="mt-8 pt-6 border-t border-slate-100">
                     <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100 flex-wrap">
                       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
@@ -911,8 +759,8 @@ export const LiveSpeakingTestScreen = ({
                 </h2>
               </div>
 
-              {/* Sample Answer placed directly below the question */}
-              {(MOCK_QUESTIONS.part3[qIndex] as any)?.sampleAnswer && (
+              {/* Sample Answer placed directly below the question (Practice Mode Only) */}
+              {testMode === 'practice' && (MOCK_QUESTIONS.part3[qIndex] as any)?.sampleAnswer && (
                 <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
                   <div className="flex items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100 flex-wrap">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4F7DFF]">
@@ -980,8 +828,8 @@ export const LiveSpeakingTestScreen = ({
           )}
         </div>
 
-        {/* BOTTOM CONTROLS: Only rendered when test is actively in progress (NOT in intro) */}
-        {phase !== 'intro' && (
+        {/* BOTTOM CONTROLS: Only rendered when test is actively in progress (NOT completed) */}
+        {phase !== 'completed' && (
           <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-[92%] max-w-4xl">
             <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-xl rounded-2xl px-6 py-4 flex flex-col md:flex-row items-center justify-between w-full mx-auto gap-4">
                    
@@ -992,10 +840,15 @@ export const LiveSpeakingTestScreen = ({
                        <Volume2 size={20} className="animate-pulse" />
                        <span className="font-bold text-sm uppercase tracking-wider">Examiner Speaking</span>
                     </div>
-                  ) : phase === 'completed' ? (
-                    <div className="flex items-center gap-3 text-emerald-600 bg-emerald-50 px-5 py-2.5 rounded-xl border border-emerald-100 shadow-sm">
-                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                       <span className="font-bold text-sm uppercase tracking-wider">Ready to Submit</span>
+                  ) : qState === 'auto_starting' ? (
+                    <div className="flex items-center gap-3 text-amber-800 bg-amber-50 px-5 py-2.5 rounded-xl border border-amber-200 shadow-sm animate-pulse">
+                       <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                       <span className="font-bold text-sm uppercase tracking-wider">Recording in {autoStartCount}s...</span>
+                    </div>
+                  ) : qState === 'auto_saving' ? (
+                    <div className="flex items-center gap-3 text-emerald-700 bg-emerald-50 px-5 py-2.5 rounded-xl border border-emerald-200 shadow-sm">
+                       <CheckCircle2 size={18} className="text-emerald-600" />
+                       <span className="font-bold text-sm uppercase tracking-wider">Answer Saved &bull; Next</span>
                     </div>
                   ) : qState === 'waiting_to_record' && phase !== 'p2-prep' ? (
                     <div className="flex items-center gap-2 text-slate-600 font-semibold text-xs uppercase tracking-wider px-2">
@@ -1005,7 +858,7 @@ export const LiveSpeakingTestScreen = ({
                   ) : qState === 'recording' && phase !== 'p2-prep' ? (
                     <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-600 px-5 py-2.5 rounded-xl shadow-sm">
                       <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" />
-                      <span className="font-bold text-sm uppercase tracking-wider">Recording</span>
+                      <span className="font-bold text-sm uppercase tracking-wider">{testMode === 'mock' ? 'Mock Exam Recording' : 'Recording'}</span>
                     </div>
                   ) : qState === 'reviewing' && phase !== 'p2-prep' ? (
                     <div className="flex items-center gap-3 text-emerald-600 bg-emerald-50 px-5 py-2.5 rounded-xl border border-emerald-100 shadow-sm">
@@ -1023,8 +876,15 @@ export const LiveSpeakingTestScreen = ({
                 <div className="w-full md:w-1/3 flex flex-col items-center justify-center">
                   {phase !== 'p2-prep' && (
                     <div className="flex flex-col items-center w-full">
-                      <div className="text-2xl font-mono font-bold text-slate-800 mb-1 drop-shadow-sm tracking-wider">
-                        {formatTime(recordingTime)}
+                      <div className="flex items-center gap-2">
+                        <div className={`text-2xl font-mono font-bold tracking-wider ${testMode === 'mock' && mockTimeLeft <= 10 ? 'text-red-600 animate-pulse' : 'text-slate-800'}`}>
+                          {testMode === 'mock' ? formatTime(mockTimeLeft) : formatTime(recordingTime)}
+                        </div>
+                        {testMode === 'mock' && (
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                            Remaining
+                          </span>
+                        )}
                       </div>
                       <div className="w-full max-w-[180px]">
                         <Waveform isRecording={qState === 'recording'} />
@@ -1040,10 +900,12 @@ export const LiveSpeakingTestScreen = ({
                       onClick={() => { setPrepTime(0); setPhase('p2'); setQState('ai_speaking'); }}
                       className="bg-slate-100 text-slate-700 border border-slate-200 px-7 py-2.5 h-11 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm tracking-wide shadow-sm cursor-pointer"
                     >
-                      Skip Prep
+                      {testMode === 'mock' ? 'Ready to Speak Early' : 'Skip Prep'}
                     </button>
                   )}
-                  {phase !== 'p2-prep' && phase !== 'completed' && qState === 'waiting_to_record' && (
+
+                  {/* Practice Mode Actions */}
+                  {testMode === 'practice' && phase !== 'p2-prep' && qState === 'waiting_to_record' && (
                     <button 
                       onClick={startRecording}
                       className="flex items-center gap-2 bg-[#4F7DFF] text-white px-7 py-2.5 h-11 rounded-xl font-bold hover:bg-[#3D63CC] transition-all shadow-md text-sm tracking-wide cursor-pointer"
@@ -1051,7 +913,7 @@ export const LiveSpeakingTestScreen = ({
                       <Mic size={16} /> Start Recording
                     </button>
                   )}
-                  {phase !== 'p2-prep' && phase !== 'completed' && qState === 'recording' && (
+                  {testMode === 'practice' && phase !== 'p2-prep' && qState === 'recording' && (
                     <button 
                       onClick={stopRecording}
                       className="flex items-center gap-2 bg-red-600 text-white px-7 py-2.5 h-11 rounded-xl font-bold hover:bg-red-700 transition-all shadow-md text-sm tracking-wide cursor-pointer"
@@ -1059,7 +921,7 @@ export const LiveSpeakingTestScreen = ({
                       <Square size={16} fill="currentColor" /> Stop Recording
                     </button>
                   )}
-                  {phase !== 'p2-prep' && phase !== 'completed' && qState === 'reviewing' && (
+                  {testMode === 'practice' && phase !== 'p2-prep' && qState === 'reviewing' && (
                     <>
                       <button 
                         onClick={() => {
@@ -1086,16 +948,21 @@ export const LiveSpeakingTestScreen = ({
                       </button>
                     </>
                   )}
-                  {phase === 'completed' && qState !== 'ai_speaking' && (
+
+                  {/* Mock Mode Actions (Strict: No Redo, No Replay) */}
+                  {testMode === 'mock' && phase !== 'p2-prep' && qState === 'recording' && (
                     <button 
-                      disabled={isSubmitting}
-                      onClick={() => {
-                        navigate('/ielts/dashboard?tab=speaking');
-                      }}
-                      className={`flex items-center gap-2 px-7 py-2.5 h-11 rounded-xl font-bold transition-all shadow-md text-sm tracking-wide animate-in fade-in zoom-in duration-300 ${isSubmitting ? "bg-slate-300 text-slate-500 cursor-not-allowed" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
+                      onClick={stopRecording}
+                      className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 h-11 rounded-xl font-bold transition-all shadow-md text-sm tracking-wide cursor-pointer"
                     >
-                      {isSubmitting ? 'Saving Results...' : 'Dashboard'}
+                      <Square size={16} fill="currentColor" /> Finish Answer &bull; Next
                     </button>
+                  )}
+                  {testMode === 'mock' && qState === 'auto_saving' && (
+                    <div className="flex items-center gap-2 text-slate-500 font-semibold text-xs px-4">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      Saving and advancing...
+                    </div>
                   )}
                 </div>
             </div>

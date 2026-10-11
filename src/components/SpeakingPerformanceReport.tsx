@@ -4,7 +4,7 @@ import { Play, Pause, RefreshCw, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
+import { IELTS_SPEAKING_QUESTIONS, getSpeakingTestQuestions } from '../data/speakingTestData';
 import { getAudioFromIndexedDB } from '../lib/indexedDB';
 import { SpeakingAudioItem } from './SpeakingAudioItem';
 
@@ -114,12 +114,33 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
     setOverallScore(roundedScore);
   }, [selectedScores]);
 
-  const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'IELTS Speaking Test 1';
+  const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') || testId.toLowerCase().includes('homework') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'IELTS Speaking Test 1';
 
-  // Extract test number or use fallback
-  const testNumMatch = formattedId.match(/Test\s+(\d+)/i);
-  const testNum = testNumMatch ? testNumMatch[1] : '1';
-  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
+  // Accurate questions resolution prioritizing saved submission questions, homework, and all test numbers
+  const initialResolvedQuestions = getSpeakingTestQuestions(submissionData?.assignmentTitle || testId || submissionData?.assignmentId, submissionData);
+  const [activeQuestions, setActiveQuestions] = useState(initialResolvedQuestions);
+
+  useEffect(() => {
+    const q = getSpeakingTestQuestions(submissionData?.assignmentTitle || testId || submissionData?.assignmentId, submissionData);
+    setActiveQuestions(q);
+
+    // If no custom questions saved directly in submission, check Firestore speaking_tests
+    if (!submissionData?.questions) {
+      const match = formattedId.match(/(?:test|speaking)\s*(\d+)/i) || formattedId.match(/\b(\d+)\b/);
+      let numToFetch = match ? match[1] : (testId || '1');
+      const numVal = parseInt(numToFetch, 10);
+      if (!isNaN(numVal) && numVal % 4 === 0 && numVal >= 4 && numVal <= 48) {
+        numToFetch = (numVal / 4).toString();
+      }
+      getDoc(doc(db, 'speaking_tests', numToFetch)).then(snap => {
+        if (snap.exists() && snap.data().questions) {
+          setActiveQuestions(snap.data().questions);
+        }
+      }).catch(() => {});
+    }
+  }, [testId, submissionData, formattedId]);
+
+  const testQuestions = activeQuestions;
 
   const resetScores = () => {
     if (!isAdmin) return;

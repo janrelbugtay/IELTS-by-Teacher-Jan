@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useSearchParams, Navigate } from 'react-router';
+import { Link, useSearchParams, Navigate, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
-import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard, Edit3 } from 'lucide-react';
+import { Search, Headphones, Book, Pen, Mic, Clock, BarChart, Users, Star, ArrowRight, LayoutDashboard, Edit3, X, Check, User } from 'lucide-react';
 
 const generateMockTests = (courseName: string) => {
   if (courseName === 'PET') {
@@ -145,7 +147,8 @@ const generateMockTests = (courseName: string) => {
 
 export function PracticeTests() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { userCourse, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { user, userCourse, isAdmin } = useAuth();
   const courseId = searchParams.get('course') || 'ielts';
   
   let normalizedUserCourse = userCourse ? userCourse.toLowerCase().replace(/[^a-z0-9-]/g, '') : null;
@@ -173,6 +176,55 @@ export function PracticeTests() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Newest');
+  const [speakingModeModalTest, setSpeakingModeModalTest] = useState<any | null>(null);
+  const [candidateName, setCandidateName] = useState(user?.displayName || '');
+  const [speakingIsPublished, setSpeakingIsPublished] = useState(true);
+
+  // Sync candidate name if user logs in or updates
+  useEffect(() => {
+    if (user?.displayName && !candidateName) {
+      setCandidateName(user.displayName);
+    }
+  }, [user?.displayName]);
+
+  // Load test visibility for the selected speaking test
+  useEffect(() => {
+    async function checkSpeakingPublished() {
+      if (!speakingModeModalTest) return;
+      try {
+        const docRef = doc(db, 'activity_logs', `speaking_settings_${speakingModeModalTest.id}`);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setSpeakingIsPublished(docSnap.data().isPublished !== false);
+        } else {
+          setSpeakingIsPublished(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch speaking test settings', err);
+        setSpeakingIsPublished(true);
+      }
+    }
+    checkSpeakingPublished();
+  }, [speakingModeModalTest]);
+
+  const handleToggleSpeakingPublish = async () => {
+    if (!speakingModeModalTest) return;
+    const newVal = !speakingIsPublished;
+    setSpeakingIsPublished(newVal);
+    try {
+      await setDoc(doc(db, 'activity_logs', `speaking_settings_${speakingModeModalTest.id}`), { isPublished: newVal }, { merge: true });
+    } catch (err) {
+      console.error('Failed to update speaking test visibility', err);
+    }
+  };
+
+  const handleStartSpeakingTest = (mode: 'mock' | 'practice') => {
+    if (!speakingModeModalTest || !candidateName.trim()) return;
+    const testId = speakingModeModalTest.id;
+    const trimmedName = encodeURIComponent(candidateName.trim());
+    setSpeakingModeModalTest(null);
+    navigate(`/test/speaking/${testId}?mode=${mode}&name=${trimmedName}`);
+  };
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -357,7 +409,18 @@ export function PracticeTests() {
                   </Link>
                 )}
 
-                {test.skill === 'Speaking' || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 53, 57, 61, 65, 69, 73, 77, 81, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
+                {test.skill === 'Speaking' ? (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setCandidateName(user?.displayName || '');
+                      setSpeakingModeModalTest(test);
+                    }}
+                    className="w-full py-3 bg-[#1E4DB7] hover:bg-blue-800 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-900/10"
+                  >
+                    Start Test <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 53, 57, 61, 65, 69, 73, 77, 81, 'IELTS-READING-JAN2026-001'].includes(test.id) ? (
                   <Link 
                     to={`/test/${test.skill.toLowerCase()}/${test.id}`}
                     className="w-full py-3 bg-[#1E4DB7] text-white font-bold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
@@ -392,6 +455,100 @@ export function PracticeTests() {
           <p className="text-slate-600">
             {courseId !== 'ielts' && courseId !== 'pet' ? 'Practice tests are currently only available for IELTS and PET courses.' : 'Try adjusting your search criteria or filters.'}
           </p>
+        </div>
+      )}
+
+      {/* CHOOSE SPEAKING TEST MODE MODAL (SIMPLE DESIGN LIKE READING) */}
+      {speakingModeModalTest && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-8 md:p-10 shadow-2xl border border-gray-200 animate-in zoom-in-95 duration-200 text-left relative">
+            <button
+              type="button"
+              onClick={() => setSpeakingModeModalTest(null)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex justify-center mb-6">
+              <div className="bg-blue-900 p-4 rounded-2xl text-white shadow-lg">
+                <Mic size={36} />
+              </div>
+            </div>
+
+            <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
+              {speakingModeModalTest.title || 'IELTS Speaking Test'}
+            </h1>
+            <p className="text-gray-500 text-center mb-8 font-medium">
+              11–14 Minutes • 3 Parts • Face-to-Face Simulation
+            </p>
+
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="modal-candidate-name" className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
+                  Candidate Full Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <User size={20} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="modal-candidate-name"
+                    required
+                    className="block w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all bg-gray-50 font-medium"
+                    placeholder="e.g. John Doe"
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl mb-2">
+                    <div>
+                      <div className="font-bold text-gray-800 text-sm">Test Visibility (Admin Only)</div>
+                      <div className="text-xs text-gray-500 mt-1">Control whether students can take this test.</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={speakingIsPublished} 
+                        onChange={handleToggleSpeakingPublish} 
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {!isAdmin && !speakingIsPublished ? (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-center font-medium text-sm">
+                  Test is currently unpublished. Please ask your administrator for permission to access this test.
+                </div>
+              ) : (
+                <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    disabled={!candidateName.trim()}
+                    onClick={() => handleStartSpeakingTest('mock')}
+                    className="group flex flex-col items-center justify-center gap-3 p-6 border-2 border-red-500 rounded-2xl bg-red-50 text-red-800 hover:bg-red-600 hover:text-white disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 transition-all text-center relative overflow-hidden font-extrabold text-xl cursor-pointer"
+                  >
+                    Mock Test Mode
+                  </button>
+
+                  <button
+                    disabled={!candidateName.trim()}
+                    onClick={() => handleStartSpeakingTest('practice')}
+                    className="group flex flex-col items-center justify-center gap-3 p-6 border-2 border-purple-500 rounded-2xl bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 transition-all text-center relative overflow-hidden font-extrabold text-xl cursor-pointer"
+                  >
+                    Practice Study Mode
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

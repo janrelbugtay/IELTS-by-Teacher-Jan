@@ -13,7 +13,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { createSubmissionNotification } from '../lib/notificationService';
 import { AdminSpeakingLobby } from '../components/AdminSpeakingLobby';
 import { SpeakingFormData, parseFullTestText, SAMPLE_BULK_TEST_TEXT } from '../utils/speakingTestParser';
-import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
+import { IELTS_SPEAKING_QUESTIONS, getSpeakingTestQuestions } from '../data/speakingTestData';
 
 const STAGES = {
   MIC_CHECK: 'MIC_CHECK',
@@ -46,7 +46,13 @@ export function ComputerSpeakingTest() {
   let testNum = id || '1';
   const numId = parseInt(testNum, 10);
   if (!isNaN(numId)) {
-    testNum = Math.ceil(numId / 4).toString();
+    if (numId % 4 === 0 && numId >= 4 && numId <= 48) {
+      testNum = (numId / 4).toString();
+    } else if (numId >= 1 && numId <= 12) {
+      testNum = numId.toString();
+    } else {
+      testNum = Math.ceil(numId / 4).toString();
+    }
   }
   useEffect(() => {
     getDoc(doc(db, 'speaking_tests', testNum)).then(docSnap => {
@@ -56,14 +62,14 @@ export function ComputerSpeakingTest() {
         setFormData(data.questions);
       } else {
         // Fallback to default questions for this specific test
-        const defaultData = (IELTS_SPEAKING_QUESTIONS as any)[testNum] || (IELTS_SPEAKING_QUESTIONS as any)['1'] || parseFullTestText(SAMPLE_BULK_TEST_TEXT).formData;
+        const defaultData = getSpeakingTestQuestions(testNum) || parseFullTestText(SAMPLE_BULK_TEST_TEXT).formData;
         setFormData(defaultData);
         setCustomQuestions(defaultData);
       }
       setLoadingLobby(false);
     }).catch(err => {
       console.error('Error fetching speaking test:', err);
-      const defaultData = (IELTS_SPEAKING_QUESTIONS as any)[testNum] || (IELTS_SPEAKING_QUESTIONS as any)['1'] || parseFullTestText(SAMPLE_BULK_TEST_TEXT).formData;
+      const defaultData = getSpeakingTestQuestions(testNum) || parseFullTestText(SAMPLE_BULK_TEST_TEXT).formData;
       setFormData(defaultData);
       setLoadingLobby(false);
     });
@@ -188,32 +194,43 @@ export function ComputerSpeakingTest() {
                 customQuestions={customQuestions} 
                 isAdmin={isAdmin}
                 onEditTest={() => setIsLobby(true)}
-                onComplete={async (responses: Record<string, Blob>) => {
+                initialMode={(searchParams.get('mode') as 'practice' | 'mock') || 'practice'}
+                initialCandidateName={searchParams.get('name') || user?.displayName || ''}
+                onComplete={async (responses: Record<string, Blob>, completedTestMode?: 'practice' | 'mock', finalCandidateName?: string) => {
                 if (responses && Object.keys(responses).length > 0) {
                   setRecordedAudio(responses);
                   
-                  
                   try {
-                    const assignmentTitle = `IELTS Speaking Test ${testNum}`;
+                    const activeMode = completedTestMode || (searchParams.get('mode') as 'practice' | 'mock') || 'practice';
+                    const activeCandidateName = finalCandidateName || searchParams.get('name') || user?.displayName || 'Student';
+                    const displayTitlePrefix = id?.startsWith('homework') 
+                      ? `IELTS Speaking ${id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`
+                      : `IELTS Speaking Test ${testNum}`;
+                    const assignmentTitle = `${displayTitlePrefix} (${activeMode === 'mock' ? 'Mock Exam' : 'Practice Study Mode'})`;
                     
                     // Create submission immediately for fast access
+                    const questionsToSave = customQuestions || formData || getSpeakingTestQuestions(testNum);
                     const docRef = await addDoc(collection(db, 'submissions'), {
                       userId: user?.uid,
                       assignmentId: id || '1',
                       assignmentTitle: assignmentTitle,
                       assignmentType: 'speaking',
+                      testMode: activeMode,
+                      studentName: activeCandidateName,
+                      candidateName: activeCandidateName,
                       audioUrl: '', 
                       bandScore: 7, // Mock score for now
                       timeSpent: 14 * 60, // 14 mins
                       createdAt: serverTimestamp(),
                       answers: {},
+                      questions: questionsToSave,
                       status: 'processing' // indicate it's still uploading
                     });
 
                     if (user) {
                       createSubmissionNotification({
                         userId: user.uid,
-                        studentName: user.displayName || 'Student',
+                        studentName: activeCandidateName,
                         assignmentTitle: assignmentTitle,
                         type: 'practice_test',
                         testType: 'speaking',

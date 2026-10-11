@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Play, Pause, Video, ExternalLink } from 'lucide-react';
-import { IELTS_SPEAKING_QUESTIONS } from '../data/speakingTestData';
+import { IELTS_SPEAKING_QUESTIONS, getSpeakingTestQuestions } from '../data/speakingTestData';
 import { db } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getAudioFromIndexedDB } from '../lib/indexedDB';
@@ -109,10 +109,15 @@ export const SpeakingRecordingsReview = ({ testId, recordedAudio, providedAudioU
   const [audioUrl, setAudioUrl] = useState<string | null>(providedAudioUrl || null);
   const [responseUrls, setResponseUrls] = useState<Record<string, string>>({});
 
-  const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'fallback';
-  const testNumMatch = formattedId.match(/Test\s+(\d+)/i);
-  const testNum = testNumMatch ? testNumMatch[1] : '1';
-  const testQuestions = IELTS_SPEAKING_QUESTIONS[testNum as keyof typeof IELTS_SPEAKING_QUESTIONS] || IELTS_SPEAKING_QUESTIONS['1'];
+  const formattedId = testId ? (testId.toLowerCase().includes('test') || testId.toLowerCase().includes('practice') || testId.toLowerCase().includes('homework') ? testId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/Ielts/i, 'IELTS') : testId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/Ielts/i, 'IELTS')) : 'fallback';
+  const initialQuestions = getSpeakingTestQuestions(testId, { answers: providedAnswers });
+  const [activeQuestions, setActiveQuestions] = useState(initialQuestions);
+
+  useEffect(() => {
+    setActiveQuestions(getSpeakingTestQuestions(testId, { answers: providedAnswers }));
+  }, [testId, providedAnswers]);
+
+  const testQuestions = activeQuestions;
 
   useEffect(() => {
     const fetchUrls = async () => {
