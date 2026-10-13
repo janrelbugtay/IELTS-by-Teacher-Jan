@@ -755,6 +755,11 @@ CRITICAL FORMATTING RULES FOR TEACHER FEEDBACK:
        ✓ "[Natural corrected sentence]"
 5. FLUENCY ICONS:
    - In Fluency & Coherence, use a check icon for what went well (✅ **What went well:**) and an x icon for holding back (❌ **Things holding you back:**).
+6. PRONUNCIATION (NO RHYTHM):
+   - In Pronunciation, title must be strictly "### 🎙️ Pronunciation" (DO NOT write "Pronunciation & Rhythm" or use the word "rhythm").
+   - Focus on:
+     * Words to practice: mispronounced words, sounds, or syllable stresses heard in the student's audio
+     * Clarity & Articulation: clear notes on consonant endings, dropped sounds, or vowel clarity.
 
 Format the 'feedback' markdown naturally like this:
 
@@ -785,8 +790,8 @@ Format the 'feedback' markdown naturally like this:
 ### 🎙️ Pronunciation
 - **Words to practice:**
   * "*[Mispronounced word from audio]*" - [Simple note on pronunciation or syllable stress]
-  * "*[Mispronounced word from audio]*" - [Simple note]
-- **Rhythm & Clarity:** [Feedback on dropping word endings like -ed/-s, sentence rhythm, or intonation]
+  * "*[Mispronounced word from audio]*" - [Simple note on pronunciation or syllable stress]
+- **Clarity & Articulation:** [Feedback on word clarity, consonant sounds, or dropped endings heard in the audio]
 
 Return STRICT JSON adhering to this exact format:
 {
@@ -810,6 +815,7 @@ Never inflate band scores unrealistically. Most ESL students score between Band 
 Always write feedback that is simple, natural, constructive, and friendly, as if written by a teacher directly to the student.
 Never mention the word AI. Do not add suggestions or practice steps. Do not include band scores inside the feedback text.
 Never write "teacher fix" — write ✗ for mistake and ✓ for correction.
+In pronunciation, never write or mention "rhythm" — focus strictly on phonetic clarity, word stress, and clarity & articulation.
 Always return valid JSON adhering to the specified schema.`;
 
       const evalStartTime = Date.now();

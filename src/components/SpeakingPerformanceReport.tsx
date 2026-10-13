@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { Play, Pause, RefreshCw, X, ArrowLeft, Sparkles, Loader2, RotateCcw, Check, AlertCircle, FileText, Edit3, Headphones, Zap, CheckCircle2, XCircle, Info, ArrowRight, BookOpen, Volume2, MessageSquare } from 'lucide-react';
+import { Play, Pause, RefreshCw, X, ArrowLeft, Sparkles, Loader2, RotateCcw, Check, AlertCircle, FileText, Edit3, Headphones, Zap, CheckCircle2, XCircle, Info, ArrowRight, BookOpen, Volume2, MessageSquare, Mic } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -75,7 +75,7 @@ const criteriaNames = {
 
 type CriterionKey = keyof typeof criteriaNames;
 
-// Helper to ensure feedback contains no suggestions, no scores, no "teacher fix", and no "AI"
+// Helper to ensure feedback contains no suggestions, no scores, no "teacher fix", no rhythm, and no "AI"
 export const cleanTeacherFeedback = (feedbackText: string): string => {
   if (!feedbackText) return '';
   return feedbackText
@@ -92,6 +92,10 @@ export const cleanTeacherFeedback = (feedbackText: string): string => {
     .replace(/###\s*[^\n]*(?:Steps to Practice|Practice Steps|Suggestions|Recommended Next Steps|Teacher Tip)[\s\S]*?(?=(###|$))/gi, '')
     // Remove standalone "Teacher tip:" lines if any
     .replace(/-\s*\*\*Teacher\s*tip:\*\*[\s\S]*?(?=(\n-|\n###|$))/gi, '')
+    // Remove rhythm from pronunciation titles and headers
+    .replace(/###\s*(?:🎙️\s*)?Pronunciation\s*(?:&|and)\s*Rhythm/gi, '### 🎙️ Pronunciation')
+    .replace(/\*\*Rhythm\s*(?:&|and)\s*Clarity:\*\*/gi, '**Clarity & Articulation:**')
+    .replace(/\*\*Rhythm:\*\*/gi, '**Clarity:**')
     // Remove any accidental mention of AI
     .replace(/\bAI Auto-Score\b/gi, 'Teacher Checking')
     .replace(/\bAI Evaluat(?:ion|or)\b/gi, 'Teacher Checking')
@@ -345,17 +349,111 @@ export function OrganizedTeacherFeedbackView({ feedback }: { feedback: string })
           );
         }
 
-        // 5. Pronunciation
+        // 5. Pronunciation (strictly remove rhythm, make colorful and immersive matching other criteria)
         if (title.toLowerCase().includes("pronunciation")) {
+          // Parse Words to practice
+          const wordsToPractice: Array<{ word: string; note: string }> = [];
+          const wordsBlockMatch = body.match(/\*\*Words to practice:\*\*([\s\S]*?)(?=(?:-\s*\*\*(?:Clarity|Articulation|Notes)|$))/i);
+          const wordsText = wordsBlockMatch ? wordsBlockMatch[1] : body;
+
+          const wordLines = wordsText.split('\n');
+          for (const line of wordLines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            const match = trimmed.match(/^[-*•]?\s*["“’'*]*([^"”’':\-–—*]+)["”’'*]*\s*[-:–—]\s*(.+)$/);
+            if (match && match[1] && match[2]) {
+              const word = match[1].trim().replace(/^["“’'*]+|["”’'*]+$/g, '');
+              const note = match[2].trim().replace(/^["“’'*]+|["”’'*]+$/g, '');
+              if (
+                word &&
+                !word.toLowerCase().includes('words to practice') &&
+                !word.toLowerCase().includes('clarity') &&
+                !word.toLowerCase().includes('articulation') &&
+                !word.toLowerCase().includes('rhythm')
+              ) {
+                wordsToPractice.push({ word, note });
+              }
+            }
+          }
+
+          // Parse Clarity / Articulation note
+          const clarityMatch = body.match(/(?:\*\*Clarity\s*(?:&|and)?\s*Articulation:\*\*|\*\*Clarity:\*\*|\*\*Articulation:\*\*|\*\*Rhythm\s*(?:&|and)?\s*Clarity:\*\*)\s*([\s\S]*?)(?=$)/i);
+          const clarityText = clarityMatch ? clarityMatch[1].trim() : null;
+
           return (
-            <div key={idx} className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <span className="text-xl">🎙️</span>
-                <h4 className="font-bold text-slate-900 text-base">Pronunciation & Rhythm</h4>
+            <div key={idx} className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎙️</span>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                      Pronunciation
+                      <span className="bg-indigo-50 text-indigo-700 border border-indigo-200/80 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Phonetic Clarity
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Targeted sound clarity and key words heard in your recording to practice
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="prose prose-slate max-w-none text-slate-700 text-xs sm:text-sm leading-relaxed">
-                <Markdown>{body}</Markdown>
-              </div>
+
+              {/* Words to Practice Grid */}
+              {wordsToPractice.length > 0 && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                    <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Words to Practice from Your Recording</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {wordsToPractice.map((item, wIdx) => (
+                      <div
+                        key={wIdx}
+                        className="bg-gradient-to-br from-indigo-50/80 via-sky-50/50 to-blue-50/40 border border-indigo-200/80 hover:border-indigo-300 rounded-xl p-3.5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between gap-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1.5 bg-white/95 border border-indigo-200 text-indigo-950 font-bold px-2.5 py-1 rounded-lg text-xs sm:text-sm shadow-2xs">
+                            <Volume2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            "{item.word}"
+                          </span>
+                          <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100/70 px-2 py-0.5 rounded-full">
+                            Sound Guide
+                          </span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium pl-1">
+                          {item.note}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Clarity & Articulation Card */}
+              {clarityText && (
+                <div className="bg-gradient-to-r from-sky-50/80 via-blue-50/60 to-indigo-50/50 border border-sky-200/90 rounded-xl p-4 shadow-2xs flex items-start gap-3.5">
+                  <div className="w-8 h-8 rounded-full bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                    <Headphones className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h5 className="font-bold text-sky-950 text-sm mb-1 flex items-center gap-1.5">
+                      Clarity & Articulation
+                    </h5>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                      {clarityText}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Fallback if format wasn't standard key/value pairs */}
+              {wordsToPractice.length === 0 && !clarityText && (
+                <div className="bg-indigo-50/60 border border-indigo-200/70 rounded-xl p-4 text-slate-700 text-xs sm:text-sm leading-relaxed">
+                  <Markdown>{body}</Markdown>
+                </div>
+              )}
             </div>
           );
         }
@@ -1357,13 +1455,15 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
               </span>
             </div>
             
-            <button 
-              onClick={resetScores} 
-              className="group flex items-center gap-2 px-6 py-3 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl text-slate-600 hover:text-red-500 transition-all font-medium shadow-sm cursor-pointer"
-            >
-              <RefreshCw className="w-4 h-4 transition-transform group-hover:-rotate-180 duration-500" />
-              Reset Evaluation
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={resetScores} 
+                className="group flex items-center gap-2 px-6 py-3 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl text-slate-600 hover:text-red-500 transition-all font-medium shadow-sm cursor-pointer"
+              >
+                <RefreshCw className="w-4 h-4 transition-transform group-hover:-rotate-180 duration-500" />
+                Reset Evaluation
+              </button>
+            )}
           </div>
 
           {/* Criteria Grid */}
@@ -1396,12 +1496,14 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
                       <p className={`text-sm font-medium ${hasScore ? (isDraft ? 'text-amber-700' : 'text-violet-600') : 'text-slate-500'}`}>
                         {hasScore ? `Band ${score} Selected` : 'Pending Assessment'}
                       </p>
-                      <button 
-                        onClick={() => openModal(key)} 
-                        className={`px-4 py-2 bg-white hover:bg-violet-600 border hover:border-violet-500 rounded-lg text-sm font-semibold transition-all shadow-sm cursor-pointer ${hasScore ? 'border-slate-200 text-violet-600 hover:text-white' : 'border-slate-200 text-slate-600 hover:text-white'}`}
-                      >
-                        {hasScore ? 'Update' : 'Evaluate'}
-                      </button>
+                      {isAdmin && (
+                        <button 
+                          onClick={() => openModal(key)} 
+                          className={`px-4 py-2 bg-white hover:bg-violet-600 border hover:border-violet-500 rounded-lg text-sm font-semibold transition-all shadow-sm cursor-pointer ${hasScore ? 'border-slate-200 text-violet-600 hover:text-white' : 'border-slate-200 text-slate-600 hover:text-white'}`}
+                        >
+                          {hasScore ? 'Update' : 'Evaluate'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1650,7 +1752,7 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
       </div>
 
       {/* Modal */}
-      {isModalOpen && activeCriterion && (
+      {isAdmin && isModalOpen && activeCriterion && (
         <div 
           className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center backdrop-blur-sm p-4 sm:p-6 transition-all duration-300"
           onClick={closeModal}
