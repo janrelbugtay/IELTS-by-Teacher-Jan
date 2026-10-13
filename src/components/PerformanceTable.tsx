@@ -32,11 +32,14 @@ export function PerformanceTable({ submissions, assignments, currentTab }: any) 
 
     return filtered.map((sub: any, index: number) => {
       const type = sub.assignmentType || assignments.find((a: any) => a.id === sub.assignmentId)?.type || (getFallbackType(sub.assignmentId));
+      const isSpeaking = type === 'speaking';
+      const isEvaluated = !isSpeaking || Boolean(sub.isEvaluated === true || sub.evaluatedBy === 'admin' || (sub.assignmentId === 'offline_speaking' && sub.bandScore !== null && sub.bandScore !== undefined));
+      const score = isEvaluated && sub.bandScore !== undefined && sub.bandScore !== null ? Number(sub.bandScore) : 0;
       return {
         id: sub.id,
         testType: type.charAt(0).toUpperCase() + type.slice(1),
         date: sub.createdAt ? format(sub.createdAt, 'MM/dd/yyyy') : 'N/A',
-        score: sub.bandScore !== undefined && sub.bandScore !== null ? Number(sub.bandScore) : 0,
+        score,
         name: `Test ${index + 1}`
       };
     });

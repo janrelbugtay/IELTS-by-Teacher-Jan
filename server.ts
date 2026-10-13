@@ -25,7 +25,8 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   // API routes
 
@@ -518,57 +519,409 @@ function pcmToWav(pcmData: Buffer, sampleRate: number = 24000, numChannels: numb
 
   app.post("/api/evaluate-speaking", async (req, res) => {
     try {
-      const { audioData, questionText } = req.body; // audioData is base64
-      if (!audioData) {
-        return res.status(400).json({ error: "Audio data is required" });
-      }
-
       if (!process.env.GEMINI_API_KEY) {
         return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
       }
 
-      // Remove the data URI prefix if present and extract the mime type
-      const mimeTypeMatch = audioData.match(/^data:(audio\/[\w.-]+);/);
-      const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "audio/webm";
-      const base64Audio = audioData.replace(/^data:audio\/[\w.-]+(?:;[\w.-]+=[\w.-]+)*;base64,/, "");
+      const { 
+        submissionId, 
+        testTitle, 
+        questions, 
+        answers, 
+        audioRecordings, 
+        audioData, 
+        questionText 
+      } = req.body;
 
-      const systemPrompt = `You are a strict, professional IELTS Speaking Examiner evaluating a candidate's response.
-Provide an estimated band score (0-9) and detailed feedback based on Fluency and Coherence, Lexical Resource, Grammatical Range and Accuracy, and Pronunciation.
-Please return your response in JSON format.
+      // Handle legacy single-audio question evaluation if audioData is directly provided
+      if (audioData && !submissionId && !questions) {
+        const commaIdx = audioData.indexOf(",");
+        const base64Audio = commaIdx !== -1 ? audioData.slice(commaIdx + 1).trim() : audioData.trim();
+        const rawMime = audioData.match(/^data:([^;,]+)/)?.[1] || "audio/webm";
+        const mimeType = rawMime.split(";")[0].trim().toLowerCase();
+
+        const singlePrompt = `You are a supportive IELTS English teacher and speaking examiner. Evaluate the candidate's audio response realistically according to the official IELTS Speaking Band Descriptors (FC, LR, GRA, PR).
+Do not inflate scores. Most ESL learners score in the Band 4.5 to 5.5 range. Only give 7.0+ if truly fluent and accurate.
+Write friendly, natural teacher feedback quoting what the student said in the audio with corrections.
+Return JSON with:
 {
-  "bandScore": 7.5,
+  "bandScore": 5.5,
+  "scores": { "FC": 5.5, "LR": 5.5, "GRA": 5.0, "PR": 5.5 },
+  "overallBand": 5.5,
   "feedback": {
-    "fluency": "...",
-    "lexical": "...",
-    "grammar": "...",
-    "pronunciation": "..."
+    "fluency": "Simple teacher comments on flow, pauses, and response length",
+    "lexical": "Teacher notes on vocabulary used vs overused",
+    "grammar": "Real sentence from audio and teacher correction",
+    "pronunciation": "Words to practice from audio"
   },
-  "improvements": ["...", "..."],
-  "transcription": "What the user actually said"
+  "improvements": ["Simple practice step 1", "Simple practice step 2"],
+  "transcription": "What the student said"
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          { text: `Question: ${questionText}\nEvaluate the candidate's audio response.` },
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: base64Audio
+        let response: any;
+        try {
+          response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+              { text: `Question: ${questionText || 'IELTS Speaking Question'}\nEvaluate the candidate's audio response.` },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Audio
+                }
+              }
+            ],
+            config: {
+              systemInstruction: singlePrompt,
+              responseMimeType: "application/json",
+            }
+          });
+        } catch (mErr: any) {
+          console.warn("gemini-2.5-flash single evaluation fallback to gemini-3.8-flash:", mErr?.message);
+          response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: [
+              { text: `Question: ${questionText || 'IELTS Speaking Question'}\nEvaluate the candidate's audio response.` },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Audio
+                }
+              }
+            ],
+            config: {
+              systemInstruction: singlePrompt,
+              responseMimeType: "application/json",
+            }
+          });
+        }
+
+        const reportData = JSON.parse(response.text || "{}");
+        return res.json(reportData);
+      }
+
+      // Full test evaluation workflow
+      const contentsParts: any[] = [];
+      let totalAudioPartsAdded = 0;
+
+      // Collect audio parts:
+      // 1. From audioRecordings provided in body (from client memory, Firestore, or blobs)
+      // Balance clips focusing on 2 key clips (Part 1 and Part 2 cue card) for rapid evaluation under 5-10s
+      let selectedRecordings = Array.isArray(audioRecordings) ? [...audioRecordings] : [];
+      if (selectedRecordings.length > 2) {
+        const p1 = selectedRecordings.filter(r => (r.label && r.label.includes('Part 1')) || (r.qId && String(r.qId).startsWith('p1')));
+        const p2 = selectedRecordings.filter(r => (r.label && r.label.includes('Part 2')) || (r.qId && (String(r.qId).startsWith('p2') || String(r.qId) === 'cueCard')));
+        const p3 = selectedRecordings.filter(r => (r.label && r.label.includes('Part 3')) || (r.qId && String(r.qId).startsWith('p3')));
+        const others = selectedRecordings.filter(r => !p1.includes(r) && !p2.includes(r) && !p3.includes(r));
+
+        const fastSelected: any[] = [];
+        if (p1.length > 0) fastSelected.push(p1[0]);
+        if (p2.length > 0) fastSelected.push(p2[0]);
+        else if (p3.length > 0) fastSelected.push(p3[0]);
+        else if (p1.length > 1) fastSelected.push(p1[1]);
+
+        for (const item of [...p3, ...others, ...p1, ...p2]) {
+          if (fastSelected.length >= 2) break;
+          if (!fastSelected.includes(item)) fastSelected.push(item);
+        }
+        selectedRecordings = fastSelected;
+      }
+
+      for (const item of selectedRecordings) {
+        if (item && item.audioBase64) {
+          const commaIdx = item.audioBase64.indexOf(",");
+          const rawBase64 = commaIdx !== -1 ? item.audioBase64.slice(commaIdx + 1).trim() : item.audioBase64.trim();
+          
+          if (rawBase64.length > 50) {
+            const rawMime = item.mimeType || 'audio/webm';
+            const cleanMime = rawMime.split(';')[0].trim().toLowerCase();
+            const qText = item.questionText ? ` (Prompt: "${item.questionText}")` : "";
+            contentsParts.push({ 
+              text: `=== Student Audio Recording for [${item.label || item.qId}]${qText} ===` 
+            });
+            contentsParts.push({
+              inlineData: {
+                mimeType: cleanMime,
+                data: rawBase64
+              }
+            });
+            totalAudioPartsAdded++;
+          }
+        }
+      }
+
+      // 2. From server uploads directory (uploads/speaking/) for this submissionId
+      if (submissionId) {
+        const safeSubmissionId = submissionId.replace(/[^a-zA-Z0-9_-]/g, "_");
+        try {
+          if (fs.existsSync(SPEAKING_DIR)) {
+            const files = fs.readdirSync(SPEAKING_DIR);
+            const subFiles = files.filter(f => f.startsWith(`${safeSubmissionId}_`));
+            
+            for (const file of subFiles) {
+              const qPart = file.replace(`${safeSubmissionId}_`, "").replace(/\.[^/.]+$/, "");
+              const alreadyAdded = Array.isArray(audioRecordings) && audioRecordings.some(ar => ar.qId === qPart);
+              
+              if (!alreadyAdded && totalAudioPartsAdded < 2) {
+                const filePath = path.join(SPEAKING_DIR, file);
+                const fileStat = fs.statSync(filePath);
+                if (fileStat.size > 100 && fileStat.size < 15 * 1024 * 1024) {
+                  const ext = path.extname(file).toLowerCase();
+                  let mime = "audio/webm";
+                  if (ext === ".mp3") mime = "audio/mpeg";
+                  else if (ext === ".wav") mime = "audio/wav";
+                  else if (ext === ".m4a") mime = "audio/mp4";
+
+                  const fileBuf = fs.readFileSync(filePath);
+                  contentsParts.push({ 
+                    text: `=== Student Audio Recording File [${file}] ===` 
+                  });
+                  contentsParts.push({
+                    inlineData: {
+                      mimeType: mime,
+                      data: fileBuf.toString("base64")
+                    }
+                  });
+                  totalAudioPartsAdded++;
+                }
+              }
             }
           }
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: "application/json",
+        } catch (dirErr) {
+          console.warn("Could not read from uploads/speaking directory:", dirErr);
         }
-      });
-      
-      const reportData = JSON.parse(response.text || "{}");
-      res.json(reportData);
+      }
+
+      if (totalAudioPartsAdded === 0) {
+        return res.status(400).json({
+          error: "No audio recordings could be found to evaluate. Please ensure the student's audio recordings are attached or uploaded."
+        });
+      }
+
+      // Context instructions summarizing the test
+      let questionOverview = `IELTS Speaking Test: ${testTitle || 'IELTS Speaking Test'}\n`;
+      if (questions) {
+        if (questions.part1 && Array.isArray(questions.part1)) {
+          questionOverview += `\nPart 1 Questions:\n` + questions.part1.map((q: any, i: number) => `${i + 1}. [ID: ${q.id}] ${q.text || ''} (Topic: ${q.topic || ''})`).join('\n');
+        }
+        if (questions.part2 && Array.isArray(questions.part2)) {
+          questionOverview += `\nPart 2 Cue Card:\n` + questions.part2.map((q: any) => `Topic: ${q.topic || ''}\nPrompt: ${q.text || q.cueCard || ''}`).join('\n');
+        }
+        if (questions.part3 && Array.isArray(questions.part3)) {
+          questionOverview += `\nPart 3 Discussion Questions:\n` + questions.part3.map((q: any, i: number) => `${i + 1}. [ID: ${q.id}] ${q.text || ''} (Topic: ${q.topic || ''})`).join('\n');
+        }
+      }
+
+      const textPrompt = `You are an experienced IELTS speaking teacher conducting Teacher Checking on a student's test.
+Attached are ${totalAudioPartsAdded} audio recording(s) of the student speaking.
+${questionOverview}
+
+Listen to the audio recordings carefully. Assess what the student ACTUALLY said.
+
+CRITICAL SCORING PRINCIPLES (STRICT & ACCURATE - DO NOT INFLATE SCORES):
+- Real ESL learners usually score between Band 4.5 and Band 6.0.
+- Do NOT give Band 7.0 or 7.5 unless the student genuinely exhibits fluent, effortless speech with sophisticated vocabulary, natural collocations, and mostly error-free sentences.
+- If the student hesitates, pauses frequently, speaks in short simple sentences, or makes basic grammar errors (e.g. wrong past tenses, subject-verb disagreement, missing plurals), score realistically in the Band 4.5 to 5.5 range.
+- If speech is very brief or incomplete, reflect that in low fluency and coherence scores (Band 4.0 - 5.0).
+- Score each of the 4 criteria using standard IELTS half-bands (e.g. 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5):
+  1. Fluency & Coherence (FC)
+  2. Lexical Resource (LR)
+  3. Grammatical Range & Accuracy (GRA)
+  4. Pronunciation (PR)
+- Calculate Overall Band score using official IELTS rounding rules:
+  Average = (FC + LR + GRA + PR) / 4.
+  If average ends in .25 -> round up to .5 (e.g., 5.25 -> 5.5).
+  If average ends in .75 -> round up to next whole band (e.g., 5.75 -> 6.0).
+  Otherwise round to nearest .0 or .5.
+
+CRITICAL ACCURACY & QUESTION-AUDIO GROUNDING:
+- Listen to the audio recordings attentively. Assess what the student ACTUALLY said in response to the specific IELTS test questions provided above.
+- Every single quote, observation, grammar correction, and vocabulary note MUST be strictly grounded in the candidate's actual speech in the audio.
+- DO NOT invent, hallucinate, or assume sentences that were not spoken in the audio.
+- In Grammar: select 3 to 5 real, high-impact grammatical mistakes from their recording. Do NOT output a bloated, repetitive list; focus on 3 to 5 clear, high-value corrections.
+
+CRITICAL FORMATTING RULES FOR TEACHER FEEDBACK:
+1. NO SCORES IN FEEDBACK:
+   - DO NOT mention, write, or repeat any scores, band numbers, or ratings anywhere in the feedback text (e.g., do NOT write "Band 5.5", "overall band", "estimated band", or "(Band [Score])").
+   - The scores are ALREADY calculated and displayed in the score cards above! The feedback text must ONLY contain qualitative teacher comments, observations, and corrections.
+2. NO SUGGESTIONS / NO PRACTICE DRILLS / NO TIPS:
+   - Do NOT add suggestions, advice lists, action plans, or practice steps. Keep the feedback strictly focused on reviewing what was spoken, vocabulary, grammar corrections, and pronunciation clarity.
+3. REMOVE THE WORD AI / DO NOT USE AI:
+   - Do NOT use or mention the word "AI" anywhere. This is a Teacher Checking report written in a warm, direct teacher voice ("You", "Your answers").
+4. WRITE "x" AND "check" INSTEAD OF "teacher fix":
+   - NEVER write the words "teacher fix", "Teacher fix", or "Teacher Fix".
+   - In Grammar corrections, write ✗ for the mistake and ✓ for the correction on separate structured lines:
+     * ✗ "[Exact sentence candidate said in audio]"
+       ✓ "[Natural corrected sentence]"
+5. FLUENCY ICONS:
+   - In Fluency & Coherence, use a check icon for what went well (✅ **What went well:**) and an x icon for holding back (❌ **Things holding you back:**).
+
+Format the 'feedback' markdown naturally like this:
+
+### 👩‍🏫 Teacher's Feedback
+[Warm, encouraging, but honest summary of performance (2-3 sentences). State what they did well and their main challenge. DO NOT state or mention any band score numbers.]
+
+### 🗣️ Fluency & Coherence
+- ✅ **What went well:** [Flow, response length, confidence in answering the specific test questions]
+- ❌ **Things holding you back:** [Specific pauses, repetition, hesitation, or filler words heard in the audio]
+
+### 📚 Vocabulary & Word Choice
+- **Good words you used:** [Specific words/phrases candidate actually said in the audio]
+- **Words you repeated often:** [e.g. 'good', 'nice', 'very', 'thing']
+- **Better alternatives:**
+  * Instead of "*[student's word]*", use "*[better natural alternative]*"
+  * Instead of "*[student's word]*", use "*[better natural alternative]*"
+
+### ⚖️ Grammar & Sentence Structure
+- **Grammar corrections:**
+  * ✗ "[Exact sentence or phrase candidate said in audio]"
+    ✓ "[Natural corrected sentence]"
+  * ✗ "[Exact sentence or phrase candidate said in audio]"
+    ✓ "[Natural corrected sentence]"
+  * ✗ "[Exact sentence or phrase candidate said in audio]"
+    ✓ "[Natural corrected sentence]"
+- **Grammar focus:** [Simple explanation of the key grammar point to review]
+
+### 🎙️ Pronunciation
+- **Words to practice:**
+  * "*[Mispronounced word from audio]*" - [Simple note on pronunciation or syllable stress]
+  * "*[Mispronounced word from audio]*" - [Simple note]
+- **Rhythm & Clarity:** [Feedback on dropping word endings like -ed/-s, sentence rhythm, or intonation]
+
+Return STRICT JSON adhering to this exact format:
+{
+  "scores": {
+    "FC": 5.5,
+    "LR": 5.5,
+    "GRA": 5.0,
+    "PR": 5.5
+  },
+  "overallBand": 5.5,
+  "feedback": "...",
+  "improvements": [],
+  "transcriptionSummary": "Brief summary of candidate's speech"
+}`;
+
+      contentsParts.unshift({ text: textPrompt });
+
+      const systemInstruction = `You are a supportive, experienced IELTS speaking teacher conducting Teacher Checking.
+Your goal is to evaluate candidate speech based strictly on the audio recordings provided.
+Never inflate band scores unrealistically. Most ESL students score between Band 4.5 and 6.0.
+Always write feedback that is simple, natural, constructive, and friendly, as if written by a teacher directly to the student.
+Never mention the word AI. Do not add suggestions or practice steps. Do not include band scores inside the feedback text.
+Never write "teacher fix" — write ✗ for mistake and ✓ for correction.
+Always return valid JSON adhering to the specified schema.`;
+
+      const evalStartTime = Date.now();
+      let response: any;
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: contentsParts,
+          config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: "application/json",
+            temperature: 0.2,
+            thinkingConfig: { thinkingBudget: 0 }
+          }
+        });
+      } catch (geminiErr: any) {
+        console.warn("gemini-2.5-flash error with budget 0, retrying standard gemini-2.5-flash:", geminiErr?.message);
+        try {
+          response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: contentsParts,
+            config: {
+              systemInstruction: systemInstruction,
+              responseMimeType: "application/json",
+              temperature: 0.2,
+            }
+          });
+        } catch (flashErr: any) {
+          console.warn("gemini-2.5-flash retry failed, attempting gemini-3.8-flash:", flashErr?.message);
+          response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: contentsParts,
+            config: {
+              systemInstruction: systemInstruction,
+              responseMimeType: "application/json",
+              temperature: 0.2,
+            }
+          });
+        }
+      }
+      console.log(`[EVAL-SPEAKING] Evaluated ${totalAudioPartsAdded} recording(s) in ${Date.now() - evalStartTime}ms`);
+
+      const responseText = response.text || "{}";
+      let reportData: any;
+      try {
+        reportData = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error("Failed to parse Gemini response as JSON:", responseText);
+        // Fallback extraction
+        const fcMatch = responseText.match(/"FC":\s*([0-9.]+)/);
+        const lrMatch = responseText.match(/"LR":\s*([0-9.]+)/);
+        const graMatch = responseText.match(/"GRA":\s*([0-9.]+)/);
+        const prMatch = responseText.match(/"PR":\s*([0-9.]+)/);
+        const overallMatch = responseText.match(/"overallBand":\s*([0-9.]+)/);
+
+        const fc = fcMatch ? parseFloat(fcMatch[1]) : 5.5;
+        const lr = lrMatch ? parseFloat(lrMatch[1]) : 5.5;
+        const gra = graMatch ? parseFloat(graMatch[1]) : 5.0;
+        const pr = prMatch ? parseFloat(prMatch[1]) : 5.5;
+        const overall = overallMatch ? parseFloat(overallMatch[1]) : Math.round(((fc + lr + gra + pr) / 4) * 2) / 2;
+
+        reportData = {
+          scores: { FC: fc, LR: lr, GRA: gra, PR: pr },
+          overallBand: overall,
+          feedback: responseText,
+          improvements: [
+            "Practice answering Part 2 for 2 full minutes without pausing.",
+            "Review past tense verbs and subject-verb agreement in spoken sentences.",
+            "Learn 3 natural topic-specific adjectives to replace overused words."
+          ]
+        };
+      }
+
+      // Ensure scores are numbers clamped between 1.0 and 9.0
+      const cleanBand = (val: any, fallback: number) => {
+        const num = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(num) || num < 1 || num > 9) return fallback;
+        return Math.round(num * 2) / 2;
+      };
+
+      const finalScores = {
+        FC: cleanBand(reportData?.scores?.FC ?? reportData?.scores?.fluency, 5.5),
+        LR: cleanBand(reportData?.scores?.LR ?? reportData?.scores?.lexical, 5.5),
+        GRA: cleanBand(reportData?.scores?.GRA ?? reportData?.scores?.grammar, 5.0),
+        PR: cleanBand(reportData?.scores?.PR ?? reportData?.scores?.pronunciation, 5.5),
+      };
+
+      const calculatedAvg = (finalScores.FC + finalScores.LR + finalScores.GRA + finalScores.PR) / 4;
+      let calculatedOverall = Math.round(calculatedAvg * 2) / 2;
+      // IELTS rounding: .25 -> .5, .75 -> next whole
+      const rem = calculatedAvg - Math.floor(calculatedAvg);
+      if (Math.abs(rem - 0.25) < 0.01) {
+        calculatedOverall = Math.floor(calculatedAvg) + 0.5;
+      } else if (Math.abs(rem - 0.75) < 0.01) {
+        calculatedOverall = Math.floor(calculatedAvg) + 1.0;
+      }
+
+      const finalOverall = cleanBand(reportData?.overallBand ?? reportData?.bandScore, calculatedOverall);
+
+      const result = {
+        scores: finalScores,
+        overallBand: finalOverall,
+        bandScore: finalOverall,
+        feedback: typeof reportData.feedback === 'string' ? reportData.feedback : JSON.stringify(reportData.feedback, null, 2),
+        improvements: Array.isArray(reportData.improvements) ? reportData.improvements : [],
+        transcriptionSummary: reportData.transcriptionSummary || reportData.transcription || ""
+      };
+
+      return res.json(result);
     } catch (err: any) {
       console.error("Evaluate Speaking Error:", err);
-      res.status(500).json({ error: err?.message || "Failed to evaluate speaking" });
+      return res.status(400).json({ error: err?.message || "Failed to evaluate speaking test." });
     }
   });
 

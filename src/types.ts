@@ -53,6 +53,8 @@ export interface Submission {
   fileUrl?: string; // For writing PDF
   correctedFileUrl?: string; // For corrected writing
   bandScore?: number; // Automatic or manual score
+  isEvaluated?: boolean;
+  evaluatedBy?: string;
   percentage?: number; // % correct for reading/listening
   score?: number;
   teacherComment?: string;

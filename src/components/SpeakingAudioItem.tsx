@@ -4,6 +4,63 @@ import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getAudioFromIndexedDB } from '../lib/indexedDB';
 
+// Global coordinator to prevent multiple speaking recordings playing simultaneously
+type StopAudioCallback = () => void;
+interface ActiveAudioSession {
+  id: string;
+  audio: HTMLAudioElement;
+  stop: StopAudioCallback;
+}
+
+let activeAudioSession: ActiveAudioSession | null = null;
+
+export const stopAllSpeakingRecordings = (exceptId?: string) => {
+  if (activeAudioSession && activeAudioSession.id !== exceptId) {
+    try {
+      activeAudioSession.audio.pause();
+    } catch (e) {}
+    try {
+      activeAudioSession.stop();
+    } catch (e) {}
+    activeAudioSession = null;
+  }
+
+  // Also stop any other audio/video elements in the DOM
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('audio, video').forEach((el) => {
+      try {
+        if (!(el as HTMLMediaElement).paused) {
+          (el as HTMLMediaElement).pause();
+        }
+      } catch (e) {}
+    });
+  }
+
+  // Broadcast event across components
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('speaking-audio-pause-all', {
+        detail: { exceptId }
+      })
+    );
+  }
+};
+
+export const registerActiveSpeakingRecording = (
+  id: string,
+  audio: HTMLAudioElement,
+  stop: StopAudioCallback
+) => {
+  stopAllSpeakingRecordings(id);
+  activeAudioSession = { id, audio, stop };
+};
+
+export const unregisterActiveSpeakingRecording = (id: string) => {
+  if (activeAudioSession?.id === id) {
+    activeAudioSession = null;
+  }
+};
+
 interface SpeakingAudioItemProps {
   qId: string;
   submissionId?: string;
@@ -21,10 +78,11 @@ export const SpeakingAudioItem: React.FC<SpeakingAudioItemProps> = ({
   isAdmin = false,
   onAudioUpdated
 }) => {
+  const instanceId = useRef(`audio_${qId}_${Math.random().toString(36).slice(2, 9)}`).current;
   const [currentUrl, setCurrentUrl] = useState<string | null>(initialAudioUrl || null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState('0:00');
-  const [durationStr, setDurationStr] = useState(defaultDurationStr);
+  const [durationStr, setDurationStr] = useState(defaultDurationStr || "0:30");
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -34,28 +92,100 @@ export const SpeakingAudioItem: React.FC<SpeakingAudioItemProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const getFallbackDurationSecs = () => {
+    if (!defaultDurationStr) return 30;
+    const parts = defaultDurationStr.split(':');
+    if (parts.length === 2) {
+      const mins = parseInt(parts[0], 10) || 0;
+      const secs = parseInt(parts[1], 10) || 0;
+      const total = mins * 60 + secs;
+      if (total > 0) return total;
+    }
+    return 30;
+  };
+
   useEffect(() => {
     setCurrentUrl(initialAudioUrl || null);
   }, [initialAudioUrl]);
 
+  // Listen for playback from other audio items so they do not play simultaneously
+  useEffect(() => {
+    const handlePauseOther = (e: any) => {
+      if (e.detail?.exceptId !== instanceId) {
+        if (audioRef.current) {
+          try {
+            audioRef.current.pause();
+          } catch (err) {}
+        }
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener('speaking-audio-pause-all', handlePauseOther as EventListener);
+    return () => {
+      window.removeEventListener('speaking-audio-pause-all', handlePauseOther as EventListener);
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch (err) {}
+      }
+      unregisterActiveSpeakingRecording(instanceId);
+    };
+  }, [instanceId]);
+
   // Audio element listeners
   useEffect(() => {
     if (currentUrl && currentUrl !== 'LOCAL_ONLY') {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+        } catch (e) {}
+      }
+      unregisterActiveSpeakingRecording(instanceId);
+      setIsPlaying(false);
+
       const audio = new Audio(currentUrl);
       audioRef.current = audio;
 
+      const handlePlay = () => {
+        stopAllSpeakingRecordings(instanceId);
+        registerActiveSpeakingRecording(instanceId, audio, () => {
+          try {
+            audio.pause();
+          } catch (e) {}
+          setIsPlaying(false);
+        });
+        setIsPlaying(true);
+      };
+
+      const handlePause = () => {
+        setIsPlaying(false);
+        unregisterActiveSpeakingRecording(instanceId);
+      };
+
       const updateProgress = () => {
-        if (audio.duration && !isNaN(audio.duration)) {
+        if (Number.isFinite(audio.currentTime)) {
           const currentSecs = Math.floor(audio.currentTime);
           const currentMins = Math.floor(currentSecs / 60);
           const remainSecs = currentSecs % 60;
           setCurrentTime(`${currentMins}:${remainSecs.toString().padStart(2, '0')}`);
-          setProgress((audio.currentTime / audio.duration) * 100);
+        }
 
+        const effectiveDuration = (Number.isFinite(audio.duration) && audio.duration > 0)
+          ? audio.duration
+          : getFallbackDurationSecs();
+
+        if (effectiveDuration > 0 && Number.isFinite(audio.currentTime)) {
+          setProgress(Math.min(100, Math.max(0, (audio.currentTime / effectiveDuration) * 100)));
+        }
+
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
           const totalSecs = Math.floor(audio.duration);
           const totalMins = Math.floor(totalSecs / 60);
           const totalRemain = totalSecs % 60;
           setDurationStr(`${totalMins}:${totalRemain.toString().padStart(2, '0')}`);
+        } else {
+          setDurationStr(defaultDurationStr || "0:30");
         }
       };
 
@@ -63,32 +193,66 @@ export const SpeakingAudioItem: React.FC<SpeakingAudioItemProps> = ({
         setIsPlaying(false);
         setProgress(0);
         setCurrentTime('0:00');
+        unregisterActiveSpeakingRecording(instanceId);
       };
 
+      audio.addEventListener('play', handlePlay);
+      audio.addEventListener('pause', handlePause);
       audio.addEventListener('timeupdate', updateProgress);
       audio.addEventListener('loadedmetadata', updateProgress);
       audio.addEventListener('ended', handleEnded);
 
       return () => {
-        audio.pause();
+        try {
+          audio.pause();
+        } catch (e) {}
+        unregisterActiveSpeakingRecording(instanceId);
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('pause', handlePause);
         audio.removeEventListener('timeupdate', updateProgress);
         audio.removeEventListener('loadedmetadata', updateProgress);
         audio.removeEventListener('ended', handleEnded);
       };
     }
-  }, [currentUrl]);
+  }, [currentUrl, instanceId, defaultDurationStr]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (isPlaying) {
-      audioRef.current.pause();
+      try {
+        audioRef.current.pause();
+      } catch (e) {}
       setIsPlaying(false);
+      unregisterActiveSpeakingRecording(instanceId);
     } else {
+      // 1. Immediately pause any other playing recording
+      stopAllSpeakingRecordings(instanceId);
+
+      let isCancelled = false;
+      registerActiveSpeakingRecording(instanceId, audioRef.current, () => {
+        isCancelled = true;
+        if (audioRef.current) {
+          try {
+            audioRef.current.pause();
+          } catch (e) {}
+        }
+        setIsPlaying(false);
+      });
+
       audioRef.current.play().then(() => {
+        if (isCancelled || !audioRef.current || audioRef.current.paused) {
+          try {
+            audioRef.current?.pause();
+          } catch (e) {}
+          setIsPlaying(false);
+          unregisterActiveSpeakingRecording(instanceId);
+          return;
+        }
         setIsPlaying(true);
       }).catch(err => {
         console.warn("Audio playback error:", err);
         setIsPlaying(false);
+        unregisterActiveSpeakingRecording(instanceId);
       });
     }
   };
@@ -279,10 +443,31 @@ export const SpeakingAudioItem: React.FC<SpeakingAudioItemProps> = ({
         <div 
           className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden cursor-pointer relative"
           onClick={(e) => {
-            if (audioRef.current && audioRef.current.duration) {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const pos = (e.clientX - rect.left) / rect.width;
-              audioRef.current.currentTime = pos * audioRef.current.duration;
+            if (audioRef.current) {
+              const dur = audioRef.current.duration;
+              const effectiveDur = (typeof dur === 'number' && Number.isFinite(dur) && dur > 0)
+                ? dur
+                : getFallbackDurationSecs();
+
+              if (typeof effectiveDur === 'number' && Number.isFinite(effectiveDur) && effectiveDur > 0) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                if (rect.width > 0) {
+                  const clickX = e.clientX - rect.left;
+                  const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+                  const newTime = ratio * effectiveDur;
+                  if (typeof newTime === 'number' && Number.isFinite(newTime) && !isNaN(newTime) && newTime >= 0) {
+                    try {
+                      if (Number.isFinite(audioRef.current.duration) && audioRef.current.duration > 0) {
+                        audioRef.current.currentTime = Math.min(audioRef.current.duration, Math.max(0, newTime));
+                      } else {
+                        audioRef.current.currentTime = Math.max(0, newTime);
+                      }
+                    } catch (err) {
+                      console.warn("Could not seek audio:", err);
+                    }
+                  }
+                }
+              }
             }
           }}
         >

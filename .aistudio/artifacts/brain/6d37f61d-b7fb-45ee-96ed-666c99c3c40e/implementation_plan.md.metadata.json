@@ -1,0 +1,6 @@
+{
+  "summary": "Implementation plan to accelerate IELTS Speaking AI evaluation to under 5-10 seconds by switching to Fast Clip Mode (focusing on Part 1 and Part 2 key recordings), trimming audio payloads, and adding an elapsed timer in the UI.",
+  "updatedAt": "2026-10-12T18:23:35.574287942Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

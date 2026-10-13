@@ -20,16 +20,22 @@ export const SimpleAudioPlayer = ({ src, defaultDurationStr, isRealAudio }: { sr
       audio.onerror = (e) => console.warn("Audio error", e);
 
       const setAudioData = () => {
-        const mins = Math.floor(audio.duration / 60);
-        const secs = Math.floor(audio.duration % 60);
-        setDurationStr(`${mins}:${secs.toString().padStart(2, '0')}`);
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          const mins = Math.floor(audio.duration / 60);
+          const secs = Math.floor(audio.duration % 60);
+          setDurationStr(`${mins}:${secs.toString().padStart(2, '0')}`);
+        }
       };
       
       const setAudioTime = () => {
-        const currentMins = Math.floor(audio.currentTime / 60);
-        const currentSecs = Math.floor(audio.currentTime % 60);
-        setCurrentTime(`${currentMins}:${currentSecs.toString().padStart(2, '0')}`);
-        setProgress((audio.currentTime / audio.duration) * 100);
+        if (Number.isFinite(audio.currentTime)) {
+          const currentMins = Math.floor(audio.currentTime / 60);
+          const currentSecs = Math.floor(audio.currentTime % 60);
+          setCurrentTime(`${currentMins}:${currentSecs.toString().padStart(2, '0')}`);
+        }
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          setProgress((audio.currentTime / audio.duration) * 100);
+        }
       };
 
       const onEnded = () => {

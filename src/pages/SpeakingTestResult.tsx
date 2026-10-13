@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Markdown from 'react-markdown';
 import { renderMarkdown } from '../lib/markdown';
 import { SpeakingRecordingsReview } from '../components/SpeakingRecordingsReview';
-import { SpeakingPerformanceReport } from '../components/SpeakingPerformanceReport';
+import { SpeakingPerformanceReport, OrganizedTeacherFeedbackView } from '../components/SpeakingPerformanceReport';
 
 export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: string; sessionId?: string }) {
   const [submissionData, setSubmissionData] = useState<any>(null);
@@ -77,15 +77,13 @@ export function SpeakingTestResult({ submissionId, sessionId }: { submissionId: 
         </div>
       )}
 
-      {(submissionData.assignmentId === 'offline_speaking' || submissionData.assignmentTitle?.toLowerCase().includes('offline') || submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment) && (
+      {(isOffline || (!submissionData.rubricScores && (submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment))) && (
         <div className="max-w-4xl mx-auto w-full px-8 pb-12">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
                 <h2 className="text-xl font-bold text-[#282B5C] mb-4">Feedback</h2>
                 
-                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 text-slate-700 whitespace-pre-wrap max-h-[50vh] overflow-y-auto">
-                    <div className="mb-4 prose prose-slate max-w-none">
-                        <Markdown>{submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment || "No feedback provided for this activity yet."}</Markdown>
-                    </div>
+                <div className="bg-slate-50/50 rounded-2xl p-4 sm:p-6 border border-slate-100 text-slate-700 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <OrganizedTeacherFeedbackView feedback={submissionData.teacherComment || submissionData.aiFeedback || submissionData.feedback || submissionData.answers?.feedback || submissionData.answers?.teacherComment || "No feedback provided for this activity yet."} />
                     {(submissionData.vietnameseTranslation || submissionData.teacherCommentVi || submissionData.answers?.vietnameseTranslation || submissionData.answers?.teacherCommentVi) && (
                         <div className="mt-4 pt-4 border-t border-slate-200">
                             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Vietnamese Translation</h4>

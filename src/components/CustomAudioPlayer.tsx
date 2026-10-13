@@ -76,8 +76,10 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
     const audio = innerAudioRef.current;
     if (!audio) return;
     const time = Number(e.target.value);
-    audio.currentTime = time;
-    setCurrentTime(time);
+    if (Number.isFinite(time)) {
+      audio.currentTime = time;
+      setCurrentTime(time);
+    }
   };
 
   const toggleMute = () => {

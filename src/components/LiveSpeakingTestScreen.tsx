@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Clock, Edit3, Volume2, RotateCcw, ChevronRight, Square, Play, Pause, CheckCircle2, ShieldAlert, AlertCircle, BookOpen, Sparkles, Check, X, User } from 'lucide-react';
 import { IELTS_SPEAKING_QUESTIONS, getSpeakingTestQuestions } from '../data/speakingTestData';
+import { stopAllSpeakingRecordings } from './SpeakingAudioItem';
 
 const Waveform = ({ isRecording }: { isRecording: boolean }) => (
   <div className="flex items-center justify-center h-12 gap-1.5 overflow-hidden">
@@ -170,12 +171,20 @@ export const LiveSpeakingTestScreen = ({
 
   useEffect(() => {
     initAudio();
+    const handlePauseAll = () => {
+      if (audioRef.current) {
+        try { audioRef.current.pause(); } catch (e) {}
+      }
+      setIsPlaying(false);
+    };
+    window.addEventListener('speaking-audio-pause-all', handlePauseAll);
     return () => {
+      window.removeEventListener('speaking-audio-pause-all', handlePauseAll);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
       if (audioRef.current) {
-        audioRef.current.pause();
+        try { audioRef.current.pause(); } catch (e) {}
       }
     };
   }, []);
@@ -453,14 +462,18 @@ export const LiveSpeakingTestScreen = ({
     const qId = getCurrentQId();
     const blob = responses[qId];
     if (blob) {
+      stopAllSpeakingRecordings();
       if (audioRef.current) {
-        audioRef.current.pause();
+        try { audioRef.current.pause(); } catch (e) {}
       }
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
       setIsPlaying(true);
-      audio.play();
+      audio.play().catch(e => {
+        console.warn("Play error:", e);
+        setIsPlaying(false);
+      });
       audio.onended = () => {
         setIsPlaying(false);
       };

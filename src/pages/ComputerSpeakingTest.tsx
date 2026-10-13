@@ -219,7 +219,8 @@ export function ComputerSpeakingTest() {
                       studentName: activeCandidateName,
                       candidateName: activeCandidateName,
                       audioUrl: '', 
-                      bandScore: 7, // Mock score for now
+                      bandScore: null,
+                      isEvaluated: false,
                       timeSpent: 14 * 60, // 14 mins
                       createdAt: serverTimestamp(),
                       answers: {},
@@ -234,7 +235,6 @@ export function ComputerSpeakingTest() {
                         assignmentTitle: assignmentTitle,
                         type: 'practice_test',
                         testType: 'speaking',
-                        bandScore: 7,
                         submissionId: docRef.id
                       }).catch(console.warn);
                     }

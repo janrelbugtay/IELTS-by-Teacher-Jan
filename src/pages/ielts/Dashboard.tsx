@@ -170,7 +170,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
       
       if (editScoreValue) {
         const score = parseFloat(editScoreValue);
-        if (!isNaN(score)) updates.bandScore = score;
+        if (!isNaN(score)) {
+          updates.bandScore = score;
+          updates.isEvaluated = true;
+          updates.evaluatedBy = 'admin';
+        }
       }
       if (editRawScoreValue) {
         const rawScore = parseInt(editRawScoreValue, 10);
@@ -478,10 +482,15 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const offlineSpeakingSubs = getSubmissionsByType('speaking').filter(s => s.assignmentId === 'offline_speaking' || (s.assignmentTitle || '').toLowerCase().includes('offline'));
   const allSpeakingSubs = [...speakingSubs, ...offlineSpeakingSubs].sort((a, b) => (b.createdAt as number) - (a.createdAt as number));
 
+  const isSpeakingEvaluated = (sub: Submission) => {
+    // Only reflect speaking score if the admin submitted the evaluation
+    return Boolean(sub.isEvaluated === true || sub.evaluatedBy === 'admin' || (sub.assignmentId === 'offline_speaking' && sub.bandScore !== undefined && sub.bandScore !== null));
+  };
+
   const rScore = averageScore(readingSubs);
   const lScore = averageScore(listeningSubs);
   const wScore = averageScore(writingSubs);
-  const sScore = averageScore(allSpeakingSubs);
+  const sScore = averageScore(allSpeakingSubs.filter(isSpeakingEvaluated));
 
   const overallBand = () => {
     let scores = [rScore, lScore, wScore, sScore].filter(s => s > 0);
@@ -805,18 +814,22 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               <span>Speaking</span>
             </h3>
             <div className="flex items-end gap-2.5 h-36 pt-7">
-              {allSpeakingSubs.slice(0, 5).reverse().map((sub, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
-                  <div 
-                    className="w-full bg-purple-500 rounded-t-lg relative transition-all duration-300 hover:bg-purple-600 shadow-xs" 
-                    style={{ height: `${Math.max(12, ((sub.bandScore || 0) / 9) * 100)}%` }}
-                  >
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-black text-purple-600 whitespace-nowrap">
-                      {sub.bandScore ? (sub.bandScore % 1 === 0 ? sub.bandScore.toFixed(1) : sub.bandScore) : '-'}
+              {allSpeakingSubs.slice(0, 5).reverse().map((sub, i) => {
+                const evaluated = isSpeakingEvaluated(sub);
+                const scoreToReflect = evaluated && sub.bandScore !== undefined && sub.bandScore !== null ? Number(sub.bandScore) : null;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
+                    <div 
+                      className={`w-full ${scoreToReflect !== null ? 'bg-purple-500 hover:bg-purple-600' : 'bg-purple-200'} rounded-t-lg relative transition-all duration-300 shadow-xs`} 
+                      style={{ height: scoreToReflect !== null ? `${Math.max(12, (scoreToReflect / 9) * 100)}%` : '12%' }}
+                    >
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-black text-purple-600 whitespace-nowrap">
+                        {scoreToReflect !== null ? (scoreToReflect % 1 === 0 ? scoreToReflect.toFixed(1) : scoreToReflect) : '-'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {allSpeakingSubs.length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
             </div>
           </div>
@@ -940,7 +953,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   e.stopPropagation();
                   setViewFeedbackItem({
                     title,
-                    bandScore: sub.bandScore,
+                    bandScore: isSpeakingEvaluated(sub) ? sub.bandScore : undefined,
                     date: sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : '',
                     feedback: feedbackContent,
                     vietnameseTranslation: viContent,
@@ -1021,8 +1034,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                         </div>
                         
                         <div className="flex items-center gap-2 mb-3 mt-1.5 flex-wrap">
-                          {sub.bandScore !== undefined && sub.bandScore !== null ? (
-                            <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-black text-xs shadow-xs">Band {sub.bandScore.toFixed(1)}</span>
+                          {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-black text-xs shadow-xs">Band {Number(sub.bandScore).toFixed(1)}</span>
                           ) : (
                             <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-extrabold text-xs">Pending</span>
                           )}
@@ -1389,7 +1402,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                         ) : (
                           <div className="flex items-center justify-end gap-2">
                             {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
-         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                             {(type !== 'speaking' || isSpeakingEvaluated(sub)) && sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                             {isAdmin && (
                               <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -2047,7 +2060,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     const viText = sub.vietnameseTranslation || sub.teacherCommentVi || (sub.answers as any)?.vietnameseTranslation || (sub.answers as any)?.teacherCommentVi || '';
                                     setViewFeedbackItem({
                                       title,
-                                      bandScore: sub.bandScore,
+                                      bandScore: isSpeakingEvaluated(sub) ? sub.bandScore : undefined,
                                       date: sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy') : '',
                                       feedback: feedbackText,
                                       vietnameseTranslation: viText,
@@ -2072,7 +2085,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             ) : (
                               <div className="flex items-center justify-end gap-2">
                                 {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
-         {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+         {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
                                 {isAdmin && (
                                   <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                     <Edit2 className="w-3.5 h-3.5" />
@@ -2239,6 +2252,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           assignmentTitle: offlineForm.name || 'Offline Speaking Assignment',
                           audioUrl: offlineForm.link,
                           bandScore: isNaN(bandScore) ? null : bandScore,
+                          isEvaluated: !isNaN(bandScore),
+                          evaluatedBy: !isNaN(bandScore) ? 'admin' : null,
                           feedback: offlineForm.feedback,
                           teacherComment: offlineForm.feedback,
                           vietnameseTranslation: offlineForm.vietnameseTranslation,
