@@ -28,6 +28,21 @@ import {
   Trophy,
   Sliders
 } from 'lucide-react';
+import {
+  TEACHER_JAN_PROFILE,
+  computeStudentSkillScores,
+  checkEnglishOnlyMessage,
+  generateEnglishPartnerReply,
+  createSpeechBubbleSprite,
+  createPersonalDashboardWallTexture,
+  createClassDashboardWallTexture,
+  ChatMessageItem
+} from '../utils/eraverseFeatures';
+import {
+  SportsSideActionsHud,
+  ProximityEnglishChat,
+  DashboardHallModals
+} from '../components/EraVerseModalsAndHud';
 
 // ============================================================================
 // PROCEDURAL WEB AUDIO ENGINE + ROOM SONG SYNTHESIZER
@@ -362,8 +377,9 @@ interface BuildingZone {
 
 interface IeltsCharacterProfile {
   id: string;
+  realUserId?: string;
   name: string;
-  cohort: 'IELTS 1' | 'IELTS 2';
+  cohort: 'IELTS 1' | 'IELTS 2' | 'TEACHER (SUPER ADMIN)';
   course: 'IELTS Course';
   roleTitle: string;
   shirtColor: string;
@@ -374,6 +390,7 @@ interface IeltsCharacterProfile {
   targetBuildingId: string;
   motto: string;
   isRealStudent?: boolean;
+  isTeacherAdmin?: boolean;
 }
 
 interface WallBoardSpec {
@@ -384,9 +401,10 @@ interface WallBoardSpec {
   badge: string;
   accentHex: string;
   bgLightHex: string;
-  actionType: 'practice_skill' | 'homework_folder' | 'navigate';
+  actionType: 'practice_skill' | 'homework_folder' | 'navigate' | 'my_dashboard' | 'class_dashboard';
   skillOrTab?: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
   route?: string;
+  dashboardType?: 'personal' | 'class';
 }
 
 // Vibrant, High-Contrast Colorful Buildings + Bright Warm Classroom Interiors
@@ -514,6 +532,49 @@ const BUILDINGS: BuildingZone[] = [
 ];
 
 const DEFAULT_IELTS_CHARACTERS: IeltsCharacterProfile[] = [
+  TEACHER_JAN_PROFILE,
+  {
+    id: 'ielts1-kai',
+    name: 'Kai',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Student',
+    shirtColor: '#2563eb',
+    hairColor: '#5c2d16',
+    skinColor: '#fde68a',
+    hatType: 'none',
+    accessoryType: 'glasses',
+    targetBuildingId: 'dashboard',
+    motto: 'Checking my IELTS 1 Dashboard & Class Scoreboard!'
+  },
+  {
+    id: 'ielts1-sophia',
+    name: 'Sophia',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Student',
+    shirtColor: '#60a5fa',
+    hairColor: '#1c1917',
+    skinColor: '#fef08a',
+    hatType: 'cap',
+    accessoryType: 'glasses',
+    targetBuildingId: 'dashboard',
+    motto: 'Practicing English speaking with my IELTS 1 classmates!'
+  },
+  {
+    id: 'ielts2-candy',
+    name: 'Candy',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Student',
+    shirtColor: '#14b8a6',
+    hairColor: '#dc2626',
+    skinColor: '#fcd34d',
+    hatType: 'crown',
+    accessoryType: 'none',
+    targetBuildingId: 'dashboard',
+    motto: 'Representing IELTS 2! Let’s play football and check our scores!'
+  },
   {
     id: 'ielts1-minh-anh',
     name: 'Minh Anh',
@@ -726,45 +787,25 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       slot: 'back-left',
       category: 'PERSONAL ANALYTICS',
       title: 'My IELTS Dashboard',
-      subtitle: 'View Band Scores, Submissions & Teacher Feedback',
+      subtitle: 'Individual Reading, Listening, Writing & Speaking Band Scores',
       badge: 'OPEN MY DASHBOARD',
       accentHex: '#2563EB',
       bgLightHex: '#DBEAFE',
-      actionType: 'navigate',
+      actionType: 'my_dashboard',
+      dashboardType: 'personal',
       route: '/ielts/dashboard'
     },
     {
       slot: 'back-right',
-      category: 'CLASSROOM HUB',
-      title: 'My Class & Leaderboard',
-      subtitle: 'See Top Students in IELTS 1 & IELTS 2',
-      badge: 'OPEN MY CLASS',
+      category: 'CLASS GROUP SCOREBOARD',
+      title: 'My Class Dashboard',
+      subtitle: 'Classmates List & Scores in Reading, Listening, Writing & Speaking',
+      badge: 'OPEN MY CLASS SCORES',
       accentHex: '#059669',
       bgLightHex: '#D1FAE5',
-      actionType: 'navigate',
+      actionType: 'class_dashboard',
+      dashboardType: 'class',
       route: '/courses/ielts?tab=leaderboard'
-    },
-    {
-      slot: 'left-wall',
-      category: 'WRITING EXAMINER',
-      title: 'Writing Task Evaluator',
-      subtitle: 'Practice Task 1 & Task 2 with Rubric Check',
-      badge: 'OPEN EVALUATOR',
-      accentHex: '#D97706',
-      bgLightHex: '#FEF3C7',
-      actionType: 'navigate',
-      route: '/writing-examiner'
-    },
-    {
-      slot: 'right-wall',
-      category: 'ALL PRACTICE TESTS',
-      title: '2026 Practice Test Collection',
-      subtitle: 'Browse All 100+ Official-Style IELTS Tests',
-      badge: 'BROWSE ALL TESTS',
-      accentHex: '#7C3AED',
-      bgLightHex: '#F3E8FF',
-      actionType: 'navigate',
-      route: '/practice-tests?course=ielts'
     }
   ],
   speaking: [
@@ -967,7 +1008,7 @@ const _desiredCamPos = new THREE.Vector3();
 const _rayDir = new THREE.Vector3();
 
 export function EraVerse() {
-  const { user, userCourse } = useAuth();
+  const { user, userCourse, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
@@ -990,11 +1031,17 @@ export function EraVerse() {
     setSkyPreset: (mode: 'day' | 'sunset' | 'night') => void;
     triggerJump: () => void;
     triggerWave: () => void;
+    triggerKick: () => void;
+    triggerHit: () => void;
+    toggleCrouch: () => void;
     setZoomDistance: (dist: number) => void;
     syncNpcProfiles: (profiles: IeltsCharacterProfile[]) => void;
+    showSpeechBubbleOnActor: (actorId: string, speakerName: string, text: string, isWarning?: boolean) => void;
+    refreshDashboardWalls: () => void;
   } | null>(null);
 
   const [activeBuildingModal, setActiveBuildingModal] = useState<string | null>(null);
+  const [dashboardHallModal, setDashboardHallModal] = useState<'my_dashboard' | 'class_dashboard' | null>(null);
   const [selectedPracticeSkill, setSelectedPracticeSkill] = useState<'Listening' | 'Reading' | 'Writing' | 'Speaking'>('Listening');
   const [selectedHomeworkTab, setSelectedHomeworkTab] = useState<'All' | 'Writing' | 'Speaking' | 'Reading' | 'Listening' | 'Assigned'>('All');
   const [insideBuilding, setInsideBuilding] = useState<BuildingZone | null>(null);
@@ -1004,7 +1051,13 @@ export function EraVerse() {
   const [xp, setXp] = useState<number>(150);
   const [crystalsCollected, setCrystalsCollected] = useState<number>(0);
   const [footballGoals, setFootballGoals] = useState<number>(0);
+  const [aiFootballGoals, setAiFootballGoals] = useState<number>(0);
   const [pickleballScore, setPickleballScore] = useState<number>(0);
+  const [aiPickleballScore, setAiPickleballScore] = useState<number>(0);
+  const [inSportsZone, setInSportsZone] = useState<'none' | 'football' | 'pickleball' | 'playground'>('none');
+  const [isCrouching, setIsCrouching] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
+  const [englishWarning, setEnglishWarning] = useState<string | null>(null);
   const [skyMode, setSkyMode] = useState<'day' | 'sunset' | 'night'>('day');
   const [graphicsQuality, setGraphicsQuality] = useState<GraphicsQuality>('high');
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
@@ -1012,7 +1065,7 @@ export function EraVerse() {
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showCharactersModal, setShowCharactersModal] = useState<boolean>(false);
   const [showCustomizerModal, setShowCustomizerModal] = useState<boolean>(false);
-  const [cohortFilter, setCohortFilter] = useState<'ALL' | 'IELTS 1' | 'IELTS 2'>('ALL');
+  const [cohortFilter, setCohortFilter] = useState<'ALL' | 'IELTS 1' | 'IELTS 2' | 'TEACHER (SUPER ADMIN)'>('ALL');
   const [toastBanner, setToastBanner] = useState<{ title: string; subtitle: string; color: string } | null>(null);
   const [zoomSliderValue, setZoomSliderValue] = useState<number>(14);
   const [joystickThumbPos, setJoystickThumbPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -1022,8 +1075,9 @@ export function EraVerse() {
 
   const [playerProfile, setPlayerProfile] = useState<{
     id: string;
+    realUserId?: string;
     name: string;
-    cohort: 'IELTS 1' | 'IELTS 2';
+    cohort: 'IELTS 1' | 'IELTS 2' | 'TEACHER (SUPER ADMIN)';
     roleTitle: string;
     shirtColor: string;
     hairColor: string;
@@ -1039,15 +1093,30 @@ export function EraVerse() {
         // ignore
       }
     }
+    if (user?.email === 'janrelbugtay03@gmail.com' || isAdmin) {
+      return {
+        id: TEACHER_JAN_PROFILE.id,
+        realUserId: user?.uid || TEACHER_JAN_PROFILE.realUserId,
+        name: 'Teacher Jan',
+        cohort: 'TEACHER (SUPER ADMIN)',
+        roleTitle: 'Teacher (Super Admin)',
+        shirtColor: TEACHER_JAN_PROFILE.shirtColor,
+        hairColor: TEACHER_JAN_PROFILE.hairColor,
+        skinColor: TEACHER_JAN_PROFILE.skinColor,
+        hatType: TEACHER_JAN_PROFILE.hatType,
+        accessoryType: TEACHER_JAN_PROFILE.accessoryType
+      };
+    }
     return {
-      id: 'player-self',
-      name: user?.displayName || user?.email?.split('@')[0] || 'IELTS Explorer',
+      id: 'ielts1-kai',
+      realUserId: user?.uid,
+      name: user?.displayName || user?.email?.split('@')[0] || 'Kai',
       cohort: 'IELTS 1',
-      roleTitle: 'IELTS Course Student',
+      roleTitle: 'IELTS 1 Student',
       shirtColor: '#2563eb',
-      hairColor: '#1c1917',
-      skinColor: '#fcd34d',
-      hatType: 'grad',
+      hairColor: '#5c2d16',
+      skinColor: '#fde68a',
+      hatType: 'none',
       accessoryType: 'glasses'
     };
   });
@@ -1055,6 +1124,7 @@ export function EraVerse() {
   const [firestoreFolders, setFirestoreFolders] = useState<Array<{ id: string; name: string; course: string }>>([]);
   const [firestoreUsers, setFirestoreUsers] = useState<Array<any>>([]);
   const [firestoreAssignments, setFirestoreAssignments] = useState<Array<any>>([]);
+  const [firestoreSubmissions, setFirestoreSubmissions] = useState<Array<any>>([]);
 
   const allPracticeTests = useMemo(() => getIeltsPracticeTests(), []);
 
@@ -1115,10 +1185,23 @@ export function EraVerse() {
       () => {}
     );
 
+    const unsubSubmissions = onSnapshot(
+      collection(db, 'submissions'),
+      (snap) => {
+        const list: any[] = [];
+        snap.forEach((d) => {
+          list.push({ id: d.id, ...d.data() });
+        });
+        setFirestoreSubmissions(list);
+      },
+      () => {}
+    );
+
     return () => {
       unsubFolders();
       unsubUsers();
       unsubAssignments();
+      unsubSubmissions();
     };
   }, []);
 
@@ -1135,7 +1218,7 @@ export function EraVerse() {
     const hats: Array<'grad' | 'cap' | 'headphones' | 'crown'> = ['grad', 'cap', 'headphones', 'crown'];
     const buildingsCycle = ['practice_tests', 'homework', 'dashboard', 'speaking', 'reading', 'listening'];
 
-    const realProfiles: IeltsCharacterProfile[] = [];
+    const realProfiles: IeltsCharacterProfile[] = [TEACHER_JAN_PROFILE];
     const ieltsUsers = firestoreUsers.filter(
       (u) =>
         (u.course && String(u.course).toUpperCase().includes('IELTS')) ||
@@ -1143,6 +1226,9 @@ export function EraVerse() {
     );
 
     ieltsUsers.forEach((u, idx) => {
+      if (u.email === 'janrelbugtay03@gmail.com' || String(u.name || '').toLowerCase() === 'teacher jan') {
+        return;
+      }
       const fName = u.folderName || (u.folderId ? folderMap.get(u.folderId) : '') || '';
       const upperFolder = String(fName).toUpperCase();
       let cohort: 'IELTS 1' | 'IELTS 2' = idx % 2 === 0 ? 'IELTS 1' : 'IELTS 2';
@@ -1155,6 +1241,7 @@ export function EraVerse() {
       const displayName = u.nickname || u.name || u.displayName || u.username || u.email?.split('@')[0] || `IELTS Student ${idx + 1}`;
       realProfiles.push({
         id: `real-${u.id}`,
+        realUserId: u.id,
         name: displayName,
         cohort,
         course: 'IELTS Course',
@@ -1181,6 +1268,54 @@ export function EraVerse() {
     return combined;
   }, [firestoreFolders, firestoreUsers]);
 
+  // Compute every student's individual Reading, Listening, Writing, Speaking & Overall Band scores
+  const allStudentsSkillScores = useMemo(() => {
+    return ieltsCharacters
+      .filter((c) => c.cohort === 'IELTS 1' || c.cohort === 'IELTS 2')
+      .map((c) => computeStudentSkillScores(c, firestoreSubmissions))
+      .sort((a, b) => b.overall - a.overall);
+  }, [ieltsCharacters, firestoreSubmissions]);
+
+  // Active player's own personal dashboard stats
+  const myPersonalDashboardStats = useMemo(() => {
+    return computeStudentSkillScores(
+      {
+        id: playerProfile.id,
+        realUserId: playerProfile.realUserId || user?.uid,
+        name: playerProfile.name,
+        cohort: playerProfile.cohort,
+        roleTitle: playerProfile.roleTitle,
+        shirtColor: playerProfile.shirtColor
+      },
+      firestoreSubmissions
+    );
+  }, [playerProfile, user?.uid, firestoreSubmissions]);
+
+  // Active player's dedicated class group list (e.g. if Kai is in IELTS 1, show ONLY IELTS 1 students!)
+  const activeClassCohortLabel = playerProfile.cohort === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1';
+  const myClassDashboardStudents = useMemo(() => {
+    const filtered = allStudentsSkillScores.filter((s) => s.cohort === activeClassCohortLabel);
+    // Ensure the active player is included in their class list
+    if (
+      playerProfile.cohort !== 'TEACHER (SUPER ADMIN)' &&
+      !filtered.some((s) => s.name.toLowerCase() === playerProfile.name.toLowerCase())
+    ) {
+      return [myPersonalDashboardStats, ...filtered].sort((a, b) => b.overall - a.overall);
+    }
+    return filtered;
+  }, [allStudentsSkillScores, activeClassCohortLabel, playerProfile, myPersonalDashboardStats]);
+
+  const dashboardDataRef = useRef({
+    myStats: myPersonalDashboardStats,
+    classCohortLabel: activeClassCohortLabel,
+    classStudents: myClassDashboardStudents
+  });
+  dashboardDataRef.current = {
+    myStats: myPersonalDashboardStats,
+    classCohortLabel: activeClassCohortLabel,
+    classStudents: myClassDashboardStudents
+  };
+
   useEffect(() => {
     if (gameActionsRef.current) {
       gameActionsRef.current.syncNpcProfiles(ieltsCharacters);
@@ -1195,8 +1330,9 @@ export function EraVerse() {
     }
     if (gameActionsRef.current) {
       gameActionsRef.current.applyAvatarAppearance(playerProfile);
+      gameActionsRef.current.refreshDashboardWalls();
     }
-  }, [playerProfile]);
+  }, [playerProfile, myPersonalDashboardStats, myClassDashboardStudents]);
 
   const showToast = (title: string, subtitle: string, color = '#2563EB') => {
     setToastBanner({ title, subtitle, color });
@@ -1205,9 +1341,74 @@ export function EraVerse() {
     }, 3200);
   };
 
+  const handleSendProximityChat = (rawText: string) => {
+    if (!nearCharacterPrompt) return;
+    const check = checkEnglishOnlyMessage(rawText);
+    if (!check.allowed) {
+      soundEngine.playDoorSlide(false);
+      const warnText = 'English only please! Please chat in English, not Vietnamese.';
+      setEnglishWarning(warnText);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `warn-${Date.now()}`,
+          senderId: 'system',
+          senderName: 'English Only Rule',
+          senderCohort: 'SYSTEM',
+          text: 'English only please!',
+          timestamp: Date.now(),
+          isWarning: true
+        }
+      ]);
+      gameActionsRef.current?.showSpeechBubbleOnActor('player-self', playerProfile.name, 'English only please!', true);
+      showToast('English Only Please! 🇬🇧', 'Please speak in English when chatting in EraVerse.', '#DC2626');
+      window.setTimeout(() => {
+        setEnglishWarning((prev) => (prev === warnText ? null : prev));
+      }, 4000);
+      return;
+    }
+
+    setEnglishWarning(null);
+    soundEngine.playUiClick();
+    const cleanText = rawText.trim();
+    const userMsg: ChatMessageItem = {
+      id: `msg-${Date.now()}`,
+      senderId: playerProfile.id,
+      senderName: playerProfile.name,
+      senderCohort: playerProfile.cohort,
+      recipientName: nearCharacterPrompt.name,
+      text: cleanText,
+      timestamp: Date.now()
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+    gameActionsRef.current?.showSpeechBubbleOnActor('player-self', playerProfile.name, cleanText, false);
+
+    // Partner replies in English after a brief natural pause
+    const partner = nearCharacterPrompt;
+    window.setTimeout(() => {
+      const replyText = generateEnglishPartnerReply(partner.name, partner.cohort, cleanText);
+      const replyMsg: ChatMessageItem = {
+        id: `reply-${Date.now()}`,
+        senderId: partner.id,
+        senderName: partner.name,
+        senderCohort: partner.cohort,
+        recipientName: playerProfile.name,
+        text: replyText,
+        timestamp: Date.now()
+      };
+      setChatMessages((prev) => [...prev, replyMsg]);
+      gameActionsRef.current?.showSpeechBubbleOnActor(partner.id, partner.name, replyText, false);
+      soundEngine.playUiClick();
+    }, 650);
+  };
+
   const handleBoardAction = (board: WallBoardSpec) => {
     soundEngine.playUiClick();
-    if (board.actionType === 'practice_skill' && board.skillOrTab) {
+    if (board.actionType === 'my_dashboard') {
+      setDashboardHallModal('my_dashboard');
+    } else if (board.actionType === 'class_dashboard') {
+      setDashboardHallModal('class_dashboard');
+    } else if (board.actionType === 'practice_skill' && board.skillOrTab) {
       setSelectedPracticeSkill(board.skillOrTab);
       setActiveBuildingModal('practice_tests');
     } else if (board.actionType === 'homework_folder') {
@@ -2108,16 +2309,17 @@ export function EraVerse() {
     // ============================================================================
     const createNameplateSprite = (name: string, cohort: string) => {
       const c = document.createElement('canvas');
-      c.width = 320;
-      c.height = 84;
+      c.width = 360;
+      c.height = 88;
       const ctx = c.getContext('2d')!;
 
+      const isTeacher = cohort.toUpperCase().includes('TEACHER') || cohort.toUpperCase().includes('ADMIN');
       const isIelts2 = cohort.includes('2');
-      const badgeColor = isIelts2 ? '#10b981' : '#2563eb';
+      const badgeColor = isTeacher ? '#d97706' : isIelts2 ? '#10b981' : '#2563eb';
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
       ctx.beginPath();
-      ctx.roundRect(6, 6, 308, 72, 20);
+      ctx.roundRect(6, 6, 348, 76, 20);
       ctx.fill();
       ctx.lineWidth = 4;
       ctx.strokeStyle = badgeColor;
@@ -2125,24 +2327,24 @@ export function EraVerse() {
 
       ctx.fillStyle = badgeColor;
       ctx.beginPath();
-      ctx.roundRect(96, 13, 128, 22, 11);
+      ctx.roundRect(42, 12, 276, 24, 12);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px Plus Jakarta Sans, sans-serif';
+      ctx.font = '900 12px Plus Jakarta Sans, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(cohort.toUpperCase(), 160, 29);
+      ctx.fillText(cohort.toUpperCase(), 180, 29);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 21px Plus Jakarta Sans, sans-serif';
-      ctx.fillText(name.slice(0, 16), 160, 60);
+      ctx.fillStyle = isTeacher ? '#fde68a' : '#ffffff';
+      ctx.font = '900 21px Plus Jakarta Sans, sans-serif';
+      ctx.fillText(name.slice(0, 20), 180, 62);
 
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
       const sprite = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true, depthWrite: false })
       );
-      sprite.scale.set(2.35, 0.62, 1);
-      sprite.position.set(0, 3.75, 0);
+      sprite.scale.set(2.65, 0.65, 1);
+      sprite.position.set(0, 3.78, 0);
       return sprite;
     };
 
@@ -2165,6 +2367,9 @@ export function EraVerse() {
       shadowDisc.rotation.x = -Math.PI / 2;
       shadowDisc.position.y = 0.02;
       root.add(shadowDisc);
+
+      const bodyGroup = new THREE.Group();
+      root.add(bodyGroup);
 
       const skinMat = new THREE.MeshStandardMaterial({ color: opts.skinColor, roughness: 0.45, metalness: 0.04 });
       const shirtMat = new THREE.MeshStandardMaterial({ color: opts.shirtColor, roughness: 0.38, metalness: 0.14 });
@@ -2196,7 +2401,7 @@ export function EraVerse() {
       const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.52, 8, segs), shirtMat);
       torso.position.y = 1.45;
       torso.castShadow = true;
-      root.add(torso);
+      bodyGroup.add(torso);
 
       const collar = new THREE.Mesh(
         new THREE.TorusGeometry(0.28, 0.06, 8, segs),
@@ -2204,20 +2409,21 @@ export function EraVerse() {
       );
       collar.rotation.x = Math.PI / 2;
       collar.position.y = 1.92;
-      root.add(collar);
+      bodyGroup.add(collar);
 
       // Student Backpack on Back
+      const isTeacherCohort = opts.cohort.toUpperCase().includes('TEACHER');
       const backpack = new THREE.Mesh(
         new THREE.BoxGeometry(0.62, 0.72, 0.32),
         new THREE.MeshStandardMaterial({
-          color: opts.cohort.includes('2') ? 0x059669 : 0x1e3a8a,
+          color: isTeacherCohort ? 0xb45309 : opts.cohort.includes('2') ? 0x059669 : 0x1e3a8a,
           roughness: 0.4,
           metalness: 0.2
         })
       );
       backpack.position.set(0, 1.48, -0.38);
       backpack.castShadow = true;
-      root.add(backpack);
+      bodyGroup.add(backpack);
 
       // Smooth Capsule Arms + Hands
       const createArm = (ax: number) => {
@@ -2235,7 +2441,7 @@ export function EraVerse() {
 
       const leftArm = createArm(-0.58);
       const rightArm = createArm(0.58);
-      root.add(leftArm, rightArm);
+      bodyGroup.add(leftArm, rightArm);
 
       // Detailed Sculpted Head + Ears + Eyes + Smile
       const headGroup = new THREE.Group();
@@ -2329,13 +2535,14 @@ export function EraVerse() {
         headGroup.add(glassesBar);
       }
 
-      root.add(headGroup);
+      bodyGroup.add(headGroup);
 
       const nameplate = createNameplateSprite(opts.name, opts.cohort);
       root.add(nameplate);
 
       return {
         root,
+        bodyGroup,
         leftLeg,
         rightLeg,
         leftArm,
@@ -2346,6 +2553,30 @@ export function EraVerse() {
 
     let playerRig = buildCharacterAvatar(playerProfile);
     scene.add(playerRig.root);
+
+    // Active 3D speech bubbles above characters
+    const activeSpeechBubbles: Array<{
+      rigRoot: THREE.Group;
+      sprite: THREE.Sprite;
+      expiresAt: number;
+    }> = [];
+
+    const attachSpeechBubble = (rigRoot: THREE.Group, speakerName: string, text: string, isWarning = false) => {
+      // Remove any existing speech bubble on this rigRoot
+      for (let i = activeSpeechBubbles.length - 1; i >= 0; i--) {
+        if (activeSpeechBubbles[i].rigRoot === rigRoot) {
+          rigRoot.remove(activeSpeechBubbles[i].sprite);
+          activeSpeechBubbles.splice(i, 1);
+        }
+      }
+      const sprite = createSpeechBubbleSprite(speakerName, text, isWarning);
+      rigRoot.add(sprite);
+      activeSpeechBubbles.push({
+        rigRoot,
+        sprite,
+        expiresAt: performance.now() + 6200
+      });
+    };
 
     // Pickleball AI Partner Character on North side of Pickleball Court
     const pickleOpponentRig = buildCharacterAvatar({
@@ -2360,7 +2591,20 @@ export function EraVerse() {
     pickleOpponentRig.root.position.set(PICKLE_CENTER.x, 0, PICKLE_CENTER.z - 8.5);
     scene.add(pickleOpponentRig.root);
 
-    // Autonomous IELTS 1 & IELTS 2 Classmates
+    // Football AI Goalkeeper on North Goal of Football Field
+    const footballKeeperRig = buildCharacterAvatar({
+      shirtColor: '#ef4444',
+      hairColor: '#0f172a',
+      skinColor: '#f1c27d',
+      hatType: 'cap',
+      accessoryType: 'none',
+      name: 'Keeper Max (GK)',
+      cohort: 'IELTS 1'
+    });
+    footballKeeperRig.root.position.set(PITCH_CENTER.x, 0, PITCH_CENTER.z - PITCH_L / 2 + 1.4);
+    scene.add(footballKeeperRig.root);
+
+    // Autonomous IELTS 1, IELTS 2 & Teacher Jan Classmates
     interface NpcActor {
       profile: IeltsCharacterProfile;
       rig: ReturnType<typeof buildCharacterAvatar>;
@@ -2380,7 +2624,7 @@ export function EraVerse() {
       }
       npcActors.length = 0;
 
-      profiles.slice(0, 12).forEach((prof, idx) => {
+      profiles.slice(0, 14).forEach((prof, idx) => {
         const rig = buildCharacterAvatar({
           shirtColor: prof.shirtColor,
           hairColor: prof.hairColor,
@@ -2390,8 +2634,9 @@ export function EraVerse() {
           name: prof.name,
           cohort: prof.cohort
         });
-        const angle = (idx / Math.max(1, Math.min(12, profiles.length))) * Math.PI * 2;
-        const radius = 14 + (idx % 3) * 8;
+        const isTeacherJan = prof.id === TEACHER_JAN_PROFILE.id || prof.cohort.includes('TEACHER');
+        const angle = (idx / Math.max(1, Math.min(14, profiles.length))) * Math.PI * 2;
+        const radius = isTeacherJan ? 8 : 14 + (idx % 3) * 8;
         rig.root.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
         rig.root.userData = { npcProfileId: prof.id };
         npcGroup.add(rig.root);
@@ -2402,7 +2647,7 @@ export function EraVerse() {
           rig,
           targetX: targetB.doorX + (Math.random() - 0.5) * 8,
           targetZ: targetB.doorZ + targetB.frontDir * 4.5,
-          speed: 3.5 + (idx % 3) * 0.45,
+          speed: isTeacherJan ? 3.2 : 3.5 + (idx % 3) * 0.45,
           walkPhase: idx * 1.1,
           pauseTimer: 0
         });
@@ -2430,6 +2675,18 @@ export function EraVerse() {
 
     // Bright High-Clarity Interactive Wall Board Texture
     const makeBrightInteriorBoardTexture = (spec: WallBoardSpec) => {
+      if (spec.dashboardType === 'personal') {
+        return createPersonalDashboardWallTexture(dashboardDataRef.current.myStats, maxAnisotropy);
+      }
+      if (spec.dashboardType === 'class') {
+        return createClassDashboardWallTexture(
+          dashboardDataRef.current.classCohortLabel,
+          dashboardDataRef.current.classStudents,
+          dashboardDataRef.current.myStats.name,
+          maxAnisotropy
+        );
+      }
+
       const c = document.createElement('canvas');
       c.width = 768;
       c.height = 440;
@@ -2613,7 +2870,7 @@ export function EraVerse() {
       headerJamb.position.set(0, 5.1, 0);
       exitFrameGroup.add(leftJamb, rightJamb, headerJamb);
 
-      // Illuminated Green "EXIT TO CAMPUS" Sign mounted cleanly above the door frame (on a PlaneGeometry so edges never stretch!)
+      // Illuminated Green "EXIT TO CAMPUS" Sign mounted cleanly above the door frame
       const exitSignTex = makeAttachedBuildingNameTexture('EXIT DOOR', '#059669', '#34d399');
       const exitSignBacking = new THREE.Mesh(
         new THREE.BoxGeometry(4.4, 1.1, 0.2),
@@ -2627,7 +2884,7 @@ export function EraVerse() {
         new THREE.MeshBasicMaterial({ map: exitSignTex })
       );
       exitSignFront.position.set(0, 6.05, -0.12);
-      exitSignFront.rotation.y = Math.PI; // Faces player inside room
+      exitSignFront.rotation.y = Math.PI;
       exitSignFront.userData = { isExitDoor: true };
       exitFrameGroup.add(exitSignFront);
       clickableBoardMeshes.push(exitSignFront);
@@ -2678,27 +2935,28 @@ export function EraVerse() {
 
       interiorGroup.add(exitFrameGroup);
 
-      // Interactive 3D Wall Boards (Mounted with PlaneGeometry front face so borders are razor-sharp)
+      // Interactive 3D Wall Boards (In Dashboard Hall, only 2 extra-large boards: My Personal Dashboard + My Class Dashboard)
+      const isDashboardHall = building.id === 'dashboard';
       const boards = INTERIOR_BOARDS_BY_BUILDING[building.id] || INTERIOR_BOARDS_BY_BUILDING['practice_tests'];
       const slotTransforms: Record<
         WallBoardSpec['slot'],
         { x: number; y: number; z: number; rotY: number; standX: number; standZ: number }
       > = {
         'back-left': {
-          x: -6.4,
-          y: 4.6,
+          x: isDashboardHall ? -6.5 : -6.4,
+          y: isDashboardHall ? 4.9 : 4.6,
           z: -roomD / 2 + 0.4,
           rotY: 0,
-          standX: INTERIOR_ORIGIN.x - 6.4,
-          standZ: INTERIOR_ORIGIN.z - roomD / 2 + 3.6
+          standX: INTERIOR_ORIGIN.x + (isDashboardHall ? -6.5 : -6.4),
+          standZ: INTERIOR_ORIGIN.z - roomD / 2 + 4.0
         },
         'back-right': {
-          x: 6.4,
-          y: 4.6,
+          x: isDashboardHall ? 6.5 : 6.4,
+          y: isDashboardHall ? 4.9 : 4.6,
           z: -roomD / 2 + 0.4,
           rotY: 0,
-          standX: INTERIOR_ORIGIN.x + 6.4,
-          standZ: INTERIOR_ORIGIN.z - roomD / 2 + 3.6
+          standX: INTERIOR_ORIGIN.x + (isDashboardHall ? 6.5 : 6.4),
+          standZ: INTERIOR_ORIGIN.z - roomD / 2 + 4.0
         },
         'left-wall': {
           x: -roomW / 2 + 0.4,
@@ -2724,8 +2982,12 @@ export function EraVerse() {
         bGroup.position.set(tf.x, tf.y, tf.z);
         bGroup.rotation.y = tf.rotY;
 
+        const isLargeDashboardBoard = Boolean(bSpec.dashboardType);
+        const boardW = isLargeDashboardBoard ? 11.4 : 8.2;
+        const boardH = isLargeDashboardBoard ? 6.8 : 4.8;
+
         const backing = new THREE.Mesh(
-          new THREE.BoxGeometry(8.2, 4.8, 0.18),
+          new THREE.BoxGeometry(boardW, boardH, 0.18),
           new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
         );
         backing.userData = { boardSpec: bSpec };
@@ -2733,7 +2995,7 @@ export function EraVerse() {
 
         const bTex = makeBrightInteriorBoardTexture(bSpec);
         const faceMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(8.0, 4.6),
+          new THREE.PlaneGeometry(boardW - 0.2, boardH - 0.2),
           new THREE.MeshBasicMaterial({ map: bTex })
         );
         faceMesh.position.z = 0.11;
@@ -2744,7 +3006,7 @@ export function EraVerse() {
         clickableBoardMeshes.push(backing, faceMesh);
 
         const padMesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(1.65, 1.65, 0.08, 28),
+          new THREE.CylinderGeometry(1.75, 1.75, 0.08, 28),
           new THREE.MeshBasicMaterial({
             color: new THREE.Color(bSpec.accentHex),
             transparent: true,
@@ -2782,9 +3044,16 @@ export function EraVerse() {
       rotY: Math.PI,
       isGrounded: true,
       sprinting: false,
+      isCrouching: false,
+      crouchLerp: 0,
       walkCycle: 0,
-      waveTimer: 0
+      waveTimer: 0,
+      kickTimer: 0,
+      hitTimer: 0
     };
+
+    let lastDetectedSportsZone: 'football' | 'pickleball' | null = null;
+    let keeperGoalCooldown = 0;
 
     const camState = {
       yaw: 0,
@@ -2827,6 +3096,10 @@ export function EraVerse() {
       setZoomSliderValue(12);
       setInsideBuilding(b);
       setNearBuildingPrompt(null);
+      if (lastDetectedSportsZone !== null) {
+        lastDetectedSportsZone = null;
+        setInSportsZone(null);
+      }
       showToast(
         `Inside ${b.name}`,
         `Now playing: ♪ ${ROOM_SONGS[b.id]?.name || 'Classroom Melody'}`,
@@ -2883,6 +3156,9 @@ export function EraVerse() {
         playerRig.root.position.copy(oldPos);
         playerRig.root.rotation.y = oldRot;
         scene.add(playerRig.root);
+        if (activeInteriorBuilding?.id === 'dashboard') {
+          buildInteriorRoom(activeInteriorBuilding);
+        }
       },
       setGraphicsQuality: (q: GraphicsQuality) => {
         currentQuality = q;
@@ -2902,7 +3178,6 @@ export function EraVerse() {
           renderer.toneMappingExposure = 1.05;
           scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0055);
         }
-        // Rebuild avatar & NPCs with updated geometry detail level
         const oldPos = playerRig.root.position.clone();
         const oldRot = playerRig.root.rotation.y;
         scene.remove(playerRig.root);
@@ -2935,9 +3210,60 @@ export function EraVerse() {
       },
       triggerJump: () => {
         if (playerState.isGrounded) {
-          playerState.vy = 11.8;
+          playerState.isCrouching = false;
+          setIsCrouching(false);
+          playerState.vy = 12.2;
           playerState.isGrounded = false;
           soundEngine.playJump(false);
+        }
+      },
+      toggleCrouch: () => {
+        playerState.isCrouching = !playerState.isCrouching;
+        setIsCrouching(playerState.isCrouching);
+        soundEngine.playUiClick();
+      },
+      triggerKick: () => {
+        playerState.kickTimer = 0.42;
+        soundEngine.playBallKick();
+        if (!activeInteriorBuilding) {
+          const distToBall = Math.hypot(playerState.x - soccerBallState.x, playerState.z - soccerBallState.z);
+          if (distToBall < 4.5) {
+            // Aim shot toward the facing direction (or North Goal if facing North)
+            const faceX = Math.sin(playerState.rotY);
+            const faceZ = Math.cos(playerState.rotY);
+            const toBallX = (soccerBallState.x - playerState.x) / Math.max(0.25, distToBall);
+            const toBallZ = (soccerBallState.z - playerState.z) / Math.max(0.25, distToBall);
+            const shotX = faceX * 0.65 + toBallX * 0.35;
+            const shotZ = faceZ * 0.65 + toBallZ * 0.35;
+            const norm = Math.hypot(shotX, shotZ) || 1;
+            soccerBallState.vx = (shotX / norm) * 24.5;
+            soccerBallState.vz = (shotZ / norm) * 24.5;
+            soccerBallState.vy = 7.4;
+            showToast('Power Kick! ⚽', 'Blasted the football downfield!', '#16A34A');
+          }
+        }
+      },
+      triggerHit: () => {
+        playerState.hitTimer = 0.42;
+        soundEngine.playPickleballHit();
+        if (!activeInteriorBuilding) {
+          const distPickle = Math.hypot(playerState.x - pickleBallState.x, playerState.z - pickleBallState.z);
+          if (distPickle < 5.6) {
+            pickleBallState.vz = -Math.abs(pickleBallState.vz) * 1.18 - 2.0;
+            pickleBallState.vx = (Math.random() - 0.5) * 6.5;
+            pickleBallState.phase = 0.35;
+            setPickleballScore((s) => s + 1);
+            setXp((x) => x + 30);
+            showToast('Pickleball Power Smash! 🏓 +30 XP', 'Crushed the return over the net!', '#0EA5E9');
+          } else {
+            // Also allow hitting soccer ball if right next to it
+            const distSoccer = Math.hypot(playerState.x - soccerBallState.x, playerState.z - soccerBallState.z);
+            if (distSoccer < 3.4) {
+              soccerBallState.vx = Math.sin(playerState.rotY) * 18;
+              soccerBallState.vz = Math.cos(playerState.rotY) * 18;
+              soccerBallState.vy = 6.0;
+            }
+          }
         }
       },
       triggerWave: () => {
@@ -2949,6 +3275,21 @@ export function EraVerse() {
       },
       syncNpcProfiles: (profiles) => {
         spawnNpcActors(profiles);
+      },
+      showSpeechBubbleOnActor: (actorId, speakerName, text, isWarning) => {
+        if (actorId === 'player') {
+          attachSpeechBubble(playerRig.root, speakerName, text, isWarning);
+          return;
+        }
+        const foundNpc = npcActors.find((n) => n.profile.id === actorId);
+        if (foundNpc) {
+          attachSpeechBubble(foundNpc.rig.root, speakerName, text, isWarning);
+        }
+      },
+      refreshDashboardWalls: () => {
+        if (activeInteriorBuilding && activeInteriorBuilding.id === 'dashboard') {
+          buildInteriorRoom(activeInteriorBuilding);
+        }
       }
     };
 
@@ -2960,12 +3301,21 @@ export function EraVerse() {
       if (code === 'Space') {
         e.preventDefault();
         gameActionsRef.current?.triggerJump();
+      } else if (code === 'KeyC') {
+        e.preventDefault();
+        gameActionsRef.current?.toggleCrouch();
+      } else if (code === 'KeyF') {
+        e.preventDefault();
+        gameActionsRef.current?.triggerKick();
+      } else if (code === 'KeyG') {
+        e.preventDefault();
+        gameActionsRef.current?.triggerHit();
       } else if (code === 'ShiftLeft' || code === 'ShiftRight') {
         playerState.sprinting = true;
       } else if (code === 'KeyE') {
         if (activeInteriorBuilding) {
           let closestBoard: WallBoardSpec | null = null;
-          let minD = 4.5;
+          let minD = 4.8;
           currentInteriorBoards.forEach((cb) => {
             const d = Math.hypot(playerState.x - cb.x, playerState.z - cb.z);
             if (d < minD) {
@@ -3112,7 +3462,7 @@ export function EraVerse() {
     }
 
     // ============================================================================
-    // 10. ANIMATION LOOP (Smooth Damped Movement, Football & Pickleball Physics)
+    // 10. ANIMATION LOOP (Smooth Damped Movement, Sports Side Actions, Football & Pickleball)
     // ============================================================================
     let frameId = 0;
     let isDisposed = false;
@@ -3146,6 +3496,18 @@ export function EraVerse() {
 
       if (doorCooldownTimer > 0) {
         doorCooldownTimer -= dt;
+      }
+      if (keeperGoalCooldown > 0) {
+        keeperGoalCooldown -= dt;
+      }
+
+      // Clean up expired 3D speech bubbles
+      const nowMs = performance.now();
+      for (let i = activeSpeechBubbles.length - 1; i >= 0; i--) {
+        if (nowMs >= activeSpeechBubbles[i].expiresAt) {
+          activeSpeechBubbles[i].rigRoot.remove(activeSpeechBubbles[i].sprite);
+          activeSpeechBubbles.splice(i, 1);
+        }
       }
 
       globeGem.rotation.y = elapsed * 0.9;
@@ -3191,7 +3553,6 @@ export function EraVerse() {
           }
         });
       } else if (interiorExitLeftDoor && interiorExitRightDoor) {
-        // Animate Interior Exit Door panels sliding open as player approaches exit (+Z)
         const distToExit = Math.hypot(
           playerState.x - INTERIOR_ORIGIN.x,
           playerState.z - (INTERIOR_ORIGIN.z + 11.5)
@@ -3202,7 +3563,7 @@ export function EraVerse() {
         interiorExitRightDoor.position.x = 1.06 + interiorExitOpenAmount * 1.4;
       }
 
-      // PLAYER MOVEMENT (Keyboard + Mobile/Tablet Touch Joystick with Smooth Acceleration)
+      // PLAYER MOVEMENT (Keyboard + Mobile/Tablet Touch Joystick with Smooth Acceleration & Crouch Support)
       let moveForward = 0;
       let moveRight = 0;
       if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
@@ -3217,7 +3578,7 @@ export function EraVerse() {
 
       const inputMag = Math.min(1, Math.hypot(moveForward, moveRight));
       const isMoving = inputMag > 0.06;
-      const maxSpeed = playerState.sprinting ? 15.0 : 9.8;
+      const baseSpeed = playerState.isCrouching ? 5.6 : playerState.sprinting ? 15.2 : 10.2;
 
       if (isMoving) {
         const fwdX = -Math.sin(camState.yaw);
@@ -3231,19 +3592,19 @@ export function EraVerse() {
         dirX /= len;
         dirZ /= len;
 
-        const targetVx = dirX * maxSpeed * inputMag;
-        const targetVz = dirZ * maxSpeed * inputMag;
-        playerState.vx = THREE.MathUtils.damp(playerState.vx, targetVx, 14, dt);
-        playerState.vz = THREE.MathUtils.damp(playerState.vz, targetVz, 14, dt);
+        const targetVx = dirX * baseSpeed * inputMag;
+        const targetVz = dirZ * baseSpeed * inputMag;
+        playerState.vx = THREE.MathUtils.damp(playerState.vx, targetVx, 15, dt);
+        playerState.vz = THREE.MathUtils.damp(playerState.vz, targetVz, 15, dt);
 
         const targetRotY = Math.atan2(dirX, dirZ);
         let diff = targetRotY - playerState.rotY;
         while (diff > Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
-        playerState.rotY += diff * Math.min(1, dt * 15);
+        playerState.rotY += diff * Math.min(1, dt * 16);
       } else {
-        playerState.vx = THREE.MathUtils.damp(playerState.vx, 0, 12, dt);
-        playerState.vz = THREE.MathUtils.damp(playerState.vz, 0, 12, dt);
+        playerState.vx = THREE.MathUtils.damp(playerState.vx, 0, 13, dt);
+        playerState.vz = THREE.MathUtils.damp(playerState.vz, 0, 13, dt);
       }
 
       const speedNow = Math.hypot(playerState.vx, playerState.vz);
@@ -3278,7 +3639,7 @@ export function EraVerse() {
         }
 
         playerState.walkCycle += dt * (speedNow * 1.15);
-        const swing = Math.sin(playerState.walkCycle) * Math.min(0.6, speedNow * 0.06);
+        const swing = Math.sin(playerState.walkCycle) * Math.min(0.62, speedNow * 0.062);
         playerRig.leftLeg.rotation.x = swing;
         playerRig.rightLeg.rotation.x = -swing;
         playerRig.leftArm.rotation.x = -swing * 0.75;
@@ -3291,10 +3652,36 @@ export function EraVerse() {
         playerRig.leftLeg.rotation.x *= 0.85;
         playerRig.rightLeg.rotation.x *= 0.85;
         playerRig.leftArm.rotation.x *= 0.85;
-        if (playerState.waveTimer <= 0) {
+        if (playerState.waveTimer <= 0 && playerState.hitTimer <= 0) {
           playerRig.rightArm.rotation.x *= 0.85;
           playerRig.rightArm.rotation.z *= 0.85;
         }
+      }
+
+      // Crouch animation (smooth torso drop + athletic knee bend)
+      const targetCrouch = playerState.isCrouching ? 1 : 0;
+      playerState.crouchLerp = THREE.MathUtils.damp(playerState.crouchLerp, targetCrouch, 14, dt);
+      playerRig.bodyGroup.position.y = -playerState.crouchLerp * 0.42;
+      playerRig.bodyGroup.rotation.x = playerState.crouchLerp * 0.24;
+      if (playerState.crouchLerp > 0.05 && speedNow <= 0.2) {
+        playerRig.leftLeg.rotation.x = -playerState.crouchLerp * 0.48;
+        playerRig.rightLeg.rotation.x = playerState.crouchLerp * 0.48;
+      }
+
+      // Kick leg swing animation
+      if (playerState.kickTimer > 0) {
+        playerState.kickTimer -= dt;
+        const kickPhase = Math.sin((playerState.kickTimer / 0.42) * Math.PI);
+        playerRig.rightLeg.rotation.x = -kickPhase * 1.35;
+        playerRig.leftArm.rotation.x = -kickPhase * 0.85;
+      }
+
+      // Hit / Smash arm swing animation
+      if (playerState.hitTimer > 0) {
+        playerState.hitTimer -= dt;
+        const hitPhase = Math.sin((playerState.hitTimer / 0.42) * Math.PI);
+        playerRig.rightArm.rotation.x = -hitPhase * 2.25;
+        playerRig.rightArm.rotation.z = -hitPhase * 0.45;
       }
 
       if (playerState.waveTimer > 0) {
@@ -3326,20 +3713,70 @@ export function EraVerse() {
       playerRig.root.position.set(playerState.x, playerState.y, playerState.z);
       playerRig.root.rotation.y = playerState.rotY;
 
+      // Detect whether player is in Football Field or Pickleball Court
+      if (!activeInteriorBuilding) {
+        const inFootball =
+          Math.abs(playerState.x - PITCH_CENTER.x) < PITCH_W / 2 + 5 &&
+          Math.abs(playerState.z - PITCH_CENTER.z) < PITCH_L / 2 + 5;
+        const inPickle =
+          Math.abs(playerState.x - PICKLE_CENTER.x) < PICKLE_W / 2 + 5 &&
+          Math.abs(playerState.z - PICKLE_CENTER.z) < PICKLE_L / 2 + 5;
+        const nextZone: 'football' | 'pickleball' | null = inFootball
+          ? 'football'
+          : inPickle
+          ? 'pickleball'
+          : null;
+        if (nextZone !== lastDetectedSportsZone) {
+          lastDetectedSportsZone = nextZone;
+          setInSportsZone(nextZone);
+        }
+      }
+
       // ============================================================================
-      // SPORTS PARK SIMULATION: FOOTBALL (SOCCER) & PICKLEBALL RALLY
+      // SPORTS PARK SIMULATION: PLAYABLE FOOTBALL MATCH & PICKLEBALL RALLY
       // ============================================================================
       if (!activeInteriorBuilding) {
-        // 1. Football Physics & Player Kick Interaction
+        // 1. Football Physics, Dribbling & AI Goalkeeper (Keeper Max)
         const distToBall = Math.hypot(playerState.x - soccerBallState.x, playerState.z - soccerBallState.z);
-        if (distToBall < 1.65 && playerState.y < 1.8) {
+        if (distToBall < 1.68 && playerState.y < 1.8) {
           const kickDirX = (soccerBallState.x - playerState.x) / Math.max(0.2, distToBall);
           const kickDirZ = (soccerBallState.z - playerState.z) / Math.max(0.2, distToBall);
-          const kickPower = Math.max(12.5, speedNow * 1.65);
+          const isPowerKick = playerState.kickTimer > 0;
+          const kickPower = isPowerKick ? 24.0 : Math.max(11.5, speedNow * 1.45);
           soccerBallState.vx = kickDirX * kickPower;
           soccerBallState.vz = kickDirZ * kickPower;
-          soccerBallState.vy = 5.2;
+          soccerBallState.vy = isPowerKick ? 7.0 : 3.6;
           soundEngine.playBallKick();
+        }
+
+        // AI Goalkeeper (Keeper Max) patrols the North Goal line and dives to save or counter-kick!
+        const northGoalZ = PITCH_CENTER.z - PITCH_L / 2 + 1.35;
+        const keeperTargetX = THREE.MathUtils.clamp(
+          soccerBallState.x,
+          PITCH_CENTER.x - 2.75,
+          PITCH_CENTER.x + 2.75
+        );
+        footballKeeperRig.root.position.x = THREE.MathUtils.damp(
+          footballKeeperRig.root.position.x,
+          keeperTargetX,
+          5.2,
+          dt
+        );
+        footballKeeperRig.root.position.z = northGoalZ;
+        footballKeeperRig.leftLeg.rotation.x = Math.sin(elapsed * 6) * 0.25;
+        footballKeeperRig.rightLeg.rotation.x = -Math.sin(elapsed * 6) * 0.25;
+
+        const distKeeperToBall = Math.hypot(
+          footballKeeperRig.root.position.x - soccerBallState.x,
+          footballKeeperRig.root.position.z - soccerBallState.z
+        );
+        if (distKeeperToBall < 1.45 && soccerBallState.y < 2.3 && soccerBallState.vz < 0) {
+          // Keeper Max blocks and counter-attacks toward South Goal!
+          soccerBallState.vz = 17.5 + Math.random() * 5;
+          soccerBallState.vx = (Math.random() - 0.5) * 10;
+          soccerBallState.vy = 5.5;
+          soundEngine.playBallKick();
+          showToast('Saved by Keeper Max! 🧤', 'Use KICK (F) from an angle to beat the goalkeeper!', '#F59E0B');
         }
 
         soccerBallState.vy -= 18 * dt;
@@ -3375,13 +3812,33 @@ export function EraVerse() {
           soccerBallState.vx = -Math.abs(soccerBallState.vx) * 0.7;
         }
 
-        // Check Goal Scored (Within goalposts X: ±3.2 at North/South ends)
-        if (Math.abs(soccerBallState.x - PITCH_CENTER.x) < 3.1) {
-          if (soccerBallState.z < minPitchZ + 1.1 || soccerBallState.z > maxPitchZ - 1.1) {
+        // Check Goal Scored (Within goalposts X: ±3.1 at North/South ends)
+        if (Math.abs(soccerBallState.x - PITCH_CENTER.x) < 3.1 && keeperGoalCooldown <= 0) {
+          if (soccerBallState.z < minPitchZ + 1.1) {
+            // Player scored in North Goal past Keeper Max!
+            keeperGoalCooldown = 1.5;
             soundEngine.playGoalCheer();
             setFootballGoals((g) => g + 1);
             setXp((x) => x + 100);
-            showToast('GOOOOAL! ⚽ +100 XP!', 'Awesome shot on the EraVerse Football Field!', '#16A34A');
+            showToast('GOOOOAL! ⚽ +100 XP!', 'You beat Keeper Max on the EraVerse Football Field!', '#16A34A');
+            soccerBallState.x = PITCH_CENTER.x;
+            soccerBallState.y = 2.0;
+            soccerBallState.z = PITCH_CENTER.z;
+            soccerBallState.vx = 0;
+            soccerBallState.vy = 0;
+            soccerBallState.vz = 0;
+          } else if (soccerBallState.z > maxPitchZ - 1.1) {
+            // South goal: if player was far or Keeper counter-attacked
+            keeperGoalCooldown = 1.5;
+            soundEngine.playGoalCheer();
+            if (playerState.z > PITCH_CENTER.z) {
+              setFootballGoals((g) => g + 1);
+              setXp((x) => x + 100);
+              showToast('GOOOOAL! ⚽ +100 XP!', 'Awesome shot into the South Goal!', '#16A34A');
+            } else {
+              setAiFootballGoals((g) => g + 1);
+              showToast('Keeper Max Scored! ⚽', 'Defend the South Goal and counter-attack!', '#EF4444');
+            }
             soccerBallState.x = PITCH_CENTER.x;
             soccerBallState.y = 2.0;
             soccerBallState.z = PITCH_CENTER.z;
@@ -3404,34 +3861,51 @@ export function EraVerse() {
         soccerBallMesh.rotation.x += soccerBallState.vz * dt * 1.2;
         soccerBallMesh.rotation.z -= soccerBallState.vx * dt * 1.2;
 
-        // 2. Pickleball Rally Simulation
+        // 2. Pickleball Rally & Match Scoring Simulation
         pickleBallState.x += pickleBallState.vx * dt;
         pickleBallState.z += pickleBallState.vz * dt;
         pickleBallState.phase += dt * 6.5;
         pickleBallState.y = 1.15 + Math.abs(Math.sin(pickleBallState.phase)) * 1.45;
 
+        // Clamp pickleball X within court width
+        if (pickleBallState.x < PICKLE_CENTER.x - PICKLE_W / 2 + 0.6) {
+          pickleBallState.x = PICKLE_CENTER.x - PICKLE_W / 2 + 0.6;
+          pickleBallState.vx = Math.abs(pickleBallState.vx);
+        }
+        if (pickleBallState.x > PICKLE_CENTER.x + PICKLE_W / 2 - 0.6) {
+          pickleBallState.x = PICKLE_CENTER.x + PICKLE_W / 2 - 0.6;
+          pickleBallState.vx = -Math.abs(pickleBallState.vx);
+        }
+
         // AI Coach hits ball back on North side
         if (pickleBallState.z < PICKLE_CENTER.z - 8.2 && pickleBallState.vz < 0) {
-          pickleBallState.vz = Math.abs(pickleBallState.vz);
-          pickleBallState.vx = (Math.random() - 0.5) * 4.5;
+          pickleBallState.vz = 9.5;
+          pickleBallState.vx = (Math.random() - 0.5) * 4.8;
+          pickleOpponentRig.rightArm.rotation.x = -1.6;
           if (Math.hypot(playerState.x - PICKLE_CENTER.x, playerState.z - PICKLE_CENTER.z) < 18) {
             soundEngine.playPickleballHit();
           }
+        } else {
+          pickleOpponentRig.rightArm.rotation.x *= 0.85;
         }
-        // South side return (if player is on South side of Pickleball court, player hits it and scores rally points!)
+
+        // South side return (if player is near or presses HIT, player returns and scores; if player is on court and misses, Coach Leo scores!)
         if (pickleBallState.z > PICKLE_CENTER.z + 8.2 && pickleBallState.vz > 0) {
-          pickleBallState.vz = -Math.abs(pickleBallState.vz);
-          pickleBallState.vx = (Math.random() - 0.5) * 4.5;
-          const playerNearPickle = Math.hypot(
+          pickleBallState.vz = -9.5;
+          pickleBallState.vx = (Math.random() - 0.5) * 4.8;
+          const playerDistToBall = Math.hypot(
             playerState.x - pickleBallState.x,
             playerState.z - pickleBallState.z
-          ) < 4.8;
-          if (playerNearPickle) {
+          );
+          if (playerDistToBall < 4.9 || playerState.hitTimer > 0) {
             soundEngine.playPickleballHit();
-            playerState.waveTimer = 0.45; // Swing arm
+            playerState.hitTimer = 0.38;
             setPickleballScore((s) => s + 1);
             setXp((x) => x + 25);
             showToast('Pickleball Smash! 🏓 +25 XP', 'Great return over the net!', '#0EA5E9');
+          } else if (lastDetectedSportsZone === 'pickleball') {
+            setAiPickleballScore((s) => s + 1);
+            showToast('Coach Leo Point! 🏓', 'Move closer or press HIT (G) to return the ball!', '#F59E0B');
           }
         }
 
@@ -3466,9 +3940,9 @@ export function EraVerse() {
         });
       }
 
-      // Autonomous Classmates AI Patrol
+      // Autonomous Classmates & Teacher Jan AI Patrol + Proximity Detection
       let closestNpc: IeltsCharacterProfile | null = null;
-      let closestNpcDist = 4.0;
+      let closestNpcDist = 5.4;
 
       npcActors.forEach((npc) => {
         if (npc.pauseTimer > 0) {
@@ -3517,7 +3991,7 @@ export function EraVerse() {
       // Proximity Prompts
       if (activeInteriorBuilding) {
         let nearBoard: WallBoardSpec | null = null;
-        let minBoardDist = 4.2;
+        let minBoardDist = 4.6;
         currentInteriorBoards.forEach((cb) => {
           const d = Math.hypot(playerState.x - cb.x, playerState.z - cb.z);
           if (d < minBoardDist) {
@@ -3740,7 +4214,9 @@ export function EraVerse() {
               <span className="font-extrabold text-sm tracking-tight text-white">{playerProfile.name}</span>
               <span
                 className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                  playerProfile.cohort === 'IELTS 2'
+                  playerProfile.cohort.includes('TEACHER')
+                    ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50'
+                    : playerProfile.cohort === 'IELTS 2'
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
                     : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
                 }`}
@@ -3769,7 +4245,7 @@ export function EraVerse() {
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-lg border border-blue-400/40 transition-all cursor-pointer"
         >
           <Users className="w-4 h-4" />
-          <span>IELTS 1 & IELTS 2 ({ieltsCharacters.length})</span>
+          <span>Characters & Teachers ({ieltsCharacters.length})</span>
         </button>
 
         <button
@@ -3784,6 +4260,37 @@ export function EraVerse() {
           <span>Avatar</span>
         </button>
       </div>
+
+      {/* 2B. SPORTS PARK SIDE ACTIONS HUD (KICK, JUMP, HIT, CROUCH + LIVE MATCH SCOREBOARD) */}
+      <SportsSideActionsHud
+        inSportsZone={inSportsZone}
+        footballGoals={footballGoals}
+        aiFootballGoals={aiFootballGoals}
+        pickleballScore={pickleballScore}
+        aiPickleballScore={aiPickleballScore}
+        isCrouching={isCrouching}
+        zoomSliderValue={zoomSliderValue}
+        onZoomChange={(val) => {
+          setZoomSliderValue(val);
+          gameActionsRef.current?.setZoomDistance(val);
+        }}
+        onKick={() => gameActionsRef.current?.triggerKick()}
+        onJump={() => gameActionsRef.current?.triggerJump()}
+        onHit={() => gameActionsRef.current?.triggerHit()}
+        onToggleCrouch={() => gameActionsRef.current?.toggleCrouch()}
+      />
+
+      {/* 2C. PROXIMITY ENGLISH-ONLY CHAT POPUP (BLOCKS VIETNAMESE WITH 'English only please!') */}
+      {nearCharacterPrompt && !insideBuilding && (
+        <ProximityEnglishChat
+          nearbyPartner={nearCharacterPrompt}
+          playerName={playerProfile.name}
+          messages={chatMessages}
+          englishWarning={englishWarning}
+          onSendMessage={handleSendProximityChat}
+          onSelectPartnerCharacter={() => handleSelectCharacter(nearCharacterPrompt)}
+        />
+      )}
 
       {/* 3. TOP-RIGHT SETTINGS (GRAPHICS QUALITY: HIGH/MEDIUM/LOW, AUDIO ON/OFF, ROOM MUSIC) & ROOM EXIT */}
       <div className="absolute top-4 right-4 z-10 flex flex-wrap items-center gap-2 pointer-events-auto">
@@ -4410,8 +4917,8 @@ export function EraVerse() {
             </div>
 
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {(['ALL', 'IELTS 1', 'IELTS 2'] as const).map((cohort) => (
+              <div className="flex items-center gap-2 flex-wrap">
+                {(['ALL', 'IELTS 1', 'IELTS 2', 'TEACHER (SUPER ADMIN)'] as const).map((cohort) => (
                   <button
                     key={cohort}
                     type="button"
@@ -4421,30 +4928,39 @@ export function EraVerse() {
                     }}
                     className={`px-4 py-2 rounded-xl font-extrabold text-xs transition-all cursor-pointer border ${
                       cohortFilter === cohort
-                        ? cohort === 'IELTS 2'
-                          ? 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-[#1E4DB7] text-white border-[#1E4DB7]'
+                        ? cohort.includes('TEACHER')
+                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                          : cohort === 'IELTS 2'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-[#1E4DB7] text-white border-[#1E4DB7] shadow-sm'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'
                     }`}
                   >
-                    {cohort === 'ALL' ? 'All IELTS Course Characters' : `${cohort} Characters`}
+                    {cohort === 'ALL'
+                      ? 'All Characters & Teachers'
+                      : cohort.includes('TEACHER')
+                      ? 'Teacher Jan (Super Admin)'
+                      : `${cohort} Characters`}
                   </button>
                 ))}
               </div>
               <span className="text-xs text-slate-500 font-semibold">
-                Select any IELTS 1 or IELTS 2 character to play as them in EraVerse
+                Select Kai (IELTS 1), IELTS 2 students, or Teacher Jan (Super Admin) to play!
               </span>
             </div>
 
             <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredCharacters.map((char) => {
                 const isSelected = playerProfile.name === char.name && playerProfile.cohort === char.cohort;
+                const isTeacher = char.cohort.includes('TEACHER');
                 return (
                   <div
                     key={char.id}
                     className={`rounded-2xl p-4 border-2 transition-all flex items-center justify-between gap-4 ${
                       isSelected
-                        ? 'border-blue-600 bg-blue-50/50 shadow-md'
+                        ? isTeacher
+                          ? 'border-amber-500 bg-amber-50/70 shadow-md'
+                          : 'border-blue-600 bg-blue-50/50 shadow-md'
                         : 'border-slate-200 bg-white hover:border-blue-300'
                     }`}
                   >
@@ -4453,7 +4969,7 @@ export function EraVerse() {
                         className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-white font-extrabold shadow-md shrink-0 border-2 border-white"
                         style={{ backgroundColor: char.shirtColor }}
                       >
-                        <span className="text-[10px] opacity-85">{char.cohort}</span>
+                        <span className="text-[10px] opacity-85">{isTeacher ? 'TEACH' : char.cohort}</span>
                         <span className="text-base">{char.name.slice(0, 2).toUpperCase()}</span>
                       </div>
                       <div>
@@ -4461,7 +4977,9 @@ export function EraVerse() {
                           <h3 className="font-extrabold text-slate-900 text-base">{char.name}</h3>
                           <span
                             className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                              char.cohort === 'IELTS 2'
+                              isTeacher
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : char.cohort === 'IELTS 2'
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                 : 'bg-blue-100 text-blue-800 border border-blue-300'
                             }`}
@@ -4479,7 +4997,9 @@ export function EraVerse() {
                       onClick={() => handleSelectCharacter(char)}
                       className={`px-4 py-2.5 rounded-xl font-extrabold text-xs shrink-0 transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-emerald-600 text-white'
+                          ? isTeacher
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-emerald-600 text-white'
                           : 'bg-[#1E4DB7] hover:bg-blue-800 text-white'
                       }`}
                     >
@@ -4718,6 +5238,30 @@ export function EraVerse() {
           </div>
         </div>
       )}
+
+      {/* ============================================================================
+          MODAL 6 & 7: DASHBOARD HALL MODALS (PERSONAL DASHBOARD & CLASS SCOREBOARD)
+          ============================================================================ */}
+      <DashboardHallModals
+        activeModal={
+          dashboardHallModal ||
+          (activeBuildingModal === 'dashboard_personal' || activeBuildingModal === 'dashboard'
+            ? 'my_dashboard'
+            : activeBuildingModal === 'dashboard_class'
+            ? 'class_dashboard'
+            : null)
+        }
+        onClose={() => {
+          setDashboardHallModal(null);
+          setActiveBuildingModal(null);
+        }}
+        myStats={myPersonalDashboardStats}
+        classCohortLabel={activeClassCohortLabel}
+        classStudents={myClassDashboardStudents}
+        allCohortsStudents={allStudentsSkillScores}
+        isSuperAdminCharacter={playerProfile.cohort === 'TEACHER (SUPER ADMIN)'}
+        onNavigateFullDashboard={(uid) => navigate(uid ? `/ielts/dashboard?user=${uid}` : '/ielts/dashboard')}
+      />
     </div>
   );
 }
