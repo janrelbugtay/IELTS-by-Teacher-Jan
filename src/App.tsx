@@ -23,6 +23,7 @@ const ComputerReadingTest = lazy(() => import('./pages/ComputerReadingTest').the
 const ComputerListeningTest = lazy(() => import('./pages/ComputerListeningTest').then(m => ({ default: m.ComputerListeningTest })));
 const ImageGenerator = lazy(() => import('./pages/ImageGenerator').then(m => ({ default: m.ImageGenerator })));
 const EmbedTest = lazy(() => import('./pages/EmbedTest').then(m => ({ default: m.EmbedTest })));
+const EraVerse = lazy(() => import('./pages/EraVerse').then(m => ({ default: m.EraVerse })));
 
 function PageLoading() {
   return (
@@ -74,6 +75,7 @@ function AppContent() {
                 <Route path="/" element={<Home />} />
                 <Route path="/courses/:id" element={<CourseDetails />} />
                 <Route path="/practice-tests" element={<PracticeTests />} />
+                <Route path="/eraverse" element={<EraVerse />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/ielts/dashboard" replace /></ProtectedRoute>} />
                 <Route path="/ielts/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

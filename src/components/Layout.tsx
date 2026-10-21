@@ -56,12 +56,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     navLinks.push({ name: 'PET Score Calculator', path: '/pet/dashboard' });
   }
   navLinks.push({ name: 'Practice Test', path: '/practice-tests' });
+  const course = userCourse || 'ielts';
+  const classPath = `/courses/${course.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : course.toLowerCase().replace(/[^a-z0-9-]/g, '')}`;
   if (user) {
-    const course = userCourse || 'ielts';
-    const classPath = `/courses/${course.toLowerCase().replace(/[^a-z0-9-]/g, '') === 'starter' ? 'starters' : course.toLowerCase().replace(/[^a-z0-9-]/g, '')}`;
     navLinks.push({ name: 'My Class', path: classPath });
-    navLinks.push({ name: 'Homework', path: `${classPath}?tab=assignments` });
   }
+  navLinks.push({ name: 'Homework', path: `${classPath}?tab=assignments` });
+  navLinks.push({ name: 'EraVerse', path: '/eraverse' });
 
   const visibleLinks = navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
 
@@ -359,13 +360,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
       
       {/* Main Content */}
-      <main className={`flex-1 w-full mx-auto mt-20 ${location.pathname === '/' ? '' : 'max-w-[1400px] p-4 sm:p-6 lg:p-8'}`}>
+      <main className={`flex-1 w-full mx-auto mt-20 ${location.pathname === '/' || location.pathname === '/eraverse' ? '' : 'max-w-[1400px] p-4 sm:p-6 lg:p-8'}`}>
         {children}
       </main>
 
       <ChatBox />
 
       {/* Footer */}
+      {location.pathname !== '/eraverse' && (
       <footer className="bg-white border-t border-[#E2E8F0] pt-16 pb-8 mt-auto relative overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
@@ -442,6 +444,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 }

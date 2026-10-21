@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EraEnglish Town - 3D Interactive Learning World</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .font-game {
+            font-family: 'Fredoka', sans-serif;
+        }
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            cursor: grab;
+        }
+        #game-canvas:active {
+            cursor: grabbing;
+        }
+        /* Roblox-style glossy buttons */
+        .rbx-btn {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+        }
+        .rbx-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 rgba(0,0,0,0.3);
+        }
+        /* Floating 3D labels */
+        .world-label {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-ring 2.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="relative">
+
+    <canvas id="game-canvas"></canvas>
+    <div id="labels-container" class="absolute inset-0 pointer-events-none overflow-hidden z-10"></div>
+
+    <header class="absolute top-0 left-0 right-0 p-3 sm:p-4 flex flex-wrap justify-between items-center gap-2 z-20 pointer-events-none">
+        <!-- Brand & Player Info -->
+        <div class="flex items-center gap-3 bg-gray-900/85 backdrop-blur-md border-2 border-white/15 px-3.5 py-2 rounded-2xl pointer-events-auto shadow-xl">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-game text-xl font-bold shadow-inner">
+                E
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-game text-white font-bold text-base sm:text-lg tracking-wide leading-none">EraEnglish Town</h1>
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Online</span>
+                </div>
+                <p id="hud-student-name" class="text-xs text-gray-300 font-medium mt-0.5">Student: Explorer_01</p>
+            </div>
+        </div>
+
+        <!-- Stats & Quick Portal Bar -->
+        <div class="flex items-center gap-2 sm:gap-3 pointer-events-auto">
+            <!-- XP & Coins -->
+            <div class="hidden sm:flex items-center gap-3 bg-gray-900/85 backdrop-blur-md border-2 border-white/15 px-4 py-2 rounded-2xl text-white shadow-xl">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-star text-amber-400"></i>
+                    <span id="hud-xp" class="font-game font-bold text-sm">150 XP</span>
+                </div>
+                <div class="w-px h-4 bg-white/20"></div>
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-coins text-yellow-400"></i>
+                    <span id="hud-coins" class="font-game font-bold text-sm">50</span>
+                </div>
+            </div>
+
+            <!-- Day / Sunset Theme Toggle -->
+            <button onclick="toggleSkyTheme()" class="rbx-btn bg-indigo-600 hover:bg-indigo-500 text-white font-game font-semibold px-3 py-2 rounded-xl border border-indigo-400/40 flex items-center gap-1.5 text-sm" title="Switch Day / Sunset">
+                <i id="sky-icon" class="fa-solid fa-sun text-amber-300"></i>
+            </button>
+
+            <!-- Customize Avatar Button -->
+            <button onclick="openAvatarModal()" class="rbx-btn bg-purple-600 hover:bg-purple-500 text-white font-game font-semibold px-3.5 py-2 rounded-xl border border-purple-400/40 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-shirt"></i>
+                <span class="hidden md:inline">Avatar</span>
+            </button>
+
+            <!-- Map Teleport Menu -->
+            <button onclick="openMapModal()" class="rbx-btn bg-sky-600 hover:bg-sky-500 text-white font-game font-semibold px-3.5 py-2 rounded-xl border border-sky-400/40 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span class="hidden md:inline">Town Map</span>
+            </button>
+
+            <!-- Exit Building Button (Shown Only When Inside a Building) -->
+            <button id="hud-exit-building-btn" onclick="exitBuildingInterior()" class="hidden rbx-btn bg-rose-600 hover:bg-rose-500 text-white font-game font-bold px-3.5 py-2 rounded-xl border border-rose-300/40 flex items-center gap-2 text-sm shadow-lg">
+                <i class="fa-solid fa-door-open"></i>
+                <span>Exit Building</span>
+            </button>
+
+            <!-- Direct Website Link -->
+            <a href="https://www.eraenglish.online" target="_blank" rel="noopener noreferrer" class="rbx-btn bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-game font-bold px-4 py-2 rounded-xl border border-emerald-300/40 flex items-center gap-2 text-sm shadow-lg">
+                <i class="fa-solid fa-globe"></i>
+                <span>eraenglish.online</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-80"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Interior Room Banner (Visible when inside a building) -->
+    <div id="interior-room-banner" class="hidden absolute top-20 left-4 z-20 pointer-events-none">
+        <div class="bg-gray-900/90 backdrop-blur-md border-2 border-sky-400/50 px-4 py-2.5 rounded-2xl text-white shadow-xl flex items-center gap-3">
+            <div id="interior-banner-icon" class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 text-lg">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-sky-300">Inside 3D Classroom</div>
+                <div id="interior-banner-title" class="font-game font-bold text-sm sm:text-base leading-tight">Courses Academy Interior</div>
+                <div class="text-[11px] text-gray-300">Walk to any <span class="text-amber-300 font-semibold">Wall Board</span> or click it to open!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Center Proximity Interaction Banner -->
+    <div id="interaction-prompt" class="hidden absolute top-24 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+        <button id="interaction-btn" onclick="triggerCurrentZone()" class="animate-pulse-slow rbx-btn bg-gray-900/95 hover:bg-black text-white border-2 border-amber-400 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-amber-400 text-gray-900 font-game font-bold flex items-center justify-center text-base shadow">E</span>
+            <div class="text-left">
+                <div id="prompt-title" class="font-game font-bold text-base text-amber-300 leading-tight">Enter Courses Academy</div>
+                <div class="text-[11px] text-gray-300">Tap or Press [E] to interact</div>
+            </div>
+        </button>
+    </div>
+
+    <!-- Left Roblox-Style Chat & Quest Feed -->
+    <div class="absolute bottom-32 sm:bottom-5 left-3 sm:left-4 w-64 sm:w-80 z-20 pointer-events-none flex flex-col gap-2">
+        <!-- Daily Quest Card -->
+        <div class="bg-gray-900/80 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-white pointer-events-auto shadow-lg">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-game font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-scroll"></i> Campus Quest
+                </span>
+                <span id="quest-progress" class="text-xs bg-white/10 px-2 py-0.5 rounded-full font-semibold">0/6 Visited</span>
+            </div>
+            <p class="text-xs text-gray-200 leading-relaxed">Explore all 6 EraEnglish buildings across the expanded campus & climb the Obby Word Tower!</p>
+        </div>
+
+        <!-- Chat Box -->
+        <div class="hidden sm:flex flex-col bg-gray-900/80 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-white pointer-events-auto shadow-lg h-40">
+            <div id="chat-messages" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
+                <div><span class="font-bold text-emerald-400">[System]:</span> Swipe or drag anywhere on the screen to pan 360° around your character!</div>
+                <div><span class="font-bold text-sky-400">[Coach Alex]:</span> Check out the new Grammar Library and Student Lounge!</div>
+                <div><span class="font-bold text-amber-400">[Mia_Student]:</span> Just reached the top of the Obby Parkour Tower! 🏆</div>
+            </div>
+            <form onsubmit="sendChatMessage(event)" class="mt-2 flex gap-1.5">
+                <input id="chat-input" type="text" placeholder="Say something in English..." class="flex-1 bg-gray-800/90 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400">
+                <button type="submit" class="bg-sky-600 hover:bg-sky-500 px-3 py-1.5 rounded-xl text-xs font-bold"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bottom Controls: Virtual Analog Thumbstick + Sprint + Jump + Camera Reset -->
+    <div class="absolute bottom-4 right-4 z-20 flex items-end gap-3 sm:gap-4 pointer-events-none">
+        <!-- Controls Hint (Desktop) -->
+        <div class="hidden xl:flex flex-col bg-gray-900/80 backdrop-blur-md border border-white/15 rounded-2xl p-3 text-xs text-gray-300 pointer-events-auto shadow-lg">
+            <div class="font-game font-bold text-white mb-1 flex items-center gap-1.5">
+                <i class="fa-solid fa-gamepad text-sky-400"></i> Controls & 360° Camera
+            </div>
+            <div><span class="text-white font-semibold">Touch / Mouse Drag:</span> Pan 360° Camera</div>
+            <div><span class="text-white font-semibold">W, A, S, D / Joystick:</span> Move Student</div>
+            <div><span class="text-white font-semibold">Shift / Sprint:</span> Fast Run</div>
+            <div><span class="text-white font-semibold">Scroll Wheel:</span> Zoom In/Out</div>
+        </div>
+
+        <!-- Interactive Analog Joystick + Action Buttons -->
+        <div class="flex items-center gap-3 pointer-events-auto">
+            <!-- Smooth 360° Touch/Mouse Virtual Joystick -->
+            <div id="joystick-zone" class="relative w-28 h-28 rounded-full bg-gray-900/75 backdrop-blur-md border-2 border-white/20 shadow-2xl flex items-center justify-center touch-none">
+                <div class="absolute inset-2 rounded-full border border-white/10 pointer-events-none"></div>
+                <i class="fa-solid fa-caret-up absolute top-2 text-white/30 text-xs pointer-events-none"></i>
+                <i class="fa-solid fa-caret-down absolute bottom-2 text-white/30 text-xs pointer-events-none"></i>
+                <i class="fa-solid fa-caret-left absolute left-2 text-white/30 text-xs pointer-events-none"></i>
+                <i class="fa-solid fa-caret-right absolute right-2 text-white/30 text-xs pointer-events-none"></i>
+                <div id="joystick-knob" class="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 border-2 border-white shadow-lg flex items-center justify-center text-white pointer-events-none transition-transform duration-75">
+                    <i class="fa-solid fa-arrows-up-down-left-right text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Action Buttons Column -->
+            <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                    <button id="sprint-btn" onclick="toggleSprint()" class="rbx-btn w-12 h-11 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-white font-game font-bold flex flex-col items-center justify-center border border-white/15 shadow-lg" title="Toggle Sprint">
+                        <i class="fa-solid fa-bolt text-amber-400 text-sm"></i>
+                        <span class="text-[9px] uppercase">Run</span>
+                    </button>
+                    <button onclick="resetCameraBehindPlayer()" class="rbx-btn w-12 h-11 rounded-xl bg-gray-800/90 hover:bg-gray-700 text-white font-game font-bold flex flex-col items-center justify-center border border-white/15 shadow-lg" title="Center Camera Behind Student">
+                        <i class="fa-solid fa-video text-sky-400 text-sm"></i>
+                        <span class="text-[9px] uppercase">View</span>
+                    </button>
+                </div>
+                <button onclick="playerJump()" class="rbx-btn w-full h-14 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-500 text-gray-900 font-game font-bold flex flex-col items-center justify-center shadow-xl border-2 border-amber-200">
+                    <i class="fa-solid fa-arrow-up text-base"></i>
+                    <span class="text-[11px] uppercase">Jump</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="building-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border-2 border-white/20 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl animate-fadeIn">
+            <!-- Modal Header -->
+            <div id="modal-header" class="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 flex items-center justify-between text-white">
+                <div class="flex items-center gap-3">
+                    <div id="modal-icon" class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shadow-inner">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <span id="modal-badge" class="text-[11px] uppercase tracking-wider font-bold bg-black/30 px-2.5 py-0.5 rounded-full">Official Portal</span>
+                        <h2 id="modal-title" class="font-game text-2xl font-bold mt-0.5">Courses Academy</h2>
+                    </div>
+                </div>
+                <button onclick="closeBuildingModal()" class="w-10 h-10 rounded-xl bg-black/25 hover:bg-black/40 flex items-center justify-center text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 text-white space-y-5 max-h-[75vh] overflow-y-auto">
+                <p id="modal-desc" class="text-gray-300 text-sm leading-relaxed"></p>
+
+                <!-- Dynamic Feature Cards or Mini-Quiz Container -->
+                <div id="modal-content-area" class="space-y-3"></div>
+
+                <!-- Primary Call-to-Action Link to www.eraenglish.online -->
+                <div class="bg-gradient-to-r from-emerald-900/60 to-teal-900/60 border border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-lg shrink-0">
+                            <i class="fa-solid fa-up-right-from-square"></i>
+                        </div>
+                        <div>
+                            <div class="font-game font-bold text-white text-base">Sync with EraEnglish Online Portal</div>
+                            <div class="text-xs text-emerald-200">Launch full dashboard at <span class="underline font-semibold">www.eraenglish.online</span></div>
+                        </div>
+                    </div>
+                    <a id="modal-external-link" href="https://www.eraenglish.online" target="_blank" rel="noopener noreferrer" class="rbx-btn w-full sm:w-auto text-center bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-game font-bold px-5 py-2.5 rounded-xl text-sm shrink-0">
+                        Open on EraEnglish.online <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avatar Customizer Modal -->
+    <div id="avatar-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border-2 border-white/20 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl space-y-5">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-game text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-user-astronaut text-purple-400"></i> Customize Student Character
+                </h3>
+                <button onclick="closeAvatarModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold uppercase text-gray-400 block mb-1.5">Student Display Name</label>
+                    <input id="avatar-name-input" type="text" maxlength="16" value="Explorer_01" class="w-full bg-gray-800 border border-white/15 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-purple-400">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold uppercase text-gray-400 block mb-1.5">Uniform Shirt Color</label>
+                    <div class="flex gap-2.5">
+                        <button onclick="setAvatarColor('shirt', 0x3b82f6)" class="w-9 h-9 rounded-xl bg-blue-500 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('shirt', 0xef4444)" class="w-9 h-9 rounded-xl bg-red-500 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('shirt', 0x10b981)" class="w-9 h-9 rounded-xl bg-emerald-500 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('shirt', 0xf59e0b)" class="w-9 h-9 rounded-xl bg-amber-500 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('shirt', 0x8b5cf6)" class="w-9 h-9 rounded-xl bg-purple-500 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('shirt', 0xec4899)" class="w-9 h-9 rounded-xl bg-pink-500 border-2 border-white shadow"></button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold uppercase text-gray-400 block mb-1.5">Pants Color</label>
+                    <div class="flex gap-2.5">
+                        <button onclick="setAvatarColor('pants', 0x1e293b)" class="w-9 h-9 rounded-xl bg-slate-800 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('pants', 0x1d4ed8)" class="w-9 h-9 rounded-xl bg-blue-700 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('pants', 0x047857)" class="w-9 h-9 rounded-xl bg-emerald-700 border-2 border-white shadow"></button>
+                        <button onclick="setAvatarColor('pants', 0x7c2d12)" class="w-9 h-9 rounded-xl bg-amber-900 border-2 border-white shadow"></button>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="saveAvatarChanges()" class="rbx-btn w-full bg-purple-600 hover:bg-purple-500 text-white font-game font-bold py-3 rounded-xl">
+                Save Student Style
+            </button>
+        </div>
+    </div>
+
+    <!-- Fast Travel Town Map Modal -->
+    <div id="map-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border-2 border-white/20 rounded-3xl max-w-xl w-full p-6 text-white shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-game text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-map-location-dot text-sky-400"></i> Expanded EraEnglish Town Map
+                </h3>
+                <button onclick="closeMapModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-gray-300">Click any campus landmark to teleport your student character immediately:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[60vh] overflow-y-auto pr-1">
+                <button onclick="teleportTo(0, -34)" class="rbx-btn bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 p-3 rounded-2xl text-left flex items-center gap-3">
+                    <i class="fa-solid fa-graduation-cap text-2xl text-blue-400 w-8 text-center"></i>
+                    <div>
+                        <div class="font-game font-bold text-sm">Courses Academy (North)</div>
+                        <div class="text-[11px] text-gray-300">Live Lessons & Core Modules</div>
+                    </div>
+                </button>
+                <button onclick="teleportTo(38, 0)" class="rbx-btn bg-amber-600/30 hover:bg-amber-600/50 border border-amber-400/40 p-3 rounded-2xl text-left flex items-center gap-3">
+                    <i class="fa-solid fa-book-open-reader text-2xl text-amber-400 w-8 text-center"></i>
+                    <div>
+                        <div class="font-game font-bold text-sm">Homework Hub (East)</div>
+                        <div class="text-[11px] text-gray-300">Daily Assignments & Tasks</div>
+                    </div>
+                </button>
+                <button onclick="teleportTo(-38, 0)" class="rbx-btn bg-rose-600/30 hover:bg-rose-600/50 border border-rose-400/40 p-3 rounded-2xl text-left flex items-center gap-3">
+                    <i class="fa-solid fa-trophy text-2xl text-rose-400 w-8 text-center"></i>
+                    <div>
+                        <div class="font-game font-bold text-sm">Practice Test Arena (West)</div>
+                        <div class="text-[11px] text-gray-300">Mock Exams & Live Quizzes</div>
+                    </div>
+                </button>
+                <button onclick="teleportTo(0, 34)" class="rbx-btn bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-400/40 p-3 rounded-2xl text-left flex items-center gap-3">
+                    <i class="fa-solid fa-comments text-2xl text-emerald-400 w-8 text-center"></i>
+                    <div>
+                        <div class="font-game font-bold text-sm">Speaking & Word Park (South)</div>
+                        <div class="text-[11px] text-gray-300">Flashcards & Speaking Club</div>
+                    </div>
+                </button>
+                <button onclick="teleportTo(-34, -34)" class="rbx-btn bg-purple-600/30 hover:bg-purple-600/50 border border-purple-400/40 p-3 rounded-2xl text-left flex items-center gap-3">
+                    <i class="fa-solid fa-book-atlas text-2xl text-purple-400 w-8 text-center"></i>
+                    <div>
+                        <div class="font-game font-bold text-sm">Grammar & Reading Library (NW)</div>
+                        <div class="text-[11px] text-gray-300">E-Books & Grammar Guides</div>
+                    </div>
+                </button>
+                <button onclick="teleportTo(34, -34)" class="rbx-btn bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-400/40 p-3 rounded-2xl text-left flex items-center gap-3">
+                    <i class="fa-solid fa-mug-hot text-2xl text-cyan-400 w-8 text-center"></i>
+                    <div>
+                        <div class="font-game font-bold text-sm">Video & Student Lounge (NE)</div>
+                        <div class="text-[11px] text-gray-300">Community & Study Videos</div>
+                    </div>
+                </button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="teleportTo(0, 12)" class="flex-1 bg-gray-800 hover:bg-gray-700 text-xs font-bold py-2.5 rounded-xl border border-white/10">
+                    <i class="fa-solid fa-compass mr-1 text-sky-400"></i> Central Fountain Plaza
+                </button>
+                <button onclick="teleportTo(-26, 26)" class="flex-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold py-2.5 rounded-xl border border-amber-400/30">
+                    <i class="fa-solid fa-cubes mr-1"></i> Obby Parkour Tower (SW)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900/95 border-2 border-emerald-400 text-white px-5 py-2.5 rounded-2xl shadow-2xl font-game text-sm flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-text">Earned +25 XP!</span>
+    </div>
+
+    <script>
+        // --- Game State & Progression ---
+        const gameState = {
+            studentName: 'Explorer_01',
+            xp: 150,
+            coins: 50,
+            visitedZones: new Set(),
+            activeZone: null,
+            activeWallItem: null,
+            activeExitDoor: false,
+            insideZone: null, // null when outdoors, zone object when inside a building
+            savedOutdoorPos: { x: 0, z: 14, rotY: 0 },
+            quizIndex: 0
+        };
+
+        // Sound effects via Tone.js
+        let synth = null;
+        function playSound(type) {
+            try {
+                if (!synth) {
+                    synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    synth.volume.value = -10;
+                }
+                if (Tone.context.state !== 'running') {
+                    Tone.context.resume();
+                }
+                if (type === 'jump') synth.triggerAttackRelease(['C5', 'E5'], '16n');
+                if (type === 'portal') synth.triggerAttackRelease(['C4', 'G4', 'C5'], '8n');
+                if (type === 'reward') synth.triggerAttackRelease(['E5', 'G5', 'C6'], '8n');
+            } catch (e) {
+                // Audio context not yet unlocked
+            }
+        }
+
+        // --- Expanded EraEnglish Town Zones Configuration (6 Detailed Campus Buildings) ---
+        const townZones = [
+            {
+                id: 'courses',
+                name: 'Courses Academy',
+                subtitle: 'Interactive Video & Live Classes',
+                badge: 'Core Curriculum',
+                color: 0x2563eb,
+                accentColor: 0x60a5fa,
+                headerClass: 'from-blue-600 to-indigo-700',
+                icon: 'fa-graduation-cap',
+                x: 0,
+                z: -48,
+                rotY: 0,
+                url: 'https://www.eraenglish.online',
+                description: 'Welcome to the flagship EraEnglish Courses Academy! Access structured English levels from Beginner to IELTS/TOEFL Mastery, interactive video lessons, and live native teacher sessions.',
+                items: [
+                    { title: 'Grammar & Vocabulary Foundations', level: 'Level A1-B1', xp: '+30 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Conversational Fluency Bootcamp', level: 'Level B1-B2', xp: '+45 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Academic & IELTS Preparation Course', level: 'Level B2-C1', xp: '+60 XP', link: 'https://www.eraenglish.online' }
+                ]
+            },
+            {
+                id: 'homework',
+                name: 'Homework Hub',
+                subtitle: 'Daily Exercises & Workbook',
+                badge: 'Assignments',
+                color: 0xd97706,
+                accentColor: 0xfbbf24,
+                headerClass: 'from-amber-500 to-orange-600',
+                icon: 'fa-book-open-reader',
+                x: 52,
+                z: 0,
+                rotY: -Math.PI / 2,
+                url: 'https://www.eraenglish.online',
+                description: 'Complete your daily EraEnglish homework missions here! Check off your workbook exercises and submit writing or speaking recordings directly on www.eraenglish.online.',
+                items: [
+                    { title: 'Unit 4: Past Continuous Worksheet', level: 'Due Today', xp: '+25 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Listening Comprehension Audio Task #12', level: '15 Mins', xp: '+35 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Paragraph Writing: My Dream Career', level: 'Teacher Feedback', xp: '+50 XP', link: 'https://www.eraenglish.online' }
+                ]
+            },
+            {
+                id: 'tests',
+                name: 'Practice Test Arena',
+                subtitle: 'Mock Exams & Instant Challenge',
+                badge: 'Assessment Center',
+                color: 0xe11d48,
+                accentColor: 0xfb7185,
+                headerClass: 'from-rose-600 to-red-700',
+                icon: 'fa-trophy',
+                x: -52,
+                z: 0,
+                rotY: Math.PI / 2,
+                url: 'https://www.eraenglish.online',
+                description: 'Test your English skills inside the Arena! Walk up to any exam board on the wall to take an instant mini-challenge or launch full timed placement and mock exams on www.eraenglish.online.',
+                isQuiz: true,
+                items: [
+                    { title: 'Grammar & Vocabulary Speed Quiz', level: 'Instant Quiz', xp: '+40 XP', link: 'https://www.eraenglish.online', isQuizBoard: true },
+                    { title: 'IELTS & TOEFL Full Mock Exam', level: 'Timed Test', xp: '+75 XP', link: 'https://www.eraenglish.online', isQuizBoard: true },
+                    { title: 'English Level Placement Test', level: 'All Levels', xp: '+50 XP', link: 'https://www.eraenglish.online', isQuizBoard: true }
+                ]
+            },
+            {
+                id: 'speaking',
+                name: 'Vocabulary & Speaking Park',
+                subtitle: 'Word Crystals & Pronunciation',
+                badge: 'Interactive Practice',
+                color: 0x059669,
+                accentColor: 0x34d399,
+                headerClass: 'from-emerald-600 to-teal-700',
+                icon: 'fa-comments',
+                x: 0,
+                z: 48,
+                rotY: Math.PI,
+                url: 'https://www.eraenglish.online',
+                description: 'Practice everyday English idioms, pronunciation flashcards, and live student conversation clubs!',
+                items: [
+                    { title: 'Daily Idioms & Phrasal Verbs Deck', level: 'Interactive Flashcards', xp: '+20 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'AI Pronunciation & Speaking Lab', level: 'Voice Practice', xp: '+40 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Weekend English Speaking Club', level: 'Live Group Room', xp: '+50 XP', link: 'https://www.eraenglish.online' }
+                ]
+            },
+            {
+                id: 'library',
+                name: 'Grammar & Reading Library',
+                subtitle: 'Stories, Articles & Study Guides',
+                badge: 'Reading Hall',
+                color: 0x7c3aed,
+                accentColor: 0xc084fc,
+                headerClass: 'from-purple-600 to-indigo-800',
+                icon: 'fa-book-atlas',
+                x: -44,
+                z: -44,
+                rotY: Math.PI / 4,
+                url: 'https://www.eraenglish.online',
+                description: 'Explore graded English short stories, grammar cheat-sheets, and academic reading passages curated by EraEnglish teachers.',
+                items: [
+                    { title: 'Illustrated English Short Stories', level: 'Graded Readers', xp: '+30 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Complete English Tenses Visual Guide', level: 'Reference PDF', xp: '+25 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Science & Culture Reading Passages', level: 'Comprehension', xp: '+40 XP', link: 'https://www.eraenglish.online' }
+                ]
+            },
+            {
+                id: 'lounge',
+                name: 'Student Café & Video Hub',
+                subtitle: 'Podcasts, Clips & Leaderboard',
+                badge: 'Community Hub',
+                color: 0x0891b2,
+                accentColor: 0x22d3ee,
+                headerClass: 'from-cyan-600 to-sky-700',
+                icon: 'fa-mug-hot',
+                x: 44,
+                z: -44,
+                rotY: -Math.PI / 4,
+                url: 'https://www.eraenglish.online',
+                description: 'Relax with fellow students, watch bite-sized English video lessons, listen to student podcasts, and check the weekly XP leaderboard!',
+                items: [
+                    { title: '5-Minute Daily English Video Clips', level: 'Video Hub', xp: '+20 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'EraEnglish Student Podcast Episodes', level: 'Listening Lounge', xp: '+30 XP', link: 'https://www.eraenglish.online' },
+                    { title: 'Global Student Hall of Fame', level: 'Leaderboard', xp: '+25 XP', link: 'https://www.eraenglish.online' }
+                ]
+            }
+        ];
+
+        const practiceQuestions = [
+            {
+                q: 'Choose the correct form: "Every student in EraEnglish Town _____ excited about learning today."',
+                options: ['are', 'is', 'were', 'be'],
+                answer: 1
+            },
+            {
+                q: 'Which word is a synonym for "Emerging" / "Innovative"?',
+                options: ['Outdated', 'Developing & Modern', 'Silent', 'Ordinary'],
+                answer: 1
+            },
+            {
+                q: 'Complete the sentence: "If I _____ more vocabulary, I will pass the practice test easily!"',
+                options: ['study', 'studied', 'studying', 'studies'],
+                answer: 0
+            },
+            {
+                q: 'Which phrasal verb means "to review or refresh your knowledge"?',
+                options: ['Brush up on', 'Give up on', 'Run out of', 'Look down on'],
+                answer: 0
+            }
+        ];
+
+        // --- Three.js World Variables ---
+        let scene, camera, renderer, ambientLight, dirLight;
+        let playerGroup, leftArm, rightArm, leftLeg, rightLeg, shirtMesh, pantsLeftMesh, pantsRightMesh;
+        let interiorGroup = null;
+        const interiorWallBoards = [];
+        const clickableWallMeshes = [];
+        const npcs = [];
+        const floatingCrystals = [];
+        const clouds = [];
+        const labelElements = [];
+        const colliders = [];
+        const platforms = []; // Walkable elevated platforms (Obby blocks, bridges, fountain steps)
+        let isSunset = false;
+        const raycaster = new THREE.Raycaster();
+        const pointerNDC = new THREE.Vector2();
+
+        // Movement, Joystick & Smooth 360° Camera State
+        const keys = { up: false, down: false, left: false, right: false };
+        let joyVector = { x: 0, y: 0 };
+        let isSprinting = false;
+        let playerVelocityY = 0;
+        let isGrounded = true;
+
+        // Camera Orbit Target & Smooth Damping
+        let cameraAngle = 0;
+        let targetCameraAngle = 0;
+        let cameraPitch = 0.42;
+        let targetCameraPitch = 0.42;
+        let cameraDistance = 17;
+        let isDraggingCamera = false;
+        let activeCameraPointerId = null;
+        let prevPointer = { x: 0, y: 0 };
+
+        function initThreeWorld() {
+            const canvas = document.getElementById('game-canvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x7dd3fc);
+            scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0045);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 450);
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Lights
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.72);
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0xfffbeb, 0.95);
+            dirLight.position.set(65, 95, 55);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 260;
+            const d = 95;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            createExpandedGroundAndPlaza();
+            createCampusBuildings();
+            createObbyParkourZone();
+            createScenicPondAndBridge();
+            createTreesLampsAndProps();
+            createSkyClouds();
+            createCollectibleWordCrystals();
+            createStudentPlayer();
+            createAutonomousClassmates();
+            setupInputListeners();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createExpandedGroundAndPlaza() {
+            // Large 240x240 Roblox Baseplate Grass
+            const grassGeo = new THREE.BoxGeometry(240, 2, 240);
+            const grassMat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.position.y = -1;
+            grass.receiveShadow = true;
+            scene.add(grass);
+
+            // Checkerboard inner lawn accents
+            const lawnMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
+            [[-22, -22], [22, -22], [-22, 22], [22, 22]].forEach(([lx, lz]) => {
+                const patch = new THREE.Mesh(new THREE.BoxGeometry(18, 0.08, 18), lawnMat);
+                patch.position.set(lx, 0.04, lz);
+                patch.receiveShadow = true;
+                scene.add(patch);
+            });
+
+            // Central Grand Cobblestone Plaza
+            const plazaGeo = new THREE.CylinderGeometry(18, 18, 0.25, 40);
+            const plazaMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
+            const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+            plaza.position.y = 0.12;
+            plaza.receiveShadow = true;
+            scene.add(plaza);
+
+            // Outer Decorative Ring Road
+            const ringGeo = new THREE.RingGeometry(36, 41, 48);
+            const ringMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1, side: THREE.DoubleSide });
+            const ringRoad = new THREE.Mesh(ringGeo, ringMat);
+            ringRoad.rotation.x = Math.PI / 2;
+            ringRoad.position.y = 0.08;
+            scene.add(ringRoad);
+
+            // Main Boulevards (North-South & East-West)
+            const pathMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1 });
+            const pathNS = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.16, 100), pathMat);
+            pathNS.position.set(0, 0.08, 0);
+            pathNS.receiveShadow = true;
+            scene.add(pathNS);
+
+            const pathEW = new THREE.Mesh(new THREE.BoxGeometry(108, 0.16, 7.5), pathMat);
+            pathEW.position.set(0, 0.08, 0);
+            pathEW.receiveShadow = true;
+            scene.add(pathEW);
+
+            // Diagonal Walkways to NW Library & NE Lounge
+            const diag1 = new THREE.Mesh(new THREE.BoxGeometry(5, 0.14, 65), pathMat);
+            diag1.rotation.y = Math.PI / 4;
+            diag1.position.set(-22, 0.07, -22);
+            scene.add(diag1);
+
+            const diag2 = new THREE.Mesh(new THREE.BoxGeometry(5, 0.14, 65), pathMat);
+            diag2.rotation.y = -Math.PI / 4;
+            diag2.position.set(22, 0.07, -22);
+            scene.add(diag2);
+
+            // Central EraEnglish Grand Fountain Monument
+            const fountainBase = new THREE.Mesh(
+                new THREE.CylinderGeometry(5.2, 5.8, 1.2, 28),
+                new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
+            );
+            fountainBase.position.y = 0.6;
+            fountainBase.castShadow = true;
+            scene.add(fountainBase);
+
+            const waterMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(4.5, 4.5, 0.95, 28),
+                new THREE.MeshLambertMaterial({ color: 0x38bdf8 })
+            );
+            waterMesh.position.y = 0.9;
+            scene.add(waterMesh);
+
+            const tier2 = new THREE.Mesh(
+                new THREE.CylinderGeometry(2.4, 2.8, 1.6, 20),
+                new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+            );
+            tier2.position.y = 1.8;
+            scene.add(tier2);
+
+            const globePillar = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.8, 1.0, 4.2, 16),
+                new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+            );
+            globePillar.position.y = 3.2;
+            scene.add(globePillar);
+
+            const globe = new THREE.Mesh(
+                new THREE.OctahedronGeometry(1.9, 1),
+                new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.3 })
+            );
+            globe.position.y = 6.5;
+            globe.castShadow = true;
+            scene.add(globe);
+            floatingCrystals.push(globe);
+
+            colliders.push({ x: 0, z: 0, radius: 5.6 });
+            create3DLabel('EraEnglish Grand Plaza', 'www.eraenglish.online', new THREE.Vector3(0, 8.2, 0), 'bg-sky-600');
+        }
+
+        function createSignboardTexture(title, subtitle, accentHex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Dark architectural sign background
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Glowing border frame attached to building
+            const hexStr = '#' + accentHex.toString(16).padStart(6, '0');
+            ctx.strokeStyle = hexStr;
+            ctx.lineWidth = 18;
+            ctx.strokeRect(9, 9, canvas.width - 18, canvas.height - 18);
+
+            // Building Name
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 74px Fredoka, Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(title, canvas.width / 2, 102);
+
+            // Subtitle
+            ctx.fillStyle = '#fde047';
+            ctx.font = 'bold 42px Inter, sans-serif';
+            ctx.fillText(subtitle, canvas.width / 2, 182);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function createWallPosterTexture(item, badgeText, accentHex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 768;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Chalkboard / Smartboard background
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, '#0f172a');
+            grad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const hexStr = '#' + accentHex.toString(16).padStart(6, '0');
+            ctx.strokeStyle = hexStr;
+            ctx.lineWidth = 16;
+            ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+
+            // Top header bar
+            ctx.fillStyle = hexStr;
+            ctx.fillRect(16, 16, canvas.width - 32, 78);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 34px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${badgeText.toUpperCase()}  •  ${item.level.toUpperCase()}`, canvas.width / 2, 66);
+
+            // Wrapped Course / Activity Title on Wall
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 48px Fredoka, Inter, sans-serif';
+            const words = item.title.split(' ');
+            let line = '';
+            const lines = [];
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + ' ';
+                if (ctx.measureText(testLine).width > 660 && i > 0) {
+                    lines.push(line.trim());
+                    line = words[i] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line.trim());
+
+            const startY = lines.length === 1 ? 215 : 185;
+            lines.forEach((l, idx) => {
+                ctx.fillText(l, canvas.width / 2, startY + idx * 62);
+            });
+
+            // Reward pill
+            ctx.fillStyle = '#facc15';
+            ctx.font = 'bold 38px Fredoka, Inter, sans-serif';
+            ctx.fillText(`Reward: ${item.xp}`, canvas.width / 2, 345);
+
+            // Bottom CTA Button drawn on board
+            ctx.fillStyle = '#10b981';
+            ctx.fillRect(154, 392, 460, 76);
+            ctx.fillStyle = '#052e16';
+            ctx.font = 'bold 34px Inter, sans-serif';
+            ctx.fillText('PRESS [E] OR CLICK BOARD', canvas.width / 2, 441);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
+        }
+
+        function createCampusBuildings() {
+            townZones.forEach((zone) => {
+                const bGroup = new THREE.Group();
+                bGroup.position.set(zone.x, 0, zone.z);
+                bGroup.rotation.y = zone.rotY || 0;
+
+                // Foundation Terrace
+                const baseGeo = new THREE.BoxGeometry(20, 0.8, 14);
+                const baseMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+                const base = new THREE.Mesh(baseGeo, baseMat);
+                base.position.y = 0.4;
+                base.receiveShadow = true;
+                bGroup.add(base);
+
+                // First Floor Body
+                const bodyGeo = new THREE.BoxGeometry(18, 8, 11);
+                const bodyMat = new THREE.MeshLambertMaterial({ color: zone.color });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 4.4;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                bGroup.add(body);
+
+                // Second Floor Tier
+                const upperGeo = new THREE.BoxGeometry(14, 5.5, 9);
+                const upperMat = new THREE.MeshLambertMaterial({ color: zone.accentColor });
+                const upper = new THREE.Mesh(upperGeo, upperMat);
+                upper.position.y = 11.1;
+                upper.castShadow = true;
+                bGroup.add(upper);
+
+                // Main Roof & Upper Roof
+                const roofMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+                const roof1 = new THREE.Mesh(new THREE.BoxGeometry(19.4, 1.1, 12.4), roofMat);
+                roof1.position.y = 8.6;
+                bGroup.add(roof1);
+
+                const roof2 = new THREE.Mesh(new THREE.BoxGeometry(15.4, 1.2, 10.4), roofMat);
+                roof2.position.y = 14.2;
+                roof2.castShadow = true;
+                bGroup.add(roof2);
+
+                // Classical White Entrance Pillars
+                const pillarMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+                [-6.5, -2.8, 2.8, 6.5].forEach((px) => {
+                    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 7.6, 12), pillarMat);
+                    pillar.position.set(px, 4.4, 5.8);
+                    pillar.castShadow = true;
+                    bGroup.add(pillar);
+                });
+
+                // Glowing Double Entrance Doors
+                const doorGeo = new THREE.BoxGeometry(3.8, 5.2, 0.5);
+                const doorMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+                const door = new THREE.Mesh(doorGeo, doorMat);
+                door.position.set(0, 3.2, 5.5);
+                bGroup.add(door);
+
+                // Multi-floor Illuminated Windows
+                const winMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe });
+                [-5.2, 5.2].forEach((wx) => {
+                    const win1 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.6, 0.4), winMat);
+                    win1.position.set(wx, 5.2, 5.5);
+                    bGroup.add(win1);
+                });
+                [-3.8, 0, 3.8].forEach((wx) => {
+                    const win2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 0.4), winMat);
+                    win2.position.set(wx, 11.2, 4.5);
+                    bGroup.add(win2);
+                });
+
+                // PHYSICALLY ATTACHED 3D SIGNBOARD ON THE BUILDING FACADE
+                const signBacking = new THREE.Mesh(
+                    new THREE.BoxGeometry(13.6, 3.3, 0.5),
+                    new THREE.MeshLambertMaterial({ color: 0x0f172a })
+                );
+                signBacking.position.set(0, 8.9, 6.35);
+                bGroup.add(signBacking);
+
+                // Left & Right Metal Brackets holding the sign to the building wall
+                [-5.5, 5.5].forEach((bx) => {
+                    const bracket = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4, 0.4, 1.2),
+                        new THREE.MeshLambertMaterial({ color: 0x334155 })
+                    );
+                    bracket.position.set(bx, 8.9, 5.8);
+                    bGroup.add(bracket);
+                });
+
+                const signTex = createSignboardTexture(zone.name, zone.subtitle, zone.accentColor);
+                const signFace = new THREE.Mesh(
+                    new THREE.PlaneGeometry(13.2, 3.0),
+                    new THREE.MeshBasicMaterial({ map: signTex })
+                );
+                signFace.position.set(0, 8.9, 6.62);
+                bGroup.add(signFace);
+
+                // Interactive Portal Ring in front of building entrance
+                const localPortalZ = 10.5;
+                const worldPortalX = zone.x + Math.sin(zone.rotY) * localPortalZ;
+                const worldPortalZ = zone.z + Math.cos(zone.rotY) * localPortalZ;
+                zone.portalX = worldPortalX;
+                zone.portalZ = worldPortalZ;
+
+                const ringGeo = new THREE.TorusGeometry(2.8, 0.25, 16, 36);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.set(0, 0.3, localPortalZ);
+                bGroup.add(ring);
+
+                scene.add(bGroup);
+                colliders.push({ x: zone.x, z: zone.z, radius: 9.2 });
+            });
+        }
+
+        const INTERIOR_ORIGIN = { x: 400, y: 0, z: 400 };
+
+        function buildInteriorForZone(zone) {
+            // Clear previous interior room if any
+            if (interiorGroup) {
+                scene.remove(interiorGroup);
+            }
+            interiorWallBoards.length = 0;
+            clickableWallMeshes.length = 0;
+
+            interiorGroup = new THREE.Group();
+            interiorGroup.position.set(INTERIOR_ORIGIN.x, INTERIOR_ORIGIN.y, INTERIOR_ORIGIN.z);
+
+            // 1. Spacious Classroom Floor (36 x 30)
+            const floor = new THREE.Mesh(
+                new THREE.BoxGeometry(36, 0.8, 30),
+                new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+            );
+            floor.position.y = -0.4;
+            floor.receiveShadow = true;
+            interiorGroup.add(floor);
+
+            // Center Welcome Carpet colored by building theme
+            const rug = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 0.1, 14),
+                new THREE.MeshLambertMaterial({ color: zone.color })
+            );
+            rug.position.set(0, 0.05, 0);
+            rug.receiveShadow = true;
+            interiorGroup.add(rug);
+
+            // 2. Interior Walls (Back Wall, Left Wall, Right Wall, Front Door Wall)
+            const wallMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+            const trimMat = new THREE.MeshLambertMaterial({ color: zone.color });
+
+            // Back Wall (North)
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(36, 12, 1), wallMat);
+            backWall.position.set(0, 6, -15);
+            backWall.receiveShadow = true;
+            interiorGroup.add(backWall);
+
+            // Top Accent Banner along Back Wall
+            const backTrim = new THREE.Mesh(new THREE.BoxGeometry(35.6, 1.4, 1.15), trimMat);
+            backTrim.position.set(0, 11.2, -15);
+            interiorGroup.add(backTrim);
+
+            // Left Wall (West)
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 12, 30), wallMat);
+            leftWall.position.set(-18, 6, 0);
+            leftWall.receiveShadow = true;
+            interiorGroup.add(leftWall);
+
+            const leftTrim = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.4, 29.6), trimMat);
+            leftTrim.position.set(-18, 11.2, 0);
+            interiorGroup.add(leftTrim);
+
+            // Right Wall (East)
+            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1, 12, 30), wallMat);
+            rightWall.position.set(18, 6, 0);
+            rightWall.receiveShadow = true;
+            interiorGroup.add(rightWall);
+
+            const rightTrim = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.4, 29.6), trimMat);
+            rightTrim.position.set(18, 11.2, 0);
+            interiorGroup.add(rightTrim);
+
+            // Front Exit Wall (South) + Glowing Exit Door
+            const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(14, 12, 1), wallMat);
+            frontWallLeft.position.set(-11, 6, 15);
+            interiorGroup.add(frontWallLeft);
+
+            const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(14, 12, 1), wallMat);
+            frontWallRight.position.set(11, 6, 15);
+            interiorGroup.add(frontWallRight);
+
+            const exitDoor = new THREE.Mesh(
+                new THREE.BoxGeometry(5.5, 7, 0.8),
+                new THREE.MeshBasicMaterial({ color: 0xfde047 })
+            );
+            exitDoor.position.set(0, 3.5, 14.8);
+            interiorGroup.add(exitDoor);
+
+            // Exit Sign board attached above the exit door
+            const exitSignTex = createSignboardTexture('EXIT TO CAMPUS', 'Walk Here or Press [E] to Leave', 0xf43f5e);
+            const exitSign = new THREE.Mesh(
+                new THREE.PlaneGeometry(8.5, 2.0),
+                new THREE.MeshBasicMaterial({ map: exitSignTex })
+            );
+            exitSign.position.set(0, 8.6, 14.35);
+            exitSign.rotation.y = Math.PI;
+            interiorGroup.add(exitSign);
+
+            // Exit Portal Ring on Floor
+            const exitRing = new THREE.Mesh(
+                new THREE.TorusGeometry(2.2, 0.2, 16, 32),
+                new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+            );
+            exitRing.rotation.x = Math.PI / 2;
+            exitRing.position.set(0, 0.18, 11.5);
+            interiorGroup.add(exitRing);
+
+            // 3. Mount the 3 Interactive Course / Subject Boards on the Walls!
+            // Board 0: Left Wall, Board 1: Center Back Wall, Board 2: Right Wall
+            const boardPlacements = [
+                { lx: -17.2, ly: 5.2, lz: -2, rotY: Math.PI / 2, standX: -12.5, standZ: -2 },
+                { lx: 0, ly: 5.5, lz: -14.2, rotY: 0, standX: 0, standZ: -9.5 },
+                { lx: 17.2, ly: 5.2, lz: -2, rotY: -Math.PI / 2, standX: 12.5, standZ: -2 }
+            ];
+
+            (zone.items || []).forEach((item, idx) => {
+                const slot = boardPlacements[idx % boardPlacements.length];
+
+                // 3D Frame mounted to the wall
+                const frameGroup = new THREE.Group();
+                frameGroup.position.set(slot.lx, slot.ly, slot.lz);
+                frameGroup.rotation.y = slot.rotY;
+
+                const backing = new THREE.Mesh(
+                    new THREE.BoxGeometry(9.6, 6.2, 0.35),
+                    new THREE.MeshLambertMaterial({ color: 0x0f172a })
+                );
+                frameGroup.add(backing);
+
+                const posterTex = createWallPosterTexture(item, zone.badge, zone.accentColor);
+                const screenMesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(9.1, 5.7),
+                    new THREE.MeshBasicMaterial({ map: posterTex })
+                );
+                screenMesh.position.z = 0.2;
+                screenMesh.userData = { zone, item };
+                frameGroup.add(screenMesh);
+                clickableWallMeshes.push(screenMesh);
+
+                interiorGroup.add(frameGroup);
+
+                // Glowing Floor Pad in front of each Wall Board so student knows where to stand
+                const padRing = new THREE.Mesh(
+                    new THREE.TorusGeometry(2.0, 0.18, 14, 28),
+                    new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+                );
+                padRing.rotation.x = Math.PI / 2;
+                padRing.position.set(slot.standX, 0.16, slot.standZ);
+                interiorGroup.add(padRing);
+
+                interiorWallBoards.push({
+                    zone,
+                    item,
+                    worldX: INTERIOR_ORIGIN.x + slot.standX,
+                    worldZ: INTERIOR_ORIGIN.z + slot.standZ
+                });
+            });
+
+            // 4. Classroom Furniture & Roleplay Decor (Desks, Bookshelves, Podium)
+            const woodMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+            const seatMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+
+            // Teacher Podium near back center
+            const podium = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.2, 2.0), woodMat);
+            podium.position.set(6.5, 1.1, -10.5);
+            podium.castShadow = true;
+            interiorGroup.add(podium);
+
+            // Student Study Desks in the middle of the room
+            [[-5, -1], [5, -1], [-5, 4.5], [5, 4.5]].forEach(([dx, dz]) => {
+                const desk = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.5, 2.0), woodMat);
+                desk.position.set(dx, 0.75, dz);
+                desk.castShadow = true;
+                interiorGroup.add(desk);
+
+                const chair = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 1.4), seatMat);
+                chair.position.set(dx, 0.5, dz + 1.5);
+                interiorGroup.add(chair);
+            });
+
+            scene.add(interiorGroup);
+        }
+
+        function enterBuildingInterior(zone) {
+            playSound('portal');
+
+            // Save student's outdoor position right in front of the building portal
+            gameState.savedOutdoorPos = {
+                x: playerGroup.position.x,
+                z: playerGroup.position.z,
+                rotY: playerGroup.rotation.y
+            };
+            gameState.insideZone = zone;
+
+            // Track visited zone for Campus Quest
+            if (!gameState.visitedZones.has(zone.id)) {
+                gameState.visitedZones.add(zone.id);
+                addReward(35, 10, `Entered ${zone.name}! +35 XP`);
+                document.getElementById('quest-progress').textContent = `${gameState.visitedZones.size}/${townZones.length} Visited`;
+            }
+
+            buildInteriorForZone(zone);
+
+            // Place student near the interior entrance facing the classroom wall boards
+            playerGroup.position.set(INTERIOR_ORIGIN.x, 0, INTERIOR_ORIGIN.z + 8.5);
+            playerGroup.rotation.y = Math.PI;
+            targetCameraAngle = 0;
+            cameraAngle = 0;
+
+            // Update HUD for interior mode
+            document.getElementById('hud-exit-building-btn').classList.remove('hidden');
+            document.getElementById('interior-room-banner').classList.remove('hidden');
+            document.getElementById('interior-banner-title').textContent = `${zone.name} (Interior)`;
+            document.getElementById('interior-banner-icon').innerHTML = `<i class="fa-solid ${zone.icon}"></i>`;
+            showToast(`Welcome inside ${zone.name}! Walk to a Wall Board or click it.`);
+        }
+
+        function exitBuildingInterior() {
+            if (!gameState.insideZone) return;
+            playSound('portal');
+
+            playerGroup.position.set(gameState.savedOutdoorPos.x, 0, gameState.savedOutdoorPos.z);
+            playerGroup.rotation.y = gameState.savedOutdoorPos.rotY;
+            gameState.insideZone = null;
+            gameState.activeWallItem = null;
+            gameState.activeExitDoor = false;
+
+            document.getElementById('hud-exit-building-btn').classList.add('hidden');
+            document.getElementById('interior-room-banner').classList.add('hidden');
+            showToast('Returned to EraEnglish Campus Plaza!');
+        }
+
+        function createObbyParkourZone() {
+            // Southwest Obby Parkour Challenge where students can jump up blocks to get a Mega Crystal
+            const obbySteps = [
+                { x: -24, y: 1.2, z: 24, color: 0xf43f5e },
+                { x: -28, y: 2.6, z: 27, color: 0xf97316 },
+                { x: -32, y: 4.0, z: 25, color: 0xeab308 },
+                { x: -35, y: 5.5, z: 29, color: 0x22c55e },
+                { x: -31, y: 7.0, z: 33, color: 0x3b82f6 },
+                { x: -26, y: 8.6, z: 35, color: 0xa855f7 },
+                { x: -21, y: 10.2, z: 33, color: 0xec4899 }
+            ];
+
+            obbySteps.forEach((step) => {
+                const pad = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.6, 0.7, 3.6),
+                    new THREE.MeshLambertMaterial({ color: step.color })
+                );
+                pad.position.set(step.x, step.y, step.z);
+                pad.castShadow = true;
+                pad.receiveShadow = true;
+                scene.add(pad);
+
+                platforms.push({
+                    minX: step.x - 1.9,
+                    maxX: step.x + 1.9,
+                    minZ: step.z - 1.9,
+                    maxZ: step.z + 1.9,
+                    topY: step.y + 0.35
+                });
+            });
+
+            // Mega Trophy Crystal at the top of the Obby
+            const trophyCrystal = new THREE.Mesh(
+                new THREE.OctahedronGeometry(1.3, 0),
+                new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.5 })
+            );
+            trophyCrystal.position.set(-21, 12.2, 33);
+            trophyCrystal.userData = { word: 'MASTER SCHOLAR (OBBY CHAMPION)', collected: false, xp: 100 };
+            scene.add(trophyCrystal);
+            floatingCrystals.push(trophyCrystal);
+
+            create3DLabel('Obby Word Tower', 'Jump the blocks for +100 XP!', new THREE.Vector3(-28, 12.5, 29), 'bg-rose-600/90');
+        }
+
+        function createScenicPondAndBridge() {
+            // Southeast Scenic Campus Lake
+            const pondX = 32;
+            const pondZ = 32;
+            const water = new THREE.Mesh(
+                new THREE.CylinderGeometry(11, 11, 0.2, 32),
+                new THREE.MeshLambertMaterial({ color: 0x0ea5e9 })
+            );
+            water.position.set(pondX, 0.06, pondZ);
+            scene.add(water);
+
+            // Wooden Footbridge over the lake
+            const bridge = new THREE.Mesh(
+                new THREE.BoxGeometry(4.2, 0.5, 23),
+                new THREE.MeshLambertMaterial({ color: 0x92400e })
+            );
+            bridge.position.set(pondX, 0.45, pondZ);
+            bridge.castShadow = true;
+            scene.add(bridge);
+
+            platforms.push({
+                minX: pondX - 2.2,
+                maxX: pondX + 2.2,
+                minZ: pondZ - 11.5,
+                maxZ: pondZ + 11.5,
+                topY: 0.7
+            });
+        }
+
+        function createTreesLampsAndProps() {
+            const treePositions = [
+                [-18, -18], [18, -18], [-18, 18], [18, 18],
+                [-35, -18], [35, -18], [-35, 18], [35, 18],
+                [-18, -36], [18, -36], [-18, 36], [18, 36],
+                [-64, -28], [64, -28], [-64, 28], [64, 28],
+                [-28, -64], [28, -64], [-28, 64], [28, 64],
+                [-58, -58], [58, -58], [-58, 58], [58, 58]
+            ];
+
+            treePositions.forEach(([tx, tz], i) => {
+                const tree = new THREE.Group();
+                const trunk = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.3, 4.2, 1.3),
+                    new THREE.MeshLambertMaterial({ color: 0x78350f })
+                );
+                trunk.position.y = 2.1;
+                trunk.castShadow = true;
+                tree.add(trunk);
+
+                const leafColor = i % 2 === 0 ? 0x16a34a : 0x15803d;
+                const leaves = new THREE.Mesh(
+                    new THREE.BoxGeometry(4.8, 4.8, 4.8),
+                    new THREE.MeshLambertMaterial({ color: leafColor })
+                );
+                leaves.position.y = 5.8;
+                leaves.castShadow = true;
+                tree.add(leaves);
+
+                const topLeaves = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.0, 2.6, 3.0),
+                    new THREE.MeshLambertMaterial({ color: 0x22c55e })
+                );
+                topLeaves.position.y = 9.0;
+                tree.add(topLeaves);
+
+                tree.position.set(tx, 0, tz);
+                scene.add(tree);
+                colliders.push({ x: tx, z: tz, radius: 1.6 });
+            });
+
+            // Streetlamps & Benches along the Boulevards
+            const lampPositions = [
+                [-6, -24], [6, -24], [-6, 24], [6, 24],
+                [-24, -6], [-24, 6], [24, -6], [24, 6]
+            ];
+            lampPositions.forEach(([lx, lz]) => {
+                const lampGroup = new THREE.Group();
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.18, 0.24, 6.2, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x334155 })
+                );
+                pole.position.y = 3.1;
+                lampGroup.add(pole);
+
+                const bulb = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.65, 12, 12),
+                    new THREE.MeshBasicMaterial({ color: 0xfef08a })
+                );
+                bulb.position.y = 6.4;
+                lampGroup.add(bulb);
+
+                lampGroup.position.set(lx, 0, lz);
+                scene.add(lampGroup);
+            });
+        }
+
+        function createSkyClouds() {
+            const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+            for (let i = 0; i < 14; i++) {
+                const cGroup = new THREE.Group();
+                const b1 = new THREE.Mesh(new THREE.BoxGeometry(10, 2.8, 6), cloudMat);
+                const b2 = new THREE.Mesh(new THREE.BoxGeometry(6, 3.6, 5), cloudMat);
+                b2.position.set(2, 1.2, 0);
+                cGroup.add(b1, b2);
+                cGroup.position.set(
+                    (Math.random() - 0.5) * 180,
+                    34 + Math.random() * 14,
+                    (Math.random() - 0.5) * 180
+                );
+                scene.add(cGroup);
+                clouds.push({ mesh: cGroup, speed: 0.02 + Math.random() * 0.03 });
+            }
+        }
+
+        function createCollectibleWordCrystals() {
+            const words = [
+                { word: 'FLUENCY', x: -12, z: -12 },
+                { word: 'GRAMMAR', x: 12, z: -12 },
+                { word: 'VOCABULARY', x: -12, z: 12 },
+                { word: 'CONFIDENCE', x: 12, z: 12 },
+                { word: 'PRONUNCIATION', x: 0, z: -28 },
+                { word: 'ARTICULATE', x: 28, z: 0 },
+                { word: 'PERSERVERANCE', x: -28, z: 0 },
+                { word: 'COMMUNICATION', x: 0, z: 28 },
+                { word: 'SCHOLARSHIP', x: 32, z: 32 }
+            ];
+
+            words.forEach((item) => {
+                const crystal = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.95, 0),
+                    new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 })
+                );
+                crystal.position.set(item.x, 1.8, item.z);
+                crystal.userData = { word: item.word, collected: false, xp: 25 };
+                scene.add(crystal);
+                floatingCrystals.push(crystal);
+            });
+        }
+
+        function create3DLabel(title, subtitle, positionVec, bgClass = 'bg-gray-900/90', followObject = null) {
+            const container = document.getElementById('labels-container');
+            const el = document.createElement('div');
+            el.className = `world-label ${bgClass} backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-white/20 shadow-lg text-center whitespace-nowrap`;
+            el.innerHTML = `
+                <div class="font-game font-bold text-xs sm:text-sm leading-tight">${title}</div>
+                ${subtitle ? `<div class="text-[10px] text-amber-300 font-semibold">${subtitle}</div>` : ''}
+            `;
+            container.appendChild(el);
+            labelElements.push({ el, pos: positionVec, followObject });
+        }
+
+        function createStudentPlayer() {
+            playerGroup = new THREE.Group();
+            playerGroup.position.set(0, 0, 14);
+
+            const skinMat = new THREE.MeshLambertMaterial({ color: 0xfde047 });
+            const shirtMat = new THREE.MeshLambertMaterial({ color: 0x3b82f6 });
+            const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+
+            // Head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.15, 1.15), skinMat);
+            head.position.y = 3.25;
+            head.castShadow = true;
+            playerGroup.add(head);
+
+            // Eyes & Smile
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111827 });
+            const leftEye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.06), eyeMat);
+            leftEye.position.set(-0.24, 3.32, 0.58);
+            const rightEye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.06), eyeMat);
+            rightEye.position.set(0.24, 3.32, 0.58);
+            playerGroup.add(leftEye, rightEye);
+
+            // Graduation / Student Cap
+            const capMat = new THREE.MeshLambertMaterial({ color: 0x1e1b4b });
+            const capBase = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.25, 1.3), capMat);
+            capBase.position.y = 3.9;
+            playerGroup.add(capBase);
+
+            // Torso (EraEnglish Uniform Shirt)
+            shirtMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.5, 0.75), shirtMat);
+            shirtMesh.position.y = 1.95;
+            shirtMesh.castShadow = true;
+            playerGroup.add(shirtMesh);
+
+            // Backpack
+            const pack = new THREE.Mesh(
+                new THREE.BoxGeometry(1.05, 1.15, 0.45),
+                new THREE.MeshLambertMaterial({ color: 0xd97706 })
+            );
+            pack.position.set(0, 2.0, -0.55);
+            pack.castShadow = true;
+            playerGroup.add(pack);
+
+            // Left & Right Arms
+            leftArm = new THREE.Group();
+            leftArm.position.set(-1.0, 2.55, 0);
+            const lArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.4, 0.55), skinMat);
+            lArmMesh.position.y = -0.55;
+            lArmMesh.castShadow = true;
+            leftArm.add(lArmMesh);
+            playerGroup.add(leftArm);
+
+            rightArm = new THREE.Group();
+            rightArm.position.set(1.0, 2.55, 0);
+            const rArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.4, 0.55), skinMat);
+            rArmMesh.position.y = -0.55;
+            rArmMesh.castShadow = true;
+            rightArm.add(rArmMesh);
+            playerGroup.add(rightArm);
+
+            // Left & Right Legs
+            leftLeg = new THREE.Group();
+            leftLeg.position.set(-0.36, 1.2, 0);
+            pantsLeftMesh = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.2, 0.65), pantsMat);
+            pantsLeftMesh.position.y = -0.6;
+            pantsLeftMesh.castShadow = true;
+            leftLeg.add(pantsLeftMesh);
+            playerGroup.add(leftLeg);
+
+            rightLeg = new THREE.Group();
+            rightLeg.position.set(0.36, 1.2, 0);
+            pantsRightMesh = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.2, 0.65), pantsMat);
+            pantsRightMesh.position.y = -0.6;
+            pantsRightMesh.castShadow = true;
+            rightLeg.add(pantsRightMesh);
+            playerGroup.add(rightLeg);
+
+            scene.add(playerGroup);
+        }
+
+        function createAutonomousClassmates() {
+            const classmateConfigs = [
+                { name: 'Coach_Alex', role: 'EraEnglish Guide', color: 0x10b981, x: -10, z: -16, phase: 0 },
+                { name: 'Mia_Scholar', role: 'IELTS Top Scorer', color: 0xec4899, x: 14, z: -10, phase: 2.1 },
+                { name: 'Leo_Grammar', role: 'Homework Helper', color: 0xf59e0b, x: 12, z: 16, phase: 4.2 },
+                { name: 'Sofia_Reader', role: 'Book Club Captain', color: 0x8b5cf6, x: -16, z: 12, phase: 1.4 }
+            ];
+
+            classmateConfigs.forEach((cfg) => {
+                const npcGroup = new THREE.Group();
+                npcGroup.position.set(cfg.x, 0, cfg.z);
+
+                const skinMat = new THREE.MeshLambertMaterial({ color: 0xfde047 });
+                const topMat = new THREE.MeshLambertMaterial({ color: cfg.color });
+                const legMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+
+                const head = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.05, 1.05), skinMat);
+                head.position.y = 3.1;
+                head.castShadow = true;
+                npcGroup.add(head);
+
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.4, 0.7), topMat);
+                body.position.y = 1.85;
+                body.castShadow = true;
+                npcGroup.add(body);
+
+                const lLeg = new THREE.Group();
+                lLeg.position.set(-0.32, 1.15, 0);
+                const lLegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.15, 0.55), legMat);
+                lLegMesh.position.y = -0.55;
+                lLeg.add(lLegMesh);
+                npcGroup.add(lLeg);
+
+                const rLeg = new THREE.Group();
+                rLeg.position.set(0.32, 1.15, 0);
+                const rLegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.15, 0.55), legMat);
+                rLegMesh.position.y = -0.55;
+                rLeg.add(rLegMesh);
+                npcGroup.add(rLeg);
+
+                scene.add(npcGroup);
+                npcs.push({
+                    group: npcGroup,
+                    lLeg,
+                    rLeg,
+                    baseX: cfg.x,
+                    baseZ: cfg.z,
+                    phase: cfg.phase
+                });
+
+                create3DLabel(cfg.name, cfg.role, new THREE.Vector3(cfg.x, 4.5, cfg.z), 'bg-slate-900/80', npcGroup);
+            });
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('keydown', (e) => {
+                if (document.activeElement.tagName === 'INPUT') return;
+                const k = e.key.toLowerCase();
+                if (k === 'w' || e.key === 'ArrowUp') keys.up = true;
+                if (k === 's' || e.key === 'ArrowDown') keys.down = true;
+                if (k === 'a' || e.key === 'ArrowLeft') keys.left = true;
+                if (k === 'd' || e.key === 'ArrowRight') keys.right = true;
+                if (e.key === 'Shift') toggleSprint(true);
+                if (e.code === 'Space') playerJump();
+                if (k === 'e' && gameState.activeZone) triggerCurrentZone();
+            });
+
+            window.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if (k === 'w' || e.key === 'ArrowUp') keys.up = false;
+                if (k === 's' || e.key === 'ArrowDown') keys.down = false;
+                if (k === 'a' || e.key === 'ArrowLeft') keys.left = false;
+                if (k === 'd' || e.key === 'ArrowRight') keys.right = false;
+                if (e.key === 'Shift') toggleSprint(false);
+            });
+
+            // 1. Virtual Analog Joystick (Multi-touch & Mouse Compatible)
+            const joyZone = document.getElementById('joystick-zone');
+            const joyKnob = document.getElementById('joystick-knob');
+            let joyPointerId = null;
+            const maxRadius = 36;
+
+            const updateJoystick = (clientX, clientY) => {
+                const rect = joyZone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                let dx = clientX - centerX;
+                let dy = clientY - centerY;
+                const dist = Math.hypot(dx, dy);
+                if (dist > maxRadius) {
+                    dx = (dx / dist) * maxRadius;
+                    dy = (dy / dist) * maxRadius;
+                }
+                joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                joyVector.x = dx / maxRadius;
+                joyVector.y = dy / maxRadius;
+            };
+
+            const resetJoystick = () => {
+                joyPointerId = null;
+                joyKnob.style.transform = 'translate(0px, 0px)';
+                joyVector.x = 0;
+                joyVector.y = 0;
+            };
+
+            joyZone.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                joyPointerId = e.pointerId;
+                joyZone.setPointerCapture(e.pointerId);
+                updateJoystick(e.clientX, e.clientY);
+            });
+
+            joyZone.addEventListener('pointermove', (e) => {
+                if (e.pointerId === joyPointerId) {
+                    e.stopPropagation();
+                    updateJoystick(e.clientX, e.clientY);
+                }
+            });
+
+            const endJoy = (e) => {
+                if (e.pointerId === joyPointerId) {
+                    e.stopPropagation();
+                    resetJoystick();
+                }
+            };
+            joyZone.addEventListener('pointerup', endJoy);
+            joyZone.addEventListener('pointercancel', endJoy);
+
+            // 2. Full 360° Touch & Mouse Camera Panning on Canvas + Clicking 3D Wall Boards
+            const canvas = document.getElementById('game-canvas');
+            let pointerDownPos = { x: 0, y: 0 };
+
+            canvas.addEventListener('pointerdown', (e) => {
+                isDraggingCamera = true;
+                activeCameraPointerId = e.pointerId;
+                prevPointer = { x: e.clientX, y: e.clientY };
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+                canvas.setPointerCapture(e.pointerId);
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!isDraggingCamera || e.pointerId !== activeCameraPointerId) return;
+                const dx = e.clientX - prevPointer.x;
+                const dy = e.clientY - prevPointer.y;
+                // Smooth 360 horizontal pan & vertical tilt
+                targetCameraAngle -= dx * 0.0085;
+                targetCameraPitch = Math.max(0.08, Math.min(1.25, targetCameraPitch + dy * 0.0065));
+                prevPointer = { x: e.clientX, y: e.clientY };
+            });
+
+            const endCameraPan = (e) => {
+                if (e.pointerId === activeCameraPointerId) {
+                    const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+                    // If user tapped/clicked without dragging, check if they clicked an interior 3D Wall Board
+                    if (moveDist < 8 && gameState.insideZone && clickableWallMeshes.length > 0) {
+                        const rect = canvas.getBoundingClientRect();
+                        pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                        pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                        raycaster.setFromCamera(pointerNDC, camera);
+                        const hits = raycaster.intersectObjects(clickableWallMeshes, false);
+                        if (hits.length > 0 && hits[0].object.userData.item) {
+                            const { zone, item } = hits[0].object.userData;
+                            openWallItemModal(zone, item);
+                        }
+                    }
+                    isDraggingCamera = false;
+                    activeCameraPointerId = null;
+                }
+            };
+            canvas.addEventListener('pointerup', endCameraPan);
+            canvas.addEventListener('pointercancel', endCameraPan);
+
+            // 3. Mouse Wheel Zoom In/Out
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance = Math.max(8, Math.min(34, cameraDistance + e.deltaY * 0.015));
+            }, { passive: false });
+        }
+
+        function toggleSprint(forceState) {
+            isSprinting = typeof forceState === 'boolean' ? forceState : !isSprinting;
+            const btn = document.getElementById('sprint-btn');
+            if (isSprinting) {
+                btn.classList.add('ring-2', 'ring-amber-400', 'bg-amber-500/30');
+            } else {
+                btn.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-500/30');
+            }
+        }
+
+        function resetCameraBehindPlayer() {
+            // Align camera directly behind the direction the student character is facing
+            targetCameraAngle = playerGroup.rotation.y + Math.PI;
+            targetCameraPitch = 0.42;
+            showToast('Camera centered behind your student!');
+        }
+
+        function toggleSkyTheme() {
+            isSunset = !isSunset;
+            const icon = document.getElementById('sky-icon');
+            if (isSunset) {
+                scene.background.setHex(0xf97316);
+                scene.fog.color.setHex(0xf97316);
+                ambientLight.color.setHex(0xfed7aa);
+                dirLight.color.setHex(0xfb923c);
+                icon.className = 'fa-solid fa-moon text-indigo-200';
+                showToast('Switched to Golden Sunset Campus!');
+            } else {
+                scene.background.setHex(0x7dd3fc);
+                scene.fog.color.setHex(0x7dd3fc);
+                ambientLight.color.setHex(0xffffff);
+                dirLight.color.setHex(0xfffbeb);
+                icon.className = 'fa-solid fa-sun text-amber-300';
+                showToast('Switched to Sunny Day Campus!');
+            }
+        }
+
+        function playerJump() {
+            if (isGrounded) {
+                playerVelocityY = 0.31;
+                isGrounded = false;
+                playSound('jump');
+            }
+        }
+
+        function teleportTo(x, z) {
+            if (gameState.insideZone) {
+                exitBuildingInterior();
+            }
+            playerGroup.position.set(x, 0, z);
+            playerVelocityY = 0;
+            closeMapModal();
+            showToast('Teleported across EraEnglish Town!');
+        }
+
+        function triggerCurrentZone() {
+            // 1. If inside a building and standing at the Exit Door
+            if (gameState.insideZone && gameState.activeExitDoor) {
+                exitBuildingInterior();
+                return;
+            }
+            // 2. If inside a building and standing in front of a Wall Board
+            if (gameState.insideZone && gameState.activeWallItem) {
+                openWallItemModal(gameState.activeWallItem.zone, gameState.activeWallItem.item);
+                return;
+            }
+            // 3. If outdoors in front of a building entrance, step inside its 3D Room!
+            if (gameState.activeZone) {
+                enterBuildingInterior(gameState.activeZone);
+            }
+        }
+
+        function openWallItemModal(zone, selectedItem) {
+            playSound('portal');
+
+            document.getElementById('modal-header').className = `bg-gradient-to-r ${zone.headerClass} p-5 flex items-center justify-between text-white`;
+            document.getElementById('modal-icon').innerHTML = `<i class="fa-solid ${zone.icon}"></i>`;
+            document.getElementById('modal-badge').textContent = `${zone.name} • ${selectedItem.level}`;
+            document.getElementById('modal-title').textContent = selectedItem.title;
+            document.getElementById('modal-desc').textContent = zone.description;
+            document.getElementById('modal-external-link').href = selectedItem.link || zone.url;
+
+            const contentArea = document.getElementById('modal-content-area');
+            contentArea.innerHTML = '';
+
+            if (zone.isQuiz || selectedItem.isQuizBoard) {
+                renderQuizQuestion(contentArea);
+            } else {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-800/95 border-2 border-sky-400/40 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl';
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-game font-bold text-white text-lg">${selectedItem.title}</span>
+                            <span class="text-xs bg-sky-500/20 text-sky-300 border border-sky-400/30 px-2.5 py-0.5 rounded-full font-semibold">${selectedItem.level}</span>
+                        </div>
+                        <p class="text-xs text-gray-300">Ready to start this module on <span class="text-emerald-300 font-semibold">www.eraenglish.online</span> and earn ${selectedItem.xp}!</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-sm font-game font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 px-3 py-1.5 rounded-xl">${selectedItem.xp}</span>
+                        <a href="${selectedItem.link}" target="_blank" rel="noopener noreferrer" onclick="addReward(30, 10, 'Launched ${selectedItem.title.replace(/'/g, '')}!')" class="rbx-btn bg-blue-600 hover:bg-blue-500 text-white text-sm font-game font-bold px-5 py-2.5 rounded-xl">
+                            Enter Module <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+                        </a>
+                    </div>
+                `;
+                contentArea.appendChild(card);
+            }
+
+            document.getElementById('building-modal').classList.remove('hidden');
+        }
+
+        function renderQuizQuestion(container) {
+            const qObj = practiceQuestions[gameState.quizIndex % practiceQuestions.length];
+            container.innerHTML = `
+                <div class="bg-gray-800 border border-rose-500/30 rounded-2xl p-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold uppercase text-rose-400">Live Practice Test Challenge</span>
+                        <span class="text-xs text-gray-400">Question ${(gameState.quizIndex % practiceQuestions.length) + 1} of ${practiceQuestions.length}</span>
+                    </div>
+                    <p class="font-game text-lg text-white">${qObj.q}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        ${qObj.options.map((opt, idx) => `
+                            <button onclick="submitQuizAnswer(${idx}, ${qObj.answer})" class="rbx-btn bg-gray-700 hover:bg-rose-600 text-left px-4 py-3 rounded-xl text-sm font-semibold text-white border border-white/10">
+                                ${String.fromCharCode(65 + idx)}. ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function submitQuizAnswer(selected, correct) {
+            if (selected === correct) {
+                gameState.quizIndex++;
+                addReward(40, 15, 'Correct Answer! +40 XP & +15 Coins');
+                renderQuizQuestion(document.getElementById('modal-content-area'));
+            } else {
+                showToast('Almost! Try another option.');
+            }
+        }
+
+        function closeBuildingModal() {
+            document.getElementById('building-modal').classList.add('hidden');
+        }
+
+        function openAvatarModal() {
+            document.getElementById('avatar-modal').classList.remove('hidden');
+        }
+        function closeAvatarModal() {
+            document.getElementById('avatar-modal').classList.add('hidden');
+        }
+        function setAvatarColor(part, hex) {
+            if (part === 'shirt') shirtMesh.material.color.setHex(hex);
+            if (part === 'pants') {
+                pantsLeftMesh.material.color.setHex(hex);
+                pantsRightMesh.material.color.setHex(hex);
+            }
+        }
+        function saveAvatarChanges() {
+            const val = document.getElementById('avatar-name-input').value.trim() || 'Explorer_01';
+            gameState.studentName = val;
+            document.getElementById('hud-student-name').textContent = `Student: ${val}`;
+            closeAvatarModal();
+            showToast('Avatar Updated!');
+        }
+
+        function openMapModal() {
+            document.getElementById('map-modal').classList.remove('hidden');
+        }
+        function closeMapModal() {
+            document.getElementById('map-modal').classList.add('hidden');
+        }
+
+        function addReward(xp, coins, msg) {
+            gameState.xp += xp;
+            gameState.coins += coins;
+            document.getElementById('hud-xp').textContent = `${gameState.xp} XP`;
+            document.getElementById('hud-coins').textContent = `${gameState.coins}`;
+            playSound('reward');
+            showToast(msg);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').textContent = message;
+            toast.classList.remove('hidden');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const box = document.getElementById('chat-messages');
+            const line = document.createElement('div');
+            line.innerHTML = `<span class="font-bold text-purple-400">[${gameState.studentName}]:</span> ${text.replace(/</g, '&lt;')}`;
+            box.appendChild(line);
+            box.scrollTop = box.scrollHeight;
+            input.value = '';
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            // Smoothly interpolate camera pan angles
+            cameraAngle += (targetCameraAngle - cameraAngle) * 0.18;
+            cameraPitch += (targetCameraPitch - cameraPitch) * 0.18;
+
+            // 1. Player Movement (Keyboard + Smooth Analog Joystick)
+            const baseSpeed = isSprinting ? 0.36 : 0.24;
+            let moveX = joyVector.x;
+            let moveZ = joyVector.y;
+
+            if (keys.up) moveZ -= 1;
+            if (keys.down) moveZ += 1;
+            if (keys.left) moveX -= 1;
+            if (keys.right) moveX += 1;
+
+            const moveMag = Math.hypot(moveX, moveZ);
+            const isMoving = moveMag > 0.05;
+
+            if (isMoving) {
+                const clampedMag = Math.min(1, moveMag);
+                const normX = moveX / moveMag;
+                const normZ = moveZ / moveMag;
+
+                // Move relative to current 360° camera viewing angle
+                const sin = Math.sin(cameraAngle);
+                const cos = Math.cos(cameraAngle);
+                const worldDX = normX * cos + normZ * sin;
+                const worldDZ = -normX * sin + normZ * cos;
+
+                const stepSpeed = baseSpeed * clampedMag;
+                let nextX = playerGroup.position.x + worldDX * stepSpeed;
+                let nextZ = playerGroup.position.z + worldDZ * stepSpeed;
+
+                if (gameState.insideZone) {
+                    // Clamp player smoothly inside the 3D classroom walls
+                    nextX = Math.max(INTERIOR_ORIGIN.x - 16.2, Math.min(INTERIOR_ORIGIN.x + 16.2, nextX));
+                    nextZ = Math.max(INTERIOR_ORIGIN.z - 13.0, Math.min(INTERIOR_ORIGIN.z + 13.2, nextZ));
+                    playerGroup.position.x = nextX;
+                    playerGroup.position.z = nextZ;
+                } else {
+                    nextX = Math.max(-108, Math.min(108, nextX));
+                    nextZ = Math.max(-108, Math.min(108, nextZ));
+
+                    // Circle collision check with outdoor buildings & trees
+                    let blocked = false;
+                    for (const col of colliders) {
+                        if (Math.hypot(nextX - col.x, nextZ - col.z) < col.radius) {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                    if (!blocked) {
+                        playerGroup.position.x = nextX;
+                        playerGroup.position.z = nextZ;
+                    }
+                }
+
+                // Smoothly rotate student character towards movement direction
+                const targetRot = Math.atan2(worldDX, worldDZ);
+                let diff = targetRot - playerGroup.rotation.y;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                playerGroup.rotation.y += diff * 0.22;
+
+                // Roblox-style limb swing animation
+                const swingSpeed = isSprinting ? 16 : 12;
+                const swing = Math.sin(elapsedTime * swingSpeed) * 0.7;
+                leftLeg.rotation.x = swing;
+                rightLeg.rotation.x = -swing;
+                leftArm.rotation.x = -swing;
+                rightArm.rotation.x = swing;
+            } else {
+                leftLeg.rotation.x = 0;
+                rightLeg.rotation.x = 0;
+                leftArm.rotation.x = 0;
+                rightArm.rotation.x = 0;
+            }
+
+            // 2. Jump, Gravity & Obby Platform Landing Physics
+            let groundHeight = 0;
+            for (const plat of platforms) {
+                if (
+                    playerGroup.position.x >= plat.minX &&
+                    playerGroup.position.x <= plat.maxX &&
+                    playerGroup.position.z >= plat.minZ &&
+                    playerGroup.position.z <= plat.maxZ &&
+                    playerGroup.position.y >= plat.topY - 0.55
+                ) {
+                    groundHeight = Math.max(groundHeight, plat.topY);
+                }
+            }
+
+            playerGroup.position.y += playerVelocityY;
+            if (playerGroup.position.y > groundHeight) {
+                playerVelocityY -= 0.015;
+                isGrounded = false;
+            } else {
+                playerGroup.position.y = groundHeight;
+                playerVelocityY = 0;
+                isGrounded = true;
+            }
+
+            // 3. Animate Floating Word Crystals & Check Collection
+            floatingCrystals.forEach((crystal) => {
+                crystal.rotation.y += 0.03;
+                crystal.rotation.x += 0.01;
+                if (crystal.userData && crystal.userData.word && !crystal.userData.collected) {
+                    const dist = playerGroup.position.distanceTo(crystal.position);
+                    if (dist < 2.5) {
+                        crystal.userData.collected = true;
+                        crystal.visible = false;
+                        const xpGain = crystal.userData.xp || 25;
+                        addReward(xpGain, 10, `Collected Word Crystal: "${crystal.userData.word}" (+${xpGain} XP)`);
+                    }
+                }
+            });
+
+            // 4. Animate Sky Clouds & Autonomous Classmates
+            clouds.forEach((c) => {
+                c.mesh.position.x += c.speed;
+                if (c.mesh.position.x > 110) c.mesh.position.x = -110;
+            });
+
+            npcs.forEach((npc) => {
+                const t = elapsedTime * 0.7 + npc.phase;
+                const nextX = npc.baseX + Math.sin(t) * 5.5;
+                const nextZ = npc.baseZ + Math.cos(t) * 5.5;
+                const dx = nextX - npc.group.position.x;
+                const dz = nextZ - npc.group.position.z;
+                npc.group.position.set(nextX, 0, nextZ);
+                npc.group.rotation.y = Math.atan2(dx, dz);
+                const legSwing = Math.sin(elapsedTime * 7 + npc.phase) * 0.5;
+                npc.lLeg.rotation.x = legSwing;
+                npc.rLeg.rotation.x = -legSwing;
+            });
+
+            // 5. Check Proximity to Outdoor Building Portals OR Interior Wall Boards
+            const promptBanner = document.getElementById('interaction-prompt');
+
+            if (gameState.insideZone) {
+                gameState.activeZone = null;
+                gameState.activeWallItem = null;
+                gameState.activeExitDoor = false;
+
+                // Check if near the interior Exit Door
+                const exitDist = Math.hypot(
+                    playerGroup.position.x - INTERIOR_ORIGIN.x,
+                    playerGroup.position.z - (INTERIOR_ORIGIN.z + 11.5)
+                );
+
+                if (exitDist < 3.4) {
+                    gameState.activeExitDoor = true;
+                    document.getElementById('prompt-title').textContent = 'Exit Back to Campus Plaza';
+                    promptBanner.classList.remove('hidden');
+                } else {
+                    // Check if standing in front of any of the 3 Wall Boards
+                    for (const wb of interiorWallBoards) {
+                        const dist = Math.hypot(
+                            playerGroup.position.x - wb.worldX,
+                            playerGroup.position.z - wb.worldZ
+                        );
+                        if (dist < 3.6) {
+                            gameState.activeWallItem = wb;
+                            break;
+                        }
+                    }
+
+                    if (gameState.activeWallItem) {
+                        document.getElementById('prompt-title').textContent = `Open: ${gameState.activeWallItem.item.title}`;
+                        promptBanner.classList.remove('hidden');
+                    } else {
+                        promptBanner.classList.add('hidden');
+                    }
+                }
+            } else {
+                gameState.activeWallItem = null;
+                gameState.activeExitDoor = false;
+                let foundZone = null;
+                for (const zone of townZones) {
+                    const dist = Math.hypot(
+                        playerGroup.position.x - zone.portalX,
+                        playerGroup.position.z - zone.portalZ
+                    );
+                    if (dist < 4.6) {
+                        foundZone = zone;
+                        break;
+                    }
+                }
+
+                if (foundZone) {
+                    gameState.activeZone = foundZone;
+                    document.getElementById('prompt-title').textContent = `Go Inside ${foundZone.name}`;
+                    promptBanner.classList.remove('hidden');
+                } else {
+                    gameState.activeZone = null;
+                    promptBanner.classList.add('hidden');
+                }
+            }
+
+            // 6. Smooth 360° Orbit Camera around Student Character
+            const targetCamX = playerGroup.position.x + Math.sin(cameraAngle) * cameraDistance * Math.cos(cameraPitch);
+            const targetCamZ = playerGroup.position.z + Math.cos(cameraAngle) * cameraDistance * Math.cos(cameraPitch);
+            const targetCamY = playerGroup.position.y + Math.sin(cameraPitch) * cameraDistance + 2.2;
+
+            camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), 0.2);
+            camera.lookAt(playerGroup.position.x, playerGroup.position.y + 2.6, playerGroup.position.z);
+
+            // 7. Update 3D Floating Labels
+            labelElements.forEach((item) => {
+                const worldPos = item.followObject
+                    ? new THREE.Vector3(item.followObject.position.x, 4.6, item.followObject.position.z)
+                    : item.pos.clone();
+                worldPos.project(camera);
+
+                if (worldPos.z < 1) {
+                    const x = (worldPos.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (-(worldPos.y * 0.5) + 0.5) * window.innerHeight;
+                    item.el.style.left = `${x}px`;
+                    item.el.style.top = `${y}px`;
+                    item.el.style.opacity = '1';
+                } else {
+                    item.el.style.opacity = '0';
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function () {
+            initThreeWorld();
+            animate();
+        };
+    </script>
+</body>
+</html>
