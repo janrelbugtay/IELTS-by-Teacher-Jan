@@ -120,7 +120,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const rawTab = searchParams.get('tab') || 'overview';
   const currentTab = isAdmin ? rawTab : 'overview';
   
-  let targetUserId = (isAdmin && searchParams.get('userId')) ? searchParams.get('userId') : user?.uid;
+  const paramUid = searchParams.get('userId') || searchParams.get('user');
+  let targetUserId = (isAdmin && paramUid) ? paramUid : user?.uid;
   if (isShared && urlUserId) {
     targetUserId = urlUserId;
   }

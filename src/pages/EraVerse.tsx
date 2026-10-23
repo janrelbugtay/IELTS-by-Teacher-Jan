@@ -26,22 +26,29 @@ import {
   Settings,
   Music,
   Trophy,
-  Sliders
+  Sliders,
+  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 import {
   TEACHER_JAN_PROFILE,
+  REAL_IELTS_STUDENT_PROFILES,
+  buildUniqueRosterFromFirestore,
+  findCharacterForAuthUser,
   computeStudentSkillScores,
   checkEnglishOnlyMessage,
   generateEnglishPartnerReply,
   createSpeechBubbleSprite,
   createPersonalDashboardWallTexture,
   createClassDashboardWallTexture,
+  createSkillDashboardWallTexture,
   ChatMessageItem
 } from '../utils/eraverseFeatures';
 import {
   SportsSideActionsHud,
   ProximityEnglishChat,
-  DashboardHallModals
+  DashboardHallModals,
+  DashboardModalType
 } from '../components/EraVerseModalsAndHud';
 
 // ============================================================================
@@ -378,10 +385,14 @@ interface BuildingZone {
 interface IeltsCharacterProfile {
   id: string;
   realUserId?: string;
+  email?: string;
   name: string;
+  fullName?: string;
   cohort: 'IELTS 1' | 'IELTS 2' | 'TEACHER (SUPER ADMIN)';
   course: 'IELTS Course';
   roleTitle: string;
+  specialty?: string;
+  avatarDetails?: string;
   shirtColor: string;
   hairColor: string;
   skinColor: string;
@@ -394,17 +405,31 @@ interface IeltsCharacterProfile {
 }
 
 interface WallBoardSpec {
-  slot: 'back-left' | 'back-right' | 'left-wall' | 'right-wall';
+  slot:
+    | 'back-left'
+    | 'back-right'
+    | 'left-wall'
+    | 'right-wall'
+    | 'left-back'
+    | 'left-front'
+    | 'right-back'
+    | 'right-front';
   category: string;
   title: string;
   subtitle: string;
   badge: string;
   accentHex: string;
   bgLightHex: string;
-  actionType: 'practice_skill' | 'homework_folder' | 'navigate' | 'my_dashboard' | 'class_dashboard';
+  actionType:
+    | 'practice_skill'
+    | 'homework_folder'
+    | 'navigate'
+    | 'my_dashboard'
+    | 'class_dashboard'
+    | 'skill_dashboard';
   skillOrTab?: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
   route?: string;
-  dashboardType?: 'personal' | 'class';
+  dashboardType?: 'personal' | 'class' | 'listening' | 'reading' | 'writing' | 'speaking';
 }
 
 // Vibrant, High-Contrast Colorful Buildings + Bright Warm Classroom Interiors
@@ -533,160 +558,7 @@ const BUILDINGS: BuildingZone[] = [
 
 const DEFAULT_IELTS_CHARACTERS: IeltsCharacterProfile[] = [
   TEACHER_JAN_PROFILE,
-  {
-    id: 'ielts1-kai',
-    name: 'Kai',
-    cohort: 'IELTS 1',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 1 Student',
-    shirtColor: '#2563eb',
-    hairColor: '#5c2d16',
-    skinColor: '#fde68a',
-    hatType: 'none',
-    accessoryType: 'glasses',
-    targetBuildingId: 'dashboard',
-    motto: 'Checking my IELTS 1 Dashboard & Class Scoreboard!'
-  },
-  {
-    id: 'ielts1-sophia',
-    name: 'Sophia',
-    cohort: 'IELTS 1',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 1 Student',
-    shirtColor: '#60a5fa',
-    hairColor: '#1c1917',
-    skinColor: '#fef08a',
-    hatType: 'cap',
-    accessoryType: 'glasses',
-    targetBuildingId: 'dashboard',
-    motto: 'Practicing English speaking with my IELTS 1 classmates!'
-  },
-  {
-    id: 'ielts2-candy',
-    name: 'Candy',
-    cohort: 'IELTS 2',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 2 Student',
-    shirtColor: '#14b8a6',
-    hairColor: '#dc2626',
-    skinColor: '#fcd34d',
-    hatType: 'crown',
-    accessoryType: 'none',
-    targetBuildingId: 'dashboard',
-    motto: 'Representing IELTS 2! Let’s play football and check our scores!'
-  },
-  {
-    id: 'ielts1-minh-anh',
-    name: 'Minh Anh',
-    cohort: 'IELTS 1',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 1 Squad Leader',
-    shirtColor: '#2563eb',
-    hairColor: '#1c1917',
-    skinColor: '#fcd34d',
-    hatType: 'grad',
-    accessoryType: 'glasses',
-    targetBuildingId: 'practice_tests',
-    motto: 'Heading to the Practice Test Arena for Reading Test 1!'
-  },
-  {
-    id: 'ielts1-hoang-nam',
-    name: 'Hoàng Nam',
-    cohort: 'IELTS 1',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 1 Listening Pro',
-    shirtColor: '#1d4ed8',
-    hairColor: '#451a03',
-    skinColor: '#fdba74',
-    hatType: 'headphones',
-    accessoryType: 'none',
-    targetBuildingId: 'listening',
-    motto: 'Practicing Part 4 Listening at the Listening Hall!'
-  },
-  {
-    id: 'ielts1-thao-vy',
-    name: 'Thảo Vy',
-    cohort: 'IELTS 1',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 1 Writing Scholar',
-    shirtColor: '#3b82f6',
-    hairColor: '#7c2d12',
-    skinColor: '#fef08a',
-    hatType: 'cap',
-    accessoryType: 'glasses',
-    targetBuildingId: 'homework',
-    motto: 'Finishing IELTS Writing Homework 1 inside the Homework Hub!'
-  },
-  {
-    id: 'ielts1-gia-bao',
-    name: 'Gia Bảo',
-    cohort: 'IELTS 1',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 1 Speaking Ace',
-    shirtColor: '#0284c7',
-    hairColor: '#1c1917',
-    skinColor: '#fdba74',
-    hatType: 'crown',
-    accessoryType: 'shades',
-    targetBuildingId: 'speaking',
-    motto: 'Warming up for Speaking Mock Test Mode!'
-  },
-  {
-    id: 'ielts2-khanh-linh',
-    name: 'Khánh Linh',
-    cohort: 'IELTS 2',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 2 Captain',
-    shirtColor: '#10b981',
-    hairColor: '#451a03',
-    skinColor: '#fef08a',
-    hatType: 'crown',
-    accessoryType: 'glasses',
-    targetBuildingId: 'practice_tests',
-    motto: 'Target Band 8.0! Let’s tackle the Practice Test Arena!'
-  },
-  {
-    id: 'ielts2-duc-anh',
-    name: 'Đức Anh',
-    cohort: 'IELTS 2',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 2 Reading Master',
-    shirtColor: '#059669',
-    hairColor: '#1c1917',
-    skinColor: '#fcd34d',
-    hatType: 'grad',
-    accessoryType: 'none',
-    targetBuildingId: 'reading',
-    motto: 'Completing Passage 3 in the Reading & Writing Library!'
-  },
-  {
-    id: 'ielts2-quynh-nhu',
-    name: 'Quỳnh Như',
-    cohort: 'IELTS 2',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 2 Homework Star',
-    shirtColor: '#0d9488',
-    hairColor: '#991b1b',
-    skinColor: '#fcd34d',
-    hatType: 'headphones',
-    accessoryType: 'glasses',
-    targetBuildingId: 'homework',
-    motto: 'Recording IELTS Speaking Homework 2 in the Homework Hub!'
-  },
-  {
-    id: 'ielts2-tuan-kiet',
-    name: 'Tuấn Kiệt',
-    cohort: 'IELTS 2',
-    course: 'IELTS Course',
-    roleTitle: 'IELTS 2 Band Sprinter',
-    shirtColor: '#f59e0b',
-    hairColor: '#1c1917',
-    skinColor: '#d97706',
-    hatType: 'cap',
-    accessoryType: 'shades',
-    targetBuildingId: 'dashboard',
-    motto: 'Checking my latest band score on the IELTS Dashboard!'
-  }
+  ...REAL_IELTS_STUDENT_PROFILES
 ];
 
 const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
@@ -787,7 +659,7 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       slot: 'back-left',
       category: 'PERSONAL ANALYTICS',
       title: 'My IELTS Dashboard',
-      subtitle: 'Individual Reading, Listening, Writing & Speaking Band Scores',
+      subtitle: 'Individual Listening, Reading, Writing & Speaking Band Scores',
       badge: 'OPEN MY DASHBOARD',
       accentHex: '#2563EB',
       bgLightHex: '#DBEAFE',
@@ -806,6 +678,54 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       actionType: 'class_dashboard',
       dashboardType: 'class',
       route: '/courses/ielts?tab=leaderboard'
+    },
+    {
+      slot: 'left-back',
+      category: 'LISTENING WALL DASHBOARD',
+      title: 'My Listening Dashboard',
+      subtitle: 'Sections 1–4 Breakdown, Accuracy & Recent Listening Scores',
+      badge: 'OPEN LISTENING DASHBOARD',
+      accentHex: '#0D9488',
+      bgLightHex: '#CCFBF1',
+      actionType: 'skill_dashboard',
+      skillOrTab: 'Listening',
+      dashboardType: 'listening'
+    },
+    {
+      slot: 'left-front',
+      category: 'READING WALL DASHBOARD',
+      title: 'My Reading Dashboard',
+      subtitle: 'Passages 1–3 Breakdown, Question Types & Reading Band Scores',
+      badge: 'OPEN READING DASHBOARD',
+      accentHex: '#2563EB',
+      bgLightHex: '#DBEAFE',
+      actionType: 'skill_dashboard',
+      skillOrTab: 'Reading',
+      dashboardType: 'reading'
+    },
+    {
+      slot: 'right-back',
+      category: 'WRITING WALL DASHBOARD',
+      title: 'My Writing Dashboard',
+      subtitle: 'Task 1 & Task 2 Criteria, Coherence, Vocabulary & Essay Scores',
+      badge: 'OPEN WRITING DASHBOARD',
+      accentHex: '#D97706',
+      bgLightHex: '#FEF3C7',
+      actionType: 'skill_dashboard',
+      skillOrTab: 'Writing',
+      dashboardType: 'writing'
+    },
+    {
+      slot: 'right-front',
+      category: 'SPEAKING WALL DASHBOARD',
+      title: 'My Speaking Dashboard',
+      subtitle: 'Fluency, Lexical Resource, Grammar, Pronunciation & Recordings',
+      badge: 'OPEN SPEAKING DASHBOARD',
+      accentHex: '#7C3AED',
+      bgLightHex: '#F3E8FF',
+      actionType: 'skill_dashboard',
+      skillOrTab: 'Speaking',
+      dashboardType: 'speaking'
     }
   ],
   speaking: [
@@ -1041,7 +961,7 @@ export function EraVerse() {
   } | null>(null);
 
   const [activeBuildingModal, setActiveBuildingModal] = useState<string | null>(null);
-  const [dashboardHallModal, setDashboardHallModal] = useState<'my_dashboard' | 'class_dashboard' | null>(null);
+  const [dashboardHallModal, setDashboardHallModal] = useState<DashboardModalType>(null);
   const [selectedPracticeSkill, setSelectedPracticeSkill] = useState<'Listening' | 'Reading' | 'Writing' | 'Speaking'>('Listening');
   const [selectedHomeworkTab, setSelectedHomeworkTab] = useState<'All' | 'Writing' | 'Speaking' | 'Reading' | 'Listening' | 'Assigned'>('All');
   const [insideBuilding, setInsideBuilding] = useState<BuildingZone | null>(null);
@@ -1056,6 +976,7 @@ export function EraVerse() {
   const [aiPickleballScore, setAiPickleballScore] = useState<number>(0);
   const [inSportsZone, setInSportsZone] = useState<'none' | 'football' | 'pickleball' | 'playground'>('none');
   const [isCrouching, setIsCrouching] = useState<boolean>(false);
+  const [showChatModal, setShowChatModal] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
   const [englishWarning, setEnglishWarning] = useState<string | null>(null);
   const [skyMode, setSkyMode] = useState<'day' | 'sunset' | 'night'>('day');
@@ -1076,48 +997,54 @@ export function EraVerse() {
   const [playerProfile, setPlayerProfile] = useState<{
     id: string;
     realUserId?: string;
+    email?: string;
     name: string;
+    fullName?: string;
     cohort: 'IELTS 1' | 'IELTS 2' | 'TEACHER (SUPER ADMIN)';
     roleTitle: string;
+    specialty?: string;
+    avatarDetails?: string;
     shirtColor: string;
     hairColor: string;
     skinColor: string;
     hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones';
     accessoryType: 'none' | 'glasses' | 'shades';
   }>(() => {
-    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('eraverse_character_v1') : null;
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (_e) {
-        // ignore
-      }
-    }
-    if (user?.email === 'janrelbugtay03@gmail.com' || isAdmin) {
+    const initialMatch = findCharacterForAuthUser(user, isAdmin, DEFAULT_IELTS_CHARACTERS as any, []);
+    if (initialMatch) {
       return {
-        id: TEACHER_JAN_PROFILE.id,
-        realUserId: user?.uid || TEACHER_JAN_PROFILE.realUserId,
-        name: 'Teacher Jan',
-        cohort: 'TEACHER (SUPER ADMIN)',
-        roleTitle: 'Teacher (Super Admin)',
-        shirtColor: TEACHER_JAN_PROFILE.shirtColor,
-        hairColor: TEACHER_JAN_PROFILE.hairColor,
-        skinColor: TEACHER_JAN_PROFILE.skinColor,
-        hatType: TEACHER_JAN_PROFILE.hatType,
-        accessoryType: TEACHER_JAN_PROFILE.accessoryType
+        id: initialMatch.id,
+        realUserId: user?.uid || initialMatch.realUserId,
+        email: user?.email || initialMatch.email,
+        name: initialMatch.name,
+        fullName: initialMatch.fullName,
+        cohort: initialMatch.cohort,
+        roleTitle: initialMatch.roleTitle,
+        specialty: initialMatch.specialty,
+        avatarDetails: initialMatch.avatarDetails,
+        shirtColor: initialMatch.shirtColor,
+        hairColor: initialMatch.hairColor,
+        skinColor: initialMatch.skinColor,
+        hatType: initialMatch.hatType,
+        accessoryType: initialMatch.accessoryType
       };
     }
+    const firstPreset = REAL_IELTS_STUDENT_PROFILES[0];
     return {
-      id: 'ielts1-kai',
+      id: firstPreset.id,
       realUserId: user?.uid,
-      name: user?.displayName || user?.email?.split('@')[0] || 'Kai',
-      cohort: 'IELTS 1',
-      roleTitle: 'IELTS 1 Student',
-      shirtColor: '#2563eb',
-      hairColor: '#5c2d16',
-      skinColor: '#fde68a',
-      hatType: 'none',
-      accessoryType: 'glasses'
+      email: user?.email || firstPreset.email,
+      name: firstPreset.name,
+      fullName: firstPreset.fullName,
+      cohort: firstPreset.cohort,
+      roleTitle: firstPreset.roleTitle,
+      specialty: firstPreset.specialty,
+      avatarDetails: firstPreset.avatarDetails,
+      shirtColor: firstPreset.shirtColor,
+      hairColor: firstPreset.hairColor,
+      skinColor: firstPreset.skinColor,
+      hatType: firstPreset.hatType,
+      accessoryType: firstPreset.accessoryType
     };
   });
 
@@ -1127,12 +1054,6 @@ export function EraVerse() {
   const [firestoreSubmissions, setFirestoreSubmissions] = useState<Array<any>>([]);
 
   const allPracticeTests = useMemo(() => getIeltsPracticeTests(), []);
-
-  useEffect(() => {
-    if (user?.displayName) {
-      setCandidateName(user.displayName);
-    }
-  }, [user?.displayName]);
 
   // Start room song synthesizer on mount and clean up on unmount
   useEffect(() => {
@@ -1205,68 +1126,50 @@ export function EraVerse() {
     };
   }, []);
 
+  // Build unique roster from real Firestore student accounts under their nicknames (no duplicate or fake characters)
   const ieltsCharacters = useMemo<IeltsCharacterProfile[]>(() => {
-    const folderMap = new Map<string, string>();
-    firestoreFolders.forEach((f) => {
-      folderMap.set(f.id, f.name);
-    });
-
-    const shirtPaletteIelts1 = ['#2563eb', '#1d4ed8', '#3b82f6', '#0284c7', '#4f46e5'];
-    const shirtPaletteIelts2 = ['#10b981', '#059669', '#0d9488', '#f59e0b', '#d97706'];
-    const skinPalette = ['#fcd34d', '#fdba74', '#fef08a', '#d97706'];
-    const hairPalette = ['#1c1917', '#451a03', '#7c2d12', '#991b1b'];
-    const hats: Array<'grad' | 'cap' | 'headphones' | 'crown'> = ['grad', 'cap', 'headphones', 'crown'];
-    const buildingsCycle = ['practice_tests', 'homework', 'dashboard', 'speaking', 'reading', 'listening'];
-
-    const realProfiles: IeltsCharacterProfile[] = [TEACHER_JAN_PROFILE];
-    const ieltsUsers = firestoreUsers.filter(
-      (u) =>
-        (u.course && String(u.course).toUpperCase().includes('IELTS')) ||
-        (u.folderName && String(u.folderName).toUpperCase().includes('IELTS'))
-    );
-
-    ieltsUsers.forEach((u, idx) => {
-      if (u.email === 'janrelbugtay03@gmail.com' || String(u.name || '').toLowerCase() === 'teacher jan') {
-        return;
-      }
-      const fName = u.folderName || (u.folderId ? folderMap.get(u.folderId) : '') || '';
-      const upperFolder = String(fName).toUpperCase();
-      let cohort: 'IELTS 1' | 'IELTS 2' = idx % 2 === 0 ? 'IELTS 1' : 'IELTS 2';
-      if (upperFolder.includes('2')) {
-        cohort = 'IELTS 2';
-      } else if (upperFolder.includes('1')) {
-        cohort = 'IELTS 1';
-      }
-
-      const displayName = u.nickname || u.name || u.displayName || u.username || u.email?.split('@')[0] || `IELTS Student ${idx + 1}`;
-      realProfiles.push({
-        id: `real-${u.id}`,
-        realUserId: u.id,
-        name: displayName,
-        cohort,
-        course: 'IELTS Course',
-        roleTitle: `${cohort} Student`,
-        shirtColor: cohort === 'IELTS 1' ? shirtPaletteIelts1[idx % shirtPaletteIelts1.length] : shirtPaletteIelts2[idx % shirtPaletteIelts2.length],
-        hairColor: hairPalette[idx % hairPalette.length],
-        skinColor: skinPalette[idx % skinPalette.length],
-        hatType: hats[idx % hats.length],
-        accessoryType: idx % 2 === 0 ? 'glasses' : 'none',
-        targetBuildingId: buildingsCycle[idx % buildingsCycle.length],
-        motto: u.motto || `Studying in ${cohort} — exploring Practice Tests & Homework!`,
-        isRealStudent: true
-      });
-    });
-
-    const combined = [...realProfiles];
-    DEFAULT_IELTS_CHARACTERS.forEach((defChar) => {
-      const exists = combined.some((c) => c.name.toLowerCase() === defChar.name.toLowerCase());
-      if (!exists) {
-        combined.push(defChar);
-      }
-    });
-
-    return combined;
+    return buildUniqueRosterFromFirestore(firestoreUsers, firestoreFolders);
   }, [firestoreFolders, firestoreUsers]);
+
+  // Strictly bind logged-in user to their personal character under their nickname
+  useEffect(() => {
+    if (!user) return;
+    const matched = findCharacterForAuthUser(user, isAdmin, ieltsCharacters as any, firestoreUsers);
+    if (!matched) return;
+
+    // Check if this specific user customized their avatar colors/hat in localStorage
+    let customLook: any = null;
+    try {
+      const rawCustom = localStorage.getItem(`eraverse_custom_${user.uid}`);
+      if (rawCustom) customLook = JSON.parse(rawCustom);
+    } catch (_e) {
+      // ignore
+    }
+
+    setPlayerProfile((prev) => {
+      // If Teacher Jan (Super Admin) manually switched to preview a student, don't overwrite unless the logged-in user changed
+      if (isAdmin && prev.id !== matched.id && prev.realUserId && prev.realUserId !== user.uid) {
+        return prev;
+      }
+      return {
+        id: matched.id,
+        realUserId: matched.realUserId || user.uid,
+        email: matched.email || user.email || undefined,
+        name: matched.name, // Always use the student's nickname!
+        fullName: matched.fullName,
+        cohort: matched.cohort,
+        roleTitle: matched.roleTitle,
+        specialty: matched.specialty,
+        avatarDetails: matched.avatarDetails,
+        shirtColor: customLook?.shirtColor || matched.shirtColor,
+        hairColor: customLook?.hairColor || matched.hairColor,
+        skinColor: customLook?.skinColor || matched.skinColor,
+        hatType: customLook?.hatType || matched.hatType,
+        accessoryType: customLook?.accessoryType || matched.accessoryType
+      };
+    });
+    setCandidateName(matched.name);
+  }, [user?.uid, user?.email, isAdmin, ieltsCharacters, firestoreUsers]);
 
   // Compute every student's individual Reading, Listening, Writing, Speaking & Overall Band scores
   const allStudentsSkillScores = useMemo(() => {
@@ -1276,26 +1179,29 @@ export function EraVerse() {
       .sort((a, b) => b.overall - a.overall);
   }, [ieltsCharacters, firestoreSubmissions]);
 
-  // Active player's own personal dashboard stats
+  // Active player's own personal dashboard stats linked to their account
   const myPersonalDashboardStats = useMemo(() => {
     return computeStudentSkillScores(
       {
         id: playerProfile.id,
         realUserId: playerProfile.realUserId || user?.uid,
+        email: playerProfile.email || user?.email || undefined,
         name: playerProfile.name,
+        fullName: playerProfile.fullName,
         cohort: playerProfile.cohort,
         roleTitle: playerProfile.roleTitle,
+        specialty: playerProfile.specialty,
+        avatarDetails: playerProfile.avatarDetails,
         shirtColor: playerProfile.shirtColor
       },
       firestoreSubmissions
     );
-  }, [playerProfile, user?.uid, firestoreSubmissions]);
+  }, [playerProfile, user?.uid, user?.email, firestoreSubmissions]);
 
-  // Active player's dedicated class group list (e.g. if Kai is in IELTS 1, show ONLY IELTS 1 students!)
+  // Active player's dedicated class group list (e.g. if Suzie/Kai is in IELTS 1, show ONLY IELTS 1 students!)
   const activeClassCohortLabel = playerProfile.cohort === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1';
   const myClassDashboardStudents = useMemo(() => {
     const filtered = allStudentsSkillScores.filter((s) => s.cohort === activeClassCohortLabel);
-    // Ensure the active player is included in their class list
     if (
       playerProfile.cohort !== 'TEACHER (SUPER ADMIN)' &&
       !filtered.some((s) => s.name.toLowerCase() === playerProfile.name.toLowerCase())
@@ -1323,11 +1229,6 @@ export function EraVerse() {
   }, [ieltsCharacters]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('eraverse_character_v1', JSON.stringify(playerProfile));
-    } catch (_e) {
-      // ignore
-    }
     if (gameActionsRef.current) {
       gameActionsRef.current.applyAvatarAppearance(playerProfile);
       gameActionsRef.current.refreshDashboardWalls();
@@ -1408,6 +1309,12 @@ export function EraVerse() {
       setDashboardHallModal('my_dashboard');
     } else if (board.actionType === 'class_dashboard') {
       setDashboardHallModal('class_dashboard');
+    } else if (board.actionType === 'skill_dashboard') {
+      if (board.dashboardType === 'listening') setDashboardHallModal('listening_dashboard');
+      else if (board.dashboardType === 'reading') setDashboardHallModal('reading_dashboard');
+      else if (board.dashboardType === 'writing') setDashboardHallModal('writing_dashboard');
+      else if (board.dashboardType === 'speaking') setDashboardHallModal('speaking_dashboard');
+      else setDashboardHallModal('my_dashboard');
     } else if (board.actionType === 'practice_skill' && board.skillOrTab) {
       setSelectedPracticeSkill(board.skillOrTab);
       setActiveBuildingModal('practice_tests');
@@ -2686,6 +2593,18 @@ export function EraVerse() {
           maxAnisotropy
         );
       }
+      if (
+        spec.dashboardType === 'listening' ||
+        spec.dashboardType === 'reading' ||
+        spec.dashboardType === 'writing' ||
+        spec.dashboardType === 'speaking'
+      ) {
+        return createSkillDashboardWallTexture(
+          dashboardDataRef.current.myStats,
+          spec.dashboardType,
+          maxAnisotropy
+        );
+      }
 
       const c = document.createElement('canvas');
       c.width = 768;
@@ -2935,7 +2854,7 @@ export function EraVerse() {
 
       interiorGroup.add(exitFrameGroup);
 
-      // Interactive 3D Wall Boards (In Dashboard Hall, only 2 extra-large boards: My Personal Dashboard + My Class Dashboard)
+      // Interactive 3D Wall Boards (In Dashboard Hall: Back wall has Personal Overview + Class Dashboard; Left & Right walls have Listening, Reading, Writing, Speaking Dashboards)
       const isDashboardHall = building.id === 'dashboard';
       const boards = INTERIOR_BOARDS_BY_BUILDING[building.id] || INTERIOR_BOARDS_BY_BUILDING['practice_tests'];
       const slotTransforms: Record<
@@ -2973,6 +2892,38 @@ export function EraVerse() {
           rotY: -Math.PI / 2,
           standX: INTERIOR_ORIGIN.x + roomW / 2 - 3.6,
           standZ: INTERIOR_ORIGIN.z - 1.8
+        },
+        'left-back': {
+          x: -roomW / 2 + 0.4,
+          y: 4.75,
+          z: -5.8,
+          rotY: Math.PI / 2,
+          standX: INTERIOR_ORIGIN.x - roomW / 2 + 3.6,
+          standZ: INTERIOR_ORIGIN.z - 5.8
+        },
+        'left-front': {
+          x: -roomW / 2 + 0.4,
+          y: 4.75,
+          z: 4.2,
+          rotY: Math.PI / 2,
+          standX: INTERIOR_ORIGIN.x - roomW / 2 + 3.6,
+          standZ: INTERIOR_ORIGIN.z + 4.2
+        },
+        'right-back': {
+          x: roomW / 2 - 0.4,
+          y: 4.75,
+          z: -5.8,
+          rotY: -Math.PI / 2,
+          standX: INTERIOR_ORIGIN.x + roomW / 2 - 3.6,
+          standZ: INTERIOR_ORIGIN.z - 5.8
+        },
+        'right-front': {
+          x: roomW / 2 - 0.4,
+          y: 4.75,
+          z: 4.2,
+          rotY: -Math.PI / 2,
+          standX: INTERIOR_ORIGIN.x + roomW / 2 - 3.6,
+          standZ: INTERIOR_ORIGIN.z + 4.2
         }
       };
 
@@ -2982,9 +2933,15 @@ export function EraVerse() {
         bGroup.position.set(tf.x, tf.y, tf.z);
         bGroup.rotation.y = tf.rotY;
 
-        const isLargeDashboardBoard = Boolean(bSpec.dashboardType);
-        const boardW = isLargeDashboardBoard ? 11.4 : 8.2;
-        const boardH = isLargeDashboardBoard ? 6.8 : 4.8;
+        const isBackDashboardBoard = bSpec.dashboardType === 'personal' || bSpec.dashboardType === 'class';
+        const isSideSkillDashboardBoard =
+          bSpec.dashboardType === 'listening' ||
+          bSpec.dashboardType === 'reading' ||
+          bSpec.dashboardType === 'writing' ||
+          bSpec.dashboardType === 'speaking';
+
+        const boardW = isBackDashboardBoard ? 11.2 : isSideSkillDashboardBoard ? 9.4 : 8.2;
+        const boardH = isBackDashboardBoard ? 6.6 : isSideSkillDashboardBoard ? 5.8 : 4.8;
 
         const backing = new THREE.Mesh(
           new THREE.BoxGeometry(boardW, boardH, 0.18),
@@ -3091,20 +3048,28 @@ export function EraVerse() {
       playerState.vy = 0;
       playerState.rotY = Math.PI;
       camState.yaw = 0;
-      camState.pitch = 0.28;
-      camState.distance = 11.8;
-      setZoomSliderValue(12);
+      camState.pitch = b.id === 'dashboard' ? 0.25 : 0.28;
+      camState.distance = b.id === 'dashboard' ? 13.8 : 11.8;
+      setZoomSliderValue(b.id === 'dashboard' ? 14 : 12);
       setInsideBuilding(b);
       setNearBuildingPrompt(null);
       if (lastDetectedSportsZone !== null) {
         lastDetectedSportsZone = null;
-        setInSportsZone(null);
+        setInSportsZone('none');
       }
-      showToast(
-        `Inside ${b.name}`,
-        `Now playing: ♪ ${ROOM_SONGS[b.id]?.name || 'Classroom Melody'}`,
-        b.hexAccent
-      );
+      if (b.id === 'dashboard') {
+        showToast(
+          `Welcome to ${dashboardDataRef.current.myStats.name}'s Dashboard Hall!`,
+          `Inspect your Personal Overview, Class Scoreboard, plus Listening, Reading, Writing & Speaking walls!`,
+          b.hexAccent
+        );
+      } else {
+        showToast(
+          `Inside ${b.name}`,
+          `Now playing: ♪ ${ROOM_SONGS[b.id]?.name || 'Classroom Melody'}`,
+          b.hexAccent
+        );
+      }
     };
 
     const exitBuildingInterior = () => {
@@ -3342,8 +3307,14 @@ export function EraVerse() {
             enterBuildingInterior(closestB);
           }
         }
-      } else if (code === 'Escape' && activeInteriorBuilding) {
-        exitBuildingInterior();
+      } else if (code === 'KeyT') {
+        e.preventDefault();
+        setShowChatModal((prev) => !prev);
+      } else if (code === 'Escape') {
+        setShowChatModal(false);
+        if (activeInteriorBuilding) {
+          exitBuildingInterior();
+        }
       }
     };
 
@@ -4085,13 +4056,34 @@ export function EraVerse() {
     };
   }, []);
 
+  const canSwitchCharacter = isAdmin || !user;
+
   const handleSelectCharacter = (char: IeltsCharacterProfile) => {
     soundEngine.playUiClick();
+    const isMyOwnChar =
+      char.name.toLowerCase() === playerProfile.name.toLowerCase() ||
+      (user?.uid && char.realUserId === user.uid) ||
+      (user?.email && char.email?.toLowerCase() === user.email.toLowerCase());
+
+    if (!canSwitchCharacter && !isMyOwnChar) {
+      showToast(
+        `Account Bound to ${playerProfile.name}`,
+        `You are logged in as ${playerProfile.name} (${playerProfile.cohort}). Each student uses their own personalized character!`,
+        '#2563EB'
+      );
+      return;
+    }
+
     setPlayerProfile({
       id: char.id,
+      realUserId: char.realUserId,
+      email: char.email,
       name: char.name,
+      fullName: char.fullName,
       cohort: char.cohort,
       roleTitle: char.roleTitle,
+      specialty: char.specialty,
+      avatarDetails: char.avatarDetails,
       shirtColor: char.shirtColor,
       hairColor: char.hairColor,
       skinColor: char.skinColor,
@@ -4259,6 +4251,31 @@ export function EraVerse() {
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span>Avatar</span>
         </button>
+
+        {/* Top-Ribbon Chat Icon Button */}
+        <button
+          type="button"
+          onClick={() => {
+            soundEngine.playUiClick();
+            setShowChatModal((prev) => !prev);
+          }}
+          className={`flex items-center gap-2 font-bold text-xs px-3.5 py-3 rounded-2xl shadow-lg border transition-all cursor-pointer ${
+            showChatModal
+              ? 'bg-sky-600 text-white border-sky-400 ring-2 ring-sky-400/40 shadow-sky-500/20'
+              : nearCharacterPrompt
+              ? 'bg-slate-900/95 hover:bg-slate-800 text-sky-300 border-sky-400/60 shadow-md ring-1 ring-sky-400/40 animate-pulse'
+              : 'bg-slate-900/90 hover:bg-slate-800 text-slate-100 border-white/15'
+          }`}
+          title={nearCharacterPrompt ? `Chat with ${nearCharacterPrompt.name} in English (or press T)` : 'Campus English Chat (press T)'}
+        >
+          <MessageCircle className="w-4 h-4 text-sky-400" />
+          <span>Chat</span>
+          {nearCharacterPrompt && (
+            <span className="text-[10px] bg-sky-500/25 text-sky-200 border border-sky-400/50 px-2 py-0.5 rounded-full font-black">
+              {nearCharacterPrompt.name.split(' ')[0]}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* 2B. SPORTS PARK SIDE ACTIONS HUD (KICK, JUMP, HIT, CROUCH + LIVE MATCH SCOREBOARD) */}
@@ -4280,16 +4297,105 @@ export function EraVerse() {
         onToggleCrouch={() => gameActionsRef.current?.toggleCrouch()}
       />
 
-      {/* 2C. PROXIMITY ENGLISH-ONLY CHAT POPUP (BLOCKS VIETNAMESE WITH 'English only please!') */}
-      {nearCharacterPrompt && !insideBuilding && (
+      {/* 2C. PROXIMITY ENGLISH-ONLY CHAT (OPENED ON-DEMAND VIA TOP CHAT ICON) */}
+      {showChatModal && (
         <ProximityEnglishChat
           nearbyPartner={nearCharacterPrompt}
           playerName={playerProfile.name}
           messages={chatMessages}
           englishWarning={englishWarning}
+          canSwitchCharacter={canSwitchCharacter}
           onSendMessage={handleSendProximityChat}
-          onSelectPartnerCharacter={() => handleSelectCharacter(nearCharacterPrompt)}
+          onSelectPartnerCharacter={() => {
+            if (nearCharacterPrompt) handleSelectCharacter(nearCharacterPrompt);
+          }}
+          onClose={() => setShowChatModal(false)}
         />
+      )}
+
+      {/* 2D. PERSONALIZED DASHBOARD DOCK WHEN INSIDE DASHBOARD BUILDING (IELTS ACADEMY) */}
+      {insideBuilding?.id === 'dashboard' && !dashboardHallModal && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4 pointer-events-auto">
+          <div className="bg-slate-950/92 border-2 border-indigo-400/60 rounded-2xl px-4 py-2.5 text-white shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs text-white border border-white/30 shadow"
+                style={{ backgroundColor: playerProfile.shirtColor }}
+              >
+                {playerProfile.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-xs text-white">
+                    {playerProfile.name}&apos;s Personalized Dashboard
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">
+                    Overall Band {myPersonalDashboardStats.overall.toFixed(1)}
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-300 font-medium">
+                  Walk to the Left, Right &amp; Back walls or click any skill below to inspect your full dashboard:
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setDashboardHallModal('my_dashboard')}
+                className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] cursor-pointer shadow"
+              >
+                My Overview
+              </button>
+              <button
+                type="button"
+                onClick={() => setDashboardHallModal('listening_dashboard')}
+                className="px-2.5 py-1.5 rounded-xl bg-teal-600/90 hover:bg-teal-500 text-white font-extrabold text-[11px] cursor-pointer"
+              >
+                Listening: {myPersonalDashboardStats.listening.toFixed(1)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDashboardHallModal('reading_dashboard')}
+                className="px-2.5 py-1.5 rounded-xl bg-blue-700/90 hover:bg-blue-600 text-white font-extrabold text-[11px] cursor-pointer"
+              >
+                Reading: {myPersonalDashboardStats.reading.toFixed(1)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDashboardHallModal('writing_dashboard')}
+                className="px-2.5 py-1.5 rounded-xl bg-amber-600/90 hover:bg-amber-500 text-white font-extrabold text-[11px] cursor-pointer"
+              >
+                Writing: {myPersonalDashboardStats.writing.toFixed(1)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDashboardHallModal('speaking_dashboard')}
+                className="px-2.5 py-1.5 rounded-xl bg-purple-600/90 hover:bg-purple-500 text-white font-extrabold text-[11px] cursor-pointer"
+              >
+                Speaking: {myPersonalDashboardStats.speaking.toFixed(1)}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDashboardHallModal('class_dashboard')}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer"
+              >
+                {activeClassCohortLabel} Class ({myClassDashboardStudents.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const targetUid = myPersonalDashboardStats.userId;
+                  navigate(isAdmin && targetUid ? `/ielts/dashboard?userId=${targetUid}` : '/ielts/dashboard');
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-amber-300 border border-amber-400/40 font-extrabold text-[11px] flex items-center gap-1 cursor-pointer"
+              >
+                <span>Full Page</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 3. TOP-RIGHT SETTINGS (GRAPHICS QUALITY: HIGH/MEDIUM/LOW, AUDIO ON/OFF, ROOM MUSIC) & ROOM EXIT */}
@@ -4636,34 +4742,7 @@ export function EraVerse() {
         </div>
       )}
 
-      {nearCharacterPrompt && !nearBuildingPrompt && !insideBuilding && (
-        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
-          <div className="bg-slate-950/95 border border-white/15 rounded-2xl px-5 py-3 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm">{nearCharacterPrompt.name}</span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                    nearCharacterPrompt.cohort === 'IELTS 2'
-                      ? 'bg-emerald-500/20 text-emerald-300'
-                      : 'bg-blue-500/20 text-blue-300'
-                  }`}
-                >
-                  {nearCharacterPrompt.cohort}
-                </span>
-              </div>
-              <div className="text-xs text-slate-300 mt-0.5">“{nearCharacterPrompt.motto}”</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleSelectCharacter(nearCharacterPrompt)}
-              className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2 rounded-xl border border-white/15 cursor-pointer shrink-0"
-            >
-              Play as {nearCharacterPrompt.name}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Character interaction is accessed cleanly via the top Chat icon and Characters menu */}
 
       {/* ============================================================================
           MODAL 1: PRACTICE TEST ARENA BUILDING MODAL
@@ -4945,13 +5024,15 @@ export function EraVerse() {
                 ))}
               </div>
               <span className="text-xs text-slate-500 font-semibold">
-                Select Kai (IELTS 1), IELTS 2 students, or Teacher Jan (Super Admin) to play!
+                {canSwitchCharacter
+                  ? 'Every student has a unique personalized character under their nickname!'
+                  : `Logged in as ${playerProfile.name} (${playerProfile.cohort}) — bound to your personal character & dashboard`}
               </span>
             </div>
 
             <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredCharacters.map((char) => {
-                const isSelected = playerProfile.name === char.name && playerProfile.cohort === char.cohort;
+                const isSelected = playerProfile.name.toLowerCase() === char.name.toLowerCase();
                 const isTeacher = char.cohort.includes('TEACHER');
                 return (
                   <div
@@ -4964,7 +5045,7 @@ export function EraVerse() {
                         : 'border-slate-200 bg-white hover:border-blue-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3.5">
+                    <div className="flex items-center gap-3.5 min-w-0">
                       <div
                         className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-white font-extrabold shadow-md shrink-0 border-2 border-white"
                         style={{ backgroundColor: char.shirtColor }}
@@ -4972,7 +5053,7 @@ export function EraVerse() {
                         <span className="text-[10px] opacity-85">{isTeacher ? 'TEACH' : char.cohort}</span>
                         <span className="text-base">{char.name.slice(0, 2).toUpperCase()}</span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-extrabold text-slate-900 text-base">{char.name}</h3>
                           <span
@@ -4986,25 +5067,41 @@ export function EraVerse() {
                           >
                             {char.cohort}
                           </span>
+                          {isSelected && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                              YOUR CHARACTER
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs font-semibold text-slate-500 mt-0.5">{char.roleTitle}</p>
-                        <p className="text-xs text-slate-600 mt-1 italic line-clamp-1">“{char.motto}”</p>
+                        <p className="text-xs font-bold text-slate-700 mt-0.5 truncate">
+                          {char.roleTitle} {char.specialty ? `• ${char.specialty}` : ''}
+                        </p>
+                        {char.avatarDetails && (
+                          <p className="text-[11px] font-semibold text-blue-600 mt-0.5 truncate">
+                            {char.avatarDetails}
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-500 mt-1 italic line-clamp-1">“{char.motto}”</p>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleSelectCharacter(char)}
-                      className={`px-4 py-2.5 rounded-xl font-extrabold text-xs shrink-0 transition-all cursor-pointer ${
-                        isSelected
-                          ? isTeacher
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-emerald-600 text-white'
-                          : 'bg-[#1E4DB7] hover:bg-blue-800 text-white'
-                      }`}
-                    >
-                      {isSelected ? 'Active Character' : 'Play Character'}
-                    </button>
+                    {isSelected ? (
+                      <span className="px-3.5 py-2 rounded-xl font-extrabold text-xs shrink-0 bg-emerald-600 text-white shadow-xs">
+                        Active (You)
+                      </span>
+                    ) : canSwitchCharacter ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCharacter(char)}
+                        className="px-4 py-2.5 rounded-xl font-extrabold text-xs shrink-0 transition-all cursor-pointer bg-[#1E4DB7] hover:bg-blue-800 text-white"
+                      >
+                        Play Character
+                      </button>
+                    ) : (
+                      <span className="px-3 py-2 rounded-xl font-bold text-[11px] shrink-0 bg-slate-100 text-slate-500 border border-slate-200">
+                        Classmate
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -5159,6 +5256,22 @@ export function EraVerse() {
                 type="button"
                 onClick={() => {
                   soundEngine.playUiClick();
+                  if (user?.uid) {
+                    try {
+                      localStorage.setItem(
+                        `eraverse_custom_${user.uid}`,
+                        JSON.stringify({
+                          shirtColor: playerProfile.shirtColor,
+                          hairColor: playerProfile.hairColor,
+                          skinColor: playerProfile.skinColor,
+                          hatType: playerProfile.hatType,
+                          accessoryType: playerProfile.accessoryType
+                        })
+                      );
+                    } catch (_e) {
+                      // ignore
+                    }
+                  }
                   setShowCustomizerModal(false);
                   showToast('Character Updated!', `${playerProfile.name} (${playerProfile.cohort}) is ready!`, '#10B981');
                 }}
@@ -5240,7 +5353,7 @@ export function EraVerse() {
       )}
 
       {/* ============================================================================
-          MODAL 6 & 7: DASHBOARD HALL MODALS (PERSONAL DASHBOARD & CLASS SCOREBOARD)
+          MODAL 6 & 7: DASHBOARD HALL MODALS (PERSONAL DASHBOARD, 4 SKILL WALLS & CLASS SCOREBOARD)
           ============================================================================ */}
       <DashboardHallModals
         activeModal={
@@ -5260,7 +5373,13 @@ export function EraVerse() {
         classStudents={myClassDashboardStudents}
         allCohortsStudents={allStudentsSkillScores}
         isSuperAdminCharacter={playerProfile.cohort === 'TEACHER (SUPER ADMIN)'}
-        onNavigateFullDashboard={(uid) => navigate(uid ? `/ielts/dashboard?user=${uid}` : '/ielts/dashboard')}
+        onNavigateFullDashboard={(uid) =>
+          navigate(isAdmin && uid ? `/ielts/dashboard?userId=${uid}` : '/ielts/dashboard')
+        }
+        onOpenSkillPractice={(skill) => {
+          setSelectedPracticeSkill(skill);
+          setActiveBuildingModal('practice_tests');
+        }}
       />
     </div>
   );
