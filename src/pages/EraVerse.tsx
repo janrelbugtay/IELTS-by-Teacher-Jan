@@ -406,6 +406,7 @@ interface IeltsCharacterProfile {
 
 interface WallBoardSpec {
   slot:
+    | 'back-center'
     | 'back-left'
     | 'back-right'
     | 'left-wall'
@@ -432,7 +433,7 @@ interface WallBoardSpec {
   dashboardType?: 'personal' | 'class' | 'listening' | 'reading' | 'writing' | 'speaking';
 }
 
-// Vibrant, High-Contrast Colorful Buildings + Bright Warm Classroom Interiors
+// Rich Architectural Campus Buildings + Warm Grounded Classroom Interiors (No Washed-Out White)
 const BUILDINGS: BuildingZone[] = [
   {
     id: 'practice_tests',
@@ -443,16 +444,16 @@ const BUILDINGS: BuildingZone[] = [
     w: 18,
     d: 14,
     h: 10.5,
-    wallColor: 0x60a5fa, // Vibrant Sky Sapphire Facade
-    trimColor: 0xeff6ff,
-    roofColor: 0x1d4ed8,
-    accentColor: 0x2563eb,
+    wallColor: 0x2563eb, // Deep Royal Cobalt Facade
+    trimColor: 0xbfdbfe,
+    roofColor: 0x1e3a8a,
+    accentColor: 0x1d4ed8,
     hexAccent: '#2563EB',
     doorX: 40,
     doorZ: -23,
     frontDir: 1,
-    interiorWallColor: 0xf0f7ff, // Bright Daylight Blue-White Classroom
-    interiorFloorColor: 0xdbeafe
+    interiorWallColor: 0xdbeafe, // Soft Sky Blue Studio Wall
+    interiorFloorColor: 0x93c5fd
   },
   {
     id: 'homework',
@@ -463,16 +464,16 @@ const BUILDINGS: BuildingZone[] = [
     w: 18,
     d: 14,
     h: 10.5,
-    wallColor: 0xfbbf24, // Warm Golden Amber Facade
-    trimColor: 0xfffbeb,
-    roofColor: 0xd97706,
-    accentColor: 0xf59e0b,
+    wallColor: 0xd97706, // Rich Terracotta Amber Facade
+    trimColor: 0xfde68a,
+    roofColor: 0x92400e,
+    accentColor: 0xb45309,
     hexAccent: '#D97706',
     doorX: -40,
     doorZ: -23,
     frontDir: 1,
-    interiorWallColor: 0xfffbeb, // Bright Warm Cream Classroom
-    interiorFloorColor: 0xfde68a
+    interiorWallColor: 0xfef3c7, // Warm Sandstone Classroom Wall
+    interiorFloorColor: 0xfcd34d
   },
   {
     id: 'dashboard',
@@ -483,16 +484,16 @@ const BUILDINGS: BuildingZone[] = [
     w: 22,
     d: 15,
     h: 12.5,
-    wallColor: 0x818cf8, // Royal Indigo Facade
-    trimColor: 0xeef2ff,
-    roofColor: 0x3730a3,
-    accentColor: 0x4f46e5,
+    wallColor: 0x4f46e5, // Deep Indigo Academy Facade
+    trimColor: 0xc7d2fe,
+    roofColor: 0x312e81,
+    accentColor: 0x4338ca,
     hexAccent: '#4F46E5',
     doorX: 0,
     doorZ: -42.5,
     frontDir: 1,
-    interiorWallColor: 0xf5f7ff, // Bright Ivory Hall
-    interiorFloorColor: 0xe0e7ff
+    interiorWallColor: 0xe0e7ff, // Soft Periwinkle Gallery Wall
+    interiorFloorColor: 0xa5b4fc
   },
   {
     id: 'speaking',
@@ -503,16 +504,16 @@ const BUILDINGS: BuildingZone[] = [
     w: 17,
     d: 13,
     h: 10,
-    wallColor: 0xc084fc, // Vibrant Orchid Purple Facade
-    trimColor: 0xfaf5ff,
-    roofColor: 0x7e22ce,
-    accentColor: 0x9333ea,
+    wallColor: 0x9333ea, // Deep Amethyst Purple Facade
+    trimColor: 0xe9d5ff,
+    roofColor: 0x581c87,
+    accentColor: 0x7e22ce,
     hexAccent: '#9333EA',
     doorX: -44,
     doorZ: 23.5,
     frontDir: -1,
-    interiorWallColor: 0xfaf5ff, // Bright Lavender Studio
-    interiorFloorColor: 0xf3e8ff
+    interiorWallColor: 0xf3e8ff, // Warm Lavender Acoustic Studio
+    interiorFloorColor: 0xd8b4fe
   },
   {
     id: 'reading',
@@ -523,16 +524,16 @@ const BUILDINGS: BuildingZone[] = [
     w: 17,
     d: 13,
     h: 10,
-    wallColor: 0x34d399, // Vibrant Mint Emerald Facade
-    trimColor: 0xecfdf5,
-    roofColor: 0x047857,
-    accentColor: 0x10b981,
+    wallColor: 0x059669, // Rich Emerald Library Facade
+    trimColor: 0xa7f3d0,
+    roofColor: 0x064e3b,
+    accentColor: 0x047857,
     hexAccent: '#059669',
     doorX: 44,
     doorZ: 23.5,
     frontDir: -1,
-    interiorWallColor: 0xf0fdf4, // Bright Botanical Library
-    interiorFloorColor: 0xd1fae5
+    interiorWallColor: 0xd1fae5, // Sage Botanical Library Wall
+    interiorFloorColor: 0x6ee7b7
   },
   {
     id: 'listening',
@@ -543,16 +544,16 @@ const BUILDINGS: BuildingZone[] = [
     w: 19,
     d: 14,
     h: 10.5,
-    wallColor: 0x22d3ee, // Vibrant Aqua Cyan Facade
-    trimColor: 0xecfeff,
-    roofColor: 0x0e7490,
-    accentColor: 0x06b6d4,
+    wallColor: 0x0891b2, // Deep Ocean Teal Facade
+    trimColor: 0xa5f3fc,
+    roofColor: 0x164e63,
+    accentColor: 0x0e7490,
     hexAccent: '#0891B2',
     doorX: 0,
     doorZ: 43,
     frontDir: -1,
-    interiorWallColor: 0xf0fdff, // Bright Cyan Audio Lounge
-    interiorFloorColor: 0xcffafe
+    interiorWallColor: 0xcffafe, // Soft Teal Audio Lounge
+    interiorFloorColor: 0x67e8f9
   }
 ];
 
@@ -656,10 +657,10 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
   ],
   dashboard: [
     {
-      slot: 'back-left',
+      slot: 'back-center',
       category: 'PERSONAL ANALYTICS',
       title: 'My IELTS Dashboard',
-      subtitle: 'Individual Listening, Reading, Writing & Speaking Band Scores',
+      subtitle: 'Individual Reading, Listening, Writing & Speaking Band Scores',
       badge: 'OPEN MY DASHBOARD',
       accentHex: '#2563EB',
       bgLightHex: '#DBEAFE',
@@ -668,23 +669,11 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       route: '/ielts/dashboard'
     },
     {
-      slot: 'back-right',
-      category: 'CLASS GROUP SCOREBOARD',
-      title: 'My Class Dashboard',
-      subtitle: 'Classmates List & Scores in Reading, Listening, Writing & Speaking',
-      badge: 'OPEN MY CLASS SCORES',
-      accentHex: '#059669',
-      bgLightHex: '#D1FAE5',
-      actionType: 'class_dashboard',
-      dashboardType: 'class',
-      route: '/courses/ielts?tab=leaderboard'
-    },
-    {
       slot: 'left-back',
-      category: 'LISTENING WALL DASHBOARD',
-      title: 'My Listening Dashboard',
-      subtitle: 'Sections 1–4 Breakdown, Accuracy & Recent Listening Scores',
-      badge: 'OPEN LISTENING DASHBOARD',
+      category: 'LISTENING ACTIVITY & BAR GRAPH',
+      title: 'Listening Activity',
+      subtitle: 'Accurate Score Bar Graph & Listening Test Name + Score Record',
+      badge: 'OPEN LISTENING ACTIVITY',
       accentHex: '#0D9488',
       bgLightHex: '#CCFBF1',
       actionType: 'skill_dashboard',
@@ -693,10 +682,10 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
     },
     {
       slot: 'left-front',
-      category: 'READING WALL DASHBOARD',
-      title: 'My Reading Dashboard',
-      subtitle: 'Passages 1–3 Breakdown, Question Types & Reading Band Scores',
-      badge: 'OPEN READING DASHBOARD',
+      category: 'READING ACTIVITY & BAR GRAPH',
+      title: 'Reading Activity',
+      subtitle: 'Accurate Score Bar Graph & Reading Test Name + Score Record',
+      badge: 'OPEN READING ACTIVITY',
       accentHex: '#2563EB',
       bgLightHex: '#DBEAFE',
       actionType: 'skill_dashboard',
@@ -705,10 +694,10 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
     },
     {
       slot: 'right-back',
-      category: 'WRITING WALL DASHBOARD',
-      title: 'My Writing Dashboard',
-      subtitle: 'Task 1 & Task 2 Criteria, Coherence, Vocabulary & Essay Scores',
-      badge: 'OPEN WRITING DASHBOARD',
+      category: 'WRITING ACTIVITY & BAR GRAPH',
+      title: 'Writing Activity',
+      subtitle: 'Accurate Score Bar Graph & Writing Test Name + Score Record',
+      badge: 'OPEN WRITING ACTIVITY',
       accentHex: '#D97706',
       bgLightHex: '#FEF3C7',
       actionType: 'skill_dashboard',
@@ -717,10 +706,10 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
     },
     {
       slot: 'right-front',
-      category: 'SPEAKING WALL DASHBOARD',
-      title: 'My Speaking Dashboard',
-      subtitle: 'Fluency, Lexical Resource, Grammar, Pronunciation & Recordings',
-      badge: 'OPEN SPEAKING DASHBOARD',
+      category: 'SPEAKING ONLINE & OFFLINE VIDEO',
+      title: 'Speaking Activity (Online & Offline)',
+      subtitle: 'Online Speaking Tests & Offline Speaking Video Thumbnails + Feedback',
+      badge: 'OPEN SPEAKING ACTIVITY',
       accentHex: '#7C3AED',
       bgLightHex: '#F3E8FF',
       actionType: 'skill_dashboard',
@@ -1175,9 +1164,9 @@ export function EraVerse() {
   const allStudentsSkillScores = useMemo(() => {
     return ieltsCharacters
       .filter((c) => c.cohort === 'IELTS 1' || c.cohort === 'IELTS 2')
-      .map((c) => computeStudentSkillScores(c, firestoreSubmissions))
+      .map((c) => computeStudentSkillScores(c, firestoreSubmissions, firestoreAssignments))
       .sort((a, b) => b.overall - a.overall);
-  }, [ieltsCharacters, firestoreSubmissions]);
+  }, [ieltsCharacters, firestoreSubmissions, firestoreAssignments]);
 
   // Active player's own personal dashboard stats linked to their account
   const myPersonalDashboardStats = useMemo(() => {
@@ -1194,9 +1183,10 @@ export function EraVerse() {
         avatarDetails: playerProfile.avatarDetails,
         shirtColor: playerProfile.shirtColor
       },
-      firestoreSubmissions
+      firestoreSubmissions,
+      firestoreAssignments
     );
-  }, [playerProfile, user?.uid, user?.email, firestoreSubmissions]);
+  }, [playerProfile, user?.uid, user?.email, firestoreSubmissions, firestoreAssignments]);
 
   // Active player's dedicated class group list (e.g. if Suzie/Kai is in IELTS 1, show ONLY IELTS 1 students!)
   const activeClassCohortLabel = playerProfile.cohort === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1';
@@ -1368,7 +1358,7 @@ export function EraVerse() {
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio * 1.25, 2.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.16;
+    renderer.toneMappingExposure = 0.95;
     renderer.shadowMap.enabled = !isSoftwareGl;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -1382,12 +1372,12 @@ export function EraVerse() {
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
     let currentQuality: GraphicsQuality = 'high';
 
-    // 1. Lighting Rig
-    const hemiLight = new THREE.HemisphereLight(0xf0f9ff, 0x34d399, 0.9);
+    // 1. Lighting Rig (Balanced natural exposure so buildings & ground never wash out to white)
+    const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x15803d, 0.75);
     hemiLight.position.set(0, 90, 0);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.5);
+    const sunLight = new THREE.DirectionalLight(0xfef3c7, 1.2);
     sunLight.position.set(70, 105, 60);
     sunLight.castShadow = !isSoftwareGl;
     sunLight.shadow.mapSize.width = 2048;
@@ -1403,7 +1393,7 @@ export function EraVerse() {
     sunLight.shadow.normalBias = 0.02;
     scene.add(sunLight);
 
-    const rimLight = new THREE.DirectionalLight(0xbae6fd, 0.55);
+    const rimLight = new THREE.DirectionalLight(0x93c5fd, 0.45);
     rimLight.position.set(-70, 50, -60);
     scene.add(rimLight);
 
@@ -1413,11 +1403,11 @@ export function EraVerse() {
       c.width = 512;
       c.height = 512;
       const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#2ec44d';
+      ctx.fillStyle = '#249e3f';
       ctx.fillRect(0, 0, 512, 512);
 
       for (let i = 0; i < 2400; i++) {
-        ctx.fillStyle = i % 3 === 0 ? '#25a244' : i % 3 === 1 ? '#4ad66d' : '#1b8a36';
+        ctx.fillStyle = i % 3 === 0 ? '#1e8736' : i % 3 === 1 ? '#34b350' : '#166929';
         ctx.fillRect(Math.random() * 512, Math.random() * 512, 3, 7);
       }
       const tex = new THREE.CanvasTexture(c);
@@ -1434,12 +1424,13 @@ export function EraVerse() {
       c.width = 512;
       c.height = 512;
       const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#cbd5e1';
+      // Warm architectural slate & sandstone pavers (not blinding white)
+      ctx.fillStyle = '#64748b';
       ctx.fillRect(0, 0, 512, 512);
       for (let y = 0; y < 512; y += 64) {
         const offset = (y / 64) % 2 === 0 ? 0 : 64;
         for (let x = -64; x < 512; x += 128) {
-          ctx.fillStyle = (x + y) % 128 === 0 ? '#e2e8f0' : '#f8fafc';
+          ctx.fillStyle = (x + y) % 128 === 0 ? '#94a3b8' : '#cbd5e1';
           ctx.fillRect(x + offset + 3, y + 3, 122, 58);
         }
       }
@@ -1464,10 +1455,10 @@ export function EraVerse() {
 
       // Decorative architectural horizontal band + crisp stone block seams
       ctx.fillStyle = `#${trimCol.getHexString()}`;
-      ctx.fillRect(0, 0, 512, 36);
-      ctx.fillRect(0, 465, 512, 47);
+      ctx.fillRect(0, 0, 512, 34);
+      ctx.fillRect(0, 468, 512, 44);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.18)';
       ctx.lineWidth = 3;
       for (let y = 64; y < 460; y += 64) {
         ctx.beginPath();
@@ -1477,8 +1468,8 @@ export function EraVerse() {
       }
       for (let x = 0; x < 512; x += 128) {
         ctx.beginPath();
-        ctx.moveTo(x, 36);
-        ctx.lineTo(x, 465);
+        ctx.moveTo(x, 34);
+        ctx.lineTo(x, 468);
         ctx.stroke();
       }
       const tex = new THREE.CanvasTexture(c);
@@ -1494,7 +1485,7 @@ export function EraVerse() {
       new THREE.PlaneGeometry(460, 460),
       new THREE.MeshStandardMaterial({
         map: createRichGrassTexture(),
-        roughness: 0.82,
+        roughness: 0.85,
         metalness: 0.04
       })
     );
@@ -1505,7 +1496,7 @@ export function EraVerse() {
     const paverTex = createPaverTexture();
     const plazaMat = new THREE.MeshStandardMaterial({
       map: paverTex,
-      roughness: 0.6,
+      roughness: 0.68,
       metalness: 0.08
     });
 
@@ -1515,50 +1506,118 @@ export function EraVerse() {
     plazaDisc.receiveShadow = true;
     scene.add(plazaDisc);
 
-    // Central Fountain Monument
+    // Central Fountain Monument + Holographic Projected Class Leaderboard Screen (replaces the yellow ball)
     const monumentGroup = new THREE.Group();
     const poolOuter = new THREE.Mesh(
       new THREE.CylinderGeometry(5.2, 5.7, 0.85, 36),
-      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.15 })
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.25 })
     );
     poolOuter.position.y = 0.42;
     poolOuter.castShadow = true;
     poolOuter.receiveShadow = true;
     monumentGroup.add(poolOuter);
 
+    const poolGoldRim = new THREE.Mesh(
+      new THREE.TorusGeometry(5.25, 0.14, 12, 48),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.35, roughness: 0.25, metalness: 0.7 })
+    );
+    poolGoldRim.rotation.x = Math.PI / 2;
+    poolGoldRim.position.y = 0.85;
+    monumentGroup.add(poolGoldRim);
+
     const waterPool = new THREE.Mesh(
       new THREE.CylinderGeometry(4.6, 4.6, 0.68, 32),
       new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        emissive: 0x0284c7,
-        emissiveIntensity: 0.25,
-        roughness: 0.1,
-        metalness: 0.4
+        color: 0x0284c7,
+        emissive: 0x0369a1,
+        emissiveIntensity: 0.3,
+        roughness: 0.12,
+        metalness: 0.45
       })
     );
     waterPool.position.y = 0.56;
     monumentGroup.add(waterPool);
 
     const spire = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 1.3, 3.8, 20),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.25 })
+      new THREE.CylinderGeometry(0.85, 1.45, 3.6, 24),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.45 })
     );
-    spire.position.y = 2.6;
+    spire.position.y = 2.4;
     spire.castShadow = true;
     monumentGroup.add(spire);
 
-    const globeGem = new THREE.Mesh(
-      new THREE.OctahedronGeometry(1.45, 1),
+    // Holographic Projector Emitter Ring on top of Fountain Pedestal
+    const holoEmitterRing = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.35, 1.05, 0.36, 28),
       new THREE.MeshStandardMaterial({
-        color: 0xf59e0b,
-        emissive: 0xd97706,
-        emissiveIntensity: 0.45,
-        roughness: 0.12,
-        metalness: 0.85
+        color: 0x38bdf8,
+        emissive: 0x0ea5e9,
+        emissiveIntensity: 0.85,
+        roughness: 0.15,
+        metalness: 0.8
       })
     );
-    globeGem.position.y = 5.6;
-    monumentGroup.add(globeGem);
+    holoEmitterRing.position.y = 4.3;
+    monumentGroup.add(holoEmitterRing);
+
+    // Translucent Upward Hologram Projection Light Beam Cone
+    const holoBeamCone = new THREE.Mesh(
+      new THREE.ConeGeometry(4.8, 3.2, 32, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    holoBeamCone.rotation.x = Math.PI; // Inverted cone expanding upward from emitter to projected screen
+    holoBeamCone.position.y = 5.9;
+    monumentGroup.add(holoBeamCone);
+
+    // Floating Projected Class Leaderboard Screen above Fountain
+    const holoScreenGroup = new THREE.Group();
+    holoScreenGroup.position.set(0, 7.8, 0);
+
+    const holoFrameOuter = new THREE.Mesh(
+      new THREE.BoxGeometry(10.4, 6.5, 0.16),
+      new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.65,
+        roughness: 0.2,
+        metalness: 0.8,
+        transparent: true,
+        opacity: 0.92
+      })
+    );
+    holoFrameOuter.userData = { isFountainLeaderboard: true };
+    holoScreenGroup.add(holoFrameOuter);
+
+    const initialLeaderboardTex = createClassDashboardWallTexture(
+      dashboardDataRef.current.classCohortLabel,
+      dashboardDataRef.current.classStudents,
+      dashboardDataRef.current.myStats.name,
+      maxAnisotropy
+    );
+    const holoScreenMat = new THREE.MeshBasicMaterial({
+      map: initialLeaderboardTex,
+      transparent: true,
+      opacity: 0.96
+    });
+
+    const holoScreenFront = new THREE.Mesh(new THREE.PlaneGeometry(10.0, 6.15), holoScreenMat);
+    holoScreenFront.position.z = 0.1;
+    holoScreenFront.userData = { isFountainLeaderboard: true };
+    holoScreenGroup.add(holoScreenFront);
+
+    const holoScreenBack = new THREE.Mesh(new THREE.PlaneGeometry(10.0, 6.15), holoScreenMat);
+    holoScreenBack.position.z = -0.1;
+    holoScreenBack.rotation.y = Math.PI;
+    holoScreenBack.userData = { isFountainLeaderboard: true };
+    holoScreenGroup.add(holoScreenBack);
+
+    monumentGroup.add(holoScreenGroup);
     scene.add(monumentGroup);
 
     // 3. Attached Building Name Signboard Texture
@@ -1605,7 +1664,7 @@ export function EraVerse() {
     }
 
     const doorControllers: AnimatedDoorController[] = [];
-    const clickableBuildingMeshes: THREE.Object3D[] = [];
+    const clickableBuildingMeshes: THREE.Object3D[] = [holoFrameOuter, holoScreenFront, holoScreenBack];
     const allBuildingOccluderMeshes: THREE.Mesh[] = [];
 
     BUILDINGS.forEach((b) => {
@@ -1620,7 +1679,7 @@ export function EraVerse() {
       roadBed.receiveShadow = true;
       roadGroup.add(roadBed);
 
-      const curbMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5, metalness: 0.1 });
+      const curbMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.15 });
       [-2.75, 2.75].forEach((cx) => {
         const curb = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, dist), curbMat);
         curb.position.set(cx, 0.12, 0);
@@ -1637,7 +1696,7 @@ export function EraVerse() {
 
       const foundation = new THREE.Mesh(
         new THREE.BoxGeometry(b.w + 1.8, 0.7, b.d + 1.8),
-        new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6, metalness: 0.1 })
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.65, metalness: 0.15 })
       );
       foundation.position.y = 0.35;
       foundation.receiveShadow = true;
@@ -1646,7 +1705,7 @@ export function EraVerse() {
 
       const stepPorch = new THREE.Mesh(
         new THREE.BoxGeometry(7.2, 0.42, 2.4),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.45 })
+        new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.55 })
       );
       stepPorch.position.set(0, 0.21, (b.d / 2 + 1.2) * b.frontDir);
       stepPorch.receiveShadow = true;
@@ -1654,7 +1713,7 @@ export function EraVerse() {
 
       const mainWallMat = new THREE.MeshStandardMaterial({
         map: createFacadeWallTexture(b.wallColor, b.trimColor),
-        roughness: 0.42,
+        roughness: 0.48,
         metalness: 0.08,
         transparent: true,
         opacity: 1.0
@@ -1672,7 +1731,7 @@ export function EraVerse() {
 
       const roofMat = new THREE.MeshStandardMaterial({
         color: b.roofColor,
-        roughness: 0.32,
+        roughness: 0.35,
         metalness: 0.25,
         transparent: true,
         opacity: 1.0
@@ -1689,14 +1748,14 @@ export function EraVerse() {
 
       const upperDeck = new THREE.Mesh(
         new THREE.BoxGeometry(b.w - 2.8, 1.6, b.d - 2.8),
-        new THREE.MeshStandardMaterial({ color: b.accentColor, roughness: 0.28, metalness: 0.35 })
+        new THREE.MeshStandardMaterial({ color: b.accentColor, roughness: 0.32, metalness: 0.3 })
       );
       upperDeck.position.y = b.h + 2.45;
       upperDeck.castShadow = true;
       bGroup.add(upperDeck);
 
-      // White 3D Corner Pilasters
-      const pilasterMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, metalness: 0.12 });
+      // Warm Architectural Limestone Corner Pilasters (Not blinding white)
+      const pilasterMat = new THREE.MeshStandardMaterial({ color: b.trimColor, roughness: 0.45, metalness: 0.12 });
       [
         [-b.w / 2, -b.d / 2],
         [b.w / 2, -b.d / 2],
@@ -1734,8 +1793,8 @@ export function EraVerse() {
       bGroup.add(signFace);
       clickableBuildingMeshes.push(signFace);
 
-      // 3D Framed Windows with Colorful Awning & Flowerbox
-      const winFrameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2 });
+      // 3D Framed Windows with Colorful Awning
+      const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.3 });
       const winGlassMat = new THREE.MeshStandardMaterial({
         color: 0xe0f2fe,
         emissive: 0x7dd3fc,
@@ -2744,16 +2803,16 @@ export function EraVerse() {
       backTrim.position.set(0, 0.22, -roomD / 2);
       interiorGroup.add(backTrim);
 
-      // Bright Studio Daylight Illumination inside the room
-      const roomLight1 = new THREE.PointLight(0xffffff, 3.2, 45);
+      // Balanced Studio Illumination inside the room (no harsh white overexposure)
+      const roomLight1 = new THREE.PointLight(0xfffbeb, 1.45, 42);
       roomLight1.position.set(-6, 8.8, -3);
       interiorGroup.add(roomLight1);
 
-      const roomLight2 = new THREE.PointLight(0xffffff, 3.2, 45);
+      const roomLight2 = new THREE.PointLight(0xfffbeb, 1.45, 42);
       roomLight2.position.set(6, 8.8, -3);
       interiorGroup.add(roomLight2);
 
-      const roomLight3 = new THREE.PointLight(0xfffbeb, 2.8, 45);
+      const roomLight3 = new THREE.PointLight(0xe0f2fe, 1.25, 42);
       roomLight3.position.set(0, 8.8, 5);
       interiorGroup.add(roomLight3);
 
@@ -2813,7 +2872,7 @@ export function EraVerse() {
         const lGroup = new THREE.Group();
         const border = new THREE.Mesh(
           new THREE.BoxGeometry(2.1, 4.8, 0.18),
-          new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.4 })
+          new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.25, metalness: 0.4 })
         );
         const glass = new THREE.Mesh(
           new THREE.BoxGeometry(1.75, 4.3, 0.22),
@@ -2854,13 +2913,21 @@ export function EraVerse() {
 
       interiorGroup.add(exitFrameGroup);
 
-      // Interactive 3D Wall Boards (In Dashboard Hall: Back wall has Personal Overview + Class Dashboard; Left & Right walls have Listening, Reading, Writing, Speaking Dashboards)
+      // Interactive 3D Wall Boards (In Dashboard Hall: Back wall has Personal Overview; Left & Right walls have Listening, Reading, Writing, Speaking Activity)
       const isDashboardHall = building.id === 'dashboard';
       const boards = INTERIOR_BOARDS_BY_BUILDING[building.id] || INTERIOR_BOARDS_BY_BUILDING['practice_tests'];
       const slotTransforms: Record<
         WallBoardSpec['slot'],
         { x: number; y: number; z: number; rotY: number; standX: number; standZ: number }
       > = {
+        'back-center': {
+          x: 0,
+          y: 4.9,
+          z: -roomD / 2 + 0.4,
+          rotY: 0,
+          standX: INTERIOR_ORIGIN.x,
+          standZ: INTERIOR_ORIGIN.z - roomD / 2 + 4.0
+        },
         'back-left': {
           x: isDashboardHall ? -6.5 : -6.4,
           y: isDashboardHall ? 4.9 : 4.6,
@@ -2940,12 +3007,12 @@ export function EraVerse() {
           bSpec.dashboardType === 'writing' ||
           bSpec.dashboardType === 'speaking';
 
-        const boardW = isBackDashboardBoard ? 11.2 : isSideSkillDashboardBoard ? 9.4 : 8.2;
-        const boardH = isBackDashboardBoard ? 6.6 : isSideSkillDashboardBoard ? 5.8 : 4.8;
+        const boardW = isBackDashboardBoard ? 12.2 : isSideSkillDashboardBoard ? 9.4 : 8.2;
+        const boardH = isBackDashboardBoard ? 6.8 : isSideSkillDashboardBoard ? 5.8 : 4.8;
 
         const backing = new THREE.Mesh(
           new THREE.BoxGeometry(boardW, boardH, 0.18),
-          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35 })
         );
         backing.userData = { boardSpec: bSpec };
         bGroup.add(backing);
@@ -3130,17 +3197,17 @@ export function EraVerse() {
         if (q === 'high') {
           renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio * 1.25, 2.5));
           renderer.shadowMap.enabled = !isSoftwareGl;
-          renderer.toneMappingExposure = 1.18;
+          renderer.toneMappingExposure = 0.96;
           scene.fog = new THREE.FogExp2(0x7dd3fc, 0.003);
         } else if (q === 'medium') {
           renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 1.5));
           renderer.shadowMap.enabled = !isSoftwareGl;
-          renderer.toneMappingExposure = 1.1;
+          renderer.toneMappingExposure = 0.94;
           scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0042);
         } else {
           renderer.setPixelRatio(1);
           renderer.shadowMap.enabled = false;
-          renderer.toneMappingExposure = 1.05;
+          renderer.toneMappingExposure = 0.92;
           scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0055);
         }
         const oldPos = playerRig.root.position.clone();
@@ -3252,6 +3319,16 @@ export function EraVerse() {
         }
       },
       refreshDashboardWalls: () => {
+        // Refresh the Holographic Projected Class Leaderboard Screen above the Central Fountain
+        const updatedHoloTex = createClassDashboardWallTexture(
+          dashboardDataRef.current.classCohortLabel,
+          dashboardDataRef.current.classStudents,
+          dashboardDataRef.current.myStats.name,
+          maxAnisotropy
+        );
+        holoScreenMat.map = updatedHoloTex;
+        holoScreenMat.needsUpdate = true;
+
         if (activeInteriorBuilding && activeInteriorBuilding.id === 'dashboard') {
           buildInteriorRoom(activeInteriorBuilding);
         }
@@ -3294,6 +3371,13 @@ export function EraVerse() {
             setActiveBuildingModal(activeInteriorBuilding.id);
           }
         } else {
+          // Check if standing near the Central Fountain Holographic Class Leaderboard
+          const distToFountain = Math.hypot(playerState.x, playerState.z);
+          if (distToFountain < 10.5) {
+            soundEngine.playUiClick();
+            setDashboardHallModal('class_dashboard');
+            return;
+          }
           let closestB: BuildingZone | null = null;
           let minD = 6.5;
           BUILDINGS.forEach((b) => {
@@ -3374,7 +3458,13 @@ export function EraVerse() {
         } else {
           const bHits = raycaster.intersectObjects(clickableBuildingMeshes, false);
           if (bHits.length > 0) {
-            const bId = bHits[0].object.userData?.buildingId;
+            const hitUserData = bHits[0].object.userData;
+            if (hitUserData?.isFountainLeaderboard) {
+              soundEngine.playUiClick();
+              setDashboardHallModal('class_dashboard');
+              return;
+            }
+            const bId = hitUserData?.buildingId;
             const foundB = BUILDINGS.find((item) => item.id === bId);
             if (foundB) {
               enterBuildingInterior(foundB);
@@ -3481,8 +3571,9 @@ export function EraVerse() {
         }
       }
 
-      globeGem.rotation.y = elapsed * 0.9;
-      globeGem.position.y = 5.6 + Math.sin(elapsed * 2.2) * 0.2;
+      // Animate Holographic Projected Class Leaderboard Screen above Central Fountain
+      holoScreenGroup.position.y = 7.8 + Math.sin(elapsed * 2.0) * 0.16;
+      holoBeamCone.material.opacity = 0.14 + Math.sin(elapsed * 3.5) * 0.05;
 
       clouds.forEach((cl) => {
         cl.group.position.x += cl.speed * dt;
@@ -4313,91 +4404,6 @@ export function EraVerse() {
         />
       )}
 
-      {/* 2D. PERSONALIZED DASHBOARD DOCK WHEN INSIDE DASHBOARD BUILDING (IELTS ACADEMY) */}
-      {insideBuilding?.id === 'dashboard' && !dashboardHallModal && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4 pointer-events-auto">
-          <div className="bg-slate-950/92 border-2 border-indigo-400/60 rounded-2xl px-4 py-2.5 text-white shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs text-white border border-white/30 shadow"
-                style={{ backgroundColor: playerProfile.shirtColor }}
-              >
-                {playerProfile.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-xs text-white">
-                    {playerProfile.name}&apos;s Personalized Dashboard
-                  </span>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">
-                    Overall Band {myPersonalDashboardStats.overall.toFixed(1)}
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-300 font-medium">
-                  Walk to the Left, Right &amp; Back walls or click any skill below to inspect your full dashboard:
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setDashboardHallModal('my_dashboard')}
-                className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] cursor-pointer shadow"
-              >
-                My Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => setDashboardHallModal('listening_dashboard')}
-                className="px-2.5 py-1.5 rounded-xl bg-teal-600/90 hover:bg-teal-500 text-white font-extrabold text-[11px] cursor-pointer"
-              >
-                Listening: {myPersonalDashboardStats.listening.toFixed(1)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDashboardHallModal('reading_dashboard')}
-                className="px-2.5 py-1.5 rounded-xl bg-blue-700/90 hover:bg-blue-600 text-white font-extrabold text-[11px] cursor-pointer"
-              >
-                Reading: {myPersonalDashboardStats.reading.toFixed(1)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDashboardHallModal('writing_dashboard')}
-                className="px-2.5 py-1.5 rounded-xl bg-amber-600/90 hover:bg-amber-500 text-white font-extrabold text-[11px] cursor-pointer"
-              >
-                Writing: {myPersonalDashboardStats.writing.toFixed(1)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDashboardHallModal('speaking_dashboard')}
-                className="px-2.5 py-1.5 rounded-xl bg-purple-600/90 hover:bg-purple-500 text-white font-extrabold text-[11px] cursor-pointer"
-              >
-                Speaking: {myPersonalDashboardStats.speaking.toFixed(1)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDashboardHallModal('class_dashboard')}
-                className="px-2.5 py-1.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer"
-              >
-                {activeClassCohortLabel} Class ({myClassDashboardStudents.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const targetUid = myPersonalDashboardStats.userId;
-                  navigate(isAdmin && targetUid ? `/ielts/dashboard?userId=${targetUid}` : '/ielts/dashboard');
-                }}
-                className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-amber-300 border border-amber-400/40 font-extrabold text-[11px] flex items-center gap-1 cursor-pointer"
-              >
-                <span>Full Page</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 3. TOP-RIGHT SETTINGS (GRAPHICS QUALITY: HIGH/MEDIUM/LOW, AUDIO ON/OFF, ROOM MUSIC) & ROOM EXIT */}
       <div className="absolute top-4 right-4 z-10 flex flex-wrap items-center gap-2 pointer-events-auto">
         {insideBuilding && (
@@ -4683,21 +4689,7 @@ export function EraVerse() {
         </button>
       </div>
 
-      {/* 5. TOAST BANNER */}
-      {toastBanner && (
-        <div className="absolute top-20 inset-x-0 z-20 flex justify-center pointer-events-none px-4">
-          <div
-            className="bg-slate-950/95 text-white px-6 py-3 rounded-2xl shadow-2xl border-2 flex items-center gap-3"
-            style={{ borderColor: toastBanner.color }}
-          >
-            <Sparkles className="w-5 h-5 shrink-0" style={{ color: toastBanner.color }} />
-            <div>
-              <div className="font-extrabold text-sm">{toastBanner.title}</div>
-              <div className="text-xs text-slate-300">{toastBanner.subtitle}</div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Top pop-up banners removed for a clean, unobstructed 3D viewport */}
 
       {/* 6. PROXIMITY INTERACTION PROMPTS */}
       {nearBuildingPrompt && !insideBuilding && (

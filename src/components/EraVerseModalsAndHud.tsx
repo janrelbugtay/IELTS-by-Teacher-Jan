@@ -13,12 +13,18 @@ import {
   Users,
   Sparkles,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Play,
+  Video,
+  Clock,
+  Calendar,
+  MessageSquare
 } from 'lucide-react';
 import {
   StudentSkillScores,
   ChatMessageItem,
-  SkillKey
+  SkillKey,
+  SkillSubmissionSummary
 } from '../utils/eraverseFeatures';
 
 interface SportsSideActionsHudProps {
@@ -394,74 +400,165 @@ interface DashboardHallModalsProps {
   onOpenSkillPractice?: (skill: 'Listening' | 'Reading' | 'Writing' | 'Speaking') => void;
 }
 
-const SKILL_MODAL_CONFIG: Record<
+const SKILL_ACTIVITY_CONFIG: Record<
   SkillKey,
   {
-    title: string;
+    activityTitle: string;
+    chartTitle: string;
     capSkill: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
-    colorText: string;
-    colorBg: string;
-    colorBorder: string;
-    badgeBg: string;
-    criteria: Array<{ label: string; delta: number; desc: string }>;
+    barColorClass: string;
+    badgeBgClass: string;
+    badgeTextClass: string;
+    pillBorderClass: string;
+    headerBtnClass: string;
   }
 > = {
-  listening: {
-    title: 'Listening Dashboard',
-    capSkill: 'Listening',
-    colorText: 'text-teal-700',
-    colorBg: 'bg-teal-50',
-    colorBorder: 'border-teal-200',
-    badgeBg: 'bg-teal-600',
-    criteria: [
-      { label: 'Section 1 • Everyday Dialogue', delta: 0.5, desc: 'Names, numbers, dates & form completion' },
-      { label: 'Section 2 • Campus Monologue', delta: 0.0, desc: 'Map labeling & multiple choice accuracy' },
-      { label: 'Section 3 • Academic Discussion', delta: 0.0, desc: 'Multi-speaker agreement & attitude tracking' },
-      { label: 'Section 4 • University Lecture', delta: -0.5, desc: 'Academic summary & note completion' }
-    ]
-  },
   reading: {
-    title: 'Reading Dashboard',
+    activityTitle: 'Reading Activity',
+    chartTitle: 'Reading',
     capSkill: 'Reading',
-    colorText: 'text-blue-700',
-    colorBg: 'bg-blue-50',
-    colorBorder: 'border-blue-200',
-    badgeBg: 'bg-blue-600',
-    criteria: [
-      { label: 'True / False / Not Given', delta: 0.5, desc: 'Distinguishing stated facts from inferences' },
-      { label: 'Matching Headings & Information', delta: 0.0, desc: 'Skimming paragraphs for main ideas' },
-      { label: 'Summary & Sentence Completion', delta: 0.0, desc: 'Scanning for exact grammatical word forms' },
-      { label: 'Passage 3 Complex Arguments', delta: -0.5, desc: 'High-lexis academic comprehension' }
-    ]
+    barColorClass: 'bg-blue-500',
+    badgeBgClass: 'bg-blue-50',
+    badgeTextClass: 'text-blue-600',
+    pillBorderClass: 'border-blue-200',
+    headerBtnClass: 'bg-blue-600 hover:bg-blue-700'
+  },
+  listening: {
+    activityTitle: 'Listening Activity',
+    chartTitle: 'Listening',
+    capSkill: 'Listening',
+    barColorClass: 'bg-emerald-500',
+    badgeBgClass: 'bg-emerald-50',
+    badgeTextClass: 'text-emerald-600',
+    pillBorderClass: 'border-emerald-200',
+    headerBtnClass: 'bg-emerald-600 hover:bg-emerald-700'
   },
   writing: {
-    title: 'Writing Dashboard',
+    activityTitle: 'Writing Activity',
+    chartTitle: 'Writing',
     capSkill: 'Writing',
-    colorText: 'text-amber-700',
-    colorBg: 'bg-amber-50',
-    colorBorder: 'border-amber-200',
-    badgeBg: 'bg-amber-600',
-    criteria: [
-      { label: 'Task Achievement / Response', delta: 0.0, desc: 'Addressing all parts of Task 1 & Task 2 prompts' },
-      { label: 'Coherence & Cohesion', delta: 0.5, desc: 'Logical paragraphing & cohesive linking devices' },
-      { label: 'Lexical Resource (Vocabulary)', delta: 0.0, desc: 'Academic collocations & topic-specific vocabulary' },
-      { label: 'Grammatical Range & Accuracy', delta: -0.5, desc: 'Complex sentence structures & punctuation' }
-    ]
+    barColorClass: 'bg-purple-500',
+    badgeBgClass: 'bg-purple-50',
+    badgeTextClass: 'text-purple-600',
+    pillBorderClass: 'border-purple-200',
+    headerBtnClass: 'bg-purple-600 hover:bg-purple-700'
   },
   speaking: {
-    title: 'Speaking Dashboard',
+    activityTitle: 'Speaking Activity',
+    chartTitle: 'Speaking',
     capSkill: 'Speaking',
-    colorText: 'text-purple-700',
-    colorBg: 'bg-purple-50',
-    colorBorder: 'border-purple-200',
-    badgeBg: 'bg-purple-600',
-    criteria: [
-      { label: 'Fluency & Topic Coherence', delta: 0.5, desc: 'Speaking at length without unnatural hesitation' },
-      { label: 'Lexical Resource & Idioms', delta: 0.0, desc: 'Paraphrasing & natural idiomatic expressions' },
-      { label: 'Grammatical Range & Accuracy', delta: 0.0, desc: 'Flexible mix of simple & complex tenses' },
-      { label: 'Pronunciation & Intonation', delta: 0.0, desc: 'Clear word stress, rhythm & connected speech' }
-    ]
+    barColorClass: 'bg-orange-500',
+    badgeBgClass: 'bg-orange-50',
+    badgeTextClass: 'text-orange-600',
+    pillBorderClass: 'border-orange-200',
+    headerBtnClass: 'bg-orange-600 hover:bg-orange-700'
   }
+};
+
+// Accurate Vertical Bar Graph Component (Matches /src/pages/ielts/Dashboard.tsx lines 750–811 & Screenshot 3)
+const SkillScoreBarGraphCard: React.FC<{
+  skill: SkillKey;
+  submissions: SkillSubmissionSummary[];
+}> = ({ skill, submissions }) => {
+  const cfg = SKILL_ACTIVITY_CONFIG[skill];
+  const chronological = [...submissions].slice(0, 5).reverse();
+  const recentScore = submissions.length > 0 ? submissions[0].bandScore : null;
+
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <span className="font-extrabold text-slate-900 text-lg block">{cfg.chartTitle}</span>
+          <span className="text-xs text-slate-500 font-medium">Recent Score</span>
+        </div>
+        <div className={`px-3 py-1 rounded-xl ${cfg.badgeBgClass} border ${cfg.pillBorderClass}`}>
+          <span className={`text-2xl font-black ${cfg.badgeTextClass}`}>
+            {recentScore !== null ? recentScore.toFixed(1) : '-'}
+          </span>
+        </div>
+      </div>
+
+      <div className="h-44 flex items-end gap-3 pt-6 px-2 border-b border-slate-100 relative">
+        {/* Background dashed grid lines */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-4">
+          <div className="border-b border-dashed border-slate-200 w-full h-0" />
+          <div className="border-b border-dashed border-slate-200 w-full h-0" />
+          <div className="border-b border-dashed border-slate-200 w-full h-0" />
+          <div className="border-b border-dashed border-slate-200 w-full h-0" />
+        </div>
+
+        {chronological.length > 0 ? (
+          chronological.map((sub, i) => {
+            const score = sub.bandScore || 0;
+            const heightPercent = Math.max(12, Math.min(100, (score / 9) * 100));
+            return (
+              <div key={sub.id || i} className="flex-1 flex flex-col items-center gap-2 z-10 h-full justify-end group relative">
+                <span className="text-[11px] font-extrabold text-slate-700">{score.toFixed(1)}</span>
+                <div className="w-full max-w-[36px] bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden">
+                  <div
+                    className={`w-full ${cfg.barColorClass} rounded-t-lg transition-all duration-500`}
+                    style={{ height: `${heightPercent}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 truncate max-w-[68px]" title={sub.title}>
+                  {sub.title.replace(/^IELTS\s+(Reading|Listening|Writing|Speaking)\s+/i, '')}
+                </span>
+              </div>
+            );
+          })
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 z-10">
+            No data available
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Accurate Activity Table Component (Matches Screenshot 4: "Reading Activity", "TEST NAME", "SCORE")
+const SkillActivityTableCard: React.FC<{
+  title: string;
+  submissions: SkillSubmissionSummary[];
+}> = ({ title, submissions }) => {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+      <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <h3 className="font-extrabold text-slate-900 text-lg">{title}</h3>
+        <span className="text-xs font-bold text-slate-400">{submissions.length} Tests</span>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50/70 text-slate-400 text-[11px] font-extrabold uppercase tracking-wider">
+              <th className="py-3 px-5">Test Name</th>
+              <th className="py-3 px-5 text-right">Score</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 text-sm">
+            {submissions.length > 0 ? (
+              submissions.slice(0, 6).map((sub) => (
+                <tr key={sub.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-5 font-semibold text-slate-800">{sub.title}</td>
+                  <td className="py-3.5 px-5 text-right">
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-extrabold bg-slate-100 text-slate-800">
+                      {sub.bandScore.toFixed(1)}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={2} className="py-8 text-center text-slate-400 text-sm">
+                  No tests completed yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
@@ -477,6 +574,8 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
 }) => {
   const [teacherCohortTab, setTeacherCohortTab] = useState<'ALL' | 'IELTS 1' | 'IELTS 2'>('ALL');
   const [personalTab, setPersonalTab] = useState<'overview' | SkillKey>('overview');
+  const [selectedVideoSub, setSelectedVideoSub] = useState<SkillSubmissionSummary | null>(null);
+  const [selectedFeedbackSub, setSelectedFeedbackSub] = useState<SkillSubmissionSummary | null>(null);
 
   useEffect(() => {
     if (activeModal === 'listening_dashboard') setPersonalTab('listening');
@@ -496,20 +595,22 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
     activeModal === 'speaking_dashboard';
 
   if (isPersonalOrSkillModal) {
-    const activeSkillCfg = personalTab !== 'overview' ? SKILL_MODAL_CONFIG[personalTab] : null;
-    const filteredSkillSubs =
-      personalTab === 'overview'
-        ? myStats.recentSubmissions
-        : myStats.recentSubmissions.filter((s) => s.skill === personalTab);
+    const activeSkillCfg = personalTab !== 'overview' ? SKILL_ACTIVITY_CONFIG[personalTab] : null;
+    const readingSubs = myStats.recentSubmissions.filter((s) => s.skill === 'reading');
+    const listeningSubs = myStats.recentSubmissions.filter((s) => s.skill === 'listening');
+    const writingSubs = myStats.recentSubmissions.filter((s) => s.skill === 'writing');
+    const speakingSubs = myStats.recentSubmissions.filter((s) => s.skill === 'speaking');
+    const onlineSpeakingSubs = speakingSubs.filter((s) => !s.isOfflineSpeaking);
+    const offlineSpeakingSubs = speakingSubs.filter((s) => s.isOfflineSpeaking);
 
     return (
       <div className="fixed inset-0 z-50 bg-slate-950/75 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-slate-50 rounded-3xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#1E4DB7] via-blue-600 to-indigo-700 px-6 py-5 text-white flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#1E4DB7] via-blue-600 to-indigo-700 px-6 py-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-3.5">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg text-white border-2 border-white/40 shadow-lg shrink-0"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base text-white border-2 border-white/40 shadow-lg shrink-0"
                 style={{ backgroundColor: myStats.shirtColor }}
               >
                 {myStats.name.slice(0, 2).toUpperCase()}
@@ -517,41 +618,43 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-extrabold uppercase tracking-widest text-blue-200">
-                    PERSONALIZED ACCOUNT DASHBOARD
+                    PERSONALIZED IELTS ACTIVITY &amp; SCORE GRAPHS
                   </span>
                   <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-white/20 text-white">
                     {myStats.cohort}
                   </span>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-300/30">
-                    {myStats.avatarDetails}
-                  </span>
                 </div>
-                <h2 className="text-2xl font-extrabold tracking-tight">
-                  {myStats.name}&apos;s IELTS Dashboard
-                  {activeSkillCfg ? ` — ${activeSkillCfg.capSkill}` : ''}
+                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                  {myStats.name}&apos;s {activeSkillCfg ? activeSkillCfg.activityTitle : 'IELTS Dashboard'}
                 </h2>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:block bg-white/15 border border-white/25 rounded-2xl px-4 py-1.5 text-center">
+                <div className="text-[9px] font-extrabold uppercase tracking-widest text-amber-300">OVERALL BAND</div>
+                <div className="text-xl font-black text-white">{myStats.overall.toFixed(1)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Interactive Wall Tabs: Overview + Listening + Reading + Writing + Speaking */}
-          <div className="px-6 py-3 bg-slate-100 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          {/* Interactive Activity Tabs: All 4 Skills Overview + Reading Activity + Listening Activity + Writing Activity + Speaking (Online & Offline) */}
+          <div className="px-6 py-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
-                  { id: 'overview', label: 'All 4 Skills Overview', icon: Sparkles },
-                  { id: 'listening', label: `Listening (${myStats.listening.toFixed(1)})`, icon: Headphones },
-                  { id: 'reading', label: `Reading (${myStats.reading.toFixed(1)})`, icon: BookOpen },
-                  { id: 'writing', label: `Writing (${myStats.writing.toFixed(1)})`, icon: PenTool },
-                  { id: 'speaking', label: `Speaking (${myStats.speaking.toFixed(1)})`, icon: Mic }
+                  { id: 'overview', label: 'All 4 Skills Activity', icon: Sparkles },
+                  { id: 'reading', label: `Reading Activity (${myStats.reading.toFixed(1)})`, icon: BookOpen },
+                  { id: 'listening', label: `Listening Activity (${myStats.listening.toFixed(1)})`, icon: Headphones },
+                  { id: 'writing', label: `Writing Activity (${myStats.writing.toFixed(1)})`, icon: PenTool },
+                  { id: 'speaking', label: `Speaking Online & Offline (${myStats.speaking.toFixed(1)})`, icon: Mic }
                 ] as const
               ).map(({ id, label, icon: Icon }) => {
                 const active = personalTab === id;
@@ -563,7 +666,7 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                     className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all cursor-pointer border ${
                       active
                         ? 'bg-[#1E4DB7] text-white border-[#1E4DB7] shadow-sm'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-blue-400'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -578,165 +681,190 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
           <div className="p-6 overflow-y-auto space-y-6">
             {personalTab === 'overview' ? (
               <>
-                {/* Overall Summary Banner */}
-                <div className="bg-slate-900 text-white rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs font-extrabold uppercase tracking-wider text-blue-300">
-                      LINKED TO {myStats.name.toUpperCase()}&apos;S ACCOUNT • {myStats.roleTitle.toUpperCase()}
-                    </div>
-                    <div className="text-lg font-extrabold mt-0.5">
-                      {myStats.name} ({myStats.cohort}) • Specialty: {myStats.specialty}
-                    </div>
-                    <p className="text-xs text-slate-300 mt-1">
-                      Click any skill card below or walk to the Listening, Reading, Writing, and Speaking walls inside Dashboard Hall!
-                    </p>
-                  </div>
-                  <div className="bg-blue-600/30 border border-blue-400/40 rounded-2xl px-5 py-3 text-center">
-                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300">OVERALL BAND</div>
-                    <div className="text-3xl font-black text-white">{myStats.overall.toFixed(1)}</div>
-                  </div>
+                {/* 4 Accurate Vertical Bar Graphs Row (Reading, Listening, Writing, Speaking) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <SkillScoreBarGraphCard skill="reading" submissions={readingSubs} />
+                  <SkillScoreBarGraphCard skill="listening" submissions={listeningSubs} />
+                  <SkillScoreBarGraphCard skill="writing" submissions={writingSubs} />
+                  <SkillScoreBarGraphCard skill="speaking" submissions={speakingSubs} />
                 </div>
 
-                {/* 4 Skill Score Cards (Clickable to drill into each wall) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {(
-                    [
-                      { key: 'listening' as SkillKey, label: 'Listening', score: myStats.listening, icon: Headphones, color: 'text-teal-600', bg: 'bg-teal-50 border-teal-200 hover:border-teal-500' },
-                      { key: 'reading' as SkillKey, label: 'Reading', score: myStats.reading, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200 hover:border-blue-500' },
-                      { key: 'writing' as SkillKey, label: 'Writing', score: myStats.writing, icon: PenTool, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200 hover:border-amber-500' },
-                      { key: 'speaking' as SkillKey, label: 'Speaking', score: myStats.speaking, icon: Mic, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200 hover:border-purple-500' }
-                    ]
-                  ).map(({ key, label, score, icon: Icon, color, bg }) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setPersonalTab(key)}
-                      className={`rounded-2xl p-4 border-2 ${bg} flex flex-col items-center text-center transition-all cursor-pointer shadow-xs hover:shadow-md`}
-                    >
-                      <Icon className={`w-6 h-6 ${color} mb-2`} />
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{label}</span>
-                      <span className="text-3xl font-black text-slate-900 mt-1">{score.toFixed(1)}</span>
-                      <span className="text-[11px] font-bold text-blue-600 mt-1 underline">View {label} Wall →</span>
-                    </button>
-                  ))}
+                {/* Activity Tables Row: Reading Activity, Listening Activity, Writing Activity */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                  <SkillActivityTableCard title="Reading Activity" submissions={readingSubs} />
+                  <SkillActivityTableCard title="Listening Activity" submissions={listeningSubs} />
+                  <SkillActivityTableCard title="Writing Activity" submissions={writingSubs} />
                 </div>
               </>
-            ) : (
-              activeSkillCfg && (
-                <div className="space-y-5">
-                  {/* Skill Specific Header Banner */}
-                  <div className={`rounded-2xl p-5 border-2 ${activeSkillCfg.colorBg} ${activeSkillCfg.colorBorder} flex flex-wrap items-center justify-between gap-4`}>
-                    <div>
-                      <span className={`text-xs font-black uppercase tracking-widest ${activeSkillCfg.colorText}`}>
-                        DEDICATED {activeSkillCfg.capSkill.toUpperCase()} WALL DASHBOARD
-                      </span>
-                      <h3 className="text-xl font-black text-slate-900 mt-0.5">
-                        {myStats.name}&apos;s {activeSkillCfg.title} ({myStats.cohort})
-                      </h3>
-                      <p className="text-xs text-slate-600 mt-1">
-                        Detailed band criteria and submission history linked to {myStats.name}&apos;s account.
-                      </p>
-                    </div>
+            ) : personalTab !== 'speaking' ? (
+              /* Dedicated Reading Activity, Listening Activity, or Writing Activity View (Bar Graph + Test Name & Score Table) */
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <SkillScoreBarGraphCard
+                    skill={personalTab}
+                    submissions={
+                      personalTab === 'reading'
+                        ? readingSubs
+                        : personalTab === 'listening'
+                        ? listeningSubs
+                        : writingSubs
+                    }
+                  />
+                  <SkillActivityTableCard
+                    title={SKILL_ACTIVITY_CONFIG[personalTab].activityTitle}
+                    submissions={
+                      personalTab === 'reading'
+                        ? readingSubs
+                        : personalTab === 'listening'
+                        ? listeningSubs
+                        : writingSubs
+                    }
+                  />
+                </div>
+
+                {onOpenSkillPractice && activeSkillCfg && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenSkillPractice(activeSkillCfg.capSkill);
+                      }}
+                      className={`px-4 py-2.5 rounded-xl font-extrabold text-xs text-white ${activeSkillCfg.headerBtnClass} flex items-center gap-1.5 cursor-pointer shadow`}
+                    >
+                      <span>Practice {activeSkillCfg.capSkill} Tests Now</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Speaking Section (Shown in Speaking tab AND at the bottom of Overview tab): Both Online & Offline Speaking with Video Thumbnails */}
+            {(personalTab === 'speaking' || personalTab === 'overview') && (
+              <div className="space-y-6">
+                {personalTab === 'speaking' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <SkillScoreBarGraphCard skill="speaking" submissions={speakingSubs} />
+                    <SkillActivityTableCard title="Online Speaking Tests" submissions={onlineSpeakingSubs} />
+                  </div>
+                )}
+
+                {/* Offline Speaking Assignments with Video Thumbnails (Exact match to Screenshot 5) */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
                     <div className="flex items-center gap-3">
-                      <div className={`${activeSkillCfg.badgeBg} text-white rounded-2xl px-5 py-3 text-center shadow-md`}>
-                        <div className="text-[10px] font-extrabold uppercase tracking-widest opacity-90">
-                          {activeSkillCfg.capSkill} BAND
-                        </div>
-                        <div className="text-3xl font-black">{myStats[personalTab].toFixed(1)}</div>
+                      <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center border border-orange-100">
+                        <Video className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-lg">Offline Speaking Assignments</h3>
+                        <p className="text-xs text-slate-500">
+                          Face-to-face speaking tests &amp; video recordings with teacher feedback
+                        </p>
                       </div>
                     </div>
+                    <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                      {offlineSpeakingSubs.length} Video Record{offlineSpeakingSubs.length === 1 ? '' : 's'}
+                    </span>
                   </div>
 
-                  {/* 4 Criteria Breakdown Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {activeSkillCfg.criteria.map((cItem) => {
-                      const subScore = Math.max(5.0, Math.min(9.0, Math.round((myStats[personalTab] + cItem.delta) * 2) / 2));
-                      const pct = Math.min(100, Math.round((subScore / 9.0) * 100));
+                  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {offlineSpeakingSubs.map((sub) => {
+                      const thumbUrl = sub.thumbnailInfo?.imageUrl;
+                      const mins = sub.timeSpent ? Math.round(sub.timeSpent / 60) : 15;
                       return (
-                        <div key={cItem.label} className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-extrabold text-sm text-slate-900">{cItem.label}</span>
-                            <span className={`font-black text-sm ${activeSkillCfg.colorText}`}>Band {subScore.toFixed(1)}</span>
+                        <div
+                          key={sub.id}
+                          className="group bg-white rounded-2xl border border-slate-200/90 overflow-hidden hover:shadow-lg hover:border-orange-200 transition-all duration-300 flex flex-col"
+                        >
+                          {/* Video Thumbnail Container */}
+                          <div
+                            onClick={() => setSelectedVideoSub(sub)}
+                            className="aspect-video bg-slate-900 relative overflow-hidden cursor-pointer flex items-center justify-center"
+                          >
+                            {thumbUrl ? (
+                              <img
+                                src={thumbUrl}
+                                alt={sub.title}
+                                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 flex items-center justify-center relative">
+                                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                                  <Video className="w-8 h-8 text-slate-400" />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+                            {/* Top-Left "Offline Test" Badge */}
+                            <div className="absolute top-3 left-3 z-20">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-black/65 text-white backdrop-blur-md border border-white/15">
+                                Offline Test
+                              </span>
+                            </div>
+
+                            {/* Center Play Button + WATCH VIDEO */}
+                            <div className="relative z-10 flex flex-col items-center gap-1.5">
+                              <div className="w-12 h-12 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-orange-500 transition-all">
+                                <Play className="w-5 h-5 fill-current ml-0.5" />
+                              </div>
+                              <span className="text-[11px] font-extrabold text-white tracking-wider uppercase bg-black/60 px-2.5 py-0.5 rounded backdrop-blur-xs">
+                                Watch Video
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-xs text-slate-500 mb-2.5">{cItem.desc}</p>
-                          <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${activeSkillCfg.badgeBg} rounded-full`}
-                              style={{ width: `${pct}%` }}
-                            />
+
+                          {/* Card Body */}
+                          <div className="p-4 flex-1 flex flex-col justify-between bg-white">
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h4 className="font-extrabold text-slate-900 text-base">{sub.title}</h4>
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-extrabold bg-orange-50 text-orange-700 border border-orange-200/70 shrink-0">
+                                  Band {sub.bandScore.toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 mt-2">
+                              <div className="flex items-center gap-3 font-semibold">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                  {mins}m
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                  {sub.dateStr}
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFeedbackSub(sub)}
+                                className="inline-flex items-center gap-1.5 font-extrabold text-slate-700 hover:text-orange-600 transition-colors bg-slate-50 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 hover:border-orange-200 cursor-pointer"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>Feedback</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  {onOpenSkillPractice && (
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onClose();
-                          onOpenSkillPractice(activeSkillCfg.capSkill);
-                        }}
-                        className={`px-4 py-2.5 rounded-xl font-extrabold text-xs text-white ${activeSkillCfg.badgeBg} hover:opacity-95 flex items-center gap-1.5 cursor-pointer shadow`}
-                      >
-                        <span>Practice {activeSkillCfg.capSkill} Tests Now</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
                 </div>
-              )
-            )}
-
-            {/* Recent Submissions List for this Student */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">
-                  {personalTab === 'overview'
-                    ? `${myStats.name}'s Recent Test & Homework Submissions`
-                    : `${myStats.name}'s ${SKILL_MODAL_CONFIG[personalTab].capSkill} Submissions`}
-                </h4>
-                <span className="text-xs font-bold text-slate-500">
-                  {filteredSkillSubs.length} Recorded Submission{filteredSkillSubs.length === 1 ? '' : 's'}
-                </span>
               </div>
-
-              {filteredSkillSubs.length === 0 ? (
-                <div className="text-xs text-slate-500 py-4 text-center bg-white rounded-xl border border-slate-200/80">
-                  No graded {personalTab === 'overview' ? '' : personalTab} submissions recorded yet for <strong>{myStats.name}</strong>. Complete a test in the Practice Test Arena or Homework Hub, or open the full dashboard page below!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {filteredSkillSubs.slice(0, 6).map((sub) => (
-                    <div
-                      key={sub.id}
-                      className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span className="font-extrabold text-xs text-slate-900 truncate">{sub.title}</span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-semibold mt-0.5 uppercase">
-                          {sub.skill} • {sub.dateStr}
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-black text-xs shrink-0 border border-blue-200">
-                        Band {sub.bandScore.toFixed(1)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Open Full Personal Dashboard Button */}
             <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-slate-200">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-200/70 cursor-pointer"
               >
                 Back to 3D Dashboard Hall
               </button>
@@ -751,11 +879,136 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Video Player Sub-Modal for Offline Speaking Assignments */}
+        {selectedVideoSub && (
+          <div
+            className="fixed inset-0 z-60 bg-slate-950/85 flex items-center justify-center p-4"
+            onClick={() => setSelectedVideoSub(null)}
+          >
+            <div
+              className="bg-slate-900 rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-700 flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                    <Video className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-white text-base">
+                      {myStats.name} — {selectedVideoSub.title} (Band {selectedVideoSub.bandScore.toFixed(1)})
+                    </h3>
+                    <p className="text-xs text-slate-400">Offline Speaking Video Recording • {selectedVideoSub.dateStr}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedVideoSub(null)}
+                  className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="aspect-video bg-black w-full relative flex items-center justify-center">
+                {selectedVideoSub.thumbnailInfo?.embedUrl &&
+                (selectedVideoSub.thumbnailInfo.type === 'youtube' ||
+                  selectedVideoSub.thumbnailInfo.type === 'drive') ? (
+                  <iframe
+                    src={selectedVideoSub.thumbnailInfo.embedUrl}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={selectedVideoSub.title}
+                  />
+                ) : selectedVideoSub.audioUrl && selectedVideoSub.thumbnailInfo?.type === 'video' ? (
+                  <video src={selectedVideoSub.audioUrl} controls autoPlay className="w-full h-full" />
+                ) : (
+                  <div className="text-center p-8 space-y-3">
+                    <div className="w-16 h-16 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center mx-auto">
+                      <Video className="w-8 h-8" />
+                    </div>
+                    <div className="text-white font-extrabold text-base">
+                      Offline Speaking Recording — {selectedVideoSub.title}
+                    </div>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      {selectedVideoSub.audioUrl
+                        ? 'Click below to open the external recording link or open your full IELTS Dashboard.'
+                        : `Recorded during ${myStats.cohort} Offline Speaking assessment (${selectedVideoSub.dateStr}).`}
+                    </p>
+                    {selectedVideoSub.audioUrl && (
+                      <a
+                        href={selectedVideoSub.audioUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold text-xs"
+                      >
+                        <span>Open Video Recording</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Teacher Feedback Sub-Modal for Offline Speaking */}
+        {selectedFeedbackSub && (
+          <div
+            className="fixed inset-0 z-60 bg-slate-950/80 flex items-center justify-center p-4"
+            onClick={() => setSelectedFeedbackSub(null)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-600">
+                    OFFLINE SPEAKING EVALUATION
+                  </span>
+                  <h4 className="font-extrabold text-lg text-slate-900">
+                    {selectedFeedbackSub.title} — Band {selectedFeedbackSub.bandScore.toFixed(1)}
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeedbackSub(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                {selectedFeedbackSub.feedback ||
+                  `Evaluated by Teacher Jan: Clear pronunciation and steady pacing on ${selectedFeedbackSub.title}. Band Score: ${selectedFeedbackSub.bandScore.toFixed(1)}.`}
+              </div>
+              {selectedFeedbackSub.vietnameseTranslation && (
+                <div className="bg-orange-50/70 border border-orange-200/80 rounded-xl p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  <div className="font-extrabold text-orange-800 mb-1 uppercase">Vietnamese Translation</div>
+                  {selectedFeedbackSub.vietnameseTranslation}
+                </div>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeedbackSub(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  // CLASS DASHBOARD MODAL (Filtered strictly to the user's real class e.g. IELTS 1 students under their nicknames)
+  // HOLOGRAPHIC FOUNTAIN CLASS LEADERBOARD MODAL (Filtered strictly to the user's real class e.g. IELTS 1 students under their nicknames)
   const displayedStudents = isSuperAdminCharacter
     ? teacherCohortTab === 'ALL'
       ? allCohortsStudents
@@ -764,26 +1017,26 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/75 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 px-6 py-5 text-white flex items-center justify-between">
+      <div className="bg-slate-950 rounded-3xl max-w-4xl w-full max-h-[88vh] flex flex-col shadow-2xl border-2 border-cyan-400/60 overflow-hidden text-white">
+        {/* Holographic Header */}
+        <div className="bg-gradient-to-r from-slate-900 via-cyan-950 to-emerald-950 px-6 py-5 border-b border-cyan-400/30 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center">
               <Trophy className="w-6 h-6 text-amber-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-100">
-                  DEDICATED CLASS DASHBOARD WALL
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-300">
+                  ✦ CENTRAL FOUNTAIN HOLOGRAPHIC PROJECTION
                 </span>
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-white/20 text-white">
-                  {isSuperAdminCharacter ? 'TEACHER JAN (SUPER ADMIN VIEW)' : `${classCohortLabel} GROUP ONLY`}
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
+                  {isSuperAdminCharacter ? 'TEACHER JAN (SUPER ADMIN)' : `${classCohortLabel} LEADERBOARD`}
                 </span>
               </div>
-              <h2 className="text-2xl font-extrabold tracking-tight">
+              <h2 className="text-2xl font-extrabold tracking-tight text-white">
                 {isSuperAdminCharacter
-                  ? 'All IELTS Classes Scoreboard (Teacher Jan)'
-                  : `${classCohortLabel} Class Dashboard (${displayedStudents.length} Students)`}
+                  ? 'All IELTS Classes Leaderboard (Teacher Jan)'
+                  : `${classCohortLabel} Class Leaderboard (${displayedStudents.length} Students)`}
               </h2>
             </div>
           </div>
@@ -791,21 +1044,21 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white cursor-pointer"
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Subheader note */}
-        <div className="px-6 py-3.5 bg-emerald-50 border-b border-emerald-200 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
-            <Users className="w-4 h-4 text-emerald-700" />
+        <div className="px-6 py-3.5 bg-slate-900/90 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-cyan-100">
+            <Users className="w-4 h-4 text-cyan-400" />
             {isSuperAdminCharacter ? (
               <span>Teacher Jan (Super Admin) can inspect all real students across IELTS 1 and IELTS 2.</span>
             ) : (
               <span>
-                Showing <strong>only {classCohortLabel}</strong> classmates by nickname for <strong>{myStats.name}</strong> with Reading, Listening, Writing &amp; Speaking scores.
+                Projected on the Central Fountain: <strong>{classCohortLabel}</strong> classmates ranked by Reading, Listening, Writing &amp; Speaking.
               </span>
             )}
           </div>
@@ -819,8 +1072,8 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                   onClick={() => setTeacherCohortTab(tab)}
                   className={`px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer ${
                     teacherCohortTab === tab
-                      ? 'bg-emerald-700 text-white'
-                      : 'bg-white text-emerald-800 border border-emerald-300'
+                      ? 'bg-cyan-500 text-slate-950'
+                      : 'bg-slate-800 text-cyan-200 border border-cyan-500/30'
                   }`}
                 >
                   {tab}
@@ -832,21 +1085,21 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
 
         {/* Scores Table */}
         <div className="p-6 overflow-y-auto">
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <div className="overflow-x-auto rounded-2xl border border-cyan-500/30 bg-slate-900/60">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-100 text-slate-700 text-[11px] font-black uppercase tracking-wider border-b border-slate-200">
-                  <th className="py-3.5 px-4">#</th>
-                  <th className="py-3.5 px-4">Student Nickname &amp; Unique Details</th>
-                  <th className="py-3.5 px-4">Class Group</th>
-                  <th className="py-3.5 px-4 text-center text-blue-700">Reading</th>
-                  <th className="py-3.5 px-4 text-center text-teal-700">Listening</th>
-                  <th className="py-3.5 px-4 text-center text-amber-700">Writing</th>
-                  <th className="py-3.5 px-4 text-center text-purple-700">Speaking</th>
-                  <th className="py-3.5 px-4 text-center text-emerald-800">Overall</th>
+                <tr className="bg-slate-900 text-cyan-300 text-[11px] font-black uppercase tracking-wider border-b border-cyan-500/25">
+                  <th className="py-3.5 px-4">Rank</th>
+                  <th className="py-3.5 px-4">Student Nickname</th>
+                  <th className="py-3.5 px-4">Class</th>
+                  <th className="py-3.5 px-4 text-center text-blue-300">Reading</th>
+                  <th className="py-3.5 px-4 text-center text-teal-300">Listening</th>
+                  <th className="py-3.5 px-4 text-center text-amber-300">Writing</th>
+                  <th className="py-3.5 px-4 text-center text-purple-300">Speaking</th>
+                  <th className="py-3.5 px-4 text-center text-emerald-300">Overall</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 text-sm">
+              <tbody className="divide-y divide-slate-800 text-sm">
                 {displayedStudents.map((st, idx) => {
                   const isCurrentPlayer = st.name.toLowerCase() === myStats.name.toLowerCase();
                   return (
@@ -854,13 +1107,15 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                       key={st.id}
                       className={
                         isCurrentPlayer
-                          ? 'bg-blue-50/90 font-extrabold'
+                          ? 'bg-cyan-950/80 font-extrabold'
                           : idx % 2 === 0
-                          ? 'bg-white hover:bg-slate-50'
-                          : 'bg-slate-50/60 hover:bg-slate-50'
+                          ? 'bg-slate-900/40 hover:bg-slate-800/60'
+                          : 'bg-slate-900/80 hover:bg-slate-800/60'
                       }
                     >
-                      <td className="py-3.5 px-4 font-bold text-slate-500">{idx + 1}</td>
+                      <td className="py-3.5 px-4 font-bold text-cyan-300">
+                        {idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`}
+                      </td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
                           <div
@@ -871,15 +1126,15 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-extrabold text-slate-900">{st.name}</span>
+                              <span className="font-extrabold text-white">{st.name}</span>
                               {isCurrentPlayer && (
-                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-500 text-slate-950">
                                   YOU
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] font-semibold text-slate-500">
-                              {st.roleTitle} • {st.avatarDetails}
+                            <div className="text-[11px] font-semibold text-slate-400">
+                              {st.roleTitle}
                             </div>
                           </div>
                         </div>
@@ -888,19 +1143,19 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                         <span
                           className={`text-[11px] font-extrabold px-2.5 py-1 rounded-lg ${
                             st.cohort === 'IELTS 2'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-blue-100 text-blue-800'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                              : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
                           }`}
                         >
                           {st.cohort}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center font-extrabold text-blue-700">{st.reading.toFixed(1)}</td>
-                      <td className="py-3.5 px-4 text-center font-extrabold text-teal-700">{st.listening.toFixed(1)}</td>
-                      <td className="py-3.5 px-4 text-center font-extrabold text-amber-700">{st.writing.toFixed(1)}</td>
-                      <td className="py-3.5 px-4 text-center font-extrabold text-purple-700">{st.speaking.toFixed(1)}</td>
+                      <td className="py-3.5 px-4 text-center font-extrabold text-blue-300">{st.reading.toFixed(1)}</td>
+                      <td className="py-3.5 px-4 text-center font-extrabold text-teal-300">{st.listening.toFixed(1)}</td>
+                      <td className="py-3.5 px-4 text-center font-extrabold text-amber-300">{st.writing.toFixed(1)}</td>
+                      <td className="py-3.5 px-4 text-center font-extrabold text-purple-300">{st.speaking.toFixed(1)}</td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-block px-3 py-1 rounded-xl bg-emerald-600 text-white font-black text-xs">
+                        <span className="inline-block px-3 py-1 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs">
                           {st.overall.toFixed(1)}
                         </span>
                       </td>
@@ -915,3 +1170,4 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
     </div>
   );
 };
+
