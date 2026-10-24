@@ -461,7 +461,7 @@ export function CourseDetails() {
           {activeTab === 'leaderboard' && (
             <HomeLeaderboardDashboard 
               defaultCourse={course.name}
-              hideCourseTabs={true}
+              hideCourseTabs={!isAdmin}
             />
           )}
 

@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { useNavigate } from 'react-router';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { EraVerseAvatar3D } from '../components/EraVerseAvatar3D';
 import {
   Headphones,
   BookOpen,
@@ -28,7 +29,8 @@ import {
   Trophy,
   Sliders,
   MessageCircle,
-  ExternalLink
+  ExternalLink,
+  ShoppingBag
 } from 'lucide-react';
 import {
   TEACHER_JAN_PROFILE,
@@ -50,6 +52,13 @@ import {
   DashboardHallModals,
   DashboardModalType
 } from '../components/EraVerseModalsAndHud';
+import {
+  EraShopModal,
+  EraGalleryModal,
+  EraGamesModal,
+  EraShopItem,
+  ERA_GALLERY_PHOTOS
+} from '../components/EraShopGalleryGamesModals';
 
 // ============================================================================
 // PROCEDURAL WEB AUDIO ENGINE + ROOM SONG SYNTHESIZER
@@ -92,22 +101,22 @@ const ROOM_SONGS: Record<string, RoomSongSpec> = {
     bassNotes: [293.66, 293.66, 246.94, 246.94, 220.0, 220.0, 196.0, 196.0]
   },
   speaking: {
-    name: 'Speaking Studio Upbeat Lounge',
-    tempoMs: 300,
+    name: 'EraGames Arcade Synthwave',
+    tempoMs: 280,
     wave: 'triangle',
     notes: [523.25, 622.25, 698.46, 783.99, 932.33, 783.99, 698.46, 622.25, 523.25, 698.46, 783.99, 1046.5, 932.33, 783.99, 698.46, 523.25],
     bassNotes: [261.63, 293.66, 311.13, 349.23, 261.63, 293.66, 311.13, 261.63]
   },
   reading: {
-    name: 'Reading Library Tranquil Piano',
-    tempoMs: 460,
+    name: "Candy's EraSHOP Boutique Pop",
+    tempoMs: 340,
     wave: 'sine',
     notes: [523.25, 587.33, 659.25, 523.25, 783.99, 659.25, 587.33, 523.25, 440.0, 523.25, 659.25, 880.0, 783.99, 659.25, 587.33, 523.25],
     bassNotes: [130.81, 196.0, 164.81, 220.0, 174.61, 261.63, 196.0, 246.94]
   },
   listening: {
-    name: 'Listening Hall Harmonic Pulse',
-    tempoMs: 340,
+    name: 'Era Gallery Exhibition Lounge',
+    tempoMs: 360,
     wave: 'sine',
     notes: [659.25, 783.99, 987.77, 783.99, 659.25, 587.33, 493.88, 587.33, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 587.33, 493.88],
     bassNotes: [164.81, 164.81, 196.0, 196.0, 220.0, 220.0, 146.83, 146.83]
@@ -396,8 +405,15 @@ interface IeltsCharacterProfile {
   shirtColor: string;
   hairColor: string;
   skinColor: string;
-  hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones';
-  accessoryType: 'none' | 'glasses' | 'shades';
+  hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones' | 'halo' | string;
+  accessoryType: 'none' | 'glasses' | 'shades' | 'cyber_visor' | 'wings' | string;
+  gender?: 'boy' | 'girl' | string;
+  hairStyle?: 'classic' | 'spiky' | 'long' | 'ponytail' | 'twintails' | string;
+  bodyType?: 'regular' | 'slim' | 'athletic' | 'tall' | string;
+  clothingType?: 'varsity' | 'hoodie' | 'streetwear' | 'royal_suit' | 'skirt_outfit' | 'cyber_jacket' | string;
+  pantsColor?: string;
+  beltType?: 'none' | 'leather_belt' | 'gold_belt' | 'cyber_belt' | 'star_belt' | string;
+  vehicleType?: 'none' | 'skateboard' | 'bike' | string;
   targetBuildingId: string;
   motto: string;
   isRealStudent?: boolean;
@@ -427,13 +443,18 @@ interface WallBoardSpec {
     | 'navigate'
     | 'my_dashboard'
     | 'class_dashboard'
-    | 'skill_dashboard';
+    | 'skill_dashboard'
+    | 'open_erashop'
+    | 'open_eragallery'
+    | 'open_eragames';
   skillOrTab?: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
+  shopCategory?: 'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories' | 'customizer';
+  galleryTab?: 'all' | 'photos' | 'videos';
   route?: string;
   dashboardType?: 'personal' | 'class' | 'listening' | 'reading' | 'writing' | 'speaking';
 }
 
-// Rich Architectural Campus Buildings + Warm Grounded Classroom Interiors (No Washed-Out White)
+// Rich Architectural Campus Buildings + Warm Grounded Classroom Interiors
 const BUILDINGS: BuildingZone[] = [
   {
     id: 'practice_tests',
@@ -444,7 +465,7 @@ const BUILDINGS: BuildingZone[] = [
     w: 18,
     d: 14,
     h: 10.5,
-    wallColor: 0x2563eb, // Deep Royal Cobalt Facade
+    wallColor: 0x2563eb,
     trimColor: 0xbfdbfe,
     roofColor: 0x1e3a8a,
     accentColor: 0x1d4ed8,
@@ -452,7 +473,7 @@ const BUILDINGS: BuildingZone[] = [
     doorX: 40,
     doorZ: -23,
     frontDir: 1,
-    interiorWallColor: 0xdbeafe, // Soft Sky Blue Studio Wall
+    interiorWallColor: 0xdbeafe,
     interiorFloorColor: 0x93c5fd
   },
   {
@@ -464,7 +485,7 @@ const BUILDINGS: BuildingZone[] = [
     w: 18,
     d: 14,
     h: 10.5,
-    wallColor: 0xd97706, // Rich Terracotta Amber Facade
+    wallColor: 0xd97706,
     trimColor: 0xfde68a,
     roofColor: 0x92400e,
     accentColor: 0xb45309,
@@ -472,7 +493,7 @@ const BUILDINGS: BuildingZone[] = [
     doorX: -40,
     doorZ: -23,
     frontDir: 1,
-    interiorWallColor: 0xfef3c7, // Warm Sandstone Classroom Wall
+    interiorWallColor: 0xfef3c7,
     interiorFloorColor: 0xfcd34d
   },
   {
@@ -484,7 +505,7 @@ const BUILDINGS: BuildingZone[] = [
     w: 22,
     d: 15,
     h: 12.5,
-    wallColor: 0x4f46e5, // Deep Indigo Academy Facade
+    wallColor: 0x4f46e5,
     trimColor: 0xc7d2fe,
     roofColor: 0x312e81,
     accentColor: 0x4338ca,
@@ -492,59 +513,59 @@ const BUILDINGS: BuildingZone[] = [
     doorX: 0,
     doorZ: -42.5,
     frontDir: 1,
-    interiorWallColor: 0xe0e7ff, // Soft Periwinkle Gallery Wall
+    interiorWallColor: 0xe0e7ff,
     interiorFloorColor: 0xa5b4fc
   },
   {
     id: 'speaking',
-    name: 'Speaking Studio',
-    shortSign: 'SPEAKING STUDIO',
+    name: 'EraGames Arcade Arena',
+    shortSign: 'ERAGAMES',
     x: -44,
     z: 30,
     w: 17,
     d: 13,
     h: 10,
-    wallColor: 0x9333ea, // Deep Amethyst Purple Facade
+    wallColor: 0x7c3aed, // Electric Violet Arcade Facade
     trimColor: 0xe9d5ff,
-    roofColor: 0x581c87,
-    accentColor: 0x7e22ce,
-    hexAccent: '#9333EA',
+    roofColor: 0x4c1d95,
+    accentColor: 0x6d28d9,
+    hexAccent: '#7C3AED',
     doorX: -44,
     doorZ: 23.5,
     frontDir: -1,
-    interiorWallColor: 0xf3e8ff, // Warm Lavender Acoustic Studio
+    interiorWallColor: 0xf3e8ff,
     interiorFloorColor: 0xd8b4fe
   },
   {
     id: 'reading',
-    name: 'Reading & Writing Library',
-    shortSign: 'READING & WRITING',
+    name: 'EraSHOP Boutique & Gear',
+    shortSign: 'EraSHOP',
     x: 44,
     z: 30,
     w: 17,
     d: 13,
     h: 10,
-    wallColor: 0x059669, // Rich Emerald Library Facade
-    trimColor: 0xa7f3d0,
-    roofColor: 0x064e3b,
-    accentColor: 0x047857,
-    hexAccent: '#059669',
+    wallColor: 0xdb2777, // Vibrant Rose-Pink & Gold Boutique Facade
+    trimColor: 0xfce7f3,
+    roofColor: 0x831843,
+    accentColor: 0xbe185d,
+    hexAccent: '#DB2777',
     doorX: 44,
     doorZ: 23.5,
     frontDir: -1,
-    interiorWallColor: 0xd1fae5, // Sage Botanical Library Wall
-    interiorFloorColor: 0x6ee7b7
+    interiorWallColor: 0xfdf2f8,
+    interiorFloorColor: 0xfbcfe8
   },
   {
     id: 'listening',
-    name: 'Listening Audio Hall',
-    shortSign: 'LISTENING HALL',
+    name: 'Era Gallery (Photos & Videos)',
+    shortSign: 'ERA GALLERY',
     x: 0,
     z: 50,
     w: 19,
     d: 14,
     h: 10.5,
-    wallColor: 0x0891b2, // Deep Ocean Teal Facade
+    wallColor: 0x0891b2, // Ocean Teal Exhibition Gallery Facade
     trimColor: 0xa5f3fc,
     roofColor: 0x164e63,
     accentColor: 0x0e7490,
@@ -552,7 +573,7 @@ const BUILDINGS: BuildingZone[] = [
     doorX: 0,
     doorZ: 43,
     frontDir: -1,
-    interiorWallColor: 0xcffafe, // Soft Teal Audio Lounge
+    interiorWallColor: 0xcffafe,
     interiorFloorColor: 0x67e8f9
   }
 ];
@@ -720,139 +741,136 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
   speaking: [
     {
       slot: 'back-left',
-      category: 'SPEAKING TEST',
-      title: 'Speaking Practice Tests',
-      subtitle: 'Choose Mock Test or Practice Study Mode',
-      badge: 'SELECT SPEAKING TEST',
+      category: 'ARCADE GAME 01 • +60 💎 GEMS',
+      title: 'Vocabulary Speed Blitz',
+      subtitle: 'Match Academic IELTS Synonyms & Win Era Gems',
+      badge: 'PLAY VOCAB BLITZ',
       accentHex: '#7C3AED',
       bgLightHex: '#F3E8FF',
-      actionType: 'practice_skill',
-      skillOrTab: 'Speaking'
+      actionType: 'open_eragames'
     },
     {
       slot: 'back-right',
-      category: 'SPEAKING HOMEWORK',
-      title: 'Assigned Speaking Homework',
-      subtitle: 'Complete Speaking Homework 1, 2 & 3',
-      badge: 'OPEN SPEAKING HOMEWORK',
+      category: 'ARCADE GAME 02 • +50 💎 GEMS',
+      title: 'Academic Word Scramble',
+      subtitle: 'Unscramble Band 8.0 Words & Collect Era Gems',
+      badge: 'PLAY WORD SCRAMBLE',
       accentHex: '#DB2777',
       bgLightHex: '#FCE7F3',
-      actionType: 'homework_folder',
-      skillOrTab: 'Speaking'
+      actionType: 'open_eragames'
     },
     {
       slot: 'left-wall',
-      category: 'QUICK LAUNCH',
-      title: 'IELTS Speaking Test 1',
-      subtitle: '15 Mins • Part 1, 2 & 3 Simulation',
-      badge: 'START TEST 1',
-      accentHex: '#6D28D9',
-      bgLightHex: '#EDE9FE',
-      actionType: 'navigate',
-      route: '/test/speaking/4?mode=practice&name=Student'
+      category: 'ARCADE GAME 03 • +75 💎 GEMS',
+      title: 'Idiom Penalty Shootout',
+      subtitle: 'Score Goals with English Idioms & Grammar',
+      badge: 'PLAY PENALTY SHOOTOUT',
+      accentHex: '#059669',
+      bgLightHex: '#D1FAE5',
+      actionType: 'open_eragames'
     },
     {
       slot: 'right-wall',
-      category: 'QUICK LAUNCH',
-      title: 'IELTS Speaking Homework 1',
-      subtitle: '15 Mins • Assigned Class Speaking Task',
-      badge: 'START HOMEWORK 1',
+      category: 'SPEND YOUR GEMS',
+      title: 'Visit Candy in EraSHOP',
+      subtitle: 'Use Your 💎 Era Gems to Buy Bikes, Skateboards & Belts',
+      badge: 'OPEN ERASHOP',
       accentHex: '#D97706',
       bgLightHex: '#FEF3C7',
-      actionType: 'navigate',
-      route: '/test/speaking/homework-test-1'
+      actionType: 'open_erashop',
+      shopCategory: 'all'
     }
   ],
   reading: [
     {
       slot: 'back-left',
-      category: 'READING COLLECTION',
-      title: 'Reading Practice Tests (1–21)',
-      subtitle: 'What Lucy Taught Us, The History of Tea & More',
-      badge: 'CHOOSE READING TEST',
+      category: 'VEHICLES & RIDES • 110–150 💎',
+      title: '3D Bikes & Skateboards',
+      subtitle: 'Ride Around EraVerse with +65% Speed Boost!',
+      badge: 'BROWSE BIKES & SKATEBOARDS',
       accentHex: '#059669',
       bgLightHex: '#D1FAE5',
-      actionType: 'practice_skill',
-      skillOrTab: 'Reading'
+      actionType: 'open_erashop',
+      shopCategory: 'vehicles'
     },
     {
       slot: 'back-right',
-      category: 'WRITING COLLECTION',
-      title: 'Writing Practice Tests (1–12)',
-      subtitle: 'Academic Task 1 Reports & Task 2 Essays',
-      badge: 'CHOOSE WRITING TEST',
-      accentHex: '#D97706',
-      bgLightHex: '#FEF3C7',
-      actionType: 'practice_skill',
-      skillOrTab: 'Writing'
+      category: 'BELTS, CLOTHES & WINGS • 40–130 💎',
+      title: 'Belts, Outfits & Accessories',
+      subtitle: 'Gold Belts, Cyber Jackets, Skirts, Wings & Crowns',
+      badge: 'SHOP BELTS & CLOTHES',
+      accentHex: '#DB2777',
+      bgLightHex: '#FCE7F3',
+      actionType: 'open_erashop',
+      shopCategory: 'belts'
     },
     {
       slot: 'left-wall',
-      category: 'DIRECT LAUNCH',
-      title: 'IELTS Reading Test 1',
-      subtitle: '60 Mins • 3 Passages • 40 Questions',
-      badge: 'START READING TEST 1',
-      accentHex: '#047857',
-      bgLightHex: '#ECFDF5',
-      actionType: 'navigate',
-      route: '/test/reading/1'
+      category: '3D CHARACTER STUDIO',
+      title: 'Boy / Girl, Hair, Skin & Body',
+      subtitle: 'Customize Gender, Hair Color, Skin Tone & Body Build',
+      badge: 'CUSTOMIZE CHARACTER',
+      accentHex: '#2563EB',
+      bgLightHex: '#DBEAFE',
+      actionType: 'open_erashop',
+      shopCategory: 'customizer'
     },
     {
       slot: 'right-wall',
-      category: 'DIRECT LAUNCH',
-      title: 'IELTS Writing Test 1',
-      subtitle: '60 Mins • Task 1 & Task 2',
-      badge: 'START WRITING TEST 1',
-      accentHex: '#B45309',
-      bgLightHex: '#FFFBEB',
-      actionType: 'navigate',
-      route: '/test/writing/3'
+      category: "CANDY'S BOUTIQUE COUNTER",
+      title: 'EraSHOP Full Catalog',
+      subtitle: 'Hosted by Candy (IELTS 2) • Spend Your 💎 Era Gems',
+      badge: 'OPEN ERASHOP STORE',
+      accentHex: '#D97706',
+      bgLightHex: '#FEF3C7',
+      actionType: 'open_erashop',
+      shopCategory: 'all'
     }
   ],
   listening: [
     {
       slot: 'back-left',
-      category: 'LISTENING COLLECTION',
-      title: 'Listening Practice Tests (1–12)',
-      subtitle: 'Full Audio Simulations • Parts 1 to 4',
-      badge: 'CHOOSE LISTENING TEST',
+      category: 'CAMPUS PHOTO EXHIBITION',
+      title: 'Life at Kỷ Nguyên Era',
+      subtitle: 'A Vibrant Community of Learners Achieving Their Dreams',
+      badge: 'VIEW CAMPUS PHOTOS (9)',
       accentHex: '#0891B2',
       bgLightHex: '#CFFAFE',
-      actionType: 'practice_skill',
-      skillOrTab: 'Listening'
+      actionType: 'open_eragallery',
+      galleryTab: 'photos'
     },
     {
       slot: 'back-right',
-      category: 'DIRECT LAUNCH',
-      title: 'IELTS Listening Test 1',
-      subtitle: '60 Mins • January Official Practice Test',
-      badge: 'START LISTENING TEST 1',
-      accentHex: '#0284C7',
-      bgLightHex: '#E0F2FE',
-      actionType: 'navigate',
-      route: '/test/listening/2'
+      category: 'CAMPUS CINEMA & STORIES',
+      title: 'Kỷ Nguyên Era Videos',
+      subtitle: 'Watch Highlights and Stories from Our Campus in HD',
+      badge: 'WATCH CAMPUS VIDEOS (6)',
+      accentHex: '#2563EB',
+      bgLightHex: '#DBEAFE',
+      actionType: 'open_eragallery',
+      galleryTab: 'videos'
     },
     {
       slot: 'left-wall',
-      category: 'DIRECT LAUNCH',
-      title: 'IELTS Listening Test 2',
-      subtitle: '60 Mins • February Official Practice Test',
-      badge: 'START LISTENING TEST 2',
-      accentHex: '#2563EB',
-      bgLightHex: '#DBEAFE',
-      actionType: 'navigate',
-      route: '/test/listening/6'
+      category: 'STUDENT MEMORIES',
+      title: 'Classroom & Event Highlights',
+      subtitle: 'Explore Full-Screen Photos from Kỷ Nguyên Era',
+      badge: 'OPEN PHOTO GALLERY',
+      accentHex: '#059669',
+      bgLightHex: '#D1FAE5',
+      actionType: 'open_eragallery',
+      galleryTab: 'photos'
     },
     {
       slot: 'right-wall',
-      category: 'HOMEWORK',
-      title: 'Listening Class Homework',
-      subtitle: 'Access Assigned Listening Exercises',
-      badge: 'OPEN HOMEWORK',
-      accentHex: '#059669',
-      bgLightHex: '#D1FAE5',
-      actionType: 'homework_folder',
-      skillOrTab: 'Listening'
+      category: 'FEATURED VIDEO REELS',
+      title: 'Life at Kỷ Nguyên Era Videos',
+      subtitle: 'Stream All 6 Campus Highlight Videos Inside EraVerse',
+      badge: 'OPEN VIDEO THEATRE',
+      accentHex: '#7C3AED',
+      bgLightHex: '#F3E8FF',
+      actionType: 'open_eragallery',
+      galleryTab: 'videos'
     }
   ]
 };
@@ -935,6 +953,13 @@ export function EraVerse() {
       accessoryType: string;
       name: string;
       cohort: string;
+      gender?: string;
+      hairStyle?: string;
+      bodyType?: string;
+      clothingType?: string;
+      pantsColor?: string;
+      beltType?: string;
+      vehicleType?: string;
     }) => void;
     setGraphicsQuality: (q: GraphicsQuality) => void;
     setSkyPreset: (mode: 'day' | 'sunset' | 'night') => void;
@@ -982,6 +1007,25 @@ export function EraVerse() {
 
   const [speakingModalTest, setSpeakingModalTest] = useState<{ id: number | string; title: string } | null>(null);
   const [candidateName, setCandidateName] = useState<string>(user?.displayName || 'Student');
+  const [eraShopInitialTab, setEraShopInitialTab] = useState<'shop' | 'customizer'>('shop');
+  const [eraShopInitialCat, setEraShopInitialCat] = useState<'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories'>('all');
+  const [eraGalleryInitialTab, setEraGalleryInitialTab] = useState<'all' | 'photos' | 'videos'>('all');
+  const [eraGems, setEraGems] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('eraverse_gems_balance');
+      return saved ? Math.max(0, parseInt(saved, 10) || 250) : 250;
+    } catch (_e) {
+      return 250;
+    }
+  });
+  const [ownedShopItems, setOwnedShopItems] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('eraverse_owned_shop_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch (_e) {
+      return [];
+    }
+  });
 
   const [playerProfile, setPlayerProfile] = useState<{
     id: string;
@@ -996,8 +1040,15 @@ export function EraVerse() {
     shirtColor: string;
     hairColor: string;
     skinColor: string;
-    hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones';
-    accessoryType: 'none' | 'glasses' | 'shades';
+    hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones' | 'halo' | string;
+    accessoryType: 'none' | 'glasses' | 'shades' | 'cyber_visor' | 'wings' | string;
+    gender?: 'boy' | 'girl' | string;
+    hairStyle?: 'classic' | 'spiky' | 'long' | 'ponytail' | 'twintails' | string;
+    bodyType?: 'regular' | 'slim' | 'athletic' | 'tall' | string;
+    clothingType?: 'varsity' | 'hoodie' | 'streetwear' | 'royal_suit' | 'skirt_outfit' | 'cyber_jacket' | string;
+    pantsColor?: string;
+    beltType?: 'none' | 'leather_belt' | 'gold_belt' | 'cyber_belt' | 'star_belt' | string;
+    vehicleType?: 'none' | 'skateboard' | 'bike' | string;
   }>(() => {
     const initialMatch = findCharacterForAuthUser(user, isAdmin, DEFAULT_IELTS_CHARACTERS as any, []);
     if (initialMatch) {
@@ -1015,7 +1066,14 @@ export function EraVerse() {
         hairColor: initialMatch.hairColor,
         skinColor: initialMatch.skinColor,
         hatType: initialMatch.hatType,
-        accessoryType: initialMatch.accessoryType
+        accessoryType: initialMatch.accessoryType,
+        gender: initialMatch.gender || 'boy',
+        hairStyle: initialMatch.hairStyle || 'classic',
+        bodyType: initialMatch.bodyType || 'regular',
+        clothingType: initialMatch.clothingType || 'varsity',
+        pantsColor: initialMatch.pantsColor || '#1e293b',
+        beltType: initialMatch.beltType || 'none',
+        vehicleType: initialMatch.vehicleType || 'none'
       };
     }
     const firstPreset = REAL_IELTS_STUDENT_PROFILES[0];
@@ -1033,16 +1091,80 @@ export function EraVerse() {
       hairColor: firstPreset.hairColor,
       skinColor: firstPreset.skinColor,
       hatType: firstPreset.hatType,
-      accessoryType: firstPreset.accessoryType
+      accessoryType: firstPreset.accessoryType,
+      gender: 'girl',
+      hairStyle: 'long',
+      bodyType: 'regular',
+      clothingType: 'varsity',
+      pantsColor: '#1e293b',
+      beltType: 'none',
+      vehicleType: 'none'
     };
   });
 
-  const [firestoreFolders, setFirestoreFolders] = useState<Array<{ id: string; name: string; course: string }>>([]);
+  const [firestoreFolders, setFirestoreFolders] = useState<Array<{ id: string; name: string; course: string; parentId?: string | null; isDeleted?: boolean }>>([]);
   const [firestoreUsers, setFirestoreUsers] = useState<Array<any>>([]);
   const [firestoreAssignments, setFirestoreAssignments] = useState<Array<any>>([]);
   const [firestoreSubmissions, setFirestoreSubmissions] = useState<Array<any>>([]);
+  const [adminSelectedCohort, setAdminSelectedCohort] = useState<'IELTS 1' | 'IELTS 2'>('IELTS 1');
 
   const allPracticeTests = useMemo(() => getIeltsPracticeTests(), []);
+
+  // Helper to persist EraVerse character customizations + Era Gems + owned items to both Firestore (`users/{uid}`) and localStorage
+  const persistAvatarCustomization = (
+    profileToSave: typeof playerProfile,
+    nextGems = eraGems,
+    nextOwned = ownedShopItems
+  ) => {
+    const targetUid = profileToSave.realUserId || user?.uid || localStorage.getItem('studentUid') || '';
+    const avatarPayload = {
+      name: profileToSave.name,
+      cohort: profileToSave.cohort,
+      shirtColor: profileToSave.shirtColor,
+      hairColor: profileToSave.hairColor,
+      skinColor: profileToSave.skinColor,
+      hatType: profileToSave.hatType,
+      accessoryType: profileToSave.accessoryType,
+      gender: profileToSave.gender || 'boy',
+      hairStyle: profileToSave.hairStyle || 'classic',
+      bodyType: profileToSave.bodyType || 'regular',
+      clothingType: profileToSave.clothingType || 'varsity',
+      pantsColor: profileToSave.pantsColor || '#1e293b',
+      beltType: profileToSave.beltType || 'none',
+      vehicleType: profileToSave.vehicleType || 'none',
+      eraGems: nextGems,
+      ownedShopItems: nextOwned,
+      updatedAt: Date.now()
+    };
+
+    try {
+      localStorage.setItem('eraverse_gems_balance', String(nextGems));
+      localStorage.setItem('eraverse_owned_shop_items', JSON.stringify(nextOwned));
+      if (targetUid) {
+        localStorage.setItem(`eraverse_custom_${targetUid}`, JSON.stringify(avatarPayload));
+      }
+      if (profileToSave.name) {
+        localStorage.setItem(`eraverse_custom_nick_${profileToSave.name.trim().toLowerCase()}`, JSON.stringify(avatarPayload));
+      }
+      window.dispatchEvent(
+        new CustomEvent('eraverse-avatar-updated', {
+          detail: { uid: targetUid, name: profileToSave.name, avatar: avatarPayload }
+        })
+      );
+    } catch (_e) {
+      // ignore storage errors
+    }
+
+    if (targetUid && !targetUid.startsWith('ielts')) {
+      setDoc(
+        doc(db, 'users', targetUid),
+        {
+          eraverseAvatar: avatarPayload
+        },
+        { merge: true }
+      ).catch(() => {});
+    }
+  };
 
   // Start room song synthesizer on mount and clean up on unmount
   useEffect(() => {
@@ -1056,11 +1178,17 @@ export function EraVerse() {
     const unsubFolders = onSnapshot(
       collection(db, 'folders'),
       (snap) => {
-        const list: Array<{ id: string; name: string; course: string }> = [];
+        const list: Array<{ id: string; name: string; course: string; parentId?: string | null; isDeleted?: boolean }> = [];
         snap.forEach((d) => {
           const data = d.data();
           if (!data.isDeleted) {
-            list.push({ id: d.id, name: data.name || '', course: data.course || '' });
+            list.push({
+              id: d.id,
+              name: data.name || '',
+              course: data.course || '',
+              parentId: data.parentId || null,
+              isDeleted: Boolean(data.isDeleted)
+            });
           }
         });
         setFirestoreFolders(list);
@@ -1122,29 +1250,49 @@ export function EraVerse() {
 
   // Strictly bind logged-in user to their personal character under their nickname
   useEffect(() => {
-    if (!user) return;
-    const matched = findCharacterForAuthUser(user, isAdmin, ieltsCharacters as any, firestoreUsers);
+    const fallbackStudentUid = typeof window !== 'undefined' ? localStorage.getItem('studentUid') : null;
+    const effectiveAuthUser = user || (fallbackStudentUid ? { uid: fallbackStudentUid, email: null, displayName: null } : null);
+    if (!effectiveAuthUser) return;
+
+    const matched = findCharacterForAuthUser(effectiveAuthUser, isAdmin, ieltsCharacters as any, firestoreUsers);
     if (!matched) return;
 
-    // Check if this specific user customized their avatar colors/hat in localStorage
-    let customLook: any = null;
+    const matchedUid = matched.realUserId || effectiveAuthUser.uid || '';
+    const fsUserDoc = firestoreUsers.find((u) => u.id === matchedUid || u.uid === matchedUid);
+    let customLook: any = fsUserDoc?.eraverseAvatar || null;
     try {
-      const rawCustom = localStorage.getItem(`eraverse_custom_${user.uid}`);
-      if (rawCustom) customLook = JSON.parse(rawCustom);
+      const rawCustom =
+        (matchedUid ? localStorage.getItem(`eraverse_custom_${matchedUid}`) : null) ||
+        localStorage.getItem(`eraverse_custom_nick_${matched.name.toLowerCase()}`);
+      if (rawCustom) {
+        const parsed = JSON.parse(rawCustom);
+        if (!customLook || (parsed.updatedAt && (!customLook.updatedAt || parsed.updatedAt >= customLook.updatedAt))) {
+          customLook = { ...customLook, ...parsed };
+        }
+      }
     } catch (_e) {
       // ignore
     }
 
+    if (customLook?.eraGems !== undefined && typeof customLook.eraGems === 'number') {
+      setEraGems(customLook.eraGems);
+    }
+    if (Array.isArray(customLook?.ownedShopItems)) {
+      setOwnedShopItems(customLook.ownedShopItems);
+    }
+
+    const femaleNames = ['suzie', 'sophia', 'may', 'emily', 'hailey', 'candy', 'anna', 'lisa', 'ruby', 'chloe'];
+    const defaultGender = femaleNames.includes((customLook?.name || matched.name).toLowerCase()) ? 'girl' : 'boy';
+
     setPlayerProfile((prev) => {
-      // If Teacher Jan (Super Admin) manually switched to preview a student, don't overwrite unless the logged-in user changed
-      if (isAdmin && prev.id !== matched.id && prev.realUserId && prev.realUserId !== user.uid) {
+      if (isAdmin && prev.id !== matched.id && prev.realUserId && prev.realUserId !== effectiveAuthUser.uid) {
         return prev;
       }
       return {
         id: matched.id,
-        realUserId: matched.realUserId || user.uid,
-        email: matched.email || user.email || undefined,
-        name: matched.name, // Always use the student's nickname!
+        realUserId: matched.realUserId || effectiveAuthUser.uid,
+        email: matched.email || effectiveAuthUser.email || undefined,
+        name: customLook?.name || matched.name,
         fullName: matched.fullName,
         cohort: matched.cohort,
         roleTitle: matched.roleTitle,
@@ -1154,18 +1302,37 @@ export function EraVerse() {
         hairColor: customLook?.hairColor || matched.hairColor,
         skinColor: customLook?.skinColor || matched.skinColor,
         hatType: customLook?.hatType || matched.hatType,
-        accessoryType: customLook?.accessoryType || matched.accessoryType
+        accessoryType: customLook?.accessoryType || matched.accessoryType,
+        gender: customLook?.gender || matched.gender || defaultGender,
+        hairStyle: customLook?.hairStyle || matched.hairStyle || (defaultGender === 'girl' ? 'long' : 'classic'),
+        bodyType: customLook?.bodyType || matched.bodyType || 'regular',
+        clothingType: customLook?.clothingType || matched.clothingType || 'varsity',
+        pantsColor: customLook?.pantsColor || matched.pantsColor || '#1e293b',
+        beltType: customLook?.beltType || matched.beltType || 'none',
+        vehicleType: customLook?.vehicleType || matched.vehicleType || 'none'
       };
     });
-    setCandidateName(matched.name);
+    setCandidateName(customLook?.name || matched.name);
+    if (matched.cohort === 'IELTS 1' || matched.cohort === 'IELTS 2') {
+      setCohortFilter(matched.cohort);
+    }
   }, [user?.uid, user?.email, isAdmin, ieltsCharacters, firestoreUsers]);
+
+  // Exact leaderboard sorting comparator matching HomeLeaderboardDashboard.tsx
+  const sortLeaderboardStudents = (a: any, b: any) => {
+    if (b.overall !== a.overall) return b.overall - a.overall;
+    const streakA = (a.scoredCount || 0) > 0 ? Math.min((a.scoredCount || 0) * 2, 30) : 0;
+    const streakB = (b.scoredCount || 0) > 0 ? Math.min((b.scoredCount || 0) * 2, 30) : 0;
+    if (streakB !== streakA) return streakB - streakA;
+    return String(a.fullName || a.name).localeCompare(String(b.fullName || b.name));
+  };
 
   // Compute every student's individual Reading, Listening, Writing, Speaking & Overall Band scores
   const allStudentsSkillScores = useMemo(() => {
     return ieltsCharacters
       .filter((c) => c.cohort === 'IELTS 1' || c.cohort === 'IELTS 2')
       .map((c) => computeStudentSkillScores(c, firestoreSubmissions, firestoreAssignments))
-      .sort((a, b) => b.overall - a.overall);
+      .sort(sortLeaderboardStudents);
   }, [ieltsCharacters, firestoreSubmissions, firestoreAssignments]);
 
   // Active player's own personal dashboard stats linked to their account
@@ -1188,18 +1355,22 @@ export function EraVerse() {
     );
   }, [playerProfile, user?.uid, user?.email, firestoreSubmissions, firestoreAssignments]);
 
-  // Active player's dedicated class group list (e.g. if Suzie/Kai is in IELTS 1, show ONLY IELTS 1 students!)
-  const activeClassCohortLabel = playerProfile.cohort === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1';
+  // Active player's dedicated class group list:
+  // - IELTS 1 students ONLY see IELTS 1 leaderboard (14 students)
+  // - IELTS 2 students ONLY see IELTS 2 leaderboard (12 students)
+  // - Teacher Jan (Super Admin) can toggle between IELTS 1 and IELTS 2
+  const activeClassCohortLabel: 'IELTS 1' | 'IELTS 2' =
+    playerProfile.cohort === 'TEACHER (SUPER ADMIN)'
+      ? adminSelectedCohort
+      : playerProfile.cohort === 'IELTS 2'
+      ? 'IELTS 2'
+      : 'IELTS 1';
+
   const myClassDashboardStudents = useMemo(() => {
-    const filtered = allStudentsSkillScores.filter((s) => s.cohort === activeClassCohortLabel);
-    if (
-      playerProfile.cohort !== 'TEACHER (SUPER ADMIN)' &&
-      !filtered.some((s) => s.name.toLowerCase() === playerProfile.name.toLowerCase())
-    ) {
-      return [myPersonalDashboardStats, ...filtered].sort((a, b) => b.overall - a.overall);
-    }
-    return filtered;
-  }, [allStudentsSkillScores, activeClassCohortLabel, playerProfile, myPersonalDashboardStats]);
+    return allStudentsSkillScores
+      .filter((s) => s.cohort === activeClassCohortLabel)
+      .sort(sortLeaderboardStudents);
+  }, [allStudentsSkillScores, activeClassCohortLabel]);
 
   const dashboardDataRef = useRef({
     myStats: myPersonalDashboardStats,
@@ -1218,12 +1389,15 @@ export function EraVerse() {
     }
   }, [ieltsCharacters]);
 
+  const playerVehicleRef = useRef<string>(playerProfile.vehicleType || 'none');
+  playerVehicleRef.current = playerProfile.vehicleType || 'none';
+
   useEffect(() => {
     if (gameActionsRef.current) {
       gameActionsRef.current.applyAvatarAppearance(playerProfile);
       gameActionsRef.current.refreshDashboardWalls();
     }
-  }, [playerProfile, myPersonalDashboardStats, myClassDashboardStudents]);
+  }, [playerProfile, myPersonalDashboardStats, myClassDashboardStudents, activeClassCohortLabel]);
 
   const showToast = (title: string, subtitle: string, color = '#2563EB') => {
     setToastBanner({ title, subtitle, color });
@@ -1295,7 +1469,21 @@ export function EraVerse() {
 
   const handleBoardAction = (board: WallBoardSpec) => {
     soundEngine.playUiClick();
-    if (board.actionType === 'my_dashboard') {
+    if (board.actionType === 'open_erashop') {
+      if (board.shopCategory === 'customizer') {
+        setEraShopInitialTab('customizer');
+        setEraShopInitialCat('all');
+      } else {
+        setEraShopInitialTab('shop');
+        setEraShopInitialCat((board.shopCategory as any) || 'all');
+      }
+      setActiveBuildingModal('reading');
+    } else if (board.actionType === 'open_eragallery') {
+      setEraGalleryInitialTab(board.galleryTab || 'all');
+      setActiveBuildingModal('listening');
+    } else if (board.actionType === 'open_eragames') {
+      setActiveBuildingModal('speaking');
+    } else if (board.actionType === 'my_dashboard') {
       setDashboardHallModal('my_dashboard');
     } else if (board.actionType === 'class_dashboard') {
       setDashboardHallModal('class_dashboard');
@@ -2322,12 +2510,20 @@ export function EraVerse() {
       accessoryType: string;
       name: string;
       cohort: string;
+      gender?: string;
+      hairStyle?: string;
+      bodyType?: string;
+      clothingType?: string;
+      pantsColor?: string;
+      beltType?: string;
+      vehicleType?: string;
     }) => {
       const root = new THREE.Group();
       const segs = currentQuality === 'high' ? 20 : currentQuality === 'medium' ? 12 : 8;
+      const isGirl = opts.gender === 'girl';
 
       const shadowDisc = new THREE.Mesh(
-        new THREE.CircleGeometry(0.78, segs),
+        new THREE.CircleGeometry(0.84, segs),
         new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false })
       );
       shadowDisc.rotation.x = -Math.PI / 2;
@@ -2335,13 +2531,28 @@ export function EraVerse() {
       root.add(shadowDisc);
 
       const bodyGroup = new THREE.Group();
+      if (opts.bodyType === 'slim') {
+        bodyGroup.scale.set(0.88, 1.02, 0.88);
+      } else if (opts.bodyType === 'athletic') {
+        bodyGroup.scale.set(1.12, 1.02, 1.08);
+      } else if (opts.bodyType === 'tall') {
+        bodyGroup.scale.set(0.96, 1.1, 0.96);
+      }
       root.add(bodyGroup);
 
       const skinMat = new THREE.MeshStandardMaterial({ color: opts.skinColor, roughness: 0.45, metalness: 0.04 });
-      const shirtMat = new THREE.MeshStandardMaterial({ color: opts.shirtColor, roughness: 0.38, metalness: 0.14 });
-      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.55, metalness: 0.08 });
+      const shirtMat = new THREE.MeshStandardMaterial({
+        color: opts.shirtColor,
+        roughness: opts.clothingType === 'cyber_jacket' ? 0.2 : 0.38,
+        metalness: opts.clothingType === 'cyber_jacket' ? 0.55 : 0.14
+      });
+      const pantsMat = new THREE.MeshStandardMaterial({
+        color: opts.pantsColor || 0x1e293b,
+        roughness: 0.55,
+        metalness: 0.08
+      });
       const shoeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3, metalness: 0.2 });
-      const hairMat = new THREE.MeshStandardMaterial({ color: opts.hairColor, roughness: 0.6, metalness: 0.08 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: opts.hairColor, roughness: 0.55, metalness: 0.08 });
 
       // Legs + Detailed Sneakers
       const createLegWithShoe = (lx: number) => {
@@ -2363,11 +2574,67 @@ export function EraVerse() {
       const rightLeg = createLegWithShoe(0.24);
       root.add(leftLeg, rightLeg);
 
-      // Sculpted Torso + White Shirt Collar + Student Backpack
-      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.52, 8, segs), shirtMat);
+      // Sculpted Torso + Clothing Styles
+      const torsoRadius = isGirl ? 0.39 : 0.42;
+      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(torsoRadius, 0.52, 8, segs), shirtMat);
       torso.position.y = 1.45;
       torso.castShadow = true;
       bodyGroup.add(torso);
+
+      if (opts.clothingType === 'skirt_outfit' || (isGirl && opts.clothingType === 'royal_suit')) {
+        const skirt = new THREE.Mesh(
+          new THREE.ConeGeometry(0.56, 0.52, segs),
+          new THREE.MeshStandardMaterial({ color: opts.pantsColor || opts.shirtColor, roughness: 0.4 })
+        );
+        skirt.position.y = 1.02;
+        bodyGroup.add(skirt);
+      }
+
+      if (opts.clothingType === 'royal_suit') {
+        const lapel = new THREE.Mesh(
+          new THREE.BoxGeometry(0.3, 0.55, 0.84),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.25, metalness: 0.75 })
+        );
+        lapel.position.set(0, 1.5, 0.03);
+        bodyGroup.add(lapel);
+      } else if (opts.clothingType === 'cyber_jacket') {
+        const neonStrip = new THREE.Mesh(
+          new THREE.TorusGeometry(0.43, 0.04, 8, segs),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        neonStrip.rotation.x = Math.PI / 2;
+        neonStrip.position.y = 1.55;
+        bodyGroup.add(neonStrip);
+      }
+
+      // EraSHOP 3D Belts
+      if (opts.beltType && opts.beltType !== 'none') {
+        const beltColor =
+          opts.beltType === 'gold_belt'
+            ? 0xfacc15
+            : opts.beltType === 'cyber_belt'
+            ? 0x06b6d4
+            : opts.beltType === 'star_belt'
+            ? 0xec4899
+            : 0x78350f;
+        const beltRing = new THREE.Mesh(
+          new THREE.CylinderGeometry(torsoRadius + 0.03, torsoRadius + 0.03, 0.14, segs),
+          new THREE.MeshStandardMaterial({
+            color: beltColor,
+            roughness: 0.25,
+            metalness: opts.beltType === 'leather_belt' ? 0.2 : 0.85
+          })
+        );
+        beltRing.position.y = 1.1;
+        bodyGroup.add(beltRing);
+
+        const buckle = new THREE.Mesh(
+          new THREE.BoxGeometry(0.24, 0.2, 0.12),
+          new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.15, metalness: 0.9 })
+        );
+        buckle.position.set(0, 1.1, torsoRadius + 0.04);
+        bodyGroup.add(buckle);
+      }
 
       const collar = new THREE.Mesh(
         new THREE.TorusGeometry(0.28, 0.06, 8, segs),
@@ -2377,19 +2644,36 @@ export function EraVerse() {
       collar.position.y = 1.92;
       bodyGroup.add(collar);
 
-      // Student Backpack on Back
+      // Student Backpack or Sky Valkyrie 3D Wings on Back
       const isTeacherCohort = opts.cohort.toUpperCase().includes('TEACHER');
-      const backpack = new THREE.Mesh(
-        new THREE.BoxGeometry(0.62, 0.72, 0.32),
-        new THREE.MeshStandardMaterial({
-          color: isTeacherCohort ? 0xb45309 : opts.cohort.includes('2') ? 0x059669 : 0x1e3a8a,
-          roughness: 0.4,
-          metalness: 0.2
-        })
-      );
-      backpack.position.set(0, 1.48, -0.38);
-      backpack.castShadow = true;
-      bodyGroup.add(backpack);
+      if (opts.accessoryType === 'wings') {
+        const wingMat = new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.45,
+          roughness: 0.2,
+          metalness: 0.7
+        });
+        [-1, 1].forEach((side) => {
+          const wing = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.15, 0.08), wingMat);
+          wing.position.set(side * 0.58, 1.65, -0.35);
+          wing.rotation.z = side * -0.28;
+          wing.rotation.y = side * 0.25;
+          bodyGroup.add(wing);
+        });
+      } else {
+        const backpack = new THREE.Mesh(
+          new THREE.BoxGeometry(0.62, 0.72, 0.32),
+          new THREE.MeshStandardMaterial({
+            color: isTeacherCohort ? 0xb45309 : opts.cohort.includes('2') ? 0x059669 : 0x1e3a8a,
+            roughness: 0.4,
+            metalness: 0.2
+          })
+        );
+        backpack.position.set(0, 1.48, -0.38);
+        backpack.castShadow = true;
+        bodyGroup.add(backpack);
+      }
 
       // Smooth Capsule Arms + Hands
       const createArm = (ax: number) => {
@@ -2424,7 +2708,7 @@ export function EraVerse() {
         headGroup.add(ear);
       });
 
-      // Expressive Eyes with White Highlights
+      // Expressive Eyes with White Highlights (+ Girl Eyelashes & Rosy Blush)
       const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
       const pupilHighlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
       [-0.16, 0.16].forEach((ex) => {
@@ -2434,24 +2718,64 @@ export function EraVerse() {
         const glint = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), pupilHighlightMat);
         glint.position.set(ex + 0.02, 0.08, 0.46);
         headGroup.add(glint);
+
+        if (isGirl) {
+          const lash = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, 0.04), eyeMat);
+          lash.position.set(ex + (ex < 0 ? -0.02 : 0.02), 0.13, 0.41);
+          lash.rotation.z = ex < 0 ? 0.22 : -0.22;
+          headGroup.add(lash);
+
+          const blush = new THREE.Mesh(
+            new THREE.CircleGeometry(0.065, 12),
+            new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.35 })
+          );
+          blush.position.set(ex * 1.4, -0.04, 0.43);
+          headGroup.add(blush);
+        }
       });
 
       // Friendly Smile Arc
       const smile = new THREE.Mesh(
         new THREE.TorusGeometry(0.11, 0.022, 6, 12, Math.PI),
-        new THREE.MeshBasicMaterial({ color: 0x7c2d12 })
+        new THREE.MeshBasicMaterial({ color: isGirl ? 0xe11d48 : 0x7c2d12 })
       );
       smile.rotation.x = Math.PI;
       smile.position.set(0, -0.08, 0.42);
       headGroup.add(smile);
 
-      // Sculpted Hair Dome
+      // Sculpted Hair Dome + Boy/Girl Hair Styles
       const hairDome = new THREE.Mesh(
         new THREE.SphereGeometry(0.48, segs, segs, 0, Math.PI * 2, 0, Math.PI * 0.55),
         hairMat
       );
       hairDome.position.y = 0.05;
       headGroup.add(hairDome);
+
+      const resolvedHairStyle = opts.hairStyle || (isGirl ? 'long' : 'classic');
+      if (resolvedHairStyle === 'long') {
+        const backHair = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, 0.56, 8, segs), hairMat);
+        backHair.position.set(0, -0.22, -0.18);
+        headGroup.add(backHair);
+      } else if (resolvedHairStyle === 'ponytail') {
+        const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.46, 8, segs), hairMat);
+        tail.position.set(0, -0.05, -0.52);
+        tail.rotation.x = 0.55;
+        headGroup.add(tail);
+      } else if (resolvedHairStyle === 'twintails') {
+        [-0.48, 0.48].forEach((tx) => {
+          const twin = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.48, 8, segs), hairMat);
+          twin.position.set(tx, -0.15, -0.12);
+          twin.rotation.z = tx < 0 ? 0.32 : -0.32;
+          headGroup.add(twin);
+        });
+      } else if (resolvedHairStyle === 'spiky') {
+        [-0.18, 0, 0.18].forEach((sx, idx) => {
+          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 8), hairMat);
+          spike.position.set(sx, 0.52 + (idx === 1 ? 0.05 : 0), 0.08);
+          spike.rotation.z = sx * -0.5;
+          headGroup.add(spike);
+        });
+      }
 
       // Hats / Headgear
       if (opts.hatType === 'grad') {
@@ -2488,20 +2812,87 @@ export function EraVerse() {
         );
         band.position.y = 0.06;
         headGroup.add(band);
+      } else if (opts.hatType === 'halo') {
+        const halo = new THREE.Mesh(
+          new THREE.TorusGeometry(0.42, 0.045, 10, 28),
+          new THREE.MeshBasicMaterial({ color: 0xfef08a })
+        );
+        halo.rotation.x = Math.PI / 2;
+        halo.position.y = 0.72;
+        headGroup.add(halo);
       }
 
-      if (opts.accessoryType === 'glasses' || opts.accessoryType === 'shades') {
+      if (
+        opts.accessoryType === 'glasses' ||
+        opts.accessoryType === 'shades' ||
+        opts.accessoryType === 'cyber_visor'
+      ) {
         const gMat = new THREE.MeshStandardMaterial({
-          color: opts.accessoryType === 'shades' ? 0x0f172a : 0x38bdf8,
+          color:
+            opts.accessoryType === 'cyber_visor'
+              ? 0xec4899
+              : opts.accessoryType === 'shades'
+              ? 0x0f172a
+              : 0x38bdf8,
+          emissive: opts.accessoryType === 'cyber_visor' ? 0xec4899 : 0x000000,
+          emissiveIntensity: opts.accessoryType === 'cyber_visor' ? 0.6 : 0,
           roughness: 0.12,
           metalness: 0.85
         });
-        const glassesBar = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.17, 0.08), gMat);
+        const glassesBar = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.18, 0.1), gMat);
         glassesBar.position.set(0, 0.06, 0.44);
         headGroup.add(glassesBar);
       }
 
       bodyGroup.add(headGroup);
+
+      // EraSHOP 3D Vehicles (Skateboard or Bike)
+      if (opts.vehicleType === 'skateboard') {
+        const boardGroup = new THREE.Group();
+        const deck = new THREE.Mesh(
+          new THREE.BoxGeometry(0.75, 0.08, 2.05),
+          new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.3, metalness: 0.2 })
+        );
+        deck.position.set(0, 0.16, 0);
+        boardGroup.add(deck);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.6 });
+        [
+          [-0.32, -0.62],
+          [0.32, -0.62],
+          [-0.32, 0.62],
+          [0.32, 0.62]
+        ].forEach(([wx, wz]) => {
+          const w = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.12, 12), wheelMat);
+          w.rotation.z = Math.PI / 2;
+          w.position.set(wx, 0.1, wz);
+          boardGroup.add(w);
+        });
+        root.add(boardGroup);
+      } else if (opts.vehicleType === 'bike') {
+        const bikeGroup = new THREE.Group();
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.2, metalness: 0.8 });
+        const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.7 });
+        [-0.75, 0.78].forEach((wz) => {
+          const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.07, 10, 20), tireMat);
+          wheel.rotation.y = Math.PI / 2;
+          wheel.position.set(0, 0.42, wz);
+          bikeGroup.add(wheel);
+        });
+        const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.45, 10), frameMat);
+        topTube.rotation.x = Math.PI / 2;
+        topTube.position.set(0, 0.78, 0);
+        bikeGroup.add(topTube);
+
+        const handleStem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.75, 10), frameMat);
+        handleStem.position.set(0, 0.95, 0.68);
+        bikeGroup.add(handleStem);
+
+        const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.95, 10), frameMat);
+        handleBar.rotation.z = Math.PI / 2;
+        handleBar.position.set(0, 1.32, 0.68);
+        bikeGroup.add(handleBar);
+        root.add(bikeGroup);
+      }
 
       const nameplate = createNameplateSprite(opts.name, opts.cohort);
       root.add(nameplate);
@@ -2598,7 +2989,14 @@ export function EraVerse() {
           hatType: prof.hatType,
           accessoryType: prof.accessoryType,
           name: prof.name,
-          cohort: prof.cohort
+          cohort: prof.cohort,
+          gender: prof.gender,
+          hairStyle: prof.hairStyle,
+          bodyType: prof.bodyType,
+          clothingType: prof.clothingType,
+          pantsColor: prof.pantsColor,
+          beltType: prof.beltType,
+          vehicleType: prof.vehicleType
         });
         const isTeacherJan = prof.id === TEACHER_JAN_PROFILE.id || prof.cohort.includes('TEACHER');
         const angle = (idx / Math.max(1, Math.min(14, profiles.length))) * Math.PI * 2;
@@ -3053,6 +3451,160 @@ export function EraVerse() {
           mesh: faceMesh
         });
       });
+
+      // ========================================================================
+      // SPECIALIZED 3D INTERIOR FURNISHINGS FOR ERASHOP, ERA GALLERY & ERAGAMES
+      // ========================================================================
+      if (building.id === 'reading') {
+        // EraSHOP Boutique Counter + Player "Candy" Assigned as Shopkeeper inside the Shop!
+        const counterGroup = new THREE.Group();
+        counterGroup.position.set(0, 0, -roomD / 2 + 5.8);
+
+        const deskBase = new THREE.Mesh(
+          new THREE.BoxGeometry(7.2, 1.35, 1.8),
+          new THREE.MeshStandardMaterial({ color: 0xdb2777, roughness: 0.25, metalness: 0.35 })
+        );
+        deskBase.position.y = 0.68;
+        counterGroup.add(deskBase);
+
+        const deskTop = new THREE.Mesh(
+          new THREE.BoxGeometry(7.6, 0.18, 2.1),
+          new THREE.MeshStandardMaterial({ color: 0xfdf2f8, roughness: 0.15, metalness: 0.4 })
+        );
+        deskTop.position.y = 1.42;
+        counterGroup.add(deskTop);
+
+        // Candy NPC Character stationed behind the EraSHOP Counter
+        const candyRig = buildCharacterAvatar({
+          shirtColor: '#f43f5e',
+          hairColor: '#991b1b',
+          skinColor: '#fef08a',
+          hatType: 'crown',
+          accessoryType: 'glasses',
+          name: 'Candy • EraSHOP Host',
+          cohort: 'IELTS 2',
+          gender: 'girl',
+          hairStyle: 'twintails',
+          clothingType: 'skirt_outfit',
+          beltType: 'star_belt'
+        });
+        candyRig.root.position.set(0, 0, -1.55);
+        const candyWelcomeBubble = createSpeechBubbleSprite(
+          'Candy (EraSHOP)',
+          'Welcome to EraSHOP! Spend your Era Gems on Bikes, Skateboards, Belts, Clothes & Boy/Girl Styles!',
+          false
+        );
+        candyRig.root.add(candyWelcomeBubble);
+        counterGroup.add(candyRig.root);
+        interiorGroup.add(counterGroup);
+
+        // 3D Display Pedestals showcasing a 3D Bike (Left) and 3D Skateboard (Right) with Price Tags
+        const createShopPedestal = (px: number, pz: number, itemType: 'bike' | 'skateboard') => {
+          const pGroup = new THREE.Group();
+          pGroup.position.set(px, 0, pz);
+          const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.1, 2.3, 0.55, 28),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.25, metalness: 0.7 })
+          );
+          base.position.y = 0.28;
+          pGroup.add(base);
+
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(2.15, 0.08, 12, 32),
+            new THREE.MeshBasicMaterial({ color: itemType === 'bike' ? 0x06b6d4 : 0xec4899 })
+          );
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = 0.56;
+          pGroup.add(ring);
+
+          if (itemType === 'bike') {
+            const bikeShowcase = buildCharacterAvatar({
+              shirtColor: '#06b6d4',
+              hairColor: '#0f172a',
+              skinColor: '#fcd34d',
+              hatType: 'headphones',
+              accessoryType: 'cyber_visor',
+              name: 'Turbo Bike • 220 💎',
+              cohort: 'ERASHOP',
+              gender: 'boy',
+              clothingType: 'cyber_jacket',
+              beltType: 'cyber_belt',
+              vehicleType: 'bike'
+            });
+            bikeShowcase.root.position.y = 0.56;
+            bikeShowcase.root.rotation.y = 0.45;
+            pGroup.add(bikeShowcase.root);
+          } else {
+            const skateShowcase = buildCharacterAvatar({
+              shirtColor: '#ec4899',
+              hairColor: '#facc15',
+              skinColor: '#fef08a',
+              hatType: 'halo',
+              accessoryType: 'wings',
+              name: 'Skateboard • 120 💎',
+              cohort: 'ERASHOP',
+              gender: 'girl',
+              hairStyle: 'long',
+              clothingType: 'skirt_outfit',
+              beltType: 'gold_belt',
+              vehicleType: 'skateboard'
+            });
+            skateShowcase.root.position.y = 0.56;
+            skateShowcase.root.rotation.y = -0.45;
+            pGroup.add(skateShowcase.root);
+          }
+          interiorGroup.add(pGroup);
+        };
+
+        createShopPedestal(-6.8, 0.5, 'bike');
+        createShopPedestal(6.8, 0.5, 'skateboard');
+      } else if (building.id === 'listening') {
+        // Era Gallery: Add a central 3D Exhibition Sculpture & Photo Display Stand
+        const galleryStand = new THREE.Group();
+        galleryStand.position.set(0, 0, -1.2);
+        const plinth = new THREE.Mesh(
+          new THREE.BoxGeometry(5.6, 1.1, 2.4),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.5 })
+        );
+        plinth.position.y = 0.55;
+        galleryStand.add(plinth);
+
+        const crystalArt = new THREE.Mesh(
+          new THREE.OctahedronGeometry(1.25, 0),
+          new THREE.MeshStandardMaterial({
+            color: 0x14b8a6,
+            emissive: 0x0d9488,
+            emissiveIntensity: 0.45,
+            roughness: 0.15,
+            metalness: 0.85
+          })
+        );
+        crystalArt.position.y = 2.45;
+        galleryStand.add(crystalArt);
+        interiorGroup.add(galleryStand);
+      } else if (building.id === 'speaking') {
+        // EraGames Arcade Arena: Add 3D Neon Arcade Cabinets inside the room
+        [
+          [-6.5, -2.2, 0x9333ea],
+          [6.5, -2.2, 0xec4899]
+        ].forEach(([ax, az, hex]) => {
+          const cab = new THREE.Group();
+          cab.position.set(ax, 0, az);
+          const body = new THREE.Mesh(
+            new THREE.BoxGeometry(1.9, 3.4, 1.5),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.6 })
+          );
+          body.position.y = 1.7;
+          cab.add(body);
+          const screen = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.45, 1.15),
+            new THREE.MeshBasicMaterial({ color: hex })
+          );
+          screen.position.set(0, 2.25, 0.77);
+          cab.add(screen);
+          interiorGroup.add(cab);
+        });
+      }
     };
 
     // ============================================================================
@@ -3550,10 +4102,29 @@ export function EraVerse() {
       }
     }
 
+    let lastHoloSignature = '';
+
     function tick() {
       if (isDisposed) return;
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.getElapsedTime();
+
+      // Guarantee Holographic Fountain Leaderboard texture always reflects latest Firestore scores & active cohort
+      const currentHoloSig = `${dashboardDataRef.current.classCohortLabel}:${dashboardDataRef.current.myStats.name}:${dashboardDataRef.current.classStudents.map((s) => `${s.id}-${s.overall}-${s.reading}-${s.listening}-${s.writing}-${s.speaking}`).join('|')}`;
+      if (currentHoloSig !== lastHoloSignature) {
+        lastHoloSignature = currentHoloSig;
+        const freshTex = createClassDashboardWallTexture(
+          dashboardDataRef.current.classCohortLabel,
+          dashboardDataRef.current.classStudents,
+          dashboardDataRef.current.myStats.name,
+          maxAnisotropy
+        );
+        if (holoScreenMat.map) {
+          holoScreenMat.map.dispose();
+        }
+        holoScreenMat.map = freshTex;
+        holoScreenMat.needsUpdate = true;
+      }
 
       if (doorCooldownTimer > 0) {
         doorCooldownTimer -= dt;
@@ -3640,7 +4211,13 @@ export function EraVerse() {
 
       const inputMag = Math.min(1, Math.hypot(moveForward, moveRight));
       const isMoving = inputMag > 0.06;
-      const baseSpeed = playerState.isCrouching ? 5.6 : playerState.sprinting ? 15.2 : 10.2;
+      const vehicleBoost =
+        playerVehicleRef.current === 'bike'
+          ? 1.55
+          : playerVehicleRef.current === 'skateboard'
+          ? 1.35
+          : 1.0;
+      const baseSpeed = (playerState.isCrouching ? 5.6 : playerState.sprinting ? 15.2 : 10.2) * vehicleBoost;
 
       if (isMoving) {
         const fwdX = -Math.sin(camState.yaw);
@@ -3882,7 +4459,14 @@ export function EraVerse() {
             soundEngine.playGoalCheer();
             setFootballGoals((g) => g + 1);
             setXp((x) => x + 100);
-            showToast('GOOOOAL! ⚽ +100 XP!', 'You beat Keeper Max on the EraVerse Football Field!', '#16A34A');
+            setEraGems((gm) => {
+              const next = gm + 25;
+              try {
+                localStorage.setItem('eraverse_gems_balance', String(next));
+              } catch (_e) {}
+              return next;
+            });
+            showToast('GOOOOAL! ⚽ +100 XP & +25 💎 Era Gems!', 'You beat Keeper Max on the EraVerse Football Field!', '#16A34A');
             soccerBallState.x = PITCH_CENTER.x;
             soccerBallState.y = 2.0;
             soccerBallState.z = PITCH_CENTER.z;
@@ -3896,7 +4480,14 @@ export function EraVerse() {
             if (playerState.z > PITCH_CENTER.z) {
               setFootballGoals((g) => g + 1);
               setXp((x) => x + 100);
-              showToast('GOOOOAL! ⚽ +100 XP!', 'Awesome shot into the South Goal!', '#16A34A');
+              setEraGems((gm) => {
+                const next = gm + 25;
+                try {
+                  localStorage.setItem('eraverse_gems_balance', String(next));
+                } catch (_e) {}
+                return next;
+              });
+              showToast('GOOOOAL! ⚽ +100 XP & +25 💎 Era Gems!', 'Awesome shot into the South Goal!', '#16A34A');
             } else {
               setAiFootballGoals((g) => g + 1);
               showToast('Keeper Max Scored! ⚽', 'Defend the South Goal and counter-attack!', '#EF4444');
@@ -3997,7 +4588,14 @@ export function EraVerse() {
             soundEngine.playCrystalCollect();
             setCrystalsCollected((c) => c + 1);
             setXp((x) => x + 50);
-            showToast(`Collected "${co.word}" Crystal!`, '+50 IELTS EraVerse XP Earned!', '#10B981');
+            setEraGems((gm) => {
+              const next = gm + 35;
+              try {
+                localStorage.setItem('eraverse_gems_balance', String(next));
+              } catch (_e) {}
+              return next;
+            });
+            showToast(`Collected "${co.word}" Gem!`, '+35 💎 Era Gems & +50 XP Earned! Spend them in EraSHOP!', '#EC4899');
           }
         });
       }
@@ -4165,7 +4763,8 @@ export function EraVerse() {
       return;
     }
 
-    setPlayerProfile({
+    setPlayerProfile((prev) => ({
+      ...prev,
       id: char.id,
       realUserId: char.realUserId,
       email: char.email,
@@ -4179,16 +4778,27 @@ export function EraVerse() {
       hairColor: char.hairColor,
       skinColor: char.skinColor,
       hatType: char.hatType,
-      accessoryType: char.accessoryType
-    });
+      accessoryType: char.accessoryType,
+      gender: char.gender || prev.gender || 'boy',
+      hairStyle: char.hairStyle || prev.hairStyle || 'classic',
+      bodyType: char.bodyType || prev.bodyType || 'regular',
+      clothingType: char.clothingType || prev.clothingType || 'varsity',
+      pantsColor: char.pantsColor || prev.pantsColor || '#1e293b',
+      beltType: char.beltType || prev.beltType || 'none',
+      vehicleType: char.vehicleType || prev.vehicleType || 'none'
+    }));
     setShowCharactersModal(false);
     showToast(`Now Playing as ${char.name} (${char.cohort})`, char.motto, char.cohort === 'IELTS 2' ? '#10B981' : '#2563EB');
   };
 
   const filteredCharacters = useMemo(() => {
+    // Non-admin students in IELTS 1 or IELTS 2 only see their own group's characters
+    if (!isAdmin && (playerProfile.cohort === 'IELTS 1' || playerProfile.cohort === 'IELTS 2')) {
+      return ieltsCharacters.filter((c) => c.cohort === playerProfile.cohort);
+    }
     if (cohortFilter === 'ALL') return ieltsCharacters;
     return ieltsCharacters.filter((c) => c.cohort === cohortFilter);
-  }, [ieltsCharacters, cohortFilter]);
+  }, [ieltsCharacters, cohortFilter, isAdmin, playerProfile.cohort]);
 
   const filteredPracticeTests = useMemo(() => {
     return allPracticeTests.filter((t) => t.skill === selectedPracticeSkill);
@@ -4310,6 +4920,8 @@ export function EraVerse() {
             <div className="text-[11px] text-slate-300 font-medium flex flex-wrap items-center gap-2 mt-0.5">
               <span>{insideBuilding ? `Inside: ${insideBuilding.name}` : 'EraVerse Campus & Sports Park'}</span>
               <span>•</span>
+              <span className="text-pink-400 font-extrabold">💎 {eraGems} Era Gems</span>
+              <span>•</span>
               <span className="text-amber-400 font-bold">{xp} XP</span>
               <span>•</span>
               <span className="text-emerald-300 font-bold">⚽ {footballGoals}</span>
@@ -4335,12 +4947,27 @@ export function EraVerse() {
           type="button"
           onClick={() => {
             soundEngine.playUiClick();
+            setEraShopInitialTab('shop');
+            setEraShopInitialCat('all');
+            setActiveBuildingModal('reading');
+          }}
+          className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs px-3.5 py-3 rounded-2xl shadow-lg border border-pink-400/40 transition-all cursor-pointer"
+        >
+          <ShoppingBag className="w-4 h-4 text-amber-200" />
+          <span>EraSHOP (💎 {eraGems})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            soundEngine.playUiClick();
+            setEraShopInitialTab('customizer');
             setShowCustomizerModal(true);
           }}
           className="flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 text-slate-100 font-bold text-xs px-3.5 py-3 rounded-2xl shadow-lg border border-white/15 transition-all cursor-pointer"
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>Avatar</span>
+          <span>Boy / Girl & Style</span>
         </button>
 
         {/* Top-Ribbon Chat Icon Button */}
@@ -4989,7 +5616,10 @@ export function EraVerse() {
 
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
-                {(['ALL', 'IELTS 1', 'IELTS 2', 'TEACHER (SUPER ADMIN)'] as const).map((cohort) => (
+                {(isAdmin
+                  ? (['ALL', 'IELTS 1', 'IELTS 2', 'TEACHER (SUPER ADMIN)'] as const)
+                  : ([playerProfile.cohort === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1'] as const)
+                ).map((cohort) => (
                   <button
                     key={cohort}
                     type="button"
@@ -4998,7 +5628,7 @@ export function EraVerse() {
                       setCohortFilter(cohort);
                     }}
                     className={`px-4 py-2 rounded-xl font-extrabold text-xs transition-all cursor-pointer border ${
-                      cohortFilter === cohort
+                      cohortFilter === cohort || !isAdmin
                         ? cohort.includes('TEACHER')
                           ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
                           : cohort === 'IELTS 2'
@@ -5018,7 +5648,7 @@ export function EraVerse() {
               <span className="text-xs text-slate-500 font-semibold">
                 {canSwitchCharacter
                   ? 'Every student has a unique personalized character under their nickname!'
-                  : `Logged in as ${playerProfile.name} (${playerProfile.cohort}) — bound to your personal character & dashboard`}
+                  : `Logged in as ${playerProfile.name} (${playerProfile.cohort}) — bound to your personal character & ${playerProfile.cohort} group`}
               </span>
             </div>
 
@@ -5103,177 +5733,124 @@ export function EraVerse() {
       )}
 
       {/* ============================================================================
-          MODAL 4: AVATAR CUSTOMIZER
+          MODAL 4A: ERASHOP BOUTIQUE & CHARACTER CUSTOMIZER (WITH CANDY & ERA GEMS)
           ============================================================================ */}
-      {showCustomizerModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-blue-600">
-                  IELTS COURSE AVATAR STUDIO
-                </span>
-                <h2 className="text-2xl font-extrabold text-slate-900">Customize Your Character</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCustomizerModal(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {(showCustomizerModal || activeBuildingModal === 'reading') && (
+        <EraShopModal
+          isOpen={showCustomizerModal || activeBuildingModal === 'reading'}
+          onClose={() => {
+            setShowCustomizerModal(false);
+            if (activeBuildingModal === 'reading') setActiveBuildingModal(null);
+          }}
+          initialTab={showCustomizerModal ? 'customizer' : eraShopInitialTab}
+          initialCategory={eraShopInitialCat}
+          eraGems={eraGems}
+          ownedItems={ownedShopItems}
+          isAdmin={isAdmin}
+          playerProfile={playerProfile}
+          onUpdateProfile={(updated) => {
+            const nextProfile = { ...playerProfile, ...updated };
+            setPlayerProfile(nextProfile);
+            persistAvatarCustomization(nextProfile, eraGems, ownedShopItems);
+          }}
+          onBuyItem={(item: EraShopItem) => {
+            if (eraGems < item.price) {
+              showToast(
+                'Not Enough Era Gems! 💎',
+                `You need ${item.price - eraGems} more 💎 Era Gems! Play EraGames, score Football goals, or collect campus crystals!`,
+                '#EC4899'
+              );
+              return;
+            }
+            const nextGems = eraGems - item.price;
+            const nextOwned = ownedShopItems.includes(item.id) ? ownedShopItems : [...ownedShopItems, item.id];
+            setEraGems(nextGems);
+            setOwnedShopItems(nextOwned);
+            soundEngine.playCrystalCollect();
+            const nextProfile = {
+              ...playerProfile,
+              [item.applyKey]: item.applyValue,
+              ...(item.shirtColorOverride ? { shirtColor: item.shirtColorOverride } : {}),
+              ...(item.pantsColorOverride ? { pantsColor: item.pantsColorOverride } : {})
+            };
+            setPlayerProfile(nextProfile);
+            persistAvatarCustomization(nextProfile, nextGems, nextOwned);
+            showToast(
+              `Purchased & Equipped ${item.name}!`,
+              `Candy: "Looks awesome on you, ${playerProfile.name}! Synced to your Student Dashboard!"`,
+              '#EC4899'
+            );
+          }}
+          onEquipItem={(item: EraShopItem) => {
+            soundEngine.playUiClick();
+            const isCurrentlyEquipped = (playerProfile as any)[item.applyKey] === item.applyValue;
+            const nextVal = isCurrentlyEquipped
+              ? item.applyKey === 'clothingType'
+                ? 'varsity'
+                : 'none'
+              : item.applyValue;
+            const nextProfile = {
+              ...playerProfile,
+              [item.applyKey]: nextVal,
+              ...(!isCurrentlyEquipped && item.shirtColorOverride ? { shirtColor: item.shirtColorOverride } : {}),
+              ...(!isCurrentlyEquipped && item.pantsColorOverride ? { pantsColor: item.pantsColorOverride } : {})
+            };
+            setPlayerProfile(nextProfile);
+            persistAvatarCustomization(nextProfile, eraGems, ownedShopItems);
+            showToast(
+              isCurrentlyEquipped ? `Unequipped ${item.name}` : `Equipped ${item.name}!`,
+              `Candy: "Updated your 3D character in EraVerse & your Student Dashboard!"`,
+              '#EC4899'
+            );
+          }}
+          onSaveAndSync={() => {
+            soundEngine.playUiClick();
+            persistAvatarCustomization(playerProfile, eraGems, ownedShopItems);
+            setShowCustomizerModal(false);
+            if (activeBuildingModal === 'reading') setActiveBuildingModal(null);
+            showToast(
+              '3D Character & EraSHOP Gear Saved!',
+              `${playerProfile.name}'s 3D character is updated in EraVerse and your Student Dashboard!`,
+              '#10B981'
+            );
+          }}
+        />
+      )}
 
-            <div className="space-y-5">
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Character Name
-                </label>
-                <input
-                  type="text"
-                  value={playerProfile.name}
-                  onChange={(e) => setPlayerProfile({ ...playerProfile, name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
+      {/* ============================================================================
+          MODAL 4B: ERA GALLERY (LIFE AT KY NGUYEN ERA PHOTOS & VIDEOS)
+          ============================================================================ */}
+      {activeBuildingModal === 'listening' && (
+        <EraGalleryModal
+          isOpen={activeBuildingModal === 'listening'}
+          onClose={() => setActiveBuildingModal(null)}
+          initialTab={eraGalleryInitialTab}
+        />
+      )}
 
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5">
-                  IELTS Course Cohort Badge
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(['IELTS 1', 'IELTS 2'] as const).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() =>
-                        setPlayerProfile({
-                          ...playerProfile,
-                          cohort: c,
-                          shirtColor: c === 'IELTS 2' ? '#10b981' : '#2563eb'
-                        })
-                      }
-                      className={`py-3 rounded-xl font-extrabold text-sm border-2 transition-all cursor-pointer ${
-                        playerProfile.cohort === c
-                          ? c === 'IELTS 2'
-                            ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                            : 'border-blue-600 bg-blue-50 text-blue-900'
-                          : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      {c} Character
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Varsity Jacket Color
-                </label>
-                <div className="flex gap-2.5">
-                  {['#2563eb', '#10b981', '#f59e0b', '#9333ea', '#ef4444', '#06b6d4', '#0f172a'].map((hex) => (
-                    <button
-                      key={hex}
-                      type="button"
-                      onClick={() => setPlayerProfile({ ...playerProfile, shirtColor: hex })}
-                      className={`w-9 h-9 rounded-xl border-2 cursor-pointer transition-transform ${
-                        playerProfile.shirtColor === hex ? 'scale-110 border-slate-900 shadow-md' : 'border-transparent'
-                      }`}
-                      style={{ backgroundColor: hex }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Headgear Style
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {(
-                    [
-                      { id: 'grad', label: 'Grad Cap' },
-                      { id: 'crown', label: 'Crown' },
-                      { id: 'headphones', label: 'Headset' },
-                      { id: 'cap', label: 'Cap' },
-                      { id: 'none', label: 'None' }
-                    ] as const
-                  ).map((h) => (
-                    <button
-                      key={h.id}
-                      type="button"
-                      onClick={() => setPlayerProfile({ ...playerProfile, hatType: h.id })}
-                      className={`py-2 px-2 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                        playerProfile.hatType === h.id
-                          ? 'bg-[#1E4DB7] text-white border-[#1E4DB7]'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {h.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Eyewear
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(
-                    [
-                      { id: 'glasses', label: 'Study Glasses' },
-                      { id: 'shades', label: 'Cool Shades' },
-                      { id: 'none', label: 'None' }
-                    ] as const
-                  ).map((acc) => (
-                    <button
-                      key={acc.id}
-                      type="button"
-                      onClick={() => setPlayerProfile({ ...playerProfile, accessoryType: acc.id })}
-                      className={`py-2 px-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                        playerProfile.accessoryType === acc.id
-                          ? 'bg-[#1E4DB7] text-white border-[#1E4DB7]'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {acc.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playUiClick();
-                  if (user?.uid) {
-                    try {
-                      localStorage.setItem(
-                        `eraverse_custom_${user.uid}`,
-                        JSON.stringify({
-                          shirtColor: playerProfile.shirtColor,
-                          hairColor: playerProfile.hairColor,
-                          skinColor: playerProfile.skinColor,
-                          hatType: playerProfile.hatType,
-                          accessoryType: playerProfile.accessoryType
-                        })
-                      );
-                    } catch (_e) {
-                      // ignore
-                    }
-                  }
-                  setShowCustomizerModal(false);
-                  showToast('Character Updated!', `${playerProfile.name} (${playerProfile.cohort}) is ready!`, '#10B981');
-                }}
-                className="w-full py-3 bg-[#1E4DB7] hover:bg-blue-800 text-white font-extrabold rounded-xl shadow-lg transition-colors cursor-pointer"
-              >
-                Save & Return to EraVerse
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ============================================================================
+          MODAL 4C: ERAGAMES ARCADE ARENA (EARN ERA GEMS & XP)
+          ============================================================================ */}
+      {activeBuildingModal === 'speaking' && (
+        <EraGamesModal
+          isOpen={activeBuildingModal === 'speaking'}
+          onClose={() => setActiveBuildingModal(null)}
+          eraGems={eraGems}
+          onOpenEraShop={() => {
+            soundEngine.playUiClick();
+            setEraShopInitialTab('shop');
+            setEraShopInitialCat('all');
+            setActiveBuildingModal('reading');
+          }}
+          onRewardGems={(gemsWon, xpWon, gameTitle) => {
+            soundEngine.playGoalCheer();
+            const nextGems = eraGems + gemsWon;
+            setEraGems(nextGems);
+            setXp((x) => x + xpWon);
+            persistAvatarCustomization(playerProfile, nextGems, ownedShopItems);
+            showToast(`+${gemsWon} 💎 Era Gems & +${xpWon} XP!`, `${gameTitle} — Spend your gems in EraSHOP with Candy!`, '#9333EA');
+          }}
+        />
       )}
 
       {/* ============================================================================
@@ -5365,6 +5942,7 @@ export function EraVerse() {
         classStudents={myClassDashboardStudents}
         allCohortsStudents={allStudentsSkillScores}
         isSuperAdminCharacter={playerProfile.cohort === 'TEACHER (SUPER ADMIN)'}
+        onSelectAdminCohort={(c) => setAdminSelectedCohort(c)}
         onNavigateFullDashboard={(uid) =>
           navigate(isAdmin && uid ? `/ielts/dashboard?userId=${uid}` : '/ielts/dashboard')
         }

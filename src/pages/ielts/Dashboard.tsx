@@ -9,6 +9,8 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
 import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, Play, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff, ExternalLink, Award } from 'lucide-react';
 import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
+import { EraVerseAvatar3D } from '../../components/EraVerseAvatar3D';
+import { resolveStudentEraVerseAvatar } from '../../utils/eraverseFeatures';
 import { format } from 'date-fns';
 import { createSubmissionNotification } from '../../lib/notificationService';
 
@@ -241,7 +243,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [userProfile, setUserProfile] = useState<{nickname?: string, motto?: string, photoURL?: string, name?: string, needsPasswordReset?: boolean, email?: string, phone?: string, course?: string, username?: string, tempPassword?: string, password?: string, studentId?: string} | null>(null);
+  const [userProfile, setUserProfile] = useState<{nickname?: string, motto?: string, photoURL?: string, name?: string, needsPasswordReset?: boolean, email?: string, phone?: string, course?: string, username?: string, tempPassword?: string, password?: string, studentId?: string, eraverseAvatar?: any, folderName?: string} | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editNickname, setEditNickname] = useState('');
   const [editUsername, setEditUsername] = useState('');
@@ -251,6 +253,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [profileError, setProfileError] = useState('');
   const [editMotto, setEditMotto] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
+  const [avatarSyncTick, setAvatarSyncTick] = useState(0);
+
+  const [editAvatarShirtColor, setEditAvatarShirtColor] = useState('#2563eb');
+  const [editAvatarHairColor, setEditAvatarHairColor] = useState('#1c1917');
+  const [editAvatarSkinColor, setEditAvatarSkinColor] = useState('#fde68a');
+  const [editAvatarHatType, setEditAvatarHatType] = useState<string>('cap');
+  const [editAvatarAccessoryType, setEditAvatarAccessoryType] = useState<string>('glasses');
 
   useEffect(() => {
     // Auto-clear January writing test content per user request
@@ -258,7 +267,25 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         localStorage.removeItem('ielts_writing_progress_3');
         localStorage.removeItem('ielts_writing_progress_1');
     }
+
+    const onAvatarSync = () => setAvatarSyncTick((t) => t + 1);
+    window.addEventListener('eraverse-avatar-updated', onAvatarSync);
+    window.addEventListener('storage', onAvatarSync);
+    window.addEventListener('focus', onAvatarSync);
+    return () => {
+      window.removeEventListener('eraverse-avatar-updated', onAvatarSync);
+      window.removeEventListener('storage', onAvatarSync);
+      window.removeEventListener('focus', onAvatarSync);
+    };
   }, []);
+
+  const eraverseLook = React.useMemo(() => {
+    return resolveStudentEraVerseAvatar(
+      targetUserId,
+      userProfile || { name: targetUserName || user?.displayName, email: user?.email },
+      Boolean(isAdmin && (!targetUserId || targetUserId === user?.uid))
+    );
+  }, [targetUserId, userProfile, targetUserName, user?.displayName, user?.email, isAdmin, user?.uid, avatarSyncTick]);
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -386,6 +413,32 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         updateData.password = editPassword.trim();
       }
 
+      const eraverseAvatarPayload = {
+        name: editNickname.trim() || eraverseLook.name,
+        cohort: eraverseLook.cohort,
+        shirtColor: editAvatarShirtColor,
+        hairColor: editAvatarHairColor,
+        skinColor: editAvatarSkinColor,
+        hatType: editAvatarHatType,
+        accessoryType: editAvatarAccessoryType,
+        updatedAt: Date.now()
+      };
+      updateData.eraverseAvatar = eraverseAvatarPayload;
+
+      try {
+        if (targetUserId) {
+          localStorage.setItem(`eraverse_custom_${targetUserId}`, JSON.stringify(eraverseAvatarPayload));
+        }
+        if (eraverseAvatarPayload.name) {
+          localStorage.setItem(`eraverse_custom_nick_${eraverseAvatarPayload.name.toLowerCase()}`, JSON.stringify(eraverseAvatarPayload));
+        }
+        window.dispatchEvent(
+          new CustomEvent('eraverse-avatar-updated', {
+            detail: { uid: targetUserId, name: eraverseAvatarPayload.name, avatar: eraverseAvatarPayload }
+          })
+        );
+      } catch (_e) {}
+
       // Profile photo ONLY updated if admin
       if (isAdmin) {
         updateData.photoURL = editPhotoURL.trim();
@@ -393,6 +446,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       await setDoc(doc(db, 'users', targetUserId), updateData, { merge: true });
       setUserProfile((prev: any) => prev ? ({ ...prev, ...updateData }) : updateData);
+      setAvatarSyncTick((t) => t + 1);
 
       if (user && targetUserId === user.uid && !(user as any).customAuth) {
         const authUpdates: any = { displayName: editNickname.trim() || user.displayName };
@@ -521,12 +575,24 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-indigo-500 rounded-full blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 w-full min-w-0">
-          <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 border-4 border-white/20 shadow-2xl overflow-hidden flex items-center justify-center shrink-0 mx-auto md:mx-0">
-            {userProfile?.photoURL ? (
-              <img src={userProfile.photoURL || undefined} alt="Profile" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
-            ) : (
-              <span className="text-3xl md:text-5xl font-bold text-white">{firstName.charAt(0)}</span>
-            )}
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 border-4 border-white/30 shadow-2xl overflow-hidden flex items-center justify-center shrink-0 mx-auto md:mx-0 relative">
+            <EraVerseAvatar3D
+              shirtColor={eraverseLook.shirtColor}
+              hairColor={eraverseLook.hairColor}
+              skinColor={eraverseLook.skinColor}
+              hatType={eraverseLook.hatType}
+              accessoryType={eraverseLook.accessoryType}
+              name={userProfile?.nickname || firstName || eraverseLook.name}
+              cohort={eraverseLook.cohort}
+              gender={eraverseLook.gender}
+              hairStyle={eraverseLook.hairStyle}
+              bodyType={eraverseLook.bodyType}
+              clothingType={eraverseLook.clothingType}
+              pantsColor={eraverseLook.pantsColor}
+              beltType={eraverseLook.beltType}
+              vehicleType={eraverseLook.vehicleType}
+              className="w-full h-full"
+            />
           </div>
           <div className="flex flex-col items-center md:items-start w-full min-w-0">
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mb-3">
@@ -554,6 +620,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     setProfileError('');
                     setEditMotto(userProfile?.motto || '');
                     setEditPhotoURL(userProfile?.photoURL || '');
+                    setEditAvatarShirtColor(eraverseLook.shirtColor);
+                    setEditAvatarHairColor(eraverseLook.hairColor);
+                    setEditAvatarSkinColor(eraverseLook.skinColor);
+                    setEditAvatarHatType(eraverseLook.hatType);
+                    setEditAvatarAccessoryType(eraverseLook.accessoryType);
                     setIsEditingProfile(true);
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider cursor-pointer"
@@ -2405,6 +2476,77 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 </div>
               )}
               
+              {/* 3D EraVerse Character Customizer inside Edit Profile (Synced with EraVerse) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500 shadow-md shrink-0">
+                    <EraVerseAvatar3D
+                      shirtColor={editAvatarShirtColor}
+                      hairColor={editAvatarHairColor}
+                      skinColor={editAvatarSkinColor}
+                      hatType={editAvatarHatType}
+                      accessoryType={editAvatarAccessoryType}
+                      name={editNickname || eraverseLook.name}
+                      cohort={eraverseLook.cohort}
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 block">
+                      3D EraVerse Character Avatar
+                    </span>
+                    <p className="text-xs text-slate-500">
+                      Synced live between your Dashboard profile picture and EraVerse!
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Jacket Color</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['#2563eb', '#10b981', '#f59e0b', '#9333ea', '#ef4444', '#06b6d4', '#db2777', '#0f172a'].map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => setEditAvatarShirtColor(hex)}
+                        className={`w-7 h-7 rounded-lg border-2 cursor-pointer transition-transform ${
+                          editAvatarShirtColor === hex ? 'scale-110 border-slate-900 shadow-xs' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Headgear</label>
+                    <select
+                      value={editAvatarHatType}
+                      onChange={(e) => setEditAvatarHatType(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800"
+                    >
+                      <option value="crown">Crown</option>
+                      <option value="grad">Grad Cap</option>
+                      <option value="cap">Cap</option>
+                      <option value="headphones">Headset</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Eyewear</label>
+                    <select
+                      value={editAvatarAccessoryType}
+                      onChange={(e) => setEditAvatarAccessoryType(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800"
+                    >
+                      <option value="glasses">Study Glasses</option>
+                      <option value="shades">Cool Shades</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Motto</label>
                 <textarea 

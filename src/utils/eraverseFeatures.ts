@@ -40,8 +40,30 @@ export interface StudentSkillScores {
   speaking: number;
   overall: number;
   submissionsCount: number;
+  scoredCount?: number;
   shirtColor: string;
+  hairColor?: string;
+  skinColor?: string;
+  hatType?: 'none' | 'cap' | 'grad' | 'crown' | 'headphones';
+  accessoryType?: 'none' | 'glasses' | 'shades';
   recentSubmissions: SkillSubmissionSummary[];
+}
+
+export interface EraVerseAvatarLook {
+  name: string;
+  cohort: 'IELTS 1' | 'IELTS 2' | 'TEACHER (SUPER ADMIN)';
+  shirtColor: string;
+  hairColor: string;
+  skinColor: string;
+  hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones' | 'halo' | string;
+  accessoryType: 'none' | 'glasses' | 'shades' | 'cyber_visor' | 'wings' | string;
+  gender?: 'boy' | 'girl' | string;
+  hairStyle?: 'classic' | 'spiky' | 'long' | 'ponytail' | 'twintails' | string;
+  bodyType?: 'regular' | 'slim' | 'athletic' | 'tall' | string;
+  clothingType?: 'varsity' | 'hoodie' | 'streetwear' | 'royal_suit' | 'skirt_outfit' | 'cyber_jacket' | string;
+  pantsColor?: string;
+  beltType?: 'none' | 'leather_belt' | 'gold_belt' | 'cyber_belt' | 'star_belt' | string;
+  vehicleType?: 'none' | 'skateboard' | 'bike' | string;
 }
 
 export interface ChatMessageItem {
@@ -69,8 +91,15 @@ export interface CanonicalStudentSpec {
   shirtColor: string;
   hairColor: string;
   skinColor: string;
-  hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones';
-  accessoryType: 'none' | 'glasses' | 'shades';
+  hatType: 'none' | 'cap' | 'grad' | 'crown' | 'headphones' | 'halo' | string;
+  accessoryType: 'none' | 'glasses' | 'shades' | 'cyber_visor' | 'wings' | string;
+  gender?: 'boy' | 'girl' | string;
+  hairStyle?: 'classic' | 'spiky' | 'long' | 'ponytail' | 'twintails' | string;
+  bodyType?: 'regular' | 'slim' | 'athletic' | 'tall' | string;
+  clothingType?: 'varsity' | 'hoodie' | 'streetwear' | 'royal_suit' | 'skirt_outfit' | 'cyber_jacket' | string;
+  pantsColor?: string;
+  beltType?: 'none' | 'leather_belt' | 'gold_belt' | 'cyber_belt' | 'star_belt' | string;
+  vehicleType?: 'none' | 'skateboard' | 'bike' | string;
   targetBuildingId: string;
   motto: string;
   defaultScores: { reading: number; listening: number; writing: number; speaking: number };
@@ -269,16 +298,20 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     fullName: 'Candy',
     cohort: 'IELTS 2',
     course: 'IELTS Course',
-    roleTitle: 'IELTS 2 Senior Captain',
-    specialty: 'Advanced Band 8.0+ Mastery',
-    avatarDetails: 'Mint Emerald Jacket • Golden Crown',
+    roleTitle: 'EraSHOP Manager & IELTS 2 Captain',
+    specialty: 'EraSHOP Boutique Host & Band 8.0+ Mastery',
+    avatarDetails: 'Rose & Emerald Boutique Outfit • Golden Crown • Star Belt',
     shirtColor: '#10b981',
     hairColor: '#dc2626',
     skinColor: '#fcd34d',
     hatType: 'crown',
     accessoryType: 'none',
-    targetBuildingId: 'dashboard',
-    motto: 'Representing IELTS 2! Let’s play football and check our scores!',
+    gender: 'girl',
+    hairStyle: 'long',
+    clothingType: 'skirt_outfit',
+    beltType: 'gold_belt',
+    targetBuildingId: 'reading', // EraSHOP building
+    motto: 'Welcome to EraSHOP! I am Candy — spend your 💎 Era Gems on Bikes, Skateboards, Belts & Outfits!',
     defaultScores: { reading: 8.0, listening: 8.5, writing: 7.5, speaking: 8.0 },
     isRealStudent: true
   }
@@ -309,15 +342,39 @@ export function extractStudentNickname(u: any): string {
 
 export function buildUniqueRosterFromFirestore(
   firestoreUsers: any[],
-  firestoreFolders: Array<{ id: string; name: string; course: string }>
+  firestoreFolders: Array<{ id: string; name: string; course: string; parentId?: string | null; isDeleted?: boolean }>
 ): CanonicalStudentSpec[] {
+  const activeFolders = firestoreFolders.filter((f) => !f.isDeleted);
   const folderMap = new Map<string, string>();
-  firestoreFolders.forEach((f) => {
+  activeFolders.forEach((f) => {
     folderMap.set(f.id, f.name);
   });
 
+  const getDescendants = (id: string, visited = new Set<string>()): string[] => {
+    if (visited.has(id)) return [];
+    visited.add(id);
+    const children = activeFolders.filter((f) => f.parentId === id);
+    const childIds = children.map((c) => c.id);
+    return [...childIds, ...childIds.flatMap((cId) => getDescendants(cId, visited))];
+  };
+
+  const buildFolderIdSet = (targetName: string) => {
+    const upper = targetName.trim().toUpperCase();
+    const roots = activeFolders.filter((f) => (f.name || '').trim().toUpperCase() === upper);
+    const set = new Set<string>();
+    roots.forEach((r) => {
+      set.add(r.id);
+      getDescendants(r.id).forEach((d) => set.add(d));
+    });
+    return set;
+  };
+
+  const ielts1FolderIds = buildFolderIdSet('IELTS 1');
+  const ielts2FolderIds = buildFolderIdSet('IELTS 2');
+
   const extraShirtColors = [
-    '#059669', '#db2777', '#9333ea', '#0891b2', '#65a30d', '#e11d48', '#2dd4bf', '#6366f1'
+    '#059669', '#db2777', '#9333ea', '#0891b2', '#65a30d', '#e11d48', '#2dd4bf', '#6366f1',
+    '#2563eb', '#d97706', '#4f46e5', '#0d9488', '#ea580c', '#7c3aed'
   ];
   const extraHairColors = ['#1c1917', '#451a03', '#7c2d12', '#991b1b', '#b45309'];
   const extraSkinColors = ['#fde68a', '#fcd34d', '#fef08a', '#fdba74'];
@@ -331,88 +388,146 @@ export function buildUniqueRosterFromFirestore(
     'Speaking Part 3 Discussion'
   ];
 
-  // Start from a map keyed by lowercase nickname so no two characters ever share a nickname or look
-  const rosterByNickname = new Map<string, CanonicalStudentSpec>();
-  REAL_IELTS_STUDENT_PROFILES.forEach((preset) => {
-    rosterByNickname.set(preset.name.toLowerCase(), { ...preset });
-  });
-
+  // Filter strictly to real IELTS students in IELTS 1 and IELTS 2 folders (matching CourseFolderModal.tsx)
   const ieltsUsers = firestoreUsers.filter((u) => {
     if (u.isDeleted) return false;
     const emailLower = String(u.email || '').toLowerCase();
-    if (emailLower === 'janrelbugtay03@gmail.com' || String(u.name || '').toLowerCase() === 'teacher jan') {
+    if (
+      emailLower === 'janrelbugtay03@gmail.com' ||
+      emailLower === 'khaisangschool.edu.vn@gmail.com' ||
+      String(u.name || '').toLowerCase() === 'teacher jan'
+    ) {
       return false;
     }
-    const courseUpper = String(u.course || '').toUpperCase();
-    const fName = u.folderName || (u.folderId ? folderMap.get(u.folderId) : '') || '';
-    const folderUpper = String(fName).toUpperCase();
-    const isPresetEmail = REAL_IELTS_STUDENT_PROFILES.some((p) => p.email?.toLowerCase() === emailLower);
-    return courseUpper.includes('IELTS') || folderUpper.includes('IELTS') || isPresetEmail;
+    if (u.course !== 'IELTS') return false;
+    if (u.folderId && (ielts1FolderIds.has(u.folderId) || ielts2FolderIds.has(u.folderId))) {
+      return true;
+    }
+    const fNameUpper = String(u.folderName || (u.folderId ? folderMap.get(u.folderId) : '') || '').trim().toUpperCase();
+    return fNameUpper === 'IELTS 1' || fNameUpper === 'IELTS 2';
   });
 
+  // If Firestore users haven't loaded yet, return preset fallback
+  if (ieltsUsers.length === 0) {
+    return [TEACHER_JAN_PROFILE, ...REAL_IELTS_STUDENT_PROFILES];
+  }
+
+  const rosterList: CanonicalStudentSpec[] = [];
   let extraIdx = 0;
+
   ieltsUsers.forEach((u) => {
     const emailLower = String(u.email || '').trim().toLowerCase();
     const nickname = extractStudentNickname(u);
-    const nickKey = nickname.toLowerCase();
+    const studentFirstName = u.firstName || u.name?.split(' ')[0] || u.displayName || nickname;
+    const displayFullName = u.nickname ? `${studentFirstName} "${u.nickname}"` : studentFirstName;
 
     const fName = u.folderName || (u.folderId ? folderMap.get(u.folderId) : '') || '';
-    const upperFolder = String(fName).toUpperCase();
-    const cohort: 'IELTS 1' | 'IELTS 2' = upperFolder.includes('2') ? 'IELTS 2' : 'IELTS 1';
+    const upperFolder = String(fName).trim().toUpperCase();
+    const isIelts2 =
+      (u.folderId && ielts2FolderIds.has(u.folderId)) ||
+      upperFolder === 'IELTS 2' ||
+      upperFolder.includes('IELTS 2');
+    const cohort: 'IELTS 1' | 'IELTS 2' = isIelts2 ? 'IELTS 2' : 'IELTS 1';
 
-    // Match preset by email or nickname
-    let existing = rosterByNickname.get(nickKey);
-    if (!existing && emailLower) {
-      for (const [k, val] of rosterByNickname.entries()) {
-        if (val.email?.toLowerCase() === emailLower) {
-          existing = val;
-          rosterByNickname.delete(k);
-          break;
+    const existing = REAL_IELTS_STUDENT_PROFILES.find(
+      (p) =>
+        (emailLower && p.email?.toLowerCase() === emailLower) ||
+        p.name.toLowerCase() === nickname.toLowerCase()
+    );
+
+    // Check saved customizations in Firestore user doc (`eraverseAvatar`) or localStorage
+    let customLook: any = u.eraverseAvatar || null;
+    if (typeof window !== 'undefined') {
+      try {
+        const rawLocal =
+          localStorage.getItem(`eraverse_custom_${u.id}`) ||
+          (u.uid ? localStorage.getItem(`eraverse_custom_${u.uid}`) : null) ||
+          localStorage.getItem(`eraverse_custom_nick_${nickname.toLowerCase()}`);
+        if (rawLocal) {
+          const parsedLocal = JSON.parse(rawLocal);
+          if (!customLook || (parsedLocal.updatedAt && (!customLook.updatedAt || parsedLocal.updatedAt >= customLook.updatedAt))) {
+            customLook = { ...customLook, ...parsedLocal };
+          }
         }
+      } catch (_e) {
+        // ignore
       }
     }
 
     if (existing) {
-      rosterByNickname.set(nickKey, {
+      const shirtColor = customLook?.shirtColor || existing.shirtColor;
+      const hairColor = customLook?.hairColor || existing.hairColor;
+      const skinColor = customLook?.skinColor || existing.skinColor;
+      const hatType = customLook?.hatType || existing.hatType;
+      const accessoryType = customLook?.accessoryType || existing.accessoryType;
+      const isCandyChar = nickname.toLowerCase() === 'candy' || existing.id === 'ielts2-candy';
+      rosterList.push({
         ...existing,
         id: `real-${u.id}`,
-        realUserId: u.id,
+        realUserId: u.uid || u.id,
         email: u.email || existing.email,
-        name: nickname,
-        fullName: u.firstName && u.nickname ? `${u.firstName} "${u.nickname}"` : u.name || existing.fullName || nickname,
+        name: customLook?.name || nickname,
+        fullName: displayFullName,
         cohort,
-        roleTitle: existing.roleTitle.replace(/^IELTS [12]/, cohort),
+        roleTitle: isCandyChar ? 'EraSHOP Manager & IELTS 2 Captain' : existing.roleTitle.replace(/^IELTS [12]/, cohort),
+        targetBuildingId: isCandyChar ? 'reading' : existing.targetBuildingId,
         motto: u.motto || existing.motto,
+        shirtColor,
+        hairColor,
+        skinColor,
+        hatType,
+        accessoryType,
+        gender: customLook?.gender || existing.gender || (isCandyChar ? 'girl' : undefined),
+        hairStyle: customLook?.hairStyle || existing.hairStyle || (isCandyChar ? 'long' : undefined),
+        bodyType: customLook?.bodyType || existing.bodyType || 'regular',
+        clothingType: customLook?.clothingType || existing.clothingType || (isCandyChar ? 'skirt_outfit' : 'varsity'),
+        pantsColor: customLook?.pantsColor || existing.pantsColor || '#1e293b',
+        beltType: customLook?.beltType || existing.beltType || (isCandyChar ? 'gold_belt' : 'none'),
+        vehicleType: customLook?.vehicleType || existing.vehicleType || 'none',
         isRealStudent: true
       });
     } else {
-      const shirtColor = extraShirtColors[extraIdx % extraShirtColors.length];
-      const hatType = extraHats[extraIdx % extraHats.length];
-      const accessoryType = extraAccessories[extraIdx % extraAccessories.length];
+      const shirtColor = customLook?.shirtColor || extraShirtColors[extraIdx % extraShirtColors.length];
+      const hairColor = customLook?.hairColor || extraHairColors[extraIdx % extraHairColors.length];
+      const skinColor = customLook?.skinColor || extraSkinColors[extraIdx % extraSkinColors.length];
+      const hatType = customLook?.hatType || extraHats[extraIdx % extraHats.length];
+      const accessoryType = customLook?.accessoryType || extraAccessories[extraIdx % extraAccessories.length];
       const specialty = extraSpecialties[extraIdx % extraSpecialties.length];
-      rosterByNickname.set(nickKey, {
+      const isCandyChar = nickname.toLowerCase() === 'candy';
+      rosterList.push({
         id: `real-${u.id}`,
-        realUserId: u.id,
+        realUserId: u.uid || u.id,
         email: u.email || undefined,
-        name: nickname,
-        fullName: u.firstName && u.nickname ? `${u.firstName} "${u.nickname}"` : u.name || nickname,
+        name: customLook?.name || nickname,
+        fullName: displayFullName,
         cohort,
         course: 'IELTS Course',
-        roleTitle: `${cohort} ${ ['Reading Scholar', 'Listening Pro', 'Speaking Star', 'Writing Specialist'][extraIdx % 4] }`,
-        specialty,
+        roleTitle: isCandyChar
+          ? 'EraSHOP Manager & IELTS 2 Captain'
+          : `${cohort} ${['Reading Scholar', 'Listening Pro', 'Speaking Star', 'Writing Specialist'][extraIdx % 4]}`,
+        specialty: isCandyChar ? 'EraSHOP Boutique Host & Band 8.0+ Mastery' : specialty,
         avatarDetails: `${shirtColor} Jacket • ${hatType === 'none' ? 'Natural Hair' : hatType.toUpperCase()} • ${accessoryType === 'none' ? 'Clear View' : accessoryType.toUpperCase()}`,
         shirtColor,
-        hairColor: extraHairColors[extraIdx % extraHairColors.length],
-        skinColor: extraSkinColors[extraIdx % extraSkinColors.length],
-        hatType,
+        hairColor,
+        skinColor,
+        hatType: isCandyChar && !customLook?.hatType ? 'crown' : hatType,
         accessoryType,
-        targetBuildingId: extraBuildings[extraIdx % extraBuildings.length],
-        motto: u.motto || `Hi, I am ${nickname} in ${cohort}! Checking my personalized IELTS dashboard!`,
+        gender: customLook?.gender || (isCandyChar ? 'girl' : undefined),
+        hairStyle: customLook?.hairStyle || (isCandyChar ? 'long' : undefined),
+        bodyType: customLook?.bodyType || 'regular',
+        clothingType: customLook?.clothingType || (isCandyChar ? 'skirt_outfit' : 'varsity'),
+        pantsColor: customLook?.pantsColor || '#1e293b',
+        beltType: customLook?.beltType || (isCandyChar ? 'gold_belt' : 'none'),
+        vehicleType: customLook?.vehicleType || 'none',
+        targetBuildingId: isCandyChar ? 'reading' : extraBuildings[extraIdx % extraBuildings.length],
+        motto: isCandyChar
+          ? 'Welcome to EraSHOP! I am Candy — spend your 💎 Era Gems on Bikes, Skateboards, Belts & Outfits!'
+          : u.motto || `Hi, I am ${nickname} in ${cohort}! Checking my personalized IELTS dashboard!`,
         defaultScores: {
-          reading: 6.5 + ((extraIdx % 4) * 0.5),
-          listening: 7.0 + (((extraIdx + 1) % 4) * 0.5),
-          writing: 6.0 + (((extraIdx + 2) % 4) * 0.5),
-          speaking: 6.5 + (((extraIdx + 3) % 4) * 0.5)
+          reading: 0,
+          listening: 0,
+          writing: 0,
+          speaking: 0
         },
         isRealStudent: true
       });
@@ -420,7 +535,108 @@ export function buildUniqueRosterFromFirestore(
     }
   });
 
-  return [TEACHER_JAN_PROFILE, ...Array.from(rosterByNickname.values())];
+  return [TEACHER_JAN_PROFILE, ...rosterList];
+}
+
+// Resolve a student's live EraVerse 3D character appearance for Dashboard.tsx & EraVerse.tsx
+export function resolveStudentEraVerseAvatar(
+  userId: string | null | undefined,
+  userProfile: any,
+  isAdmin = false
+): EraVerseAvatarLook {
+  const emailLower = String(userProfile?.email || '').trim().toLowerCase();
+  if (
+    isAdmin &&
+    (!userId || emailLower === 'janrelbugtay03@gmail.com' || emailLower === 'khaisangschool.edu.vn@gmail.com')
+  ) {
+    let teacherCustom: any = userProfile?.eraverseAvatar || null;
+    if (typeof window !== 'undefined' && userId) {
+      try {
+        const raw = localStorage.getItem(`eraverse_custom_${userId}`);
+        if (raw) teacherCustom = { ...teacherCustom, ...JSON.parse(raw) };
+      } catch (_e) {}
+    }
+    return {
+      name: teacherCustom?.name || TEACHER_JAN_PROFILE.name,
+      cohort: 'TEACHER (SUPER ADMIN)',
+      shirtColor: teacherCustom?.shirtColor || TEACHER_JAN_PROFILE.shirtColor,
+      hairColor: teacherCustom?.hairColor || TEACHER_JAN_PROFILE.hairColor,
+      skinColor: teacherCustom?.skinColor || TEACHER_JAN_PROFILE.skinColor,
+      hatType: teacherCustom?.hatType || TEACHER_JAN_PROFILE.hatType,
+      accessoryType: teacherCustom?.accessoryType || TEACHER_JAN_PROFILE.accessoryType,
+      gender: teacherCustom?.gender || 'boy',
+      hairStyle: teacherCustom?.hairStyle || 'classic',
+      bodyType: teacherCustom?.bodyType || 'regular',
+      clothingType: teacherCustom?.clothingType || 'varsity',
+      pantsColor: teacherCustom?.pantsColor || '#1e293b',
+      beltType: teacherCustom?.beltType || 'none',
+      vehicleType: teacherCustom?.vehicleType || 'none'
+    };
+  }
+
+  const nickname = extractStudentNickname(userProfile);
+  const matchedPreset = REAL_IELTS_STUDENT_PROFILES.find(
+    (p) =>
+      (emailLower && p.email?.toLowerCase() === emailLower) ||
+      p.name.toLowerCase() === nickname.toLowerCase()
+  );
+
+  // Deterministic hash fallback for students not in REAL_IELTS_STUDENT_PROFILES so each student has a unique character
+  const seedStr = String(userId || emailLower || nickname || 'student');
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0;
+  }
+
+  const extraShirtColors = [
+    '#059669', '#db2777', '#9333ea', '#0891b2', '#65a30d', '#e11d48', '#2dd4bf', '#6366f1',
+    '#2563eb', '#d97706', '#4f46e5', '#0d9488', '#ea580c', '#7c3aed'
+  ];
+  const extraHairColors = ['#1c1917', '#451a03', '#7c2d12', '#991b1b', '#b45309'];
+  const extraSkinColors = ['#fde68a', '#fcd34d', '#fef08a', '#fdba74'];
+  const extraHats: Array<'cap' | 'grad' | 'crown' | 'headphones' | 'none'> = ['cap', 'grad', 'headphones', 'crown', 'none'];
+  const extraAccessories: Array<'glasses' | 'shades' | 'none'> = ['glasses', 'shades', 'none'];
+
+  const folderUpper = String(userProfile?.folderName || '').trim().toUpperCase();
+  const baseCohort: 'IELTS 1' | 'IELTS 2' =
+    folderUpper.includes('IELTS 2') || matchedPreset?.cohort === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1';
+
+  let customLook: any = userProfile?.eraverseAvatar || null;
+  if (typeof window !== 'undefined') {
+    try {
+      const rawById = userId ? localStorage.getItem(`eraverse_custom_${userId}`) : null;
+      const rawByNick = nickname ? localStorage.getItem(`eraverse_custom_nick_${nickname.toLowerCase()}`) : null;
+      const rawLocal = rawById || rawByNick;
+      if (rawLocal) {
+        const parsedLocal = JSON.parse(rawLocal);
+        if (!customLook || (parsedLocal.updatedAt && (!customLook.updatedAt || parsedLocal.updatedAt >= customLook.updatedAt))) {
+          customLook = { ...customLook, ...parsedLocal };
+        }
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }
+
+  const femaleNames = ['suzie', 'sophia', 'may', 'emily', 'hailey', 'candy', 'anna', 'lisa', 'ruby', 'chloe', 'jenny'];
+  const defaultGender = femaleNames.includes(nickname.toLowerCase()) ? 'girl' : 'boy';
+
+  return {
+    name: customLook?.name || nickname,
+    cohort: baseCohort,
+    shirtColor: customLook?.shirtColor || matchedPreset?.shirtColor || extraShirtColors[hash % extraShirtColors.length],
+    hairColor: customLook?.hairColor || matchedPreset?.hairColor || extraHairColors[hash % extraHairColors.length],
+    skinColor: customLook?.skinColor || matchedPreset?.skinColor || extraSkinColors[hash % extraSkinColors.length],
+    hatType: customLook?.hatType || matchedPreset?.hatType || extraHats[hash % extraHats.length],
+    accessoryType: customLook?.accessoryType || matchedPreset?.accessoryType || extraAccessories[hash % extraAccessories.length],
+    gender: customLook?.gender || matchedPreset?.gender || defaultGender,
+    hairStyle: customLook?.hairStyle || matchedPreset?.hairStyle || (defaultGender === 'girl' ? 'long' : 'classic'),
+    bodyType: customLook?.bodyType || matchedPreset?.bodyType || 'regular',
+    clothingType: customLook?.clothingType || matchedPreset?.clothingType || 'varsity',
+    pantsColor: customLook?.pantsColor || matchedPreset?.pantsColor || '#1e293b',
+    beltType: customLook?.beltType || matchedPreset?.beltType || 'none',
+    vehicleType: customLook?.vehicleType || matchedPreset?.vehicleType || 'none'
+  };
 }
 
 // Match the currently logged-in Firebase Auth user to their personal character under their nickname
@@ -790,8 +1006,12 @@ export function computeStudentSkillScores(
   const fullNameLower = (character.fullName || preset?.fullName || '').trim().toLowerCase();
   const emailLower = (character.email || preset?.email || '').trim().toLowerCase();
 
+  // Match Dashboard.tsx and HomeLeaderboardDashboard.tsx: when rawUid is known, filter strictly by s.userId === rawUid
   const userSubs = allSubmissions.filter((s) => {
-    if (rawUid && s.userId === rawUid) return true;
+    if (s.assignmentId === '3' || String(s.title || '').includes('January Writing')) return false;
+    if (rawUid) {
+      return s.userId === rawUid;
+    }
     if (emailLower && String(s.userEmail || s.email || '').trim().toLowerCase() === emailLower) return true;
     const subName = String(s.userName || s.studentName || s.candidateName || '').trim().toLowerCase();
     if (!subName) return false;
@@ -802,30 +1022,99 @@ export function computeStudentSkillScores(
 
   // Sort userSubs newest first (matching Dashboard.tsx)
   const sortedSubs = [...userSubs].sort((a, b) => {
-    const tA = a.submittedAt ? new Date(a.submittedAt).getTime() : a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-    const tB = b.submittedAt ? new Date(b.submittedAt).getTime() : b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+    const tA = a.submittedAt ? new Date(a.submittedAt).getTime() : a.createdAt?.toMillis ? a.createdAt.toMillis() : typeof a.createdAt === 'number' ? a.createdAt : 0;
+    const tB = b.submittedAt ? new Date(b.submittedAt).getTime() : b.createdAt?.toMillis ? b.createdAt.toMillis() : typeof b.createdAt === 'number' ? b.createdAt : 0;
     return tB - tA;
   });
 
-  const bySkill: Record<SkillKey, number[]> = {
-    reading: [],
-    listening: [],
-    writing: [],
-    speaking: []
+  // Exact Dashboard.tsx & HomeLeaderboardDashboard.tsx skill classification & score calculation
+  const getFallbackType = (id: any) => {
+    if (id === 'offline_speaking') return 'speaking';
+    const numId = parseInt(String(id), 10);
+    if (!isNaN(numId)) {
+      if (numId % 4 === 1) return 'reading';
+      if (numId % 4 === 2) return 'listening';
+      if (numId % 4 === 3) return 'writing';
+      if (numId % 4 === 0) return 'speaking';
+    }
+    return 'unknown';
   };
+
+  const getSubmissionsByType = (type: string) =>
+    sortedSubs.filter((s) => {
+      const directType =
+        s.assignmentType ||
+        allAssignments.find((a) => a.id === s.assignmentId)?.type ||
+        getFallbackType(s.assignmentId);
+      if (directType === type) return true;
+
+      const title = String(s.assignmentTitle || s.title || '').toLowerCase();
+      if (type === 'speaking' && (title.includes('speaking') || s.assignmentId === 'offline_speaking')) return true;
+      if (type === 'reading' && (title.includes('reading') || s.assignmentId === 'offline_reading')) return true;
+      if (type === 'listening' && (title.includes('listening') || s.assignmentId === 'offline_listening')) return true;
+      if (type === 'writing' && (title.includes('writing') || s.assignmentId === 'offline_writing')) return true;
+
+      return false;
+    });
+
+  const averageScore = (subs: any[]) => {
+    const scored = subs.filter((s) => s.bandScore !== undefined && s.bandScore !== null && !isNaN(Number(s.bandScore)));
+    if (scored.length === 0) return 0;
+    const sum = scored.reduce((acc, curr) => acc + (Number(curr.bandScore) || 0), 0);
+    return Math.round((sum / scored.length) * 2) / 2;
+  };
+
+  const isSpeakingEvaluated = (sub: any) => {
+    return Boolean(
+      sub.isEvaluated === true ||
+        sub.evaluatedBy === 'admin' ||
+        (sub.assignmentId === 'offline_speaking' && sub.bandScore !== undefined && sub.bandScore !== null)
+    );
+  };
+
+  const readingSubs = getSubmissionsByType('reading');
+  const listeningSubs = getSubmissionsByType('listening');
+  const writingSubs = getSubmissionsByType('writing');
+  const speakingSubs = getSubmissionsByType('speaking').filter(
+    (s) => s.assignmentId !== 'offline_speaking' && !String(s.assignmentTitle || '').toLowerCase().includes('offline')
+  );
+  const offlineSpeakingSubs = getSubmissionsByType('speaking').filter(
+    (s) => s.assignmentId === 'offline_speaking' || String(s.assignmentTitle || '').toLowerCase().includes('offline')
+  );
+  const allSpeakingSubs = [...speakingSubs, ...offlineSpeakingSubs];
+
+  const reading = averageScore(readingSubs);
+  const listening = averageScore(listeningSubs);
+  const writing = averageScore(writingSubs);
+  const speaking = averageScore(allSpeakingSubs.filter(isSpeakingEvaluated));
+
+  const activeScores = [reading, listening, writing, speaking].filter((v) => v > 0);
+  const overall =
+    activeScores.length > 0
+      ? Math.round((activeScores.reduce((a, b) => a + b, 0) / activeScores.length) * 2) / 2
+      : 0.0;
+
+  const scoredCount = sortedSubs.filter((s) => s.bandScore !== undefined && s.bandScore !== null).length;
 
   const recentSubmissions: SkillSubmissionSummary[] = [];
 
   sortedSubs.forEach((s, idx) => {
     const { skill, title, isOfflineSpeaking } = getAccurateSkillAndTitle(s, allAssignments);
-    if (!skill || !bySkill[skill]) return;
+    if (!skill) return;
 
-    const rawScore = s.bandScore !== undefined && s.bandScore !== null ? s.bandScore : s.score;
-    const parsedBand = typeof rawScore === 'number' ? rawScore : parseFloat(String(rawScore));
-    if (isNaN(parsedBand) || parsedBand <= 0) return;
+    if (skill === 'speaking') {
+      const isEvaluated = Boolean(
+        s.isEvaluated === true ||
+          s.evaluatedBy === 'admin' ||
+          (s.assignmentId === 'offline_speaking' && s.bandScore !== undefined && s.bandScore !== null) ||
+          (isOfflineSpeaking && s.bandScore !== undefined && s.bandScore !== null)
+      );
+      if (!isEvaluated) return;
+    }
 
-    const validBand = Math.round(parsedBand * 2) / 2;
-    bySkill[skill].push(validBand);
+    if (s.bandScore === undefined || s.bandScore === null) return;
+    const parsedBand = typeof s.bandScore === 'number' ? s.bandScore : parseFloat(String(s.bandScore));
+    if (isNaN(parsedBand)) return;
 
     const rawTime = s.submittedAt
       ? new Date(s.submittedAt).getTime()
@@ -842,7 +1131,7 @@ export function computeStudentSkillScores(
       assignmentId: s.assignmentId,
       title,
       skill,
-      bandScore: validBand,
+      bandScore: Math.round(parsedBand * 2) / 2,
       dateStr,
       timestamp: rawTime,
       isOfflineSpeaking,
@@ -853,42 +1142,6 @@ export function computeStudentSkillScores(
       vietnameseTranslation: typeof s.vietnameseTranslation === 'string' ? s.vietnameseTranslation : undefined
     });
   });
-
-  const isIelts2 = character.cohort === 'IELTS 2';
-
-  const avgOrFallback = (arr: number[], offset: number) => {
-    if (arr.length > 0) {
-      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-      return Math.round(avg * 2) / 2;
-    }
-    return getSeededScore(character.name, offset, isIelts2);
-  };
-
-  const reading = avgOrFallback(bySkill.reading, 1);
-  const listening = avgOrFallback(bySkill.listening, 2);
-  const writing = avgOrFallback(bySkill.writing, 3);
-  const speaking = avgOrFallback(bySkill.speaking, 4);
-
-  // Ensure every skill has activity entries for the Bar Graph + Activity Table if none were in Firestore for that skill
-  (['reading', 'listening', 'writing', 'speaking'] as SkillKey[]).forEach((sk) => {
-    const existingForSkill = recentSubmissions.filter((r) => r.skill === sk);
-    const targetScore = sk === 'reading' ? reading : sk === 'listening' ? listening : sk === 'writing' ? writing : speaking;
-    if (existingForSkill.length === 0) {
-      recentSubmissions.push(...getFallbackSkillActivity(character.name, character.cohort, sk, targetScore));
-    } else if (sk === 'speaking' && !existingForSkill.some((r) => r.isOfflineSpeaking)) {
-      const fallbackOff = getFallbackSkillActivity(character.name, character.cohort, 'speaking', speaking).find(
-        (r) => r.isOfflineSpeaking
-      );
-      if (fallbackOff) recentSubmissions.push(fallbackOff);
-    }
-  });
-
-  // Match Dashboard.tsx overallBand calculation
-  const activeScores = [reading, listening, writing, speaking].filter((v) => v > 0);
-  const overall =
-    activeScores.length > 0
-      ? Math.round((activeScores.reduce((a, b) => a + b, 0) / activeScores.length) * 2) / 2
-      : 6.5;
 
   return {
     id: character.id,
@@ -906,6 +1159,7 @@ export function computeStudentSkillScores(
     speaking,
     overall,
     submissionsCount: userSubs.length || recentSubmissions.length,
+    scoredCount,
     shirtColor: character.shirtColor,
     recentSubmissions
   };
@@ -1197,22 +1451,22 @@ export function createClassDashboardWallTexture(
 ): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 1024;
-  c.height = 640;
+  c.height = 720;
   const ctx = c.getContext('2d')!;
 
   // Deep Translucent-Style Hologram Screen Backing
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, 640);
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, 720);
   bgGrad.addColorStop(0, '#041326');
   bgGrad.addColorStop(0.5, '#071c36');
   bgGrad.addColorStop(1, '#041326');
   ctx.fillStyle = bgGrad;
   ctx.beginPath();
-  ctx.roundRect(8, 8, 1008, 624, 32);
+  ctx.roundRect(8, 8, 1008, 704, 32);
   ctx.fill();
 
   // Holographic Scanline Overlay
   ctx.fillStyle = 'rgba(56, 189, 248, 0.045)';
-  for (let y = 16; y < 620; y += 8) {
+  for (let y = 16; y < 700; y += 8) {
     ctx.fillRect(16, y, 992, 3);
   }
 
@@ -1224,107 +1478,111 @@ export function createClassDashboardWallTexture(
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#34d399';
   ctx.beginPath();
-  ctx.roundRect(20, 20, 984, 600, 24);
+  ctx.roundRect(20, 20, 984, 680, 24);
   ctx.stroke();
 
   // Header Banner
-  const grad = ctx.createLinearGradient(32, 32, 992, 134);
+  const grad = ctx.createLinearGradient(32, 28, 992, 118);
   grad.addColorStop(0, 'rgba(6, 95, 70, 0.92)');
   grad.addColorStop(0.5, 'rgba(3, 105, 161, 0.92)');
   grad.addColorStop(1, 'rgba(30, 58, 138, 0.92)');
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.roundRect(32, 30, 960, 108, 20);
+  ctx.roundRect(32, 26, 960, 88, 18);
   ctx.fill();
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#67e8f9';
   ctx.stroke();
 
   ctx.fillStyle = '#67e8f9';
-  ctx.font = '800 19px Plus Jakarta Sans, sans-serif';
+  ctx.font = '800 17px Plus Jakarta Sans, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`✦ HOLOGRAPHIC FOUNTAIN PROJECTION • ${cohortTitle} CLASS LEADERBOARD`, 54, 66);
+  ctx.fillText(`✦ HOLOGRAPHIC FOUNTAIN PROJECTION • ${cohortTitle} CLASS LEADERBOARD`, 52, 56);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '900 38px Plus Jakarta Sans, sans-serif';
-  ctx.fillText(`${cohortTitle} Class Leaderboard (${students.length} Students)`, 54, 114);
+  ctx.font = '900 32px Plus Jakarta Sans, sans-serif';
+  ctx.fillText(`Top Students - ${cohortTitle} (${students.length} Students)`, 52, 96);
 
   // Table Header Row
-  const tableY = 152;
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  const tableY = 122;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
   ctx.beginPath();
-  ctx.roundRect(34, tableY, 956, 44, 12);
+  ctx.roundRect(34, tableY, 956, 36, 10);
   ctx.fill();
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
   ctx.stroke();
 
   ctx.fillStyle = '#7dd3fc';
-  ctx.font = '900 18px Plus Jakarta Sans, sans-serif';
+  ctx.font = '900 15px Plus Jakarta Sans, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('RANK & NICKNAME', 52, tableY + 28);
+  ctx.fillText('RANK & STUDENT', 50, tableY + 23);
   ctx.textAlign = 'center';
-  ctx.fillText('READING', 450, tableY + 28);
-  ctx.fillText('LISTENING', 585, tableY + 28);
-  ctx.fillText('WRITING', 720, tableY + 28);
-  ctx.fillText('SPEAKING', 845, tableY + 28);
-  ctx.fillText('OVERALL', 945, tableY + 28);
+  ctx.fillText('READING', 460, tableY + 23);
+  ctx.fillText('LISTENING', 590, tableY + 23);
+  ctx.fillText('WRITING', 720, tableY + 23);
+  ctx.fillText('SPEAKING', 835, tableY + 23);
+  ctx.fillText('OVERALL BAND', 935, tableY + 23);
 
-  // Up to 7 rows on the Projected Leaderboard Screen
-  const visibleRows = students.slice(0, 7);
+  // Render up to 14 students so all 14 IELTS 1 students (or 12 IELTS 2 students) are visible on the screen!
+  const visibleRows = students.slice(0, 14);
+  const rowPitch = visibleRows.length > 10 ? 33 : 42;
+  const rowHeight = visibleRows.length > 10 ? 30 : 37;
+
   visibleRows.forEach((st, idx) => {
-    const rowY = tableY + 50 + idx * 48;
+    const rowY = tableY + 42 + idx * rowPitch;
     const isMe = st.name.toLowerCase() === activeStudentName.toLowerCase();
 
     ctx.fillStyle = isMe
-      ? 'rgba(37, 99, 235, 0.42)'
+      ? 'rgba(37, 99, 235, 0.45)'
       : idx % 2 === 0
-      ? 'rgba(15, 23, 42, 0.72)'
-      : 'rgba(30, 41, 59, 0.72)';
+      ? 'rgba(15, 23, 42, 0.74)'
+      : 'rgba(30, 41, 59, 0.74)';
     ctx.beginPath();
-    ctx.roundRect(34, rowY, 956, 43, 10);
+    ctx.roundRect(34, rowY, 956, rowHeight, 8);
     ctx.fill();
-    ctx.lineWidth = isMe ? 3 : 1;
-    ctx.strokeStyle = isMe ? '#38bdf8' : 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = isMe ? 2.5 : 1;
+    ctx.strokeStyle = isMe ? '#38bdf8' : 'rgba(148, 163, 184, 0.22)';
     ctx.stroke();
 
     ctx.fillStyle = isMe ? '#fde047' : '#f8fafc';
-    ctx.font = isMe ? '900 21px Plus Jakarta Sans, sans-serif' : '800 20px Plus Jakarta Sans, sans-serif';
+    ctx.font = isMe ? '900 16px Plus Jakarta Sans, sans-serif' : '800 15px Plus Jakarta Sans, sans-serif';
     ctx.textAlign = 'left';
-    const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : `${idx + 1}. `;
-    ctx.fillText(`${medal}${st.name.slice(0, 16)}${isMe ? ' (YOU)' : ''}`, 52, rowY + 29);
+    const medal = idx === 0 ? '🥇 1. ' : idx === 1 ? '🥈 2. ' : idx === 2 ? '🥉 3. ' : `${idx + 1}. `;
+    const displayLabel = (st.fullName || st.name).slice(0, 26);
+    ctx.fillText(`${medal}${displayLabel}${isMe ? ' (YOU)' : ''}`, 48, rowY + rowHeight * 0.68);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#93c5fd';
-    ctx.fillText(st.reading.toFixed(1), 450, rowY + 29);
+    ctx.fillText(st.reading > 0 ? st.reading.toFixed(1) : '0.0', 460, rowY + rowHeight * 0.68);
     ctx.fillStyle = '#5eead4';
-    ctx.fillText(st.listening.toFixed(1), 585, rowY + 29);
+    ctx.fillText(st.listening > 0 ? st.listening.toFixed(1) : '0.0', 590, rowY + rowHeight * 0.68);
     ctx.fillStyle = '#fcd34d';
-    ctx.fillText(st.writing.toFixed(1), 720, rowY + 29);
+    ctx.fillText(st.writing > 0 ? st.writing.toFixed(1) : '0.0', 720, rowY + rowHeight * 0.68);
     ctx.fillStyle = '#d8b4fe';
-    ctx.fillText(st.speaking.toFixed(1), 845, rowY + 29);
+    ctx.fillText(st.speaking > 0 ? st.speaking.toFixed(1) : '0.0', 835, rowY + rowHeight * 0.68);
 
-    ctx.fillStyle = '#34d399';
-    ctx.font = '900 22px Plus Jakarta Sans, sans-serif';
-    ctx.fillText(st.overall.toFixed(1), 945, rowY + 29);
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 17px Plus Jakarta Sans, sans-serif';
+    ctx.fillText(`★ ${st.overall.toFixed(1)}`, 935, rowY + rowHeight * 0.68);
   });
 
   // Footer CTA
-  const ctaGrad = ctx.createLinearGradient(180, 548, 844, 612);
+  const ctaGrad = ctx.createLinearGradient(180, 636, 844, 688);
   ctaGrad.addColorStop(0, '#0284c7');
   ctaGrad.addColorStop(1, '#059669');
   ctx.fillStyle = ctaGrad;
   ctx.beginPath();
-  ctx.roundRect(182, 548, 660, 58, 29);
+  ctx.roundRect(182, 634, 660, 48, 24);
   ctx.fill();
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#a7f3d0';
   ctx.stroke();
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '900 22px Plus Jakarta Sans, sans-serif';
+  ctx.font = '900 19px Plus Jakarta Sans, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`CLICK SCREEN OR PRESS E • VIEW ${cohortTitle} CLASS LEADERBOARD`, 512, 585);
+  ctx.fillText(`CLICK SCREEN OR PRESS E • VIEW ${cohortTitle} CLASS LEADERBOARD`, 512, 664);
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

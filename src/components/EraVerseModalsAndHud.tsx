@@ -398,6 +398,7 @@ interface DashboardHallModalsProps {
   isSuperAdminCharacter: boolean;
   onNavigateFullDashboard: (userId?: string) => void;
   onOpenSkillPractice?: (skill: 'Listening' | 'Reading' | 'Writing' | 'Speaking') => void;
+  onSelectAdminCohort?: (cohort: 'IELTS 1' | 'IELTS 2') => void;
 }
 
 const SKILL_ACTIVITY_CONFIG: Record<
@@ -570,12 +571,19 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
   allCohortsStudents,
   isSuperAdminCharacter,
   onNavigateFullDashboard,
-  onOpenSkillPractice
+  onOpenSkillPractice,
+  onSelectAdminCohort
 }) => {
-  const [teacherCohortTab, setTeacherCohortTab] = useState<'ALL' | 'IELTS 1' | 'IELTS 2'>('ALL');
+  const [teacherCohortTab, setTeacherCohortTab] = useState<'IELTS 1' | 'IELTS 2'>(
+    classCohortLabel === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1'
+  );
   const [personalTab, setPersonalTab] = useState<'overview' | SkillKey>('overview');
   const [selectedVideoSub, setSelectedVideoSub] = useState<SkillSubmissionSummary | null>(null);
   const [selectedFeedbackSub, setSelectedFeedbackSub] = useState<SkillSubmissionSummary | null>(null);
+
+  useEffect(() => {
+    setTeacherCohortTab(classCohortLabel === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1');
+  }, [classCohortLabel]);
 
   useEffect(() => {
     if (activeModal === 'listening_dashboard') setPersonalTab('listening');
@@ -1008,11 +1016,10 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
     );
   }
 
-  // HOLOGRAPHIC FOUNTAIN CLASS LEADERBOARD MODAL (Filtered strictly to the user's real class e.g. IELTS 1 students under their nicknames)
+  // HOLOGRAPHIC FOUNTAIN CLASS LEADERBOARD MODAL (Filtered strictly to the user's real class: IELTS 1 sees ONLY IELTS 1, IELTS 2 sees ONLY IELTS 2)
+  const activeCohort = isSuperAdminCharacter ? teacherCohortTab : classCohortLabel;
   const displayedStudents = isSuperAdminCharacter
-    ? teacherCohortTab === 'ALL'
-      ? allCohortsStudents
-      : allCohortsStudents.filter((s) => s.cohort === teacherCohortTab)
+    ? allCohortsStudents.filter((s) => s.cohort === teacherCohortTab)
     : classStudents;
 
   return (
@@ -1030,13 +1037,11 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                   ✦ CENTRAL FOUNTAIN HOLOGRAPHIC PROJECTION
                 </span>
                 <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
-                  {isSuperAdminCharacter ? 'TEACHER JAN (SUPER ADMIN)' : `${classCohortLabel} LEADERBOARD`}
+                  {`${activeCohort} LEADERBOARD`}
                 </span>
               </div>
               <h2 className="text-2xl font-extrabold tracking-tight text-white">
-                {isSuperAdminCharacter
-                  ? 'All IELTS Classes Leaderboard (Teacher Jan)'
-                  : `${classCohortLabel} Class Leaderboard (${displayedStudents.length} Students)`}
+                {`Top Students - ${activeCohort} (${displayedStudents.length} Students)`}
               </h2>
             </div>
           </div>
@@ -1055,25 +1060,30 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
           <div className="flex items-center gap-2 text-xs font-bold text-cyan-100">
             <Users className="w-4 h-4 text-cyan-400" />
             {isSuperAdminCharacter ? (
-              <span>Teacher Jan (Super Admin) can inspect all real students across IELTS 1 and IELTS 2.</span>
+              <span>
+                Inspecting <strong>{activeCohort}</strong> Leaderboard ({displayedStudents.length} Students). Admin can switch between IELTS 1 and IELTS 2.
+              </span>
             ) : (
               <span>
-                Projected on the Central Fountain: <strong>{classCohortLabel}</strong> classmates ranked by Reading, Listening, Writing &amp; Speaking.
+                Your Class Group Leaderboard: <strong>{classCohortLabel}</strong> ({displayedStudents.length} Students) ranked by Reading, Listening, Writing &amp; Speaking.
               </span>
             )}
           </div>
 
           {isSuperAdminCharacter && (
             <div className="flex items-center gap-1.5">
-              {(['ALL', 'IELTS 1', 'IELTS 2'] as const).map((tab) => (
+              {(['IELTS 1', 'IELTS 2'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setTeacherCohortTab(tab)}
-                  className={`px-3 py-1 rounded-lg text-xs font-extrabold cursor-pointer ${
+                  onClick={() => {
+                    setTeacherCohortTab(tab);
+                    onSelectAdminCohort?.(tab);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-all ${
                     teacherCohortTab === tab
-                      ? 'bg-cyan-500 text-slate-950'
-                      : 'bg-slate-800 text-cyan-200 border border-cyan-500/30'
+                      ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                      : 'bg-slate-800 text-cyan-200 border border-cyan-500/30 hover:bg-slate-700'
                   }`}
                 >
                   {tab}
@@ -1090,18 +1100,19 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
               <thead>
                 <tr className="bg-slate-900 text-cyan-300 text-[11px] font-black uppercase tracking-wider border-b border-cyan-500/25">
                   <th className="py-3.5 px-4">Rank</th>
-                  <th className="py-3.5 px-4">Student Nickname</th>
+                  <th className="py-3.5 px-4">Student</th>
                   <th className="py-3.5 px-4">Class</th>
                   <th className="py-3.5 px-4 text-center text-blue-300">Reading</th>
                   <th className="py-3.5 px-4 text-center text-teal-300">Listening</th>
                   <th className="py-3.5 px-4 text-center text-amber-300">Writing</th>
                   <th className="py-3.5 px-4 text-center text-purple-300">Speaking</th>
-                  <th className="py-3.5 px-4 text-center text-emerald-300">Overall</th>
+                  <th className="py-3.5 px-4 text-center text-emerald-300">Overall Band</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-sm">
                 {displayedStudents.map((st, idx) => {
                   const isCurrentPlayer = st.name.toLowerCase() === myStats.name.toLowerCase();
+                  const fullLabel = st.fullName || st.name;
                   return (
                     <tr
                       key={st.id}
@@ -1126,7 +1137,7 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-extrabold text-white">{st.name}</span>
+                              <span className="font-extrabold text-white">{fullLabel}</span>
                               {isCurrentPlayer && (
                                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-500 text-slate-950">
                                   YOU
@@ -1155,8 +1166,8 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
                       <td className="py-3.5 px-4 text-center font-extrabold text-amber-300">{st.writing.toFixed(1)}</td>
                       <td className="py-3.5 px-4 text-center font-extrabold text-purple-300">{st.speaking.toFixed(1)}</td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-block px-3 py-1 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs">
-                          {st.overall.toFixed(1)}
+                        <span className="inline-block px-3 py-1 rounded-xl bg-amber-400 text-slate-950 font-black text-xs">
+                          ★ {st.overall.toFixed(1)}
                         </span>
                       </td>
                     </tr>
