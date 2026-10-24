@@ -293,10 +293,11 @@ interface EraShopModalProps {
   initialCategory?: 'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories';
   playerProfile: any;
   eraGems: number;
+  eraDollars?: number;
   ownedItems: string[];
   isAdmin: boolean;
   onUpdateProfile: (updated: any) => void;
-  onBuyItem: (item: EraShopItem) => void;
+  onBuyItem: (item: EraShopItem, currency?: 'gems' | 'dollars') => void;
   onEquipItem: (item: EraShopItem) => void;
   onSaveAndSync: () => void;
   onClose: () => void;
@@ -308,6 +309,7 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
   initialCategory = 'all',
   playerProfile,
   eraGems,
+  eraDollars = 0,
   ownedItems,
   isAdmin,
   onUpdateProfile,
@@ -352,13 +354,22 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
             {/* Era Gems Wallet Pill */}
-            <div className="flex items-center gap-2.5 bg-slate-950/85 border-2 border-amber-300/80 rounded-2xl px-4 py-2 shadow-lg">
-              <span className="text-xl">💎</span>
+            <div className="flex items-center gap-2 bg-slate-950/90 border border-pink-400/40 rounded-2xl px-3.5 py-2 shadow-lg">
+              <span className="text-lg animate-pulse">💎</span>
               <div>
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Your Era Gems</div>
-                <div className="text-lg font-black text-white leading-tight">{eraGems.toLocaleString()} 💎</div>
+                <div className="text-[9px] font-extrabold uppercase tracking-wider text-pink-300">Era Gems</div>
+                <div className="text-base font-black text-pink-100 leading-tight">{eraGems.toLocaleString()} 💎</div>
+              </div>
+            </div>
+
+            {/* Era Dollars Wallet Pill */}
+            <div className="flex items-center gap-2 bg-slate-950/90 border border-emerald-400/40 rounded-2xl px-3.5 py-2 shadow-lg">
+              <span className="text-lg">💵</span>
+              <div>
+                <div className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300">Era Dollar</div>
+                <div className="text-base font-black text-emerald-100 leading-tight">${eraDollars.toLocaleString()}</div>
               </div>
             </div>
 
@@ -599,26 +610,30 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                             <span>{equipped ? 'Equipped ✓ (Click to Unequip)' : 'Equip Now'}</span>
                           </button>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => onBuyItem(item)}
-                            className={`w-full py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                              canAfford
-                                ? 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white shadow-sm'
-                                : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-                            }`}
-                          >
-                            {canAfford ? (
-                              <>
-                                <span>Buy & Equip — 💎 {item.price} Gems</span>
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="w-3.5 h-3.5" />
-                                <span>Need {item.price - eraGems} more 💎 Gems (Play EraGames!)</span>
-                              </>
-                            )}
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onBuyItem(item, 'gems')}
+                              className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                                canAfford
+                                  ? 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white shadow-sm'
+                                  : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                              }`}
+                            >
+                              💎 {item.price} Gems
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onBuyItem(item, 'dollars')}
+                              className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                                (eraDollars || 0) >= item.price
+                                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-sm'
+                                  : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                              }`}
+                            >
+                              💵 ${item.price} Dollars
+                            </button>
+                          </div>
                         )}
                       </div>
                     );
@@ -1117,7 +1132,8 @@ export const EraGalleryModal: React.FC<EraGalleryModalProps> = ({
 interface EraGamesModalProps {
   isOpen: boolean;
   eraGems: number;
-  onRewardGems: (gemsWon: number, xpWon: number, gameTitle: string) => void;
+  eraDollars?: number;
+  onRewardGems: (gemsWon: number, xpWon: number, dollarsWon: number, gameTitle: string) => void;
   onOpenEraShop: () => void;
   onClose: () => void;
 }
@@ -1184,6 +1200,7 @@ const PENALTY_IDIOM_QUESTIONS = [
 export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   isOpen,
   eraGems,
+  eraDollars = 0,
   onRewardGems,
   onOpenEraShop,
   onClose
@@ -1218,7 +1235,8 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
       setVocabScore(nextScore);
       setVocabFinished(true);
       const gemsWon = Math.max(20, nextScore * 12);
-      onRewardGems(gemsWon, nextScore * 30, 'IELTS Vocabulary Speed Blitz');
+      const dollarsWon = Math.max(25, nextScore * 20);
+      onRewardGems(gemsWon, nextScore * 30, dollarsWon, 'IELTS Vocabulary Speed Blitz');
     } else {
       setVocabScore(nextScore);
       setVocabIdx(vocabIdx + 1);
@@ -1228,8 +1246,8 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   const handleScrambleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (scrambleInput.trim().toUpperCase() === currentScramble.answer) {
-      onRewardGems(50, 80, `Word Scramble (${currentScramble.answer})`);
-      setScrambleFeedback(`🎉 Correct! "${currentScramble.answer}" unlocked +50 💎 Era Gems!`);
+      onRewardGems(50, 80, 50, `Word Scramble (${currentScramble.answer})`);
+      setScrambleFeedback(`🎉 Correct! "${currentScramble.answer}" unlocked +50 💎 Era Gems & +$50 💵 Era Dollars!`);
       setScrambleInput('');
       setTimeout(() => {
         setScrambleFeedback(null);
@@ -1247,7 +1265,8 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
       setPenaltyGoals(nextGoals);
       setPenaltyDone(true);
       const gems = Math.max(25, nextGoals * 25);
-      onRewardGems(gems, nextGoals * 40, 'Grammar & Idiom Penalty Shootout');
+      const dollars = Math.max(30, nextGoals * 35);
+      onRewardGems(gems, nextGoals * 40, dollars, 'Grammar & Idiom Penalty Shootout');
     } else {
       setPenaltyGoals(nextGoals);
       setPenaltyIdx(penaltyIdx + 1);
@@ -1273,12 +1292,20 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-950/85 border-2 border-amber-300/80 rounded-2xl px-4 py-2">
-              <span className="text-lg">💎</span>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 bg-slate-950/85 border-2 border-pink-400/80 rounded-2xl px-3.5 py-2">
+              <span className="text-lg animate-pulse">💎</span>
               <div>
-                <div className="text-[10px] font-bold uppercase text-amber-300">Era Gems</div>
+                <div className="text-[9px] font-bold uppercase text-pink-300">Era Gems</div>
                 <div className="text-base font-black text-white">{eraGems.toLocaleString()} 💎</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-950/85 border-2 border-emerald-400/80 rounded-2xl px-3.5 py-2">
+              <span className="text-lg">💵</span>
+              <div>
+                <div className="text-[9px] font-bold uppercase text-emerald-300">Era Dollar</div>
+                <div className="text-base font-black text-white">${eraDollars.toLocaleString()}</div>
               </div>
             </div>
 

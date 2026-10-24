@@ -364,7 +364,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <ChatBox />
+      {location.pathname !== '/eraverse' && <ChatBox />}
 
       {/* Footer */}
       {location.pathname !== '/eraverse' && (

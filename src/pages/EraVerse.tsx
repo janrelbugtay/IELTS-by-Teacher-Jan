@@ -30,7 +30,9 @@ import {
   Sliders,
   MessageCircle,
   ExternalLink,
-  ShoppingBag
+  ShoppingBag,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import {
   TEACHER_JAN_PROFILE,
@@ -1010,12 +1012,21 @@ export function EraVerse() {
   const [eraShopInitialTab, setEraShopInitialTab] = useState<'shop' | 'customizer'>('shop');
   const [eraShopInitialCat, setEraShopInitialCat] = useState<'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories'>('all');
   const [eraGalleryInitialTab, setEraGalleryInitialTab] = useState<'all' | 'photos' | 'videos'>('all');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(true);
   const [eraGems, setEraGems] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem('eraverse_gems_balance');
-      return saved ? Math.max(0, parseInt(saved, 10) || 250) : 250;
+      const saved = localStorage.getItem('eraverse_gems_v2');
+      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 0;
     } catch (_e) {
-      return 250;
+      return 0;
+    }
+  });
+  const [eraDollars, setEraDollars] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('eraverse_dollars_v2');
+      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 0;
+    } catch (_e) {
+      return 0;
     }
   });
   const [ownedShopItems, setOwnedShopItems] = useState<string[]>(() => {
@@ -1110,11 +1121,12 @@ export function EraVerse() {
 
   const allPracticeTests = useMemo(() => getIeltsPracticeTests(), []);
 
-  // Helper to persist EraVerse character customizations + Era Gems + owned items to both Firestore (`users/{uid}`) and localStorage
+  // Helper to persist EraVerse character customizations + Era Gems + Era Dollars + owned items to both Firestore (`users/{uid}`) and localStorage
   const persistAvatarCustomization = (
     profileToSave: typeof playerProfile,
     nextGems = eraGems,
-    nextOwned = ownedShopItems
+    nextOwned = ownedShopItems,
+    nextDollars = eraDollars
   ) => {
     const targetUid = profileToSave.realUserId || user?.uid || localStorage.getItem('studentUid') || '';
     const avatarPayload = {
@@ -1133,12 +1145,14 @@ export function EraVerse() {
       beltType: profileToSave.beltType || 'none',
       vehicleType: profileToSave.vehicleType || 'none',
       eraGems: nextGems,
+      eraDollars: nextDollars,
       ownedShopItems: nextOwned,
       updatedAt: Date.now()
     };
 
     try {
-      localStorage.setItem('eraverse_gems_balance', String(nextGems));
+      localStorage.setItem('eraverse_gems_v2', String(nextGems));
+      localStorage.setItem('eraverse_dollars_v2', String(nextDollars));
       localStorage.setItem('eraverse_owned_shop_items', JSON.stringify(nextOwned));
       if (targetUid) {
         localStorage.setItem(`eraverse_custom_${targetUid}`, JSON.stringify(avatarPayload));
@@ -1164,6 +1178,20 @@ export function EraVerse() {
         { merge: true }
       ).catch(() => {});
     }
+  };
+
+  const toggleAppFullscreen = () => {
+    soundEngine.playUiClick();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen((prev) => !prev);
+    }
+    window.setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 120);
   };
 
   // Start room song synthesizer on mount and clean up on unmount
@@ -1274,9 +1302,6 @@ export function EraVerse() {
       // ignore
     }
 
-    if (customLook?.eraGems !== undefined && typeof customLook.eraGems === 'number') {
-      setEraGems(customLook.eraGems);
-    }
     if (Array.isArray(customLook?.ownedShopItems)) {
       setOwnedShopItems(customLook.ownedShopItems);
     }
@@ -2433,29 +2458,110 @@ export function EraVerse() {
     ];
     treeCoords.forEach(([tx, tz, sc]) => createStylizedTree(tx, tz, sc));
 
-    // Collectible Word Crystals
-    const crystalWords = [
-      { word: 'COHERENCE', x: 18, y: 1.4, z: -12, color: 0x38bdf8 },
-      { word: 'LEXICAL', x: -18, y: 1.4, z: -12, color: 0xf59e0b },
-      { word: 'FLUENCY', x: -18, y: 1.4, z: 14, color: 0xa855f7 },
-      { word: 'ARTICULATE', x: 18, y: 1.4, z: 14, color: 0x10b981 },
-      { word: 'BAND 9.0', x: -75, y: 1.5, z: -14, color: 0xf43f5e }
+    // Dynamic Pop-Up Collectible Era Gems (💎) & Era Dollars (💵)
+    const createCollectibleLabelSprite = (label: string, borderHex: string) => {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 64;
+      const ctx = c.getContext('2d')!;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.beginPath();
+      ctx.roundRect(6, 6, 244, 52, 16);
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = borderHex;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 20px Plus Jakarta Sans, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, 128, 39);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+      sp.scale.set(2.2, 0.55, 1);
+      sp.position.set(0, 1.35, 0);
+      return sp;
+    };
+
+    const spawnLocations = [
+      { x: 15, z: -11 },
+      { x: -15, z: -11 },
+      { x: -15, z: 13 },
+      { x: 15, z: 13 },
+      { x: 0, z: 19 },
+      { x: 0, z: -19 },
+      { x: 32, z: -16 },
+      { x: -32, z: -16 },
+      { x: 32, z: 16 },
+      { x: -32, z: 16 },
+      { x: -58, z: -8 },
+      { x: -58, z: 10 }
     ];
-    const crystalObjs: Array<{ mesh: THREE.Mesh; word: string; collected: boolean; baseY: number }> = [];
-    crystalWords.forEach((cw) => {
+
+    const crystalObjs: Array<{
+      group: THREE.Group;
+      mesh: THREE.Mesh;
+      ring: THREE.Mesh;
+      kind: 'gem' | 'dollar';
+      amount: number;
+      collected: boolean;
+      respawnTimer: number;
+      popScale: number;
+      baseY: number;
+    }> = [];
+
+    spawnLocations.forEach((loc, idx) => {
+      const isGem = idx % 2 === 0;
+      const amount = isGem ? 15 + (idx % 3) * 5 : 20 + (idx % 4) * 10;
+      const colorHex = isGem ? (idx % 4 === 0 ? 0xec4899 : 0x38bdf8) : 0x10b981;
+
+      const cGroup = new THREE.Group();
+      cGroup.position.set(loc.x, 1.35, loc.z);
+
       const cMesh = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.72, 0),
+        isGem ? new THREE.OctahedronGeometry(0.75, 0) : new THREE.CylinderGeometry(0.68, 0.68, 0.24, 20),
         new THREE.MeshStandardMaterial({
-          color: cw.color,
-          emissive: cw.color,
-          emissiveIntensity: 0.5,
+          color: isGem ? colorHex : 0xfacc15,
+          emissive: colorHex,
+          emissiveIntensity: 0.55,
           roughness: 0.15,
-          metalness: 0.8
+          metalness: 0.85
         })
       );
-      cMesh.position.set(cw.x, cw.y, cw.z);
-      scene.add(cMesh);
-      crystalObjs.push({ mesh: cMesh, word: cw.word, collected: false, baseY: cw.y });
+      if (!isGem) {
+        cMesh.rotation.x = Math.PI / 2;
+      }
+      cGroup.add(cMesh);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.95, 0.05, 8, 24),
+        new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.75 })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = -0.55;
+      cGroup.add(ring);
+
+      const labelSprite = createCollectibleLabelSprite(
+        isGem ? `💎 +${amount} GEMS` : `💵 +$${amount}`,
+        isGem ? '#ec4899' : '#10b981'
+      );
+      cGroup.add(labelSprite);
+
+      scene.add(cGroup);
+      crystalObjs.push({
+        group: cGroup,
+        mesh: cMesh,
+        ring,
+        kind: isGem ? 'gem' : 'dollar',
+        amount,
+        collected: idx >= 7, // Start with 7 popped up immediately, others pop up dynamically
+        respawnTimer: idx >= 7 ? 2.5 + (idx - 7) * 2.0 : 0,
+        popScale: idx >= 7 ? 0.01 : 1,
+        baseY: 1.35
+      });
+      if (idx >= 7) {
+        cGroup.visible = false;
+      }
     });
 
     // ============================================================================
@@ -4462,11 +4568,18 @@ export function EraVerse() {
             setEraGems((gm) => {
               const next = gm + 25;
               try {
-                localStorage.setItem('eraverse_gems_balance', String(next));
+                localStorage.setItem('eraverse_gems_v2', String(next));
               } catch (_e) {}
               return next;
             });
-            showToast('GOOOOAL! ⚽ +100 XP & +25 💎 Era Gems!', 'You beat Keeper Max on the EraVerse Football Field!', '#16A34A');
+            setEraDollars((dl) => {
+              const next = dl + 40;
+              try {
+                localStorage.setItem('eraverse_dollars_v2', String(next));
+              } catch (_e) {}
+              return next;
+            });
+            showToast('GOOOOAL! ⚽ +25 💎 Gems & +$40 💵!', 'You beat Keeper Max on the EraVerse Football Field!', '#16A34A');
             soccerBallState.x = PITCH_CENTER.x;
             soccerBallState.y = 2.0;
             soccerBallState.z = PITCH_CENTER.z;
@@ -4483,11 +4596,18 @@ export function EraVerse() {
               setEraGems((gm) => {
                 const next = gm + 25;
                 try {
-                  localStorage.setItem('eraverse_gems_balance', String(next));
+                  localStorage.setItem('eraverse_gems_v2', String(next));
                 } catch (_e) {}
                 return next;
               });
-              showToast('GOOOOAL! ⚽ +100 XP & +25 💎 Era Gems!', 'Awesome shot into the South Goal!', '#16A34A');
+              setEraDollars((dl) => {
+                const next = dl + 40;
+                try {
+                  localStorage.setItem('eraverse_dollars_v2', String(next));
+                } catch (_e) {}
+                return next;
+              });
+              showToast('GOOOOAL! ⚽ +25 💎 Gems & +$40 💵!', 'Awesome shot into the South Goal!', '#16A34A');
             } else {
               setAiFootballGoals((g) => g + 1);
               showToast('Keeper Max Scored! ⚽', 'Defend the South Goal and counter-attack!', '#EF4444');
@@ -4571,31 +4691,60 @@ export function EraVerse() {
         );
       }
 
-      // Collectible Word Crystals
+      // Dynamic Pop-Up Era Gems (💎) & Era Dollars (💵) Collection & Respawn Loop
       if (!activeInteriorBuilding) {
-        crystalObjs.forEach((co) => {
-          if (co.collected) return;
-          co.mesh.rotation.y = elapsed * 1.8;
-          co.mesh.position.y = co.baseY + Math.sin(elapsed * 3) * 0.2;
+        crystalObjs.forEach((co, idx) => {
+          if (co.collected) {
+            co.respawnTimer -= dt;
+            if (co.respawnTimer <= 0) {
+              co.collected = false;
+              co.popScale = 0.05;
+              co.group.visible = true;
+              // Slightly randomize position around its spawn zone so pop-ups feel dynamic
+              const baseLoc = spawnLocations[idx % spawnLocations.length];
+              co.group.position.x = baseLoc.x + (Math.random() - 0.5) * 6;
+              co.group.position.z = baseLoc.z + (Math.random() - 0.5) * 6;
+            }
+            return;
+          }
+
+          co.popScale = THREE.MathUtils.damp(co.popScale, 1.0, 9, dt);
+          co.group.scale.setScalar(co.popScale);
+          co.mesh.rotation.y = elapsed * 2.2;
+          co.ring.scale.setScalar(0.9 + Math.sin(elapsed * 4 + idx) * 0.12);
+          co.group.position.y = co.baseY + Math.sin(elapsed * 3.2 + idx) * 0.22;
+
           const dist = Math.hypot(
-            playerState.x - co.mesh.position.x,
-            playerState.y + 1.2 - co.mesh.position.y,
-            playerState.z - co.mesh.position.z
+            playerState.x - co.group.position.x,
+            playerState.z - co.group.position.z
           );
-          if (dist < 2.0) {
+          if (dist < 2.35) {
             co.collected = true;
-            co.mesh.visible = false;
+            co.group.visible = false;
+            co.respawnTimer = 6.5 + Math.random() * 5.5;
             soundEngine.playCrystalCollect();
             setCrystalsCollected((c) => c + 1);
-            setXp((x) => x + 50);
-            setEraGems((gm) => {
-              const next = gm + 35;
-              try {
-                localStorage.setItem('eraverse_gems_balance', String(next));
-              } catch (_e) {}
-              return next;
-            });
-            showToast(`Collected "${co.word}" Gem!`, '+35 💎 Era Gems & +50 XP Earned! Spend them in EraSHOP!', '#EC4899');
+            setXp((x) => x + 30);
+
+            if (co.kind === 'gem') {
+              setEraGems((gm) => {
+                const next = gm + co.amount;
+                try {
+                  localStorage.setItem('eraverse_gems_v2', String(next));
+                } catch (_e) {}
+                return next;
+              });
+              showToast(`💎 +${co.amount} Era Gems Collected!`, 'Walk around campus to collect more popping Era Gems!', '#EC4899');
+            } else {
+              setEraDollars((dl) => {
+                const next = dl + co.amount;
+                try {
+                  localStorage.setItem('eraverse_dollars_v2', String(next));
+                } catch (_e) {}
+                return next;
+              });
+              showToast(`💵 +$${co.amount} Era Dollars Collected!`, 'Spend your Era Dollars & Era Gems in EraSHOP!', '#10B981');
+            }
           }
         });
       }
@@ -4889,86 +5038,71 @@ export function EraVerse() {
     : ROOM_SONGS.campus.name;
 
   return (
-    <div className="relative w-full h-[calc(100vh-80px)] overflow-hidden bg-slate-950 select-none">
+    <div
+      className={`relative w-full ${
+        isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[calc(100vh-80px)]'
+      } overflow-hidden bg-slate-950 select-none`}
+    >
       {/* 1. ISOLATED THREE.JS WEBGL CANVAS */}
       <div ref={canvasMountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
 
-      {/* 2. TOP-LEFT PLAYER STATUS, SPORTS SCOREBOARD & CHARACTER SWITCHER */}
+      {/* 2. TOP-LEFT ERA WALLET (ONLY ERA GEMS & ERA DOLLAR) + SUPERADMIN CHARACTERS & SHOP-ONLY ERASHOP ICON */}
       <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2.5 pointer-events-auto">
-        <div className="flex items-center gap-3 bg-slate-950/90 border border-white/15 rounded-2xl px-4 py-2.5 text-white shadow-xl">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm text-white shadow-inner border border-white/20"
-            style={{ backgroundColor: playerProfile.shirtColor }}
-          >
-            {playerProfile.cohort === 'IELTS 2' ? 'I2' : 'I1'}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm tracking-tight text-white">{playerProfile.name}</span>
-              <span
-                className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                  playerProfile.cohort.includes('TEACHER')
-                    ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50'
-                    : playerProfile.cohort === 'IELTS 2'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-                    : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                }`}
-              >
-                {playerProfile.cohort}
+        <div className="flex items-center gap-2.5 bg-slate-950/90 backdrop-blur-md border border-white/15 rounded-2xl px-3.5 py-2 text-white shadow-2xl">
+          {/* Era Gems Pill */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-pink-500/15 border border-pink-400/35">
+            <span className="text-base">💎</span>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-extrabold uppercase tracking-wider text-pink-300 leading-none">
+                Era Gems
               </span>
+              <span className="text-sm font-black text-white leading-tight">{eraGems.toLocaleString()}</span>
             </div>
-            <div className="text-[11px] text-slate-300 font-medium flex flex-wrap items-center gap-2 mt-0.5">
-              <span>{insideBuilding ? `Inside: ${insideBuilding.name}` : 'EraVerse Campus & Sports Park'}</span>
-              <span>•</span>
-              <span className="text-pink-400 font-extrabold">💎 {eraGems} Era Gems</span>
-              <span>•</span>
-              <span className="text-amber-400 font-bold">{xp} XP</span>
-              <span>•</span>
-              <span className="text-emerald-300 font-bold">⚽ {footballGoals}</span>
-              <span>•</span>
-              <span className="text-cyan-300 font-bold">🏓 {pickleballScore}</span>
+          </div>
+
+          {/* Era Dollar Pill */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-400/35">
+            <span className="text-base">💵</span>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300 leading-none">
+                Era Dollar
+              </span>
+              <span className="text-sm font-black text-white leading-tight">${eraDollars.toLocaleString()}</span>
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            soundEngine.playUiClick();
-            setShowCharactersModal(true);
-          }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-lg border border-blue-400/40 transition-all cursor-pointer"
-        >
-          <Users className="w-4 h-4" />
-          <span>Characters & Teachers ({ieltsCharacters.length})</span>
-        </button>
+        {/* Characters & Teachers button: ONLY visible to SuperAdmin */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playUiClick();
+              setShowCharactersModal(true);
+            }}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-lg border border-blue-400/40 transition-all cursor-pointer"
+          >
+            <Users className="w-4 h-4" />
+            <span>Characters & Teachers ({ieltsCharacters.length})</span>
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={() => {
-            soundEngine.playUiClick();
-            setEraShopInitialTab('shop');
-            setEraShopInitialCat('all');
-            setActiveBuildingModal('reading');
-          }}
-          className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs px-3.5 py-3 rounded-2xl shadow-lg border border-pink-400/40 transition-all cursor-pointer"
-        >
-          <ShoppingBag className="w-4 h-4 text-amber-200" />
-          <span>EraSHOP (💎 {eraGems})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            soundEngine.playUiClick();
-            setEraShopInitialTab('customizer');
-            setShowCustomizerModal(true);
-          }}
-          className="flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 text-slate-100 font-bold text-xs px-3.5 py-3 rounded-2xl shadow-lg border border-white/15 transition-all cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>Boy / Girl & Style</span>
-        </button>
+        {/* EraSHOP icon: ONLY appears when the player enters the EraSHOP building */}
+        {insideBuilding?.id === 'reading' && (
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playUiClick();
+              setEraShopInitialTab('shop');
+              setEraShopInitialCat('all');
+              setActiveBuildingModal('reading');
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl shadow-lg border border-pink-400/40 transition-all cursor-pointer animate-bounce"
+          >
+            <ShoppingBag className="w-4 h-4 text-amber-200" />
+            <span>EraSHOP (💎 {eraGems} • 💵 ${eraDollars})</span>
+          </button>
+        )}
 
         {/* Top-Ribbon Chat Icon Button */}
         <button
@@ -5031,7 +5165,7 @@ export function EraVerse() {
         />
       )}
 
-      {/* 3. TOP-RIGHT SETTINGS (GRAPHICS QUALITY: HIGH/MEDIUM/LOW, AUDIO ON/OFF, ROOM MUSIC) & ROOM EXIT */}
+      {/* 3. TOP-RIGHT FULLSCREEN & SETTINGS (AUDIO ICON MOVED INSIDE SETTINGS) */}
       <div className="absolute top-4 right-4 z-10 flex flex-wrap items-center gap-2 pointer-events-auto">
         {insideBuilding && (
           <>
@@ -5057,27 +5191,22 @@ export function EraVerse() {
           </>
         )}
 
-        {/* Quick Audio On/Off Toggle */}
+        {/* Full Screen App Toggle Button */}
         <button
           type="button"
-          onClick={() => {
-            const nextAudio = !audioEnabled;
-            soundEngine.audioEnabled = nextAudio;
-            setAudioEnabled(nextAudio);
-            if (nextAudio) soundEngine.playUiClick();
-          }}
-          className={`flex items-center gap-2 font-bold text-xs px-3.5 py-3 rounded-2xl shadow-xl border transition-all cursor-pointer ${
-            audioEnabled
-              ? 'bg-slate-900/90 hover:bg-slate-800 text-emerald-300 border-emerald-500/30'
-              : 'bg-slate-900/90 hover:bg-slate-800 text-red-300 border-red-500/30'
-          }`}
-          title="Audio On / Off"
+          onClick={toggleAppFullscreen}
+          className="flex items-center gap-2 bg-slate-900/95 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-3 rounded-2xl shadow-xl border border-white/15 transition-all cursor-pointer"
+          title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Mode'}
         >
-          {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          <span className="hidden sm:inline">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
+          {isFullscreen ? (
+            <Minimize className="w-4 h-4 text-emerald-400" />
+          ) : (
+            <Maximize className="w-4 h-4 text-sky-400" />
+          )}
+          <span className="hidden sm:inline">{isFullscreen ? 'Full Screen' : 'Expand'}</span>
         </button>
 
-        {/* Top-Right Settings Button */}
+        {/* Top-Right Settings Button (Contains Audio & Music Controls) */}
         <button
           type="button"
           onClick={() => {
@@ -5733,7 +5862,7 @@ export function EraVerse() {
       )}
 
       {/* ============================================================================
-          MODAL 4A: ERASHOP BOUTIQUE & CHARACTER CUSTOMIZER (WITH CANDY & ERA GEMS)
+          MODAL 4A: ERASHOP BOUTIQUE & CHARACTER CUSTOMIZER (WITH CANDY, ERA GEMS & ERA DOLLARS)
           ============================================================================ */}
       {(showCustomizerModal || activeBuildingModal === 'reading') && (
         <EraShopModal
@@ -5745,26 +5874,42 @@ export function EraVerse() {
           initialTab={showCustomizerModal ? 'customizer' : eraShopInitialTab}
           initialCategory={eraShopInitialCat}
           eraGems={eraGems}
+          eraDollars={eraDollars}
           ownedItems={ownedShopItems}
           isAdmin={isAdmin}
           playerProfile={playerProfile}
           onUpdateProfile={(updated) => {
             const nextProfile = { ...playerProfile, ...updated };
             setPlayerProfile(nextProfile);
-            persistAvatarCustomization(nextProfile, eraGems, ownedShopItems);
+            persistAvatarCustomization(nextProfile, eraGems, ownedShopItems, eraDollars);
           }}
-          onBuyItem={(item: EraShopItem) => {
-            if (eraGems < item.price) {
-              showToast(
-                'Not Enough Era Gems! 💎',
-                `You need ${item.price - eraGems} more 💎 Era Gems! Play EraGames, score Football goals, or collect campus crystals!`,
-                '#EC4899'
-              );
-              return;
+          onBuyItem={(item: EraShopItem, currency: 'gems' | 'dollars' = 'gems') => {
+            let nextGems = eraGems;
+            let nextDollars = eraDollars;
+            if (currency === 'dollars') {
+              if (eraDollars < item.price) {
+                showToast(
+                  'Not Enough Era Dollars! 💵',
+                  `You need $${item.price - eraDollars} more 💵 Era Dollars! Collect popping dollars on campus or play EraGames!`,
+                  '#10B981'
+                );
+                return;
+              }
+              nextDollars = eraDollars - item.price;
+              setEraDollars(nextDollars);
+            } else {
+              if (eraGems < item.price) {
+                showToast(
+                  'Not Enough Era Gems! 💎',
+                  `You need ${item.price - eraGems} more 💎 Era Gems! Collect popping Era Gems on campus or play EraGames!`,
+                  '#EC4899'
+                );
+                return;
+              }
+              nextGems = eraGems - item.price;
+              setEraGems(nextGems);
             }
-            const nextGems = eraGems - item.price;
             const nextOwned = ownedShopItems.includes(item.id) ? ownedShopItems : [...ownedShopItems, item.id];
-            setEraGems(nextGems);
             setOwnedShopItems(nextOwned);
             soundEngine.playCrystalCollect();
             const nextProfile = {
@@ -5774,7 +5919,7 @@ export function EraVerse() {
               ...(item.pantsColorOverride ? { pantsColor: item.pantsColorOverride } : {})
             };
             setPlayerProfile(nextProfile);
-            persistAvatarCustomization(nextProfile, nextGems, nextOwned);
+            persistAvatarCustomization(nextProfile, nextGems, nextOwned, nextDollars);
             showToast(
               `Purchased & Equipped ${item.name}!`,
               `Candy: "Looks awesome on you, ${playerProfile.name}! Synced to your Student Dashboard!"`,
@@ -5796,7 +5941,7 @@ export function EraVerse() {
               ...(!isCurrentlyEquipped && item.pantsColorOverride ? { pantsColor: item.pantsColorOverride } : {})
             };
             setPlayerProfile(nextProfile);
-            persistAvatarCustomization(nextProfile, eraGems, ownedShopItems);
+            persistAvatarCustomization(nextProfile, eraGems, ownedShopItems, eraDollars);
             showToast(
               isCurrentlyEquipped ? `Unequipped ${item.name}` : `Equipped ${item.name}!`,
               `Candy: "Updated your 3D character in EraVerse & your Student Dashboard!"`,
@@ -5805,7 +5950,7 @@ export function EraVerse() {
           }}
           onSaveAndSync={() => {
             soundEngine.playUiClick();
-            persistAvatarCustomization(playerProfile, eraGems, ownedShopItems);
+            persistAvatarCustomization(playerProfile, eraGems, ownedShopItems, eraDollars);
             setShowCustomizerModal(false);
             if (activeBuildingModal === 'reading') setActiveBuildingModal(null);
             showToast(
@@ -5829,26 +5974,33 @@ export function EraVerse() {
       )}
 
       {/* ============================================================================
-          MODAL 4C: ERAGAMES ARCADE ARENA (EARN ERA GEMS & XP)
+          MODAL 4C: ERAGAMES ARCADE ARENA (EARN ERA GEMS & ERA DOLLARS)
           ============================================================================ */}
       {activeBuildingModal === 'speaking' && (
         <EraGamesModal
           isOpen={activeBuildingModal === 'speaking'}
           onClose={() => setActiveBuildingModal(null)}
           eraGems={eraGems}
+          eraDollars={eraDollars}
           onOpenEraShop={() => {
             soundEngine.playUiClick();
             setEraShopInitialTab('shop');
             setEraShopInitialCat('all');
             setActiveBuildingModal('reading');
           }}
-          onRewardGems={(gemsWon, xpWon, gameTitle) => {
+          onRewardGems={(gemsWon, xpWon, dollarsWon, gameTitle) => {
             soundEngine.playGoalCheer();
             const nextGems = eraGems + gemsWon;
+            const nextDollars = eraDollars + dollarsWon;
             setEraGems(nextGems);
+            setEraDollars(nextDollars);
             setXp((x) => x + xpWon);
-            persistAvatarCustomization(playerProfile, nextGems, ownedShopItems);
-            showToast(`+${gemsWon} 💎 Era Gems & +${xpWon} XP!`, `${gameTitle} — Spend your gems in EraSHOP with Candy!`, '#9333EA');
+            persistAvatarCustomization(playerProfile, nextGems, ownedShopItems, nextDollars);
+            showToast(
+              `+${gemsWon} 💎 Era Gems & +$${dollarsWon} 💵!`,
+              `${gameTitle} — Spend your rewards in EraSHOP with Candy!`,
+              '#9333EA'
+            );
           }}
         />
       )}
