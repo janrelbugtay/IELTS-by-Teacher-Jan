@@ -6,6 +6,7 @@ import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { EraVerseAvatar3D } from '../components/EraVerseAvatar3D';
+import { buildRealisticCharacter3D } from '../utils/realisticCharacterBuilder';
 import {
   Headphones,
   BookOpen,
@@ -783,52 +784,7 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       shopCategory: 'all'
     }
   ],
-  reading: [
-    {
-      slot: 'back-left',
-      category: 'VEHICLES & RIDES • 110–150 💎',
-      title: '3D Bikes & Skateboards',
-      subtitle: 'Ride Around EraVerse with +65% Speed Boost!',
-      badge: 'BROWSE BIKES & SKATEBOARDS',
-      accentHex: '#059669',
-      bgLightHex: '#D1FAE5',
-      actionType: 'open_erashop',
-      shopCategory: 'vehicles'
-    },
-    {
-      slot: 'back-right',
-      category: 'BELTS, CLOTHES & WINGS • 40–130 💎',
-      title: 'Belts, Outfits & Accessories',
-      subtitle: 'Gold Belts, Cyber Jackets, Skirts, Wings & Crowns',
-      badge: 'SHOP BELTS & CLOTHES',
-      accentHex: '#DB2777',
-      bgLightHex: '#FCE7F3',
-      actionType: 'open_erashop',
-      shopCategory: 'belts'
-    },
-    {
-      slot: 'left-wall',
-      category: '3D CHARACTER STUDIO',
-      title: 'Boy / Girl, Hair, Skin & Body',
-      subtitle: 'Customize Gender, Hair Color, Skin Tone & Body Build',
-      badge: 'CUSTOMIZE CHARACTER',
-      accentHex: '#2563EB',
-      bgLightHex: '#DBEAFE',
-      actionType: 'open_erashop',
-      shopCategory: 'customizer'
-    },
-    {
-      slot: 'right-wall',
-      category: "CANDY'S BOUTIQUE COUNTER",
-      title: 'EraSHOP Full Catalog',
-      subtitle: 'Hosted by Candy (IELTS 2) • Spend Your 💎 Era Gems',
-      badge: 'OPEN ERASHOP STORE',
-      accentHex: '#D97706',
-      bgLightHex: '#FEF3C7',
-      actionType: 'open_erashop',
-      shopCategory: 'all'
-    }
-  ],
+  reading: [],
   listening: [
     {
       slot: 'back-left',
@@ -1060,6 +1016,7 @@ export function EraVerse() {
     pantsColor?: string;
     beltType?: 'none' | 'leather_belt' | 'gold_belt' | 'cyber_belt' | 'star_belt' | string;
     vehicleType?: 'none' | 'skateboard' | 'bike' | string;
+    [key: string]: any;
   }>(() => {
     const initialMatch = findCharacterForAuthUser(user, isAdmin, DEFAULT_IELTS_CHARACTERS as any, []);
     if (initialMatch) {
@@ -1130,19 +1087,20 @@ export function EraVerse() {
   ) => {
     const targetUid = profileToSave.realUserId || user?.uid || localStorage.getItem('studentUid') || '';
     const avatarPayload = {
+      ...profileToSave,
       name: profileToSave.name,
       cohort: profileToSave.cohort,
-      shirtColor: profileToSave.shirtColor,
+      shirtColor: profileToSave.topColor || profileToSave.shirtColor,
       hairColor: profileToSave.hairColor,
-      skinColor: profileToSave.skinColor,
-      hatType: profileToSave.hatType,
+      skinColor: profileToSave.skinTone || profileToSave.skinColor,
+      hatType: profileToSave.hatStyle || profileToSave.hatType,
       accessoryType: profileToSave.accessoryType,
       gender: profileToSave.gender || 'boy',
       hairStyle: profileToSave.hairStyle || 'classic',
       bodyType: profileToSave.bodyType || 'regular',
       clothingType: profileToSave.clothingType || 'varsity',
-      pantsColor: profileToSave.pantsColor || '#1e293b',
-      beltType: profileToSave.beltType || 'none',
+      pantsColor: profileToSave.bottomColor || profileToSave.pantsColor || '#1e293b',
+      beltType: profileToSave.beltStyle || profileToSave.beltType || 'none',
       vehicleType: profileToSave.vehicleType || 'none',
       eraGems: nextGems,
       eraDollars: nextDollars,
@@ -1314,6 +1272,8 @@ export function EraVerse() {
         return prev;
       }
       return {
+        ...prev,
+        ...(customLook || {}),
         id: matched.id,
         realUserId: matched.realUserId || effectiveAuthUser.uid,
         email: matched.email || effectiveAuthUser.email || undefined,
@@ -1323,17 +1283,17 @@ export function EraVerse() {
         roleTitle: matched.roleTitle,
         specialty: matched.specialty,
         avatarDetails: matched.avatarDetails,
-        shirtColor: customLook?.shirtColor || matched.shirtColor,
+        shirtColor: customLook?.topColor || customLook?.shirtColor || matched.shirtColor,
         hairColor: customLook?.hairColor || matched.hairColor,
-        skinColor: customLook?.skinColor || matched.skinColor,
-        hatType: customLook?.hatType || matched.hatType,
+        skinColor: customLook?.skinTone || customLook?.skinColor || matched.skinColor,
+        hatType: customLook?.hatStyle || customLook?.hatType || matched.hatType,
         accessoryType: customLook?.accessoryType || matched.accessoryType,
         gender: customLook?.gender || matched.gender || defaultGender,
-        hairStyle: customLook?.hairStyle || matched.hairStyle || (defaultGender === 'girl' ? 'long' : 'classic'),
+        hairStyle: customLook?.hairStyle || matched.hairStyle || (defaultGender === 'girl' ? 'twin_buns' : 'fluffy_swept'),
         bodyType: customLook?.bodyType || matched.bodyType || 'regular',
         clothingType: customLook?.clothingType || matched.clothingType || 'varsity',
-        pantsColor: customLook?.pantsColor || matched.pantsColor || '#1e293b',
-        beltType: customLook?.beltType || matched.beltType || 'none',
+        pantsColor: customLook?.bottomColor || customLook?.pantsColor || matched.pantsColor || '#1e293b',
+        beltType: customLook?.beltStyle || customLook?.beltType || matched.beltType || 'none',
         vehicleType: customLook?.vehicleType || matched.vehicleType || 'none'
       };
     });
@@ -2623,10 +2583,10 @@ export function EraVerse() {
       pantsColor?: string;
       beltType?: string;
       vehicleType?: string;
+      [key: string]: any;
     }) => {
       const root = new THREE.Group();
       const segs = currentQuality === 'high' ? 20 : currentQuality === 'medium' ? 12 : 8;
-      const isGirl = opts.gender === 'girl';
 
       const shadowDisc = new THREE.Mesh(
         new THREE.CircleGeometry(0.84, segs),
@@ -2636,381 +2596,34 @@ export function EraVerse() {
       shadowDisc.position.y = 0.02;
       root.add(shadowDisc);
 
-      const bodyGroup = new THREE.Group();
-      if (opts.bodyType === 'slim') {
-        bodyGroup.scale.set(0.88, 1.02, 0.88);
-      } else if (opts.bodyType === 'athletic') {
-        bodyGroup.scale.set(1.12, 1.02, 1.08);
-      } else if (opts.bodyType === 'tall') {
-        bodyGroup.scale.set(0.96, 1.1, 0.96);
-      }
-      root.add(bodyGroup);
-
-      const skinMat = new THREE.MeshStandardMaterial({ color: opts.skinColor, roughness: 0.45, metalness: 0.04 });
-      const shirtMat = new THREE.MeshStandardMaterial({
-        color: opts.shirtColor,
-        roughness: opts.clothingType === 'cyber_jacket' ? 0.2 : 0.38,
-        metalness: opts.clothingType === 'cyber_jacket' ? 0.55 : 0.14
-      });
-      const pantsMat = new THREE.MeshStandardMaterial({
-        color: opts.pantsColor || 0x1e293b,
-        roughness: 0.55,
-        metalness: 0.08
-      });
-      const shoeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3, metalness: 0.2 });
-      const hairMat = new THREE.MeshStandardMaterial({ color: opts.hairColor, roughness: 0.55, metalness: 0.08 });
-
-      // Legs + Detailed Sneakers
-      const createLegWithShoe = (lx: number) => {
-        const legGroup = new THREE.Group();
-        legGroup.position.set(lx, 0.92, 0);
-        const legCyl = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.52, 8, segs), pantsMat);
-        legCyl.position.y = -0.38;
-        legCyl.castShadow = true;
-        legGroup.add(legCyl);
-
-        const sneaker = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.22, 0.54), shoeMat);
-        sneaker.position.set(0, -0.8, 0.06);
-        sneaker.castShadow = true;
-        legGroup.add(sneaker);
-        return legGroup;
-      };
-
-      const leftLeg = createLegWithShoe(-0.24);
-      const rightLeg = createLegWithShoe(0.24);
-      root.add(leftLeg, rightLeg);
-
-      // Sculpted Torso + Clothing Styles
-      const torsoRadius = isGirl ? 0.39 : 0.42;
-      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(torsoRadius, 0.52, 8, segs), shirtMat);
-      torso.position.y = 1.45;
-      torso.castShadow = true;
-      bodyGroup.add(torso);
-
-      if (opts.clothingType === 'skirt_outfit' || (isGirl && opts.clothingType === 'royal_suit')) {
-        const skirt = new THREE.Mesh(
-          new THREE.ConeGeometry(0.56, 0.52, segs),
-          new THREE.MeshStandardMaterial({ color: opts.pantsColor || opts.shirtColor, roughness: 0.4 })
-        );
-        skirt.position.y = 1.02;
-        bodyGroup.add(skirt);
-      }
-
-      if (opts.clothingType === 'royal_suit') {
-        const lapel = new THREE.Mesh(
-          new THREE.BoxGeometry(0.3, 0.55, 0.84),
-          new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.25, metalness: 0.75 })
-        );
-        lapel.position.set(0, 1.5, 0.03);
-        bodyGroup.add(lapel);
-      } else if (opts.clothingType === 'cyber_jacket') {
-        const neonStrip = new THREE.Mesh(
-          new THREE.TorusGeometry(0.43, 0.04, 8, segs),
-          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-        );
-        neonStrip.rotation.x = Math.PI / 2;
-        neonStrip.position.y = 1.55;
-        bodyGroup.add(neonStrip);
-      }
-
-      // EraSHOP 3D Belts
-      if (opts.beltType && opts.beltType !== 'none') {
-        const beltColor =
-          opts.beltType === 'gold_belt'
-            ? 0xfacc15
-            : opts.beltType === 'cyber_belt'
-            ? 0x06b6d4
-            : opts.beltType === 'star_belt'
-            ? 0xec4899
-            : 0x78350f;
-        const beltRing = new THREE.Mesh(
-          new THREE.CylinderGeometry(torsoRadius + 0.03, torsoRadius + 0.03, 0.14, segs),
-          new THREE.MeshStandardMaterial({
-            color: beltColor,
-            roughness: 0.25,
-            metalness: opts.beltType === 'leather_belt' ? 0.2 : 0.85
-          })
-        );
-        beltRing.position.y = 1.1;
-        bodyGroup.add(beltRing);
-
-        const buckle = new THREE.Mesh(
-          new THREE.BoxGeometry(0.24, 0.2, 0.12),
-          new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.15, metalness: 0.9 })
-        );
-        buckle.position.set(0, 1.1, torsoRadius + 0.04);
-        bodyGroup.add(buckle);
-      }
-
-      const collar = new THREE.Mesh(
-        new THREE.TorusGeometry(0.28, 0.06, 8, segs),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+      const built = buildRealisticCharacter3D(
+        {
+          ...opts,
+          skinTone: opts.skinTone || opts.skinColor,
+          topColor: opts.topColor || opts.shirtColor,
+          bottomColor: opts.bottomColor || opts.pantsColor,
+          hatStyle: opts.hatStyle || opts.hatType,
+          beltStyle: opts.beltStyle || opts.beltType,
+          rideStyle: opts.rideStyle || opts.vehicleType
+        },
+        currentQuality === 'high' ? 'high' : 'campus'
       );
-      collar.rotation.x = Math.PI / 2;
-      collar.position.y = 1.92;
-      bodyGroup.add(collar);
 
-      // Student Backpack or Sky Valkyrie 3D Wings on Back
-      const isTeacherCohort = opts.cohort.toUpperCase().includes('TEACHER');
-      if (opts.accessoryType === 'wings') {
-        const wingMat = new THREE.MeshStandardMaterial({
-          color: 0x38bdf8,
-          emissive: 0x0284c7,
-          emissiveIntensity: 0.45,
-          roughness: 0.2,
-          metalness: 0.7
-        });
-        [-1, 1].forEach((side) => {
-          const wing = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.15, 0.08), wingMat);
-          wing.position.set(side * 0.58, 1.65, -0.35);
-          wing.rotation.z = side * -0.28;
-          wing.rotation.y = side * 0.25;
-          bodyGroup.add(wing);
-        });
-      } else {
-        const backpack = new THREE.Mesh(
-          new THREE.BoxGeometry(0.62, 0.72, 0.32),
-          new THREE.MeshStandardMaterial({
-            color: isTeacherCohort ? 0xb45309 : opts.cohort.includes('2') ? 0x059669 : 0x1e3a8a,
-            roughness: 0.4,
-            metalness: 0.2
-          })
-        );
-        backpack.position.set(0, 1.48, -0.38);
-        backpack.castShadow = true;
-        bodyGroup.add(backpack);
-      }
-
-      // Smooth Capsule Arms + Hands
-      const createArm = (ax: number) => {
-        const armGroup = new THREE.Group();
-        armGroup.position.set(ax, 1.86, 0);
-        const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.48, 8, segs), shirtMat);
-        sleeve.position.y = -0.34;
-        sleeve.castShadow = true;
-        armGroup.add(sleeve);
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.16, segs, segs), skinMat);
-        hand.position.y = -0.76;
-        armGroup.add(hand);
-        return armGroup;
-      };
-
-      const leftArm = createArm(-0.58);
-      const rightArm = createArm(0.58);
-      bodyGroup.add(leftArm, rightArm);
-
-      // Detailed Sculpted Head + Ears + Eyes + Smile
-      const headGroup = new THREE.Group();
-      headGroup.position.y = 2.44;
-      const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.46, segs, segs), skinMat);
-      headMesh.scale.set(1.0, 1.04, 0.96);
-      headMesh.castShadow = true;
-      headGroup.add(headMesh);
-
-      // Ears
-      [-0.45, 0.45].forEach((ex) => {
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), skinMat);
-        ear.position.set(ex, 0.0, 0);
-        headGroup.add(ear);
-      });
-
-      // Expressive Eyes with White Highlights (+ Girl Eyelashes & Rosy Blush)
-      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
-      const pupilHighlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      [-0.16, 0.16].forEach((ex) => {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 10), eyeMat);
-        eye.position.set(ex, 0.06, 0.41);
-        headGroup.add(eye);
-        const glint = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), pupilHighlightMat);
-        glint.position.set(ex + 0.02, 0.08, 0.46);
-        headGroup.add(glint);
-
-        if (isGirl) {
-          const lash = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, 0.04), eyeMat);
-          lash.position.set(ex + (ex < 0 ? -0.02 : 0.02), 0.13, 0.41);
-          lash.rotation.z = ex < 0 ? 0.22 : -0.22;
-          headGroup.add(lash);
-
-          const blush = new THREE.Mesh(
-            new THREE.CircleGeometry(0.065, 12),
-            new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.35 })
-          );
-          blush.position.set(ex * 1.4, -0.04, 0.43);
-          headGroup.add(blush);
-        }
-      });
-
-      // Friendly Smile Arc
-      const smile = new THREE.Mesh(
-        new THREE.TorusGeometry(0.11, 0.022, 6, 12, Math.PI),
-        new THREE.MeshBasicMaterial({ color: isGirl ? 0xe11d48 : 0x7c2d12 })
-      );
-      smile.rotation.x = Math.PI;
-      smile.position.set(0, -0.08, 0.42);
-      headGroup.add(smile);
-
-      // Sculpted Hair Dome + Boy/Girl Hair Styles
-      const hairDome = new THREE.Mesh(
-        new THREE.SphereGeometry(0.48, segs, segs, 0, Math.PI * 2, 0, Math.PI * 0.55),
-        hairMat
-      );
-      hairDome.position.y = 0.05;
-      headGroup.add(hairDome);
-
-      const resolvedHairStyle = opts.hairStyle || (isGirl ? 'long' : 'classic');
-      if (resolvedHairStyle === 'long') {
-        const backHair = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, 0.56, 8, segs), hairMat);
-        backHair.position.set(0, -0.22, -0.18);
-        headGroup.add(backHair);
-      } else if (resolvedHairStyle === 'ponytail') {
-        const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.46, 8, segs), hairMat);
-        tail.position.set(0, -0.05, -0.52);
-        tail.rotation.x = 0.55;
-        headGroup.add(tail);
-      } else if (resolvedHairStyle === 'twintails') {
-        [-0.48, 0.48].forEach((tx) => {
-          const twin = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.48, 8, segs), hairMat);
-          twin.position.set(tx, -0.15, -0.12);
-          twin.rotation.z = tx < 0 ? 0.32 : -0.32;
-          headGroup.add(twin);
-        });
-      } else if (resolvedHairStyle === 'spiky') {
-        [-0.18, 0, 0.18].forEach((sx, idx) => {
-          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 8), hairMat);
-          spike.position.set(sx, 0.52 + (idx === 1 ? 0.05 : 0), 0.08);
-          spike.rotation.z = sx * -0.5;
-          headGroup.add(spike);
-        });
-      }
-
-      // Hats / Headgear
-      if (opts.hatType === 'grad') {
-        const mortar = new THREE.Mesh(
-          new THREE.BoxGeometry(1.12, 0.08, 1.12),
-          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.35 })
-        );
-        mortar.position.y = 0.52;
-        headGroup.add(mortar);
-        const tassel = new THREE.Mesh(
-          new THREE.BoxGeometry(0.1, 0.32, 0.1),
-          new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.7 })
-        );
-        tassel.position.set(0.46, 0.38, 0.46);
-        headGroup.add(tassel);
-      } else if (opts.hatType === 'crown') {
-        const crown = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.38, 0.32, 0.28, 12),
-          new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.18, metalness: 0.88 })
-        );
-        crown.position.y = 0.54;
-        headGroup.add(crown);
-      } else if (opts.hatType === 'cap') {
-        const capVisor = new THREE.Mesh(
-          new THREE.BoxGeometry(0.76, 0.08, 0.42),
-          new THREE.MeshStandardMaterial({ color: opts.shirtColor, roughness: 0.35 })
-        );
-        capVisor.position.set(0, 0.32, 0.42);
-        headGroup.add(capVisor);
-      } else if (opts.hatType === 'headphones') {
-        const band = new THREE.Mesh(
-          new THREE.TorusGeometry(0.49, 0.06, 8, 20, Math.PI),
-          new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.25, metalness: 0.7 })
-        );
-        band.position.y = 0.06;
-        headGroup.add(band);
-      } else if (opts.hatType === 'halo') {
-        const halo = new THREE.Mesh(
-          new THREE.TorusGeometry(0.42, 0.045, 10, 28),
-          new THREE.MeshBasicMaterial({ color: 0xfef08a })
-        );
-        halo.rotation.x = Math.PI / 2;
-        halo.position.y = 0.72;
-        headGroup.add(halo);
-      }
-
-      if (
-        opts.accessoryType === 'glasses' ||
-        opts.accessoryType === 'shades' ||
-        opts.accessoryType === 'cyber_visor'
-      ) {
-        const gMat = new THREE.MeshStandardMaterial({
-          color:
-            opts.accessoryType === 'cyber_visor'
-              ? 0xec4899
-              : opts.accessoryType === 'shades'
-              ? 0x0f172a
-              : 0x38bdf8,
-          emissive: opts.accessoryType === 'cyber_visor' ? 0xec4899 : 0x000000,
-          emissiveIntensity: opts.accessoryType === 'cyber_visor' ? 0.6 : 0,
-          roughness: 0.12,
-          metalness: 0.85
-        });
-        const glassesBar = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.18, 0.1), gMat);
-        glassesBar.position.set(0, 0.06, 0.44);
-        headGroup.add(glassesBar);
-      }
-
-      bodyGroup.add(headGroup);
-
-      // EraSHOP 3D Vehicles (Skateboard or Bike)
-      if (opts.vehicleType === 'skateboard') {
-        const boardGroup = new THREE.Group();
-        const deck = new THREE.Mesh(
-          new THREE.BoxGeometry(0.75, 0.08, 2.05),
-          new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.3, metalness: 0.2 })
-        );
-        deck.position.set(0, 0.16, 0);
-        boardGroup.add(deck);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.6 });
-        [
-          [-0.32, -0.62],
-          [0.32, -0.62],
-          [-0.32, 0.62],
-          [0.32, 0.62]
-        ].forEach(([wx, wz]) => {
-          const w = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.12, 12), wheelMat);
-          w.rotation.z = Math.PI / 2;
-          w.position.set(wx, 0.1, wz);
-          boardGroup.add(w);
-        });
-        root.add(boardGroup);
-      } else if (opts.vehicleType === 'bike') {
-        const bikeGroup = new THREE.Group();
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.2, metalness: 0.8 });
-        const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.7 });
-        [-0.75, 0.78].forEach((wz) => {
-          const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.07, 10, 20), tireMat);
-          wheel.rotation.y = Math.PI / 2;
-          wheel.position.set(0, 0.42, wz);
-          bikeGroup.add(wheel);
-        });
-        const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.45, 10), frameMat);
-        topTube.rotation.x = Math.PI / 2;
-        topTube.position.set(0, 0.78, 0);
-        bikeGroup.add(topTube);
-
-        const handleStem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.75, 10), frameMat);
-        handleStem.position.set(0, 0.95, 0.68);
-        bikeGroup.add(handleStem);
-
-        const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.95, 10), frameMat);
-        handleBar.rotation.z = Math.PI / 2;
-        handleBar.position.set(0, 1.32, 0.68);
-        bikeGroup.add(handleBar);
-        root.add(bikeGroup);
-      }
+      // Scale anatomical studio mesh (2.15m) to match campus world scale (~3.12m)
+      built.root.scale.setScalar(1.45);
+      root.add(built.root);
 
       const nameplate = createNameplateSprite(opts.name, opts.cohort);
       root.add(nameplate);
 
       return {
         root,
-        bodyGroup,
-        leftLeg,
-        rightLeg,
-        leftArm,
-        rightArm,
-        headGroup
+        bodyGroup: built.torsoGroup,
+        leftLeg: built.leftLegGroup,
+        rightLeg: built.rightLegGroup,
+        leftArm: built.leftArmGroup,
+        rightArm: built.rightArmGroup,
+        headGroup: built.headGroup
       };
     };
 
@@ -3571,14 +3184,18 @@ export function EraVerse() {
           new THREE.MeshStandardMaterial({ color: 0xdb2777, roughness: 0.25, metalness: 0.35 })
         );
         deskBase.position.y = 0.68;
+        deskBase.userData = { isCandyShop: true };
         counterGroup.add(deskBase);
+        clickableBoardMeshes.push(deskBase);
 
         const deskTop = new THREE.Mesh(
           new THREE.BoxGeometry(7.6, 0.18, 2.1),
           new THREE.MeshStandardMaterial({ color: 0xfdf2f8, roughness: 0.15, metalness: 0.4 })
         );
         deskTop.position.y = 1.42;
+        deskTop.userData = { isCandyShop: true };
         counterGroup.add(deskTop);
+        clickableBoardMeshes.push(deskTop);
 
         // Candy NPC Character stationed behind the EraSHOP Counter
         const candyRig = buildCharacterAvatar({
@@ -3600,6 +3217,8 @@ export function EraVerse() {
           'Welcome to EraSHOP! Spend your Era Gems on Bikes, Skateboards, Belts, Clothes & Boy/Girl Styles!',
           false
         );
+        candyWelcomeBubble.userData = { isCandyShop: true };
+        clickableBoardMeshes.push(candyWelcomeBubble);
         candyRig.root.add(candyWelcomeBubble);
         counterGroup.add(candyRig.root);
         interiorGroup.add(counterGroup);
@@ -3613,6 +3232,8 @@ export function EraVerse() {
             new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.25, metalness: 0.7 })
           );
           base.position.y = 0.28;
+          base.userData = { isCandyShop: true };
+          clickableBoardMeshes.push(base);
           pGroup.add(base);
 
           const ring = new THREE.Mesh(
@@ -4109,6 +3730,18 @@ export function EraVerse() {
             const hitData = hits[0].object.userData;
             if (hitData.isExitDoor) {
               exitBuildingInterior();
+            } else if (hitData.isCandyShop) {
+              handleBoardActionRef.current({
+                slot: 'back-center',
+                category: "CANDY'S BOUTIQUE COUNTER",
+                title: 'EraSHOP Store & Gear',
+                subtitle: 'Buy Vehicles, Belts, Outfits & Customize Character',
+                badge: 'OPEN ERASHOP',
+                accentHex: '#DB2777',
+                bgLightHex: '#FCE7F3',
+                actionType: 'open_erashop',
+                shopCategory: 'all'
+              });
             } else if (hitData.boardSpec) {
               handleBoardActionRef.current(hitData.boardSpec);
             }
@@ -4808,6 +4441,25 @@ export function EraVerse() {
             nearBoard = cb.spec;
           }
         });
+        if (!nearBoard && activeInteriorBuilding.id === 'reading') {
+          const distToCandy = Math.hypot(
+            playerState.x - INTERIOR_ORIGIN.x,
+            playerState.z - (INTERIOR_ORIGIN.z - 6.2)
+          );
+          if (distToCandy < 5.0) {
+            nearBoard = {
+              slot: 'back-center',
+              category: "CANDY'S BOUTIQUE COUNTER",
+              title: 'EraSHOP Store & Gear',
+              subtitle: 'Buy Vehicles, Belts, Outfits & Customize Character',
+              badge: 'OPEN ERASHOP',
+              accentHex: '#DB2777',
+              bgLightHex: '#FCE7F3',
+              actionType: 'open_erashop',
+              shopCategory: 'all'
+            };
+          }
+        }
         setNearBoardPrompt(nearBoard);
       } else {
         let nearB: BuildingZone | null = null;
@@ -5915,6 +5567,7 @@ export function EraVerse() {
             const nextProfile = {
               ...playerProfile,
               [item.applyKey]: item.applyValue,
+              ...(item.extraUpdates || {}),
               ...(item.shirtColorOverride ? { shirtColor: item.shirtColorOverride } : {}),
               ...(item.pantsColorOverride ? { pantsColor: item.pantsColorOverride } : {})
             };
@@ -5937,6 +5590,7 @@ export function EraVerse() {
             const nextProfile = {
               ...playerProfile,
               [item.applyKey]: nextVal,
+              ...(!isCurrentlyEquipped && item.extraUpdates ? item.extraUpdates : {}),
               ...(!isCurrentlyEquipped && item.shirtColorOverride ? { shirtColor: item.shirtColorOverride } : {}),
               ...(!isCurrentlyEquipped && item.pantsColorOverride ? { pantsColor: item.pantsColorOverride } : {})
             };
@@ -5946,6 +5600,19 @@ export function EraVerse() {
               isCurrentlyEquipped ? `Unequipped ${item.name}` : `Equipped ${item.name}!`,
               `Candy: "Updated your 3D character in EraVerse & your Student Dashboard!"`,
               '#EC4899'
+            );
+          }}
+          onRewardGems={(gemsWon, dollarsWon, reason) => {
+            soundEngine.playGoalCheer();
+            const nextGems = eraGems + gemsWon;
+            const nextDollars = eraDollars + dollarsWon;
+            setEraGems(nextGems);
+            setEraDollars(nextDollars);
+            persistAvatarCustomization(playerProfile, nextGems, ownedShopItems, nextDollars);
+            showToast(
+              `+${gemsWon} 💎 Era Gems & +$${dollarsWon} 💵!`,
+              reason,
+              '#F59E0B'
             );
           }}
           onSaveAndSync={() => {

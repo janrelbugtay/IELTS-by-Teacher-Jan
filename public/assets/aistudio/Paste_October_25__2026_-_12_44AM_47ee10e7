@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduVerse 3D — Realistic Student Profile & Wardrobe Studio (100 Characters)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Three.js r128 & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Fredoka', sans-serif;
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--font-sans);
+      background-color: #0b1120;
+      color: #f8fafc;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    .font-display {
+      font-family: var(--font-display);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.85);
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+    .swatch-btn {
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+    }
+    .swatch-btn:hover {
+      transform: scale(1.12);
+    }
+    .swatch-btn.active {
+      transform: scale(1.16);
+      box-shadow: 0 0 0 3px #0f172a, 0 0 0 5px #38bdf8;
+    }
+    .item-card {
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .item-card:hover {
+      transform: translateY(-2px);
+    }
+    .item-card.active {
+      border-color: #38bdf8;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.2));
+      box-shadow: 0 6px 18px -4px rgba(56, 189, 248, 0.3);
+    }
+    .item-card.previewing {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.15));
+      box-shadow: 0 6px 18px -4px rgba(245, 158, 11, 0.35);
+    }
+    .student-item.active {
+      border-color: #f97316;
+      background: linear-gradient(90deg, rgba(249, 115, 22, 0.22), rgba(249, 115, 22, 0.04));
+    }
+    #canvas-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="h-14 px-4 lg:px-6 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-400 to-sky-400 flex items-center justify-center shadow-lg shadow-orange-500/20">
+        <i class="fa-solid fa-cube text-slate-950 text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-display text-base lg:text-lg font-bold tracking-wide bg-gradient-to-r from-white via-sky-200 to-orange-300 bg-clip-text text-transparent">
+            EduVerse 3D Studio
+          </h1>
+          <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+            💎 Realistic Mesh v10
+          </span>
+        </div>
+        <p class="text-[10px] text-slate-400 hidden sm:block">Anatomical 3D Student Profiles (#001–#100) • IELTS 1 & IELTS 2</p>
+      </div>
+    </div>
+
+    <!-- Quick Reference Presets -->
+    <div class="hidden xl:flex items-center gap-1.5 bg-slate-800/70 p-1 rounded-xl border border-slate-700/60">
+      <span class="text-[11px] font-semibold text-slate-400 px-2"><i class="fa-solid fa-wand-magic-sparkles text-amber-400 mr-1"></i>Ref Presets:</span>
+      <button onclick="selectStudentById(1)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 border border-orange-500/30 transition">
+        #001 Uniform Boy
+      </button>
+      <button onclick="selectStudentById(2)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 transition">
+        #002 Smartwatch Boy
+      </button>
+      <button onclick="selectStudentById(3)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-500/30 transition">
+        #003 Daisy Qipao Girl
+      </button>
+      <button onclick="selectStudentById(4)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 transition">
+        #004 Layered Vest Boy
+      </button>
+    </div>
+
+    <!-- EraGems Wallet & Actions -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 bg-slate-900/95 border border-cyan-500/40 px-3 py-1 rounded-xl shadow-inner">
+        <i class="fa-solid fa-gem text-cyan-400 text-sm animate-pulse"></i>
+        <div>
+          <span class="text-[9px] uppercase tracking-wider text-slate-400 block leading-none">EraGems</span>
+          <span id="header-gem-balance" class="font-display font-bold text-sm text-cyan-300">420</span>
+        </div>
+        <button onclick="openEraGemsModal()" class="ml-1 px-2 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-slate-950 font-extrabold text-[11px] transition shadow">
+          + Earn
+        </button>
+      </div>
+
+      <button onclick="toggleDirectoryModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-table-cells text-sky-400"></i>
+        <span class="hidden sm:inline">100 Roster</span>
+      </button>
+      <button onclick="openStudentCardModal()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-orange-500/20 transition">
+        <i class="fa-solid fa-id-card"></i>
+        <span class="hidden sm:inline">ID Card</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+    <!-- LEFT PANEL: 100 CHARACTER ROSTER -->
+    <aside class="w-full lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-slate-900/75 flex flex-col shrink-0 max-h-48 lg:max-h-full z-20">
+      <div class="p-3 border-b border-slate-800/80 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-users text-orange-400 text-sm"></i>
+            <h2 class="font-display font-bold text-sm tracking-wide text-white">Characters <span id="roster-count" class="text-slate-400 font-normal">(100)</span></h2>
+          </div>
+          <button onclick="openEditProfileModal()" class="text-[11px] font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1">
+            <i class="fa-solid fa-pen-to-square"></i> Edit Level
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="student-search" type="text" oninput="renderRosterList()" placeholder="Search #001 to #100 or IELTS..."
+            class="w-full pl-8 pr-3 py-1.5 bg-slate-950/90 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400 transition" />
+        </div>
+
+        <!-- Class & Gender Filter Pills -->
+        <div class="flex gap-1.5 overflow-x-auto pb-1">
+          <button onclick="setRosterFilter('all')" id="filter-all" class="filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-orange-500 text-white shrink-0">All (100)</button>
+          <button onclick="setRosterFilter('featured')" id="filter-featured" class="filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">⭐ Ref Presets</button>
+          <button onclick="setRosterFilter('boy')" id="filter-boy" class="filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">Boys</button>
+          <button onclick="setRosterFilter('girl')" id="filter-girl" class="filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">Girls</button>
+          <button onclick="setRosterFilter('IELTS 1')" id="filter-IELTS 1" class="filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">IELTS 1</button>
+          <button onclick="setRosterFilter('IELTS 2')" id="filter-IELTS 2" class="filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0">IELTS 2</button>
+        </div>
+      </div>
+
+      <!-- Scrollable 100 Students List -->
+      <div id="roster-list" class="flex-1 overflow-y-auto p-2.5 space-y-1.5"></div>
+
+      <!-- Prev / Next Navigation Footer -->
+      <div class="p-2.5 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between gap-2 hidden lg:flex">
+        <div class="flex items-center gap-1.5">
+          <button onclick="navigateStudent(-1)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition" title="Previous Character">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <span id="active-student-index-label" class="text-xs font-bold text-slate-300 px-1">#001 / 100</span>
+          <button onclick="navigateStudent(1)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition" title="Next Character">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+        <button onclick="awardGems(50, 'Class Participation Bonus')" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1 transition">
+          <i class="fa-solid fa-gem"></i> +50 Gems
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER PANEL: INTERACTIVE 3D CHARACTER VIEWPORT -->
+    <main class="flex-1 relative flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 overflow-hidden">
+
+      <!-- Top Floating Student Badge & Animation Controls -->
+      <div class="absolute top-3 left-3 right-3 flex flex-wrap items-start justify-between gap-2 pointer-events-none z-10">
+        <!-- Student Profile Badge -->
+        <div class="glass-panel px-4 py-3 rounded-2xl shadow-2xl pointer-events-auto flex items-center gap-3.5 border border-white/10 max-w-md">
+          <div id="profile-badge-avatar" class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-display font-bold text-lg shadow-inner shrink-0">
+            #001
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h2 id="profile-name" class="font-display text-base lg:text-lg font-bold text-white truncate">Character #001</h2>
+              <button onclick="toggleStudentIeltsLevel()" id="profile-class-badge" title="Click to toggle IELTS 1 / IELTS 2" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/30 cursor-pointer transition">IELTS 1</button>
+            </div>
+            <p id="profile-bio" class="text-xs text-slate-300 truncate mt-0.5">Orange Uniform Squad • Ready for IELTS Speaking</p>
+            <div class="flex items-center gap-2.5 mt-1.5 text-[11px] font-bold">
+              <span class="text-cyan-300 flex items-center gap-1 bg-cyan-950/70 px-2 py-0.5 rounded-md border border-cyan-500/30">
+                <i class="fa-solid fa-gem text-cyan-400"></i> <span id="profile-gems">420</span>
+              </span>
+              <span class="text-amber-400 flex items-center gap-1"><i class="fa-solid fa-star"></i> <span id="profile-stars">1,850</span> XP</span>
+              <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-unlock"></i> <span id="profile-owned-count">14</span> Owned</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pose, Animation & Camera Controls -->
+        <div class="glass-panel p-1.5 rounded-2xl shadow-xl pointer-events-auto flex flex-wrap items-center gap-1 border border-white/10">
+          <button onclick="setAnimationMode('idle')" id="anim-idle" class="anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-sky-500 text-slate-950 transition">
+            <i class="fa-solid fa-child-reaching mr-1"></i>Idle
+          </button>
+          <button onclick="setAnimationMode('walk')" id="anim-walk" class="anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+            <i class="fa-solid fa-person-walking mr-1"></i>Walk
+          </button>
+          <button onclick="setAnimationMode('wave')" id="anim-wave" class="anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+            <i class="fa-solid fa-hand-spock mr-1"></i>Wave
+          </button>
+          <button onclick="setAnimationMode('ride')" id="anim-ride" class="anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+            <i class="fa-solid fa-bicycle mr-1"></i>Ride
+          </button>
+          <button onclick="setAnimationMode('tpose')" id="anim-tpose" class="anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+            <i class="fa-solid fa-arrows-up-down-left-right mr-1"></i>T-Pose
+          </button>
+          <div class="h-4 w-[1px] bg-slate-700 mx-0.5"></div>
+          <button onclick="focusCamera('full')" class="p-1.5 rounded-xl text-xs text-slate-300 hover:bg-slate-800 transition" title="Full Body Camera">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button onclick="focusCamera('face')" class="p-1.5 rounded-xl text-xs text-slate-300 hover:bg-slate-800 transition" title="Close-up Face Camera">
+            <i class="fa-solid fa-face-smile"></i>
+          </button>
+          <button onclick="cycleStudioLighting()" class="p-1.5 rounded-xl text-xs text-amber-300 hover:bg-slate-800 transition" title="Cycle Studio Backdrop">
+            <i class="fa-solid fa-sun"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Try-On Locked Item Floating Banner -->
+      <div id="preview-purchase-banner" class="hidden absolute bottom-16 left-1/2 -translate-x-1/2 z-20 glass-panel px-4 py-2.5 rounded-2xl border border-amber-400/50 shadow-2xl flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
+          <i class="fa-solid fa-eye"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold text-white">Trying On: <span id="preview-item-name" class="text-amber-300">Item</span></p>
+          <p class="text-[10px] text-slate-300">Unlock permanently for this character with EraGems</p>
+        </div>
+        <button id="preview-buy-btn" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-500 hover:from-cyan-300 hover:to-sky-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition">
+          <i class="fa-solid fa-gem"></i> Buy (<span id="preview-item-cost">100</span>)
+        </button>
+        <button onclick="clearPreviewItem()" class="p-1.5 rounded-lg text-slate-400 hover:text-white text-xs" title="Revert">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Three.js 3D Canvas Container -->
+      <div id="canvas-container" class="w-full flex-1 cursor-grab active:cursor-grabbing relative"></div>
+
+      <!-- Bottom Floating Quick Controls -->
+      <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center gap-2">
+        <div class="glass-panel px-3.5 py-2 rounded-2xl shadow-xl pointer-events-auto flex items-center gap-2.5 border border-white/10">
+          <span class="text-[11px] text-slate-400 hidden sm:inline"><i class="fa-solid fa-computer-mouse mr-1 text-sky-400"></i>Drag to rotate • Scroll to zoom</span>
+          <div class="h-3.5 w-[1px] bg-slate-700 hidden sm:block"></div>
+          <button onclick="toggleAutoRotate()" id="btn-autorotate" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+            <i class="fa-solid fa-rotate mr-1"></i>Auto-Spin
+          </button>
+          <button onclick="openEraGemsModal()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-cyan-500/30 to-sky-500/30 text-cyan-200 border border-cyan-400/40 hover:border-cyan-300 transition">
+            <i class="fa-solid fa-gem mr-1 text-cyan-300"></i>IELTS Quiz (+Gems)
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL: ORGANIZED WARDROBE & ERAGEMS SHOP -->
+    <aside class="w-full lg:w-96 xl:w-[430px] border-t lg:border-t-0 lg:border-l border-slate-800/80 bg-slate-900/85 flex flex-col shrink-0 max-h-[48vh] lg:max-h-full z-20">
+      <!-- Category Tabs -->
+      <div class="p-2.5 border-b border-slate-800/80 bg-slate-950/50">
+        <div class="grid grid-cols-6 gap-1">
+          <button onclick="switchCustomTab('body')" id="tab-body" class="custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-sky-500 text-white shadow-lg shadow-sky-500/25 transition relative">
+            <span class="absolute -top-1 right-1 px-1 rounded text-[8px] bg-emerald-500 text-slate-950 font-extrabold">FREE</span>
+            <i class="fa-solid fa-user-astronaut text-sm mb-1"></i>
+            <span>Body/Skin</span>
+          </button>
+          <button onclick="switchCustomTab('hair')" id="tab-hair" class="custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition relative">
+            <span class="absolute -top-1 right-1 px-1 rounded text-[8px] bg-cyan-400 text-slate-950 font-extrabold">4 FREE</span>
+            <i class="fa-solid fa-scissors text-sm mb-1"></i>
+            <span>Hair</span>
+          </button>
+          <button onclick="switchCustomTab('clothes')" id="tab-clothes" class="custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition relative">
+            <span class="absolute -top-1 right-1 px-1 rounded text-[8px] bg-cyan-400 text-slate-950 font-extrabold">LAYERED</span>
+            <i class="fa-solid fa-shirt text-sm mb-1"></i>
+            <span>Clothes</span>
+          </button>
+          <button onclick="switchCustomTab('headgear')" id="tab-headgear" class="custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition relative">
+            <span class="absolute -top-1 right-1 px-1 rounded text-[8px] bg-amber-400 text-slate-950 font-extrabold">💎50+</span>
+            <i class="fa-solid fa-hat-cowboy text-sm mb-1"></i>
+            <span>Headgear</span>
+          </button>
+          <button onclick="switchCustomTab('accessories')" id="tab-accessories" class="custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition relative">
+            <span class="absolute -top-1 right-1 px-1 rounded text-[8px] bg-amber-400 text-slate-950 font-extrabold">💎50+</span>
+            <i class="fa-solid fa-glasses text-sm mb-1"></i>
+            <span>Props</span>
+          </button>
+          <button onclick="switchCustomTab('bikes')" id="tab-bikes" class="custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition relative">
+            <span class="absolute -top-1 right-1 px-1 rounded text-[8px] bg-purple-400 text-slate-950 font-extrabold">💎120+</span>
+            <i class="fa-solid fa-bicycle text-sm mb-1"></i>
+            <span>Bikes</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- EraGems Status Subbar -->
+      <div class="px-4 py-2 bg-slate-950/80 border-b border-slate-800/80 flex items-center justify-between text-[11px]">
+        <span id="shop-rule-text" class="text-emerald-300 font-semibold">
+          <i class="fa-solid fa-circle-check mr-1"></i>Anatomical Body & Skin is 100% FREE!
+        </span>
+        <span class="text-cyan-300 font-bold flex items-center gap-1">
+          <i class="fa-solid fa-gem text-cyan-400"></i> <span id="sidebar-gem-balance">420</span>
+        </span>
+      </div>
+
+      <!-- Customizer Tab Content -->
+      <div id="customizer-content" class="flex-1 overflow-y-auto p-4 space-y-5"></div>
+    </aside>
+  </div>
+
+  <!-- MODAL 1: ERAGEMS REWARDS & IELTS QUIZ CENTER -->
+  <div id="eragems-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-xl">
+            <i class="fa-solid fa-gem"></i>
+          </div>
+          <div>
+            <h3 class="font-display text-lg font-bold text-white">EraGems Reward Center</h3>
+            <p class="text-xs text-slate-400">Active Profile: <span id="gem-modal-student-name" class="text-cyan-300 font-bold">Character #001</span></p>
+          </div>
+        </div>
+        <button onclick="closeEraGemsModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/90 via-slate-900 to-indigo-950/90 border border-cyan-500/30 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Available Balance</span>
+          <div class="flex items-center gap-2 mt-0.5">
+            <i class="fa-solid fa-gem text-cyan-400 text-xl"></i>
+            <span id="gem-modal-balance" class="font-display text-2xl font-bold text-white">420</span>
+            <span class="text-xs text-slate-400">EraGems</span>
+          </div>
+        </div>
+        <div class="text-right text-[11px] text-slate-300 space-y-0.5">
+          <p><span class="text-emerald-400 font-bold">FREE:</span> Body/Skin, 4 Hairs, 2 Tees</p>
+          <p><span class="text-amber-300 font-bold">50💎–500💎:</span> Jackets, Headgear, Props & Bikes</p>
+        </div>
+      </div>
+
+      <!-- Mini IELTS Quiz -->
+      <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-bolt mr-1"></i>IELTS 1 & 2 Challenge (+80 💎)</span>
+          <button onclick="loadNextQuizQuestion()" class="text-[11px] text-sky-400 hover:underline">Skip Question</button>
+        </div>
+        <p id="quiz-question-text" class="text-sm font-bold text-white">
+          IELTS Vocabulary: "The students designed a sustainable ______ house powered by solar panels."
+        </p>
+        <div id="quiz-options-grid" class="grid grid-cols-2 gap-2"></div>
+      </div>
+
+      <!-- Teacher Instant Award Buttons -->
+      <div class="space-y-2">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Teacher / Classroom Instant Gem Awards</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="awardGems(60, 'Homework Star')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">
+            <div class="text-cyan-300 font-display font-bold text-sm">+60 💎</div>
+            <div class="text-[10px] text-slate-300 mt-0.5">Homework Star</div>
+          </button>
+          <button onclick="awardGems(120, 'Speaking Presentation')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">
+            <div class="text-cyan-300 font-display font-bold text-sm">+120 💎</div>
+            <div class="text-[10px] text-slate-300 mt-0.5">IELTS Speaking</div>
+          </button>
+          <button onclick="awardGems(250, 'Project Winner')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">
+            <div class="text-amber-300 font-display font-bold text-sm">+250 💎</div>
+            <div class="text-[10px] text-slate-300 mt-0.5">IELTS Band Up!</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: 100 CHARACTERS DIRECTORY -->
+  <div id="directory-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex-col p-4 lg:p-8">
+    <div class="max-w-7xl w-full mx-auto bg-slate-900 border border-slate-700/80 rounded-3xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 lg:p-5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="font-display text-lg lg:text-xl font-bold text-white">All 100 Student 3D Profiles (#001 – #100)</h2>
+          <p class="text-xs text-slate-400">Click any character card to load their 3D model and EraGems locker</p>
+        </div>
+        <button onclick="toggleDirectoryModal()" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="directory-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: STUDENT ID CARD -->
+  <div id="idcard-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display text-base font-bold text-white"><i class="fa-solid fa-id-badge text-orange-400 mr-2"></i>IELTS Student 3D Profile Card</h3>
+        <button onclick="closeStudentCardModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-950 border border-white/10 space-y-3">
+        <div class="flex items-center gap-3">
+          <img id="idcard-snapshot" alt="3D Snapshot" class="w-24 h-24 rounded-2xl object-cover bg-slate-950 border-2 border-orange-400 shadow-lg" />
+          <div>
+            <span id="idcard-class" class="px-2 py-0.5 text-[10px] font-bold rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">IELTS 1</span>
+            <h4 id="idcard-name" class="font-display text-lg font-bold text-white mt-1">Character #001</h4>
+            <p id="idcard-bio" class="text-xs text-slate-300">Ready for IELTS Speaking</p>
+            <p id="idcard-gems" class="text-xs font-bold text-cyan-300 mt-1"><i class="fa-solid fa-gem mr-1"></i>420 EraGems</p>
+          </div>
+        </div>
+        <div id="idcard-loadout" class="grid grid-cols-2 gap-2 text-[11px] bg-slate-950/60 p-3 rounded-xl border border-slate-800"></div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="downloadSnapshot()" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> Save 3D Portrait PNG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: EDIT PROFILE LEVEL & BIO -->
+  <div id="edit-profile-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display text-base font-bold text-white"><i class="fa-solid fa-user-pen text-sky-400 mr-2"></i>Edit Character Info</h3>
+        <button onclick="closeEditProfileModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">Character ID (Read-Only)</label>
+          <input id="edit-name-input" type="text" readonly class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-400 cursor-not-allowed" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-300 block mb-1">Class / Level</label>
+            <select id="edit-class-input" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-400">
+              <option value="IELTS 1">IELTS 1</option>
+              <option value="IELTS 2">IELTS 2</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-300 block mb-1">EraGems Balance (💎)</label>
+            <input id="edit-gems-input" type="number" min="0" step="10" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-cyan-300 font-bold focus:outline-none focus:border-sky-400" />
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-300 block mb-1">Status / Achievement Tagline</label>
+          <input id="edit-bio-input" type="text" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-sky-400" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeEditProfileModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+        <button onclick="saveStudentMetadata()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl bg-slate-900/95 border border-sky-500/40 text-white text-xs font-semibold shadow-2xl transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-text">Saved!</span>
+  </div>
+
+  <!-- MAIN APPLICATION & ANATOMICAL 3D CHARACTER ENGINE -->
+  <script>
+    /*************************************************************************
+     * 1. ERAGEMS PRICING & ORGANIZED MULTI-LAYER CUSTOMIZATION CATALOGS
+     *************************************************************************/
+    const SKIN_TONES = [
+      { id: 'almond_milk', name: 'Almond Milk',    hex: '#FCEAE3', subsurface: '#FFABA0', blush: '#F08A8A' },
+      { id: 'porcelain',   name: 'Porcelain Glow', hex: '#F7DCD0', subsurface: '#FF9B85', blush: '#E87A7A' },
+      { id: 'fair',        name: 'Fair Peach',     hex: '#F2CBB8', subsurface: '#F58A73', blush: '#E06C6C' },
+      { id: 'warm_ivory',  name: 'Warm Ivory',     hex: '#EBBAA0', subsurface: '#E87E64', blush: '#D96262' },
+      { id: 'rose_beige',  name: 'Rose Beige',     hex: '#E6B29A', subsurface: '#E07460', blush: '#D45A62' },
+      { id: 'natural',     name: 'Natural Sand',   hex: '#E0A889', subsurface: '#D97054', blush: '#CC5858' },
+      { id: 'golden_sand', name: 'Golden Sand',    hex: '#D89F7E', subsurface: '#D16A4E', blush: '#C45252' },
+      { id: 'honey',       name: 'Golden Honey',   hex: '#D19471', subsurface: '#C96346', blush: '#BF4E4E' },
+      { id: 'amber_tan',   name: 'Amber Tan',      hex: '#C78A67', subsurface: '#BF5C40', blush: '#B64848' },
+      { id: 'olive',       name: 'Warm Olive',     hex: '#BE815E', subsurface: '#B5553A', blush: '#AD4242' },
+      { id: 'caramel',     name: 'Caramel Tan',    hex: '#A66B49', subsurface: '#9C462D', blush: '#963636' },
+      { id: 'cinnamon',    name: 'Warm Cinnamon',  hex: '#965E3F', subsurface: '#8C3D26', blush: '#882E2E' },
+      { id: 'bronze',      name: 'Rich Bronze',    hex: '#875236', subsurface: '#7D3520', blush: '#7A2828' },
+      { id: 'chestnut',    name: 'Deep Chestnut',  hex: '#74442C', subsurface: '#6A2B19', blush: '#6B2222' },
+      { id: 'espresso',    name: 'Deep Espresso',  hex: '#633923', subsurface: '#592314', blush: '#5C1D1D' },
+      { id: 'cocoa',       name: 'Velvet Cocoa',   hex: '#472718', subsurface: '#40170C', blush: '#451414' }
+    ];
+
+    const FACE_SHAPES = [
+      { id: 'oval',         name: 'Balanced Oval',     icon: 'fa-face-smile' },
+      { id: 'soft_round',   name: 'Soft Youthful',     icon: 'fa-face-laugh-beam' },
+      { id: 'heart',        name: 'Heart Tapered',     icon: 'fa-heart' },
+      { id: 'v_line',       name: 'Sleek V-Line Jaw',  icon: 'fa-caret-down' },
+      { id: 'chiseled_jaw', name: 'Chiseled Jawline',  icon: 'fa-shield-halved' },
+      { id: 'defined_jaw',  name: 'Defined Mandible',  icon: 'fa-cube' },
+      { id: 'hero_angular', name: 'Heroic Angular',    icon: 'fa-crown' },
+      { id: 'diamond',      name: 'Sculpted Cheek',    icon: 'fa-gem' },
+      { id: 'square',       name: 'Strong Square Jaw', icon: 'fa-square-full' },
+      { id: 'chibi',        name: 'Plush Chibi',       icon: 'fa-star' }
+    ];
+
+    const EAR_STYLES = [
+      { id: 'normal',   name: 'Standard Ears' },
+      { id: 'small',    name: 'Petite Ears' },
+      { id: 'round',    name: 'Rounded Ears' },
+      { id: 'elf',      name: 'Pixie Pointed' },
+      { id: 'studs',    name: 'Silver Studs' },
+      { id: 'hoops',    name: 'Gold Hoops' }
+    ];
+
+    const EYE_SHAPES = [
+      { id: 'almond',   name: 'Classic Almond', sx: 1.04, sy: 0.96, rotZ: 0.0,  lashBoost: false },
+      { id: 'round',    name: 'Big Bright',     sx: 1.08, sy: 1.10, rotZ: 0.0,  lashBoost: true },
+      { id: 'upturned', name: 'Cat-Eye Lift',   sx: 1.06, sy: 0.92, rotZ: 0.10, lashBoost: true },
+      { id: 'gentle',   name: 'Soft Droopy',    sx: 1.02, sy: 0.95, rotZ: -0.08,lashBoost: false },
+      { id: 'cool',     name: 'Focused Narrow', sx: 1.10, sy: 0.78, rotZ: 0.04, lashBoost: false },
+      { id: 'starry',   name: 'Sparkle Doll',   sx: 1.12, sy: 1.12, rotZ: 0.02, lashBoost: true }
+    ];
+
+    const EYEBROW_STYLES = [
+      { id: 'natural',  name: 'Natural Arch',   thick: 1.0,  arch: 0.014, tilt: 0.0 },
+      { id: 'soft',     name: 'Soft Straight',  thick: 0.9,  arch: 0.004, tilt: 0.004 },
+      { id: 'bold',     name: 'Bold Thick',     thick: 1.45, arch: 0.012, tilt: -0.006 },
+      { id: 'high',     name: 'High Glam Arch', thick: 0.85, arch: 0.026, tilt: 0.008 },
+      { id: 'angled',   name: 'Hero Angled',    thick: 1.15, arch: 0.016, tilt: -0.016 },
+      { id: 'short',    name: 'Cute Short',     thick: 1.2,  arch: 0.008, tilt: 0.006 }
+    ];
+
+    const NOSE_SHAPES = [
+      { id: 'button',   name: 'Cute Button',    w: 1.0,  h: 0.9,  proj: 1.0,  tipLift: 0.004 },
+      { id: 'petite',   name: 'Petite Small',   w: 0.82, h: 0.8,  proj: 0.85, tipLift: 0.006 },
+      { id: 'sculpted', name: 'Defined Bridge', w: 0.92, h: 1.15, proj: 1.12, tipLift: 0.0 },
+      { id: 'upturned', name: 'Pixie Upturned', w: 0.95, h: 0.95, proj: 1.08, tipLift: 0.012 },
+      { id: 'round',    name: 'Soft Rounded',   w: 1.18, h: 0.95, proj: 1.05, tipLift: -0.002 },
+      { id: 'aquiline', name: 'Noble Classic',  w: 0.90, h: 1.22, proj: 1.18, tipLift: -0.005 }
+    ];
+
+    const MOUTH_STYLES = [
+      { id: 'happy',     name: 'Big Joyful Smile', icon: 'fa-face-laugh-squint' },
+      { id: 'grin',      name: 'Bright Teeth Grin',icon: 'fa-face-grin-beam' },
+      { id: 'excited',   name: 'Cheerful Laugh',   icon: 'fa-face-laugh-beam' },
+      { id: 'confident', name: 'Happy Smirk',      icon: 'fa-face-grin-wink' },
+      { id: 'glossy',    name: 'Sweet Glossy Smile',icon: 'fa-heart' },
+      { id: 'cat',       name: 'Playful Kitty :3', icon: 'fa-cat' },
+      { id: 'pout',      name: 'Cute Smile Pout',  icon: 'fa-circle-dot' },
+      { id: 'surprised', name: 'Happy Wow!',       icon: 'fa-face-surprise' }
+    ];
+
+    const SKIN_DETAILS = [
+      { id: 'none',      name: 'Smooth Clear' },
+      { id: 'freckles',  name: 'Cute Freckles' },
+      { id: 'beauty_l',  name: 'Left Cheek Mole' },
+      { id: 'beauty_r',  name: 'Under-Eye Mole' },
+      { id: 'bandaid',   name: 'Nose Band-Aid' },
+      { id: 'star_mark', name: 'Star Cheek Stamp' }
+    ];
+
+    const HAIR_COLORS = [
+      '#16161B', '#281D16', '#442D1F', '#664127',
+      '#8F613B', '#C99552', '#E5BD72', '#A63424',
+      '#CF4B36', '#E86B9A', '#7C4DFF', '#29A8DF',
+      '#0E9F6E', '#CBD5E1', '#4C1D95', '#EA580C'
+    ];
+
+    const EYE_COLORS = [
+      { id: 'dark_brown', name: 'Deep Brown', hex: '#3B2314', inner: '#633B22', rim: '#140B06' },
+      { id: 'amber',      name: 'Warm Amber', hex: '#8F5319', inner: '#D98A36', rim: '#331A05' },
+      { id: 'ocean_blue', name: 'Ocean Blue', hex: '#2563EB', inner: '#60A5FA', rim: '#172554' },
+      { id: 'sky_cyan',   name: 'Azure Sky',  hex: '#0284C7', inner: '#38BDF8', rim: '#082F49' },
+      { id: 'emerald',    name: 'Emerald',    hex: '#059669', inner: '#34D399', rim: '#022C22' },
+      { id: 'hazel',      name: 'Hazel Gold', hex: '#785A28', inner: '#B88E44', rim: '#2E210B' },
+      { id: 'violet',     name: 'Amethyst',   hex: '#6D28D9', inner: '#A78BFA', rim: '#2E1065' },
+      { id: 'charcoal',   name: 'Obsidian',   hex: '#27303F', inner: '#4B5563', rim: '#090B10' },
+      { id: 'rose_quartz',name: 'Rose Pink',  hex: '#DB2777', inner: '#F472B6', rim: '#500724' },
+      { id: 'jade_mint',  name: 'Jade Mint',  hex: '#0D9488', inner: '#2DD4BF', rim: '#042F2E' },
+      { id: 'crimson',    name: 'Ruby Glow',  hex: '#DC2626', inner: '#F87171', rim: '#450A0A' },
+      { id: 'silver_ice', name: 'Silver Ice', hex: '#64748B', inner: '#CBD5E1', rim: '#1E293B' }
+    ];
+
+    const HAIRSTYLES = [
+      { id: 'bowl_fringe',    name: 'Student Fringe Cut',  group: 'short',  icon: 'fa-user',                cost: 0,   tag: 'FREE' },
+      { id: 'side_part',      name: 'Neat Side-Part',      group: 'short',  icon: 'fa-user-tie',            cost: 0,   tag: 'FREE' },
+      { id: 'bob_bangs',      name: 'Classic Chin Bob',    group: 'medium', icon: 'fa-face-smile',          cost: 0,   tag: 'FREE' },
+      { id: 'high_ponytail',  name: 'Sleek High Ponytail', group: 'long',   icon: 'fa-ribbon',              cost: 0,   tag: 'FREE' },
+      { id: 'swept_boy',      name: 'Pixar Swept Layers',  group: 'short',  icon: 'fa-wind',                cost: 60,  tag: 'Ref Boy' },
+      { id: 'twin_braids',    name: 'School Twin Braids',  group: 'long',   icon: 'fa-grip-lines-vertical', cost: 80,  tag: 'Cute' },
+      { id: 'fluffy_curls',   name: 'Two-Block Curtain',   group: 'medium', icon: 'fa-cloud',               cost: 90,  tag: 'Popular' },
+      { id: 'textured_quiff', name: 'Textured Quiff Crop', group: 'short',  icon: 'fa-fire-flame-curved',   cost: 110, tag: 'Trendy' },
+      { id: 'daisy_buns',     name: 'Double Buns & Tails', group: 'long',   icon: 'fa-spa',                 cost: 120, tag: 'Ref Girl' },
+      { id: 'afro_puffs',     name: 'Double Space Buns',   group: 'medium', icon: 'fa-circle-nodes',        cost: 140, tag: 'Stylized' },
+      { id: 'long_wavy',      name: 'Long Wavy Cascade',   group: 'long',   icon: 'fa-water',               cost: 160, tag: 'Royal' },
+      { id: 'cyber_spikes',   name: 'Hero Layered Locks',  group: 'medium', icon: 'fa-bolt',                cost: 180, tag: 'Epic' }
+    ];
+
+    const TOP_STYLES = [
+      { id: 'orange_uniform', name: 'Orange Era Uniform Tee', icon: 'fa-graduation-cap', primary: '#FF7A1A', secondary: '#788292', cost: 0,   tag: 'FREE' },
+      { id: 'white_graphic',  name: 'White Graphic Tee',      icon: 'fa-shirt',          primary: '#F8FAFC', secondary: '#334155', cost: 0,   tag: 'FREE' },
+      { id: 'sport_jersey',   name: 'Athletic Polo Shirt',    icon: 'fa-medal',          primary: '#10B981', secondary: '#F8FAFC', cost: 70,  tag: 'Sport' },
+      { id: 'pastel_sweater', name: 'Ribbed Knit Sweater',    icon: 'fa-snowflake',      primary: '#A78BFA', secondary: '#F3E8FF', cost: 85,  tag: 'Cozy' },
+      { id: 'denim_overalls', name: 'Denim Work Overalls',    icon: 'fa-person-digging', primary: '#3B82F6', secondary: '#FDE047', cost: 110, tag: 'Playful' },
+      { id: 'sailor_uniform', name: 'Sailor Academy Blouse',  icon: 'fa-anchor',         primary: '#F8FAFC', secondary: '#1D4ED8', cost: 135, tag: 'Classic' },
+      { id: 'daisy_qipao',    name: 'Blue Daisy Qipao Dress', icon: 'fa-fan',            primary: '#7AB3FC', secondary: '#1E293B', cost: 150, tag: '3D Girl Ref' }
+    ];
+
+    const JACKET_STYLES = [
+      { id: 'none',           name: 'No Jacket / Coat',        icon: 'fa-ban',           primary: '#4B4497', secondary: '#FACC15', cost: 0,   tag: 'None' },
+      { id: 'hoodie_vest',    name: 'Layered Zip Hoodie Vest', icon: 'fa-vest',          primary: '#4B4497', secondary: '#FACC15', cost: 110, tag: '3D Boy Ref' },
+      { id: 'varsity_jacket', name: 'Varsity Letterman',       icon: 'fa-baseball',      primary: '#DC2626', secondary: '#F8FAFC', cost: 140, tag: 'Street' },
+      { id: 'denim_jacket',   name: 'Classic Denim Jacket',    icon: 'fa-shirt',         primary: '#2563EB', secondary: '#93C5FD', cost: 155, tag: 'Cool' },
+      { id: 'windbreaker',    name: 'Pro Track Windbreaker',   icon: 'fa-wind',          primary: '#0EA5E9', secondary: '#FDE047', cost: 170, tag: 'Sport' },
+      { id: 'academy_blazer', name: 'Tailored Crest Blazer',   icon: 'fa-user-graduate', primary: '#1E3A8A', secondary: '#EF4444', cost: 195, tag: 'Scholar' },
+      { id: 'trench_coat',    name: 'Tailored Winter Coat',    icon: 'fa-user-tie',      primary: '#B45309', secondary: '#FDE68A', cost: 220, tag: 'VIP' }
+    ];
+
+    const BOTTOM_STYLES = [
+      { id: 'khaki_shorts',   name: 'Tailored Khaki Shorts', color: '#D6BC98', cost: 0  },
+      { id: 'white_shorts',   name: 'Crisp White Shorts',    color: '#F1F5F9', cost: 0  },
+      { id: 'denim_shorts',   name: 'Denim Cargo Shorts',    color: '#2C5282', cost: 50 },
+      { id: 'pleated_skirt',  name: 'Pleated Academy Skirt', color: '#334155', cost: 60 },
+      { id: 'rolled_jeans',   name: 'Rolled-Cuff Jeans',     color: '#3B6BA5', cost: 70 },
+      { id: 'track_pants',    name: 'Tapered Track Joggers', color: '#1E293B', cost: 75 },
+      { id: 'chino_trousers', name: 'Slim Chino Trousers',   color: '#475569', cost: 85 }
+    ];
+
+    const SHOE_STYLES = [
+      { id: 'white_kicks',   name: 'Court White Sneakers', color: '#F8FAFC', sole: '#CBD5E1', cost: 0   },
+      { id: 'black_loafers', name: 'Polished Loafers',     color: '#1E293B', sole: '#0F172A', cost: 0   },
+      { id: 'red_sneakers',  name: 'Red Skate Sneakers',   color: '#E13D3D', sole: '#F8FAFC', cost: 60  },
+      { id: 'blue_laceups',  name: 'Blue Qipao Oxfords',   color: '#7AB3FC', sole: '#1E293B', cost: 75  },
+      { id: 'high_tops',     name: 'Gold Pro High-Tops',   color: '#F59E0B', sole: '#FFFFFF', cost: 95  },
+      { id: 'chelsea_boots', name: 'Leather Ankle Boots',  color: '#451A03', sole: '#1C1917', cost: 110 }
+    ];
+
+    const HEADGEAR_ITEMS = [
+      { id: 'none',           name: 'No Headgear',         group: 'hats',  icon: 'fa-ban',             cost: 0   },
+      { id: 'baseball_cap',   name: 'Street Stitch Cap',   group: 'hats',  icon: 'fa-hat-cowboy-side', cost: 50,  tag: 'Sport' },
+      { id: 'sprout_clip',    name: 'Botanical Sprout',    group: 'clips', icon: 'fa-seedling',        cost: 55,  tag: 'Eco' },
+      { id: 'daisy_clips',    name: 'White Daisy Clips',   group: 'clips', icon: 'fa-spa',             cost: 60,  tag: 'Ref Girl' },
+      { id: 'bike_helmet',    name: 'Aero Cycling Helmet', group: 'hats',  icon: 'fa-helmet-safety',   cost: 65,  tag: 'Safety' },
+      { id: 'sun_straw_hat',  name: 'Woven Sun Boater',    group: 'hats',  icon: 'fa-sun',             cost: 75,  tag: 'Outdoor' },
+      { id: 'artist_beret',   name: 'Wool Studio Beret',   group: 'hats',  icon: 'fa-palette',         cost: 85,  tag: 'Art' },
+      { id: 'grad_cap',       name: 'Honour Mortarboard',  group: 'hats',  icon: 'fa-graduation-cap',  cost: 110, tag: 'Scholar' },
+      { id: 'cat_headphones', name: 'Studio Cat Headset',  group: 'clips', icon: 'fa-headphones',      cost: 140, tag: 'Gamer' },
+      { id: 'gold_crown',     name: 'Royal Sovereign Crown',group:'clips', icon: 'fa-crown',           cost: 250, tag: 'Legendary' }
+    ];
+
+    const ACCESSORY_ITEMS = [
+      { id: 'glasses_round',   name: 'Optical Wire Glasses', group: 'eyewear', icon: 'fa-glasses',     cost: 50,  tag: 'Photo Ref' },
+      { id: 'smartwatch',      name: 'Digital Smartwatch',   group: 'wear',    icon: 'fa-clock',       cost: 70,  tag: 'Photo Ref' },
+      { id: 'star_shades',     name: 'Aviator Sun Frames',   group: 'eyewear', icon: 'fa-sunglasses',  cost: 85,  tag: 'VIP' },
+      { id: 'backpack',        name: 'Canvas Daypack',       group: 'wear',    icon: 'fa-briefcase',   cost: 95,  tag: 'School' },
+      { id: 'bowtie_crest',    name: 'Academy Silk Tie',     group: 'wear',    icon: 'fa-user-tie',    cost: 110, tag: 'Scholar' },
+      { id: 'honor_medal',     name: 'Gold Academic Medal',  group: 'wear',    icon: 'fa-medal',       cost: 150, tag: 'Honor' }
+    ];
+
+    const VEHICLE_ITEMS = [
+      { id: 'none',          name: 'Standing on Stage',    icon: 'fa-circle-dot',     cost: 0,   desc: 'Standard Studio Pedestal' },
+      { id: 'skateboard',    name: 'Pro Street Skateboard',icon: 'fa-sliders',        cost: 120, desc: 'Maple Deck with Custom Trucks & Urethane Wheels' },
+      { id: 'kick_scooter',  name: 'Alloy Pro Scooter',    icon: 'fa-person-skating', cost: 180, desc: 'Anodized Deck, Spoked Cores & T-Bar' },
+      { id: 'school_desk',   name: 'IELTS Exam Desk',      icon: 'fa-chair',          cost: 210, desc: 'Hardwood Desk with Tubular Frame' },
+      { id: 'mountain_bike', name: '3D Cruiser Bicycle',   icon: 'fa-bicycle',        cost: 280, desc: 'Diamond Frame, Spoked Wheels, Crankset & Basket' },
+      { id: 'golden_bike',   name: 'Golden Champion Bike', icon: 'fa-trophy',         cost: 500, desc: 'Legendary Gold-Plated Racing Bicycle' }
+    ];
+
+    const CLOTHING_PALETTE = [
+      '#FF7A1A', '#7AB3FC', '#4B4497', '#F8FAFC', '#EF4444', '#10B981',
+      '#F59E0B', '#EC4899', '#6366F1', '#14B8A6', '#1E293B', '#84CC16'
+    ];
+
+    const ALWAYS_FREE_IDS = new Set([
+      'hair:bowl_fringe', 'hair:side_part', 'hair:bob_bangs', 'hair:high_ponytail',
+      'top:orange_uniform', 'top:white_graphic',
+      'jacket:none',
+      'bottom:khaki_shorts', 'bottom:white_shorts',
+      'shoe:white_kicks', 'shoe:black_loafers',
+      'headgear:none', 'vehicle:none'
+    ]);
+
+    const CLASS_LEVELS = ['IELTS 1', 'IELTS 2'];
+
+    let studentsData = [];
+    let activeStudentId = 1;
+    let activeRosterFilter = 'all';
+    let activeCustomTab = 'body';
+    let activeBodySubTab = 'skin_body';
+    let activeClothesSubTab = 'tshirts';
+    let activeHairFilter = 'all';
+    let activeHeadgearFilter = 'all';
+    let activeAccFilter = 'all';
+    let previewState = null;
+
+    let scene, camera, renderer, controls;
+    let characterRoot = new THREE.Group();
+    let vehicleGroup = new THREE.Group();
+    let characterRig = {};
+    let autoSpin = false;
+    let studioThemeIndex = 0;
+    const clock = new THREE.Clock();
+    let animationMode = 'idle';
+
+    function formatCharNumber(id) {
+      return `Character #${String(id).padStart(3, '0')}`;
+    }
+
+    function ensureFacialDefaults(s, idx = 1) {
+      s.headScale = s.headScale || 1.0;
+      s.faceShape = s.faceShape || 'oval';
+      s.jawDefine = typeof s.jawDefine === 'number' ? s.jawDefine : 1.0;
+      s.earStyle = s.earStyle || 'normal';
+      s.eyeShape = s.eyeShape || (s.gender === 'girl' ? 'round' : 'almond');
+      s.eyeScale = s.eyeScale || 1.0;
+      s.eyebrowStyle = s.eyebrowStyle || 'natural';
+      s.noseShape = s.noseShape || 'button';
+      s.mouthStyle = s.mouthStyle || (s.expression === 'excited' ? 'excited' : (s.expression === 'confident' ? 'confident' : 'happy'));
+      s.skinDetail = s.skinDetail || 'none';
+      return s;
+    }
+
+    function buildInitial100Students() {
+      const saved = localStorage.getItem('eduverse_100_students_realistic_v10');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 100) {
+            studentsData = parsed.map((s, idx) => ensureFacialDefaults({
+              ...s,
+              id: idx + 1,
+              name: formatCharNumber(idx + 1),
+              classLevel: s.classLevel === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1',
+              jacketStyle: s.jacketStyle || 'none',
+              jacketPrimary: s.jacketPrimary || '#4B4497',
+              jacketSecondary: s.jacketSecondary || '#FACC15'
+            }, idx + 1));
+            return;
+          }
+        } catch (e) {
+          console.warn('Could not load saved roster, regenerating.');
+        }
+      }
+
+      studentsData = [];
+
+      // #001: Center Boy from Photo 1 (Orange Uniform & Optical Glasses — Empty Hands)
+      studentsData.push(ensureFacialDefaults({
+        id: 1,
+        name: 'Character #001',
+        gender: 'boy',
+        bodyScale: 0.96,
+        chubbiness: 1.02,
+        headScale: 1.0,
+        faceShape: 'oval',
+        earStyle: 'normal',
+        eyeShape: 'almond',
+        eyeScale: 1.0,
+        eyebrowStyle: 'natural',
+        noseShape: 'button',
+        mouthStyle: 'happy',
+        skinDetail: 'none',
+        classLevel: 'IELTS 1',
+        xp: 1850,
+        gems: 420,
+        featured: true,
+        bio: 'IELTS 1 Team Leader • Orange Era Uniform & Optical Glasses',
+        skinTone: 'warm_ivory',
+        blush: 0.35,
+        eyeColor: 'dark_brown',
+        expression: 'happy',
+        hairStyle: 'bowl_fringe',
+        hairColor: '#16161B',
+        topStyle: 'orange_uniform',
+        topPrimary: '#FF7A1A',
+        topSecondary: '#788292',
+        jacketStyle: 'none',
+        jacketPrimary: '#1E3A8A',
+        jacketSecondary: '#F8FAFC',
+        bottomStyle: 'khaki_shorts',
+        bottomColor: '#D6BC98',
+        shoeStyle: 'white_kicks',
+        shoeColor: '#F8FAFC',
+        headgear: 'none',
+        accessories: ['glasses_round'],
+        vehicle: 'none',
+        bikeColor: '#38BDF8',
+        unlockedItems: ['acc:glasses_round']
+      }));
+
+      // #002: Second Left Boy from Photo 1 (Orange Uniform & Smartwatch — Empty Hands)
+      studentsData.push(ensureFacialDefaults({
+        id: 2,
+        name: 'Character #002',
+        gender: 'boy',
+        bodyScale: 1.03,
+        chubbiness: 1.06,
+        headScale: 1.0,
+        faceShape: 'round',
+        earStyle: 'round',
+        eyeShape: 'almond',
+        eyeScale: 1.0,
+        eyebrowStyle: 'bold',
+        noseShape: 'round',
+        mouthStyle: 'confident',
+        skinDetail: 'none',
+        classLevel: 'IELTS 1',
+        xp: 1720,
+        gems: 340,
+        featured: true,
+        bio: 'Lead Speaker • Orange Uniform Squad with Smartwatch',
+        skinTone: 'warm_ivory',
+        blush: 0.38,
+        eyeColor: 'dark_brown',
+        expression: 'confident',
+        hairStyle: 'side_part',
+        hairColor: '#16161B',
+        topStyle: 'orange_uniform',
+        topPrimary: '#FF7A1A',
+        topSecondary: '#788292',
+        jacketStyle: 'none',
+        jacketPrimary: '#DC2626',
+        jacketSecondary: '#F8FAFC',
+        bottomStyle: 'white_shorts',
+        bottomColor: '#F1F5F9',
+        shoeStyle: 'red_sneakers',
+        shoeColor: '#E13D3D',
+        headgear: 'none',
+        accessories: ['smartwatch'],
+        vehicle: 'none',
+        bikeColor: '#F97316',
+        unlockedItems: ['shoe:red_sneakers', 'acc:smartwatch']
+      }));
+
+      // #003: Image 2 Reference - 3D Girl in Blue Daisy Qipao Dress with Double Buns & Pigtails
+      studentsData.push(ensureFacialDefaults({
+        id: 3,
+        name: 'Character #003',
+        gender: 'girl',
+        bodyScale: 0.94,
+        chubbiness: 0.98,
+        headScale: 1.04,
+        faceShape: 'chibi',
+        earStyle: 'small',
+        eyeShape: 'starry',
+        eyeScale: 1.08,
+        eyebrowStyle: 'soft',
+        noseShape: 'petite',
+        mouthStyle: 'glossy',
+        skinDetail: 'freckles',
+        classLevel: 'IELTS 2',
+        xp: 1980,
+        gems: 520,
+        featured: true,
+        bio: '3D Stylized Girl • Double Buns, Daisy Clips & Blue Qipao Dress',
+        skinTone: 'porcelain',
+        blush: 0.62,
+        eyeColor: 'charcoal',
+        expression: 'happy',
+        hairStyle: 'daisy_buns',
+        hairColor: '#1E1E24',
+        topStyle: 'daisy_qipao',
+        topPrimary: '#7AB3FC',
+        topSecondary: '#1E293B',
+        jacketStyle: 'none',
+        jacketPrimary: '#7AB3FC',
+        jacketSecondary: '#FFFFFF',
+        bottomStyle: 'pleated_skirt',
+        bottomColor: '#7AB3FC',
+        shoeStyle: 'blue_laceups',
+        shoeColor: '#7AB3FC',
+        headgear: 'daisy_clips',
+        accessories: [],
+        vehicle: 'none',
+        bikeColor: '#7AB3FC',
+        unlockedItems: ['hair:daisy_buns', 'top:daisy_qipao', 'bottom:pleated_skirt', 'shoe:blue_laceups', 'headgear:daisy_clips']
+      }));
+
+      // #004: Image 3 Reference - 3D Stylized Boy with Swept Brown Hair, Purple Zip Vest over Red Tee & Yellow Sleeves
+      studentsData.push(ensureFacialDefaults({
+        id: 4,
+        name: 'Character #004',
+        gender: 'boy',
+        bodyScale: 1.0,
+        chubbiness: 0.97,
+        headScale: 1.0,
+        faceShape: 'heart',
+        earStyle: 'normal',
+        eyeShape: 'round',
+        eyeScale: 1.04,
+        eyebrowStyle: 'angled',
+        noseShape: 'upturned',
+        mouthStyle: 'confident',
+        skinDetail: 'freckles',
+        classLevel: 'IELTS 2',
+        xp: 2100,
+        gems: 480,
+        featured: true,
+        bio: '3D Stylized Boy • Swept Hair, Layered Zip Vest & Cruiser Bike',
+        skinTone: 'fair',
+        blush: 0.45,
+        eyeColor: 'amber',
+        expression: 'confident',
+        hairStyle: 'swept_boy',
+        hairColor: '#442D1F',
+        topStyle: 'white_graphic',
+        topPrimary: '#E13D3D',
+        topSecondary: '#38BDF8',
+        jacketStyle: 'hoodie_vest',
+        jacketPrimary: '#4B4497',
+        jacketSecondary: '#FACC15',
+        bottomStyle: 'rolled_jeans',
+        bottomColor: '#3B6BA5',
+        shoeStyle: 'red_sneakers',
+        shoeColor: '#E13D3D',
+        headgear: 'none',
+        accessories: [],
+        vehicle: 'mountain_bike',
+        bikeColor: '#EF4444',
+        unlockedItems: ['hair:swept_boy', 'jacket:hoodie_vest', 'bottom:rolled_jeans', 'shoe:red_sneakers', 'vehicle:mountain_bike']
+      }));
+
+      // #005: Far Right Boy from Photo 1
+      studentsData.push(ensureFacialDefaults({
+        id: 5,
+        name: 'Character #005',
+        gender: 'boy',
+        bodyScale: 1.07,
+        chubbiness: 1.08,
+        headScale: 1.0,
+        faceShape: 'round',
+        earStyle: 'normal',
+        eyeShape: 'almond',
+        eyeScale: 1.0,
+        eyebrowStyle: 'natural',
+        noseShape: 'button',
+        mouthStyle: 'happy',
+        skinDetail: 'none',
+        classLevel: 'IELTS 2',
+        xp: 1640,
+        gems: 310,
+        featured: true,
+        bio: 'Orange Uniform Squad • Glasses & Denim Cargo Shorts',
+        skinTone: 'warm_ivory',
+        blush: 0.35,
+        eyeColor: 'dark_brown',
+        expression: 'happy',
+        hairStyle: 'side_part',
+        hairColor: '#16161B',
+        topStyle: 'orange_uniform',
+        topPrimary: '#FF7A1A',
+        topSecondary: '#788292',
+        jacketStyle: 'none',
+        jacketPrimary: '#1E3A8A',
+        jacketSecondary: '#F8FAFC',
+        bottomStyle: 'denim_shorts',
+        bottomColor: '#2C5282',
+        shoeStyle: 'white_kicks',
+        shoeColor: '#F8FAFC',
+        headgear: 'none',
+        accessories: ['glasses_round', 'smartwatch'],
+        vehicle: 'none',
+        bikeColor: '#10B981',
+        unlockedItems: ['bottom:denim_shorts', 'acc:glasses_round', 'acc:smartwatch']
+      }));
+
+      // #006: Far Left Boy from Photo 1
+      studentsData.push(ensureFacialDefaults({
+        id: 6,
+        name: 'Character #006',
+        gender: 'boy',
+        bodyScale: 1.05,
+        chubbiness: 1.02,
+        headScale: 1.0,
+        faceShape: 'oval',
+        earStyle: 'normal',
+        eyeShape: 'almond',
+        eyeScale: 1.0,
+        eyebrowStyle: 'natural',
+        noseShape: 'sculpted',
+        mouthStyle: 'happy',
+        skinDetail: 'none',
+        classLevel: 'IELTS 1',
+        xp: 1590,
+        gems: 290,
+        featured: true,
+        bio: 'Orange Uniform Squad • Ready for IELTS Speaking',
+        skinTone: 'natural',
+        blush: 0.35,
+        eyeColor: 'dark_brown',
+        expression: 'happy',
+        hairStyle: 'bowl_fringe',
+        hairColor: '#16161B',
+        topStyle: 'orange_uniform',
+        topPrimary: '#FF7A1A',
+        topSecondary: '#788292',
+        jacketStyle: 'none',
+        jacketPrimary: '#1E3A8A',
+        jacketSecondary: '#F8FAFC',
+        bottomStyle: 'khaki_shorts',
+        bottomColor: '#1E293B',
+        shoeStyle: 'white_kicks',
+        shoeColor: '#F8FAFC',
+        headgear: 'none',
+        accessories: [],
+        vehicle: 'none',
+        bikeColor: '#F59E0B',
+        unlockedItems: []
+      }));
+
+      // #007: White Graphic T-Shirt Boy from Photo 1
+      studentsData.push(ensureFacialDefaults({
+        id: 7,
+        name: 'Character #007',
+        gender: 'boy',
+        bodyScale: 0.92,
+        chubbiness: 0.97,
+        headScale: 1.0,
+        faceShape: 'oval',
+        earStyle: 'normal',
+        eyeShape: 'almond',
+        eyeScale: 1.0,
+        eyebrowStyle: 'soft',
+        noseShape: 'button',
+        mouthStyle: 'happy',
+        skinDetail: 'none',
+        classLevel: 'IELTS 1',
+        xp: 1490,
+        gems: 360,
+        featured: true,
+        bio: 'Street Style White Graphic Tee & Rolled Jeans',
+        skinTone: 'warm_ivory',
+        blush: 0.4,
+        eyeColor: 'dark_brown',
+        expression: 'happy',
+        hairStyle: 'bowl_fringe',
+        hairColor: '#16161B',
+        topStyle: 'white_graphic',
+        topPrimary: '#F8FAFC',
+        topSecondary: '#334155',
+        jacketStyle: 'none',
+        jacketPrimary: '#2563EB',
+        jacketSecondary: '#93C5FD',
+        bottomStyle: 'rolled_jeans',
+        bottomColor: '#4A789C',
+        shoeStyle: 'white_kicks',
+        shoeColor: '#F8FAFC',
+        headgear: 'none',
+        accessories: [],
+        vehicle: 'none',
+        bikeColor: '#6366F1',
+        unlockedItems: ['bottom:rolled_jeans']
+      }));
+
+      const freeHairsBoy = ['bowl_fringe', 'side_part'];
+      const freeHairsGirl = ['bob_bangs', 'high_ponytail'];
+      const freeTops = ['orange_uniform', 'white_graphic'];
+      const freeBottoms = ['khaki_shorts', 'white_shorts'];
+      const freeShoes = ['white_kicks', 'black_loafers'];
+
+      for (let i = 8; i <= 100; i++) {
+        const isGirl = i % 2 === 1;
+        const skin = SKIN_TONES[(i * 3) % SKIN_TONES.length];
+        const eye = EYE_COLORS[(i * 5) % EYE_COLORS.length];
+        const hairStyle = isGirl ? freeHairsGirl[i % 2] : freeHairsBoy[i % 2];
+        const topId = freeTops[i % 2];
+        const bottomId = freeBottoms[i % 2];
+        const shoeId = freeShoes[i % 2];
+        const lvl = CLASS_LEVELS[i % 2];
+
+        studentsData.push(ensureFacialDefaults({
+          id: i,
+          name: formatCharNumber(i),
+          gender: isGirl ? 'girl' : 'boy',
+          bodyScale: Number((0.92 + ((i * 7) % 18) / 100).toFixed(2)),
+          chubbiness: Number((0.94 + ((i * 3) % 18) / 100).toFixed(2)),
+          headScale: 1.0,
+          faceShape: FACE_SHAPES[i % FACE_SHAPES.length].id,
+          earStyle: EAR_STYLES[i % 4].id,
+          eyeShape: EYE_SHAPES[i % EYE_SHAPES.length].id,
+          eyeScale: 1.0,
+          eyebrowStyle: EYEBROW_STYLES[i % EYEBROW_STYLES.length].id,
+          noseShape: NOSE_SHAPES[i % NOSE_SHAPES.length].id,
+          mouthStyle: MOUTH_STYLES[i % 5].id,
+          skinDetail: i % 5 === 0 ? 'freckles' : 'none',
+          classLevel: lvl,
+          xp: 800 + ((i * 47) % 1500),
+          gems: 240 + ((i * 35) % 450),
+          featured: false,
+          bio: `${lvl} Candidate • Custom 3D Student Avatar`,
+          skinTone: skin.id,
+          blush: isGirl ? 0.52 : 0.32,
+          eyeColor: eye.id,
+          expression: ['happy', 'confident', 'wink', 'excited'][i % 4],
+          hairStyle: hairStyle,
+          hairColor: HAIR_COLORS[(i * 3) % 8],
+          topStyle: topId,
+          topPrimary: topId === 'orange_uniform' ? '#FF7A1A' : '#F8FAFC',
+          topSecondary: topId === 'orange_uniform' ? '#788292' : '#334155',
+          jacketStyle: 'none',
+          jacketPrimary: '#1E3A8A',
+          jacketSecondary: '#F8FAFC',
+          bottomStyle: bottomId,
+          bottomColor: bottomId === 'khaki_shorts' ? '#D6BC98' : '#F1F5F9',
+          shoeStyle: shoeId,
+          shoeColor: shoeId === 'white_kicks' ? '#F8FAFC' : '#1E293B',
+          headgear: 'none',
+          accessories: [],
+          vehicle: 'none',
+          bikeColor: CLOTHING_PALETTE[(i * 2) % CLOTHING_PALETTE.length],
+          unlockedItems: []
+        }, i));
+      }
+    }
+
+    function persistStudents() {
+      try {
+        localStorage.setItem('eduverse_100_students_realistic_v10', JSON.stringify(studentsData));
+      } catch (e) {}
+    }
+
+    function getActiveStudent() {
+      return studentsData.find(s => s.id === activeStudentId) || studentsData[0];
+    }
+
+    function isItemUnlocked(student, itemKey) {
+      if (ALWAYS_FREE_IDS.has(itemKey)) return true;
+      return Array.isArray(student.unlockedItems) && student.unlockedItems.includes(itemKey);
+    }
+
+    function getEffectiveStudentState(student) {
+      const copy = JSON.parse(JSON.stringify(student));
+      if (!previewState) return copy;
+
+      const { category, itemId, extraProps } = previewState;
+      if (category === 'hair') copy.hairStyle = itemId;
+      else if (category === 'top') {
+        copy.topStyle = itemId;
+        if (extraProps && extraProps.primary) copy.topPrimary = extraProps.primary;
+        if (extraProps && extraProps.secondary) copy.topSecondary = extraProps.secondary;
+      }
+      else if (category === 'jacket') {
+        copy.jacketStyle = itemId;
+        if (extraProps && extraProps.primary) copy.jacketPrimary = extraProps.primary;
+        if (extraProps && extraProps.secondary) copy.jacketSecondary = extraProps.secondary;
+      }
+      else if (category === 'bottom') {
+        copy.bottomStyle = itemId;
+        if (extraProps && extraProps.color) copy.bottomColor = extraProps.color;
+      }
+      else if (category === 'shoe') {
+        copy.shoeStyle = itemId;
+        if (extraProps && extraProps.color) copy.shoeColor = extraProps.color;
+      }
+      else if (category === 'headgear') copy.headgear = itemId;
+      else if (category === 'acc') {
+        if (!copy.accessories.includes(itemId)) copy.accessories.push(itemId);
+      }
+      else if (category === 'vehicle') copy.vehicle = itemId;
+      return copy;
+    }
+
+    /*************************************************************************
+     * 3. THREE.JS INITIALIZATION & PBR MATERIALS
+     *************************************************************************/
+    function createSkinMaterial(skinObj) {
+      return new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(skinObj.hex),
+        roughness: 0.42,
+        metalness: 0.0,
+        clearcoat: 0.35,
+        clearcoatRoughness: 0.15
+      });
+    }
+
+    function createHairMaterial(hexColor) {
+      return new THREE.MeshStandardMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: 0.55,
+        metalness: 0.05
+      });
+    }
+
+    function createFabricMaterial(hexColor, roughness = 0.65) {
+      return new THREE.MeshStandardMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: roughness,
+        metalness: 0.0
+      });
+    }
+
+    function createGlossyMaterial(hexColor, roughness = 0.2, metalness = 0.1) {
+      return new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: roughness,
+        metalness: metalness,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.1
+      });
+    }
+
+    function getRealisticIrisTexture(eyeObj) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = eyeObj.rim;
+      ctx.fillRect(0, 0, 128, 128);
+
+      const grad = ctx.createRadialGradient(64, 64, 10, 64, 64, 60);
+      grad.addColorStop(0, eyeObj.rim);
+      grad.addColorStop(0.3, eyeObj.hex);
+      grad.addColorStop(0.85, eyeObj.inner);
+      grad.addColorStop(1, eyeObj.rim);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(64, 64, 58, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Radial iris fibers
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 48; i++) {
+        const angle = (i / 48) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(64 + Math.cos(angle) * 12, 64 + Math.sin(angle) * 12);
+        ctx.lineTo(64 + Math.cos(angle) * 54, 64 + Math.sin(angle) * 54);
+        ctx.stroke();
+      }
+
+      // Pupil
+      ctx.fillStyle = '#090b10';
+      ctx.beginPath();
+      ctx.arc(64, 64, 13, 0, Math.PI * 2);
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function initThreeJS() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color('#0f172a');
+      scene.fog = new THREE.FogExp2('#0f172a', 0.02);
+
+      const w = container.clientWidth || 800;
+      const h = container.clientHeight || 600;
+
+      camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+      camera.position.set(0, 1.88, 6.2);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.92;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.minDistance = 2.0;
+      controls.maxDistance = 12.0;
+      controls.target.set(0, 1.38, 0);
+      controls.maxPolarAngle = Math.PI / 2 + 0.08;
+
+      // Studio Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.72);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 1.15);
+      keyLight.position.set(3.5, 5.5, 4.0);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.bias = -0.0001;
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.65);
+      fillLight.position.set(-4.0, 3.0, 3.0);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(0xf43f5e, 0.45);
+      rimLight.position.set(0.0, 4.0, -4.5);
+      scene.add(rimLight);
+
+      // Studio Pedestal Stage
+      const stageGeo = new THREE.CylinderGeometry(2.2, 2.4, 0.22, 64);
+      const stageMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.15 });
+      const stage = new THREE.Mesh(stageGeo, stageMat);
+      stage.position.y = -0.11;
+      stage.receiveShadow = true;
+      scene.add(stage);
+
+      const stageRim = new THREE.Mesh(
+        new THREE.TorusGeometry(2.22, 0.04, 16, 64),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8, roughness: 0.2 })
+      );
+      stageRim.rotation.x = Math.PI / 2;
+      stageRim.position.y = 0.0;
+      scene.add(stageRim);
+
+      scene.add(characterRoot);
+      scene.add(vehicleGroup);
+
+      window.addEventListener('resize', onWindowResize);
+      rebuild3DSceneForStudent(getActiveStudent());
+      animateLoop();
+    }
+
+    /*************************************************************************
+     * 4. ANATOMICAL 3D HEAD & JAWLINE TOPOLOGY (10 FACE SHAPES, ZERO DENTING)
+     *************************************************************************/
+    function createSculptedRealisticHeadGeometry(chub = 1.0, isGirl = false, faceShape = 'oval', jawDefine = 1.0) {
+      const geo = new THREE.SphereGeometry(0.305, 64, 64);
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+
+      let widthScale = 0.96;
+      let verticalScale = 1.08;
+      let depthScale = 0.98;
+      let jawWidthFactor = isGirl ? 0.84 : 0.88;
+      let chinWidthFactor = isGirl ? 0.56 : 0.62;
+      let jawAngleRidge = 0.012 * jawDefine;
+      let chinForward = 0.014 * jawDefine;
+      let cheekApple = 0.018 * chub;
+
+      if (faceShape === 'soft_round' || faceShape === 'round') {
+        widthScale = 1.01;
+        verticalScale = 1.04;
+        jawWidthFactor = 0.93;
+        chinWidthFactor = 0.72;
+        jawAngleRidge = 0.006 * jawDefine;
+        cheekApple = 0.024 * chub;
+      } else if (faceShape === 'heart') {
+        widthScale = 0.98;
+        verticalScale = 1.07;
+        jawWidthFactor = 0.78;
+        chinWidthFactor = 0.48;
+        jawAngleRidge = 0.008 * jawDefine;
+        chinForward = 0.016 * jawDefine;
+        cheekApple = 0.022 * chub;
+      } else if (faceShape === 'v_line') {
+        widthScale = 0.95;
+        verticalScale = 1.09;
+        jawWidthFactor = 0.76;
+        chinWidthFactor = 0.45;
+        jawAngleRidge = 0.016 * jawDefine;
+        chinForward = 0.018 * jawDefine;
+      } else if (faceShape === 'chiseled_jaw') {
+        widthScale = 0.96;
+        verticalScale = 1.09;
+        jawWidthFactor = 0.92;
+        chinWidthFactor = 0.66;
+        jawAngleRidge = 0.028 * jawDefine;
+        chinForward = 0.020 * jawDefine;
+        cheekApple = 0.014 * chub;
+      } else if (faceShape === 'defined_jaw') {
+        widthScale = 0.97;
+        verticalScale = 1.08;
+        jawWidthFactor = 0.90;
+        chinWidthFactor = 0.65;
+        jawAngleRidge = 0.022 * jawDefine;
+        chinForward = 0.018 * jawDefine;
+      } else if (faceShape === 'hero_angular') {
+        widthScale = 0.98;
+        verticalScale = 1.09;
+        jawWidthFactor = 0.95;
+        chinWidthFactor = 0.70;
+        jawAngleRidge = 0.032 * jawDefine;
+        chinForward = 0.022 * jawDefine;
+        cheekApple = 0.012 * chub;
+      } else if (faceShape === 'diamond') {
+        widthScale = 0.95;
+        verticalScale = 1.08;
+        jawWidthFactor = 0.80;
+        chinWidthFactor = 0.50;
+        jawAngleRidge = 0.020 * jawDefine;
+        cheekApple = 0.025 * chub;
+      } else if (faceShape === 'square') {
+        widthScale = 0.99;
+        verticalScale = 1.06;
+        jawWidthFactor = 0.96;
+        chinWidthFactor = 0.76;
+        jawAngleRidge = 0.026 * jawDefine;
+        chinForward = 0.016 * jawDefine;
+      } else if (faceShape === 'chibi') {
+        widthScale = 1.03;
+        verticalScale = 1.02;
+        jawWidthFactor = 0.92;
+        chinWidthFactor = 0.74;
+        jawAngleRidge = 0.005 * jawDefine;
+        cheekApple = 0.028 * chub;
+      }
+
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        const nx = v.x / 0.305;
+        const ny = v.y / 0.305;
+        const nz = v.z / 0.305;
+
+        v.x *= widthScale;
+        v.y *= verticalScale;
+        v.z *= depthScale;
+
+        if (ny > 0.05) {
+          const dome = Math.sin(((ny - 0.05) / 0.95) * Math.PI * 0.5);
+          v.x *= 1.0 + 0.03 * dome;
+          v.z *= 1.0 + 0.03 * dome;
+        }
+
+        const frontWeight = Math.max(0, nz);
+        if (frontWeight > 0 && ny > -0.65 && ny < 0.35) {
+          const facePlane = Math.cos(((ny + 0.15) / 0.55) * Math.PI * 0.5);
+          if (facePlane > 0) {
+            v.z -= 0.012 * Math.pow(frontWeight, 1.5) * facePlane;
+          }
+        }
+
+        if (ny < 0.05) {
+          const t = Math.min(1.0, (0.05 - ny) / 1.05);
+          const smoothT = t * t * (3.0 - 2.0 * t);
+
+          let xFactor;
+          if (t < 0.55) {
+            const u = t / 0.55;
+            const su = u * u * (3.0 - 2.0 * u);
+            xFactor = 1.0 - (1.0 - jawWidthFactor) * su;
+          } else {
+            const u = (t - 0.55) / 0.45;
+            const su = u * u * (3.0 - 2.0 * u);
+            xFactor = jawWidthFactor - (jawWidthFactor - chinWidthFactor) * su;
+          }
+          xFactor = xFactor * (0.94 + 0.06 * chub);
+          v.x *= xFactor;
+
+          const jawLevel = Math.exp(-Math.pow((ny + 0.42) / 0.24, 2.0));
+          const sideWeight = Math.pow(Math.abs(nx), 1.2) * Math.max(0, 1.0 - Math.abs(nz - 0.08) / 0.75);
+          v.x += Math.sign(nx) * jawAngleRidge * jawLevel * sideWeight;
+
+          const backWeight = Math.max(0, -nz + 0.15) / 1.15;
+          v.z += 0.045 * Math.pow(backWeight, 1.6) * smoothT;
+
+          if (nz > 0.0) {
+            const chinHeightBell = Math.exp(-Math.pow((ny + 0.72) / 0.28, 2.0));
+            const chinWidthBell = Math.exp(-Math.pow(nx / 0.52, 2.0));
+            v.z += chinForward * chinHeightBell * chinWidthBell * frontWeight;
+          }
+        }
+
+        if (nz > 0.1 && ny > -0.48 && ny < 0.15) {
+          const cx = (Math.abs(nx) - 0.36) / 0.38;
+          const cy = (ny + 0.14) / 0.30;
+          const cDist = Math.hypot(cx, cy);
+          if (cDist < 1.0) {
+            const cBell = Math.pow(Math.cos(cDist * Math.PI * 0.5), 2.0);
+            v.x += Math.sign(nx) * cheekApple * 0.65 * cBell;
+            v.z += cheekApple * 0.85 * cBell;
+          }
+        }
+
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    /*************************************************************************
+     * 5. COMPLETE SCENE & CHARACTER BUILDER
+     *************************************************************************/
+    function disposeGroup(group) {
+      if (!group) return;
+      while (group.children.length > 0) {
+        const obj = group.children[0];
+        group.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+          else obj.material.dispose();
+        }
+      }
+    }
+
+    function addVolumetricHairLock(parent, points, rRoot, rMid, rTip, hairMat, widthFlatten = 1.25) {
+      const curve = new THREE.CatmullRomCurve3(points);
+      const tubularSegments = 24;
+      const radialSegments = 12;
+      const geo = new THREE.TubeGeometry(curve, tubularSegments, 1.0, radialSegments, false);
+
+      const pos = geo.attributes.position;
+      const center = new THREE.Vector3();
+      const vertex = new THREE.Vector3();
+      const normal = new THREE.Vector3();
+
+      for (let i = 0; i <= tubularSegments; i++) {
+        const u = i / tubularSegments;
+        curve.getPointAt(u, center);
+
+        let radius;
+        if (u < 0.45) {
+          const t = u / 0.45;
+          radius = rRoot + (rMid - rRoot) * Math.sin(t * Math.PI * 0.5);
+        } else {
+          const t = (u - 0.45) / 0.55;
+          radius = rMid * Math.cos(t * Math.PI * 0.5) + rTip * (1 - t);
+        }
+
+        for (let j = 0; j <= radialSegments; j++) {
+          const idx = i * (radialSegments + 1) + j;
+          vertex.fromBufferAttribute(pos, idx);
+          normal.subVectors(vertex, center).normalize();
+          vertex.copy(center).addScaledVector(normal, radius);
+          pos.setXYZ(idx, vertex.x, vertex.y, vertex.z);
+        }
+      }
+
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, hairMat);
+      mesh.scale.set(widthFlatten, 1.0, 1.0);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function buildHairstyleMesh(headGroup, styleId, hairMat, student) {
+      const hairGroup = new THREE.Group();
+      headGroup.add(hairGroup);
+
+      const capGeo = new THREE.SphereGeometry(0.312, 48, 48, 0, Math.PI * 2, 0, Math.PI * 0.58);
+      capGeo.scale(0.99, 1.12, 1.05);
+      const capMesh = new THREE.Mesh(capGeo, hairMat);
+      capMesh.rotation.x = -0.52;
+      capMesh.position.set(0, 0.032, -0.022);
+      capMesh.castShadow = true;
+      hairGroup.add(capMesh);
+
+      [-1, 1].forEach(dir => {
+        addVolumetricHairLock(hairGroup, [
+          new THREE.Vector3(dir * 0.265, 0.16, 0.03),
+          new THREE.Vector3(dir * 0.292, 0.05, 0.02),
+          new THREE.Vector3(dir * 0.282, -0.04, 0.01)
+        ], 0.032, 0.026, 0.008, hairMat, 1.0);
+      });
+
+      for (let b = -3; b <= 3; b++) {
+        const bx = b * 0.062;
+        addVolumetricHairLock(hairGroup, [
+          new THREE.Vector3(bx * 0.65, 0.26, -0.18),
+          new THREE.Vector3(bx, 0.10, -0.315),
+          new THREE.Vector3(bx * 0.92, -0.08, -0.285)
+        ], 0.052, 0.048, 0.014, hairMat, 1.2);
+      }
+
+      if (styleId === 'bowl_fringe' || styleId === 'side_part') {
+        const isSidePart = styleId === 'side_part';
+        for (let i = -4; i <= 4; i++) {
+          const x0 = i * 0.042;
+          const sweepX = isSidePart ? (i >= -1 ? 0.036 : -0.028) : x0 * 0.12;
+          const zFront = 0.292 - Math.abs(i) * 0.013;
+          addVolumetricHairLock(hairGroup, [
+            new THREE.Vector3(x0 * 0.5, 0.34, 0.05),
+            new THREE.Vector3(x0 * 0.85 + sweepX * 0.4, 0.265, zFront * 0.92),
+            new THREE.Vector3(x0 + sweepX, 0.155, zFront)
+          ], 0.036, 0.032, 0.008, hairMat, 1.18);
+        }
+      }
+      else if (styleId === 'swept_boy' || styleId === 'textured_quiff' || styleId === 'cyber_spikes') {
+        const lift = styleId === 'cyber_spikes' ? 0.10 : (styleId === 'textured_quiff' ? 0.075 : 0.05);
+        for (let i = -4; i <= 4; i++) {
+          const xBase = i * 0.042;
+          const archY = 0.35 + lift + (2 - Math.abs(i) * 0.4) * 0.02;
+          addVolumetricHairLock(hairGroup, [
+            new THREE.Vector3(xBase * 0.45, 0.32, -0.02),
+            new THREE.Vector3(xBase * 0.8 + 0.03, archY, 0.16),
+            new THREE.Vector3(xBase + 0.065, 0.26 + lift * 0.4, 0.292 - Math.abs(i) * 0.014),
+            new THREE.Vector3(xBase + 0.09, 0.19 + (i % 2) * 0.015, 0.298 - Math.abs(i) * 0.015)
+          ], 0.042, 0.038, 0.009, hairMat, 1.18);
+        }
+      }
+      else if (styleId === 'daisy_buns') {
+        for (let i = -4; i <= 4; i++) {
+          const bx = i * 0.038;
+          addVolumetricHairLock(hairGroup, [
+            new THREE.Vector3(bx * 0.5, 0.34, 0.07),
+            new THREE.Vector3(bx * 0.88, 0.255, 0.280 - Math.abs(i) * 0.009),
+            new THREE.Vector3(bx, 0.155, 0.292 - Math.abs(i) * 0.011)
+          ], 0.034, 0.030, 0.008, hairMat, 1.2);
+        }
+        [-1, 1].forEach(dir => {
+          const bunGroup = new THREE.Group();
+          bunGroup.position.set(dir * 0.34, 0.03, -0.05);
+          const bunCore = new THREE.Mesh(new THREE.SphereGeometry(0.112, 32, 32), hairMat);
+          bunCore.scale.set(0.92, 1.05, 1.05);
+          bunGroup.add(bunCore);
+          hairGroup.add(bunGroup);
+        });
+      }
+      else if (styleId === 'bob_bangs' || styleId === 'long_wavy') {
+        const isLong = styleId === 'long_wavy';
+        for (let i = -4; i <= 4; i++) {
+          const bx = i * 0.039;
+          addVolumetricHairLock(hairGroup, [
+            new THREE.Vector3(bx * 0.5, 0.34, 0.07),
+            new THREE.Vector3(bx * 0.88, 0.255, 0.280 - Math.abs(i) * 0.009),
+            new THREE.Vector3(bx, 0.155, 0.290 - Math.abs(i) * 0.011)
+          ], 0.034, 0.030, 0.008, hairMat, 1.2);
+        }
+      }
+      else if (styleId === 'high_ponytail' || styleId === 'twin_braids') {
+        [-1, 1].forEach(dir => {
+          for (let j = 1; j <= 3; j++) {
+            addVolumetricHairLock(hairGroup, [
+              new THREE.Vector3(dir * 0.03, 0.34, 0.10),
+              new THREE.Vector3(dir * (0.075 * j), 0.255, 0.285 - j * 0.022),
+              new THREE.Vector3(dir * (0.105 * j), 0.15, 0.255 - j * 0.03)
+            ], 0.034, 0.028, 0.008, hairMat, 1.18);
+          }
+        });
+      }
+    }
+
+    function buildSculptedHandMesh(parent, dir, skinMat) {
+      const handGroup = new THREE.Group();
+      handGroup.position.y = -0.238;
+      handGroup.rotation.y = dir * -Math.PI * 0.46;
+      parent.add(handGroup);
+
+      const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.037, 0.039, 0.036, 24), skinMat);
+      wrist.position.y = -0.006;
+      handGroup.add(wrist);
+
+      const palm = new THREE.Mesh(new THREE.SphereGeometry(0.044, 28, 28), skinMat);
+      palm.scale.set(0.60, 1.08, 0.96);
+      palm.position.set(0, -0.044, 0.002);
+      handGroup.add(palm);
+
+      const thenar = new THREE.Mesh(new THREE.SphereGeometry(0.022, 18, 18), skinMat);
+      thenar.scale.set(0.85, 1.25, 1.05);
+      thenar.position.set(dir * -0.010, -0.038, 0.028);
+      handGroup.add(thenar);
+
+      return handGroup;
+    }
+
+    function rebuild3DSceneForStudent(student) {
+      if (!scene) return;
+      disposeGroup(characterRoot);
+      disposeGroup(vehicleGroup);
+
+      characterRig = {};
+
+      const skinObj = SKIN_TONES.find(s => s.id === student.skinTone) || SKIN_TONES[3];
+      const eyeObj = EYE_COLORS.find(e => e.id === student.eyeColor) || EYE_COLORS[0];
+      const skinMat = createSkinMaterial(skinObj);
+      const hairMat = createHairMaterial(student.hairColor);
+
+      const scale = student.bodyScale || 1.0;
+      const chub = student.chubbiness || 1.0;
+      const headScale = student.headScale || 1.0;
+      const jawDefine = typeof student.jawDefine === 'number' ? student.jawDefine : 1.0;
+      const isGirl = student.gender === 'girl';
+      characterRoot.scale.set(scale, scale, scale);
+
+      const hipsGroup = new THREE.Group();
+      hipsGroup.position.y = 1.06;
+      characterRoot.add(hipsGroup);
+      characterRig.hips = hipsGroup;
+
+      const torsoGroup = new THREE.Group();
+      hipsGroup.add(torsoGroup);
+      characterRig.torso = torsoGroup;
+
+      const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.104, 0.22, 32), skinMat);
+      neckMesh.position.set(0, 0.72, -0.01);
+      neckMesh.castShadow = true;
+      torsoGroup.add(neckMesh);
+
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 1.06, 0.01);
+      headGroup.scale.set(headScale, headScale, headScale);
+      torsoGroup.add(headGroup);
+      characterRig.head = headGroup;
+
+      const headGeo = createSculptedRealisticHeadGeometry(chub, isGirl, student.faceShape || 'oval', jawDefine);
+      const headMesh = new THREE.Mesh(headGeo, skinMat);
+      headMesh.castShadow = true;
+      headMesh.receiveShadow = true;
+      headGroup.add(headMesh);
+
+      // Nose
+      const noseCfg = NOSE_SHAPES.find(n => n.id === (student.noseShape || 'button')) || NOSE_SHAPES[0];
+      const noseGroup = new THREE.Group();
+      noseGroup.position.set(0, -0.024 + noseCfg.tipLift, 0.284);
+      headGroup.add(noseGroup);
+
+      const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.027, 28, 28), skinMat);
+      noseTip.scale.set(1.06 * noseCfg.w, 0.86 * noseCfg.h, 0.92 * noseCfg.proj);
+      noseGroup.add(noseTip);
+
+      // Blush
+      if (student.blush > 0.05) {
+        const blushMat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(skinObj.blush),
+          transparent: true,
+          opacity: Math.min(0.42, student.blush * 0.36),
+          depthWrite: false
+        });
+        const blushGeo = new THREE.SphereGeometry(0.056, 24, 24);
+        blushGeo.scale(1.28, 0.74, 0.22);
+        [-1, 1].forEach(dir => {
+          const blushMesh = new THREE.Mesh(blushGeo, blushMat);
+          blushMesh.position.set(dir * 0.146 * Math.pow(chub, 0.35), -0.046, 0.248);
+          headGroup.add(blushMesh);
+        });
+      }
+
+      // Ears
+      [-1, 1].forEach(dir => {
+        const pinna = new THREE.Mesh(new THREE.SphereGeometry(0.068, 28, 28), skinMat);
+        pinna.scale.set(0.38, 1.05, 0.70);
+        pinna.position.set(dir * 0.284, -0.010, -0.015);
+        headGroup.add(pinna);
+      });
+
+      // Eyes
+      const eyesGroup = new THREE.Group();
+      headGroup.add(eyesGroup);
+      const irisTex = getRealisticIrisTexture(eyeObj);
+      const eyeShapeCfg = EYE_SHAPES.find(es => es.id === (student.eyeShape || 'almond')) || EYE_SHAPES[0];
+      const eyeRadius = (isGirl ? 0.055 : 0.051) * (student.eyeScale || 1.0);
+
+      [-1, 1].forEach(dir => {
+        const singleEye = new THREE.Group();
+        singleEye.position.set(dir * 0.102, 0.028, 0.254);
+        singleEye.rotation.y = dir * 0.34;
+
+        const eyeball = new THREE.Mesh(new THREE.SphereGeometry(eyeRadius, 36, 36), new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.08 }));
+        eyeball.scale.set(eyeShapeCfg.sx, eyeShapeCfg.sy, 0.46);
+        singleEye.add(eyeball);
+
+        const irisDisc = new THREE.Mesh(new THREE.CircleGeometry(eyeRadius * 0.68, 36), new THREE.MeshPhysicalMaterial({ map: irisTex, roughness: 0.1 }));
+        irisDisc.position.z = eyeRadius * 0.465;
+        singleEye.add(irisDisc);
+        eyesGroup.add(singleEye);
+      });
+
+      // Mouth
+      const mouthGroup = new THREE.Group();
+      mouthGroup.position.set(0, -0.098, 0.274);
+      headGroup.add(mouthGroup);
+      const smileCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.060, 0.024, -0.018),
+        new THREE.Vector3(0, -0.002, 0.008),
+        new THREE.Vector3(0.060, 0.024, -0.018)
+      ]);
+      mouthGroup.add(new THREE.Mesh(new THREE.TubeGeometry(smileCurve, 28, 0.0048, 10, false), new THREE.MeshBasicMaterial({ color: 0x6e2626 })));
+
+      buildHairstyleMesh(headGroup, student.hairStyle, hairMat, student);
+
+      // Torso & Clothes
+      const topMat = createFabricMaterial(student.topPrimary || '#FF7A1A', 0.65);
+      const torsoGeo = new THREE.CylinderGeometry(0.228 * chub, 0.212 * chub, 0.64, 40, 8);
+      torsoGeo.scale(1.14, 1.0, 0.76);
+      const torsoMesh = new THREE.Mesh(torsoGeo, topMat);
+      torsoMesh.position.y = 0.34;
+      torsoMesh.castShadow = true;
+      torsoGroup.add(torsoMesh);
+
+      // Arms
+      [-1, 1].forEach((dir, idx) => {
+        const armPivot = new THREE.Group();
+        armPivot.position.set(dir * 0.285 * chub, 0.56, 0);
+        torsoGroup.add(armPivot);
+
+        const upperMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.070, 0.058, 0.26, 28), topMat);
+        upperMesh.position.y = -0.125;
+        armPivot.add(upperMesh);
+
+        const foreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.039, 0.24, 28), skinMat);
+        foreMesh.position.y = -0.38;
+        armPivot.add(foreMesh);
+
+        buildSculptedHandMesh(armPivot, dir, skinMat);
+      });
+
+      // Legs & Shoes
+      const bottomMat = createFabricMaterial(student.bottomColor || '#3B6BA5', 0.68);
+      const shoeMat = createGlossyMaterial(student.shoeColor || '#F8FAFC', 0.3, 0.05);
+
+      [-1, 1].forEach(dir => {
+        const legPivot = new THREE.Group();
+        legPivot.position.set(dir * 0.125 * chub, -0.08, 0);
+        hipsGroup.add(legPivot);
+
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.096 * chub, 0.078 * chub, 0.42, 28), bottomMat);
+        thigh.position.y = -0.21;
+        legPivot.add(thigh);
+
+        const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.076, 0.058, 0.42, 28), skinMat);
+        calf.position.y = -0.60;
+        legPivot.add(calf);
+
+        const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.095, 28, 28), shoeMat);
+        shoe.scale.set(0.88, 0.66, 1.58);
+        shoe.position.set(0, -0.90, 0.048);
+        legPivot.add(shoe);
+      });
+
+      buildVehicleOrMount(vehicleGroup, student);
+      updateCharacterPose(0);
+    }
+
+    function buildVehicleOrMount(vGroup, student) {
+      const vType = student.vehicle;
+      if (!vType || vType === 'none') return;
+      const isGolden = vType === 'golden_bike';
+      const frameColor = isGolden ? '#FACC15' : (student.bikeColor || '#38BDF8');
+      const frameMat = createGlossyMaterial(frameColor, 0.2, 0.3);
+
+      if (vType === 'mountain_bike' || vType === 'golden_bike') {
+        const bike = new THREE.Group();
+        const isRiding = animationMode === 'ride';
+        bike.position.set(isRiding ? 0 : 0.65, 0, isRiding ? 0.05 : -0.22);
+        bike.rotation.y = isRiding ? Math.PI / 2 : -0.35;
+
+        [-0.58, 0.58].forEach(wx => {
+          const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.048, 16, 40), createFabricMaterial('#0F172A', 0.85));
+          wheel.position.set(wx, 0.38, 0);
+          bike.add(wheel);
+        });
+        vGroup.add(bike);
+      }
+    }
+
+    function updateCharacterPose(t) {
+      if (!characterRig.hips) return;
+      characterRig.hips.position.y = 1.06;
+      characterRig.hips.rotation.set(0, 0, 0);
+      if (characterRig.torso) characterRig.torso.rotation.set(0, 0, 0);
+      if (characterRig.head) characterRig.head.rotation.set(0, 0, 0);
+
+      if (animationMode === 'idle') {
+        const breath = Math.sin(t * 2.0);
+        characterRig.hips.position.y = 1.06 + breath * 0.012;
+        if (characterRig.head) characterRig.head.rotation.y = Math.sin(t * 0.9) * 0.07;
+      }
+    }
+
+    function animateLoop() {
+      requestAnimationFrame(animateLoop);
+      const elapsed = clock.getElapsedTime();
+      updateCharacterPose(elapsed);
+      if (autoSpin && characterRoot) {
+        characterRoot.rotation.y += 0.01;
+        if (vehicleGroup) vehicleGroup.rotation.y += 0.01;
+      }
+      if (controls) controls.update();
+      if (renderer && scene && camera) renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container || !renderer || !camera) return;
+      const w = container.clientWidth || 800;
+      const h = container.clientHeight || 600;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function setAnimationMode(mode) {
+      animationMode = mode;
+      document.querySelectorAll('.anim-btn').forEach(btn => {
+        btn.className = 'anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition';
+      });
+      const activeBtn = document.getElementById(`anim-${mode}`);
+      if (activeBtn) activeBtn.className = 'anim-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-sky-500 text-slate-950 transition';
+      rebuild3DSceneForStudent(getEffectiveStudentState(getActiveStudent()));
+    }
+
+    function focusCamera(targetType) {
+      if (!controls || !camera) return;
+      if (targetType === 'face') {
+        camera.position.set(0, 2.15, 2.75);
+        controls.target.set(0, 2.02, 0);
+      } else {
+        camera.position.set(0, 1.88, 6.2);
+        controls.target.set(0, 1.38, 0);
+      }
+      controls.update();
+    }
+
+    function toggleAutoRotate() {
+      autoSpin = !autoSpin;
+      const btn = document.getElementById('btn-autorotate');
+      if (autoSpin) {
+        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition';
+      } else {
+        btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+      }
+    }
+
+    function cycleStudioLighting() {
+      const themes = ['#0f172a', '#1e1b4b', '#064e3b', '#31102f'];
+      studioThemeIndex = (studioThemeIndex + 1) % themes.length;
+      if (scene) {
+        scene.background = new THREE.Color(themes[studioThemeIndex]);
+        scene.fog = new THREE.FogExp2(themes[studioThemeIndex], 0.02);
+      }
+    }
+
+    function updateStudentProp(prop, val) {
+      const s = getActiveStudent();
+      s[prop] = val;
+      persistStudents();
+      updateHeaderCardUI(s);
+      renderRosterList();
+      renderCustomizerPanel();
+      rebuild3DSceneForStudent(getEffectiveStudentState(s));
+    }
+
+    function handleShopItemClick(category, itemId, cost, itemName, extraProps = {}) {
+      const student = getActiveStudent();
+      const itemKey = `${category}:${itemId}`;
+
+      if (isItemUnlocked(student, itemKey)) {
+        previewState = null;
+        updatePreviewBannerUI();
+        equipOwnedItem(student, category, itemId, extraProps);
+        persistStudents();
+        updateHeaderCardUI(student);
+        renderRosterList();
+        renderCustomizerPanel();
+        rebuild3DSceneForStudent(student);
+        showToast(`Equipped ${itemName}!`);
+      } else {
+        previewState = { category, itemId, itemKey, cost, itemName, extraProps };
+        updatePreviewBannerUI();
+        renderCustomizerPanel();
+        rebuild3DSceneForStudent(getEffectiveStudentState(student));
+      }
+    }
+
+    function buyAndEquipItem(category, itemId, cost, itemName, extraProps = {}) {
+      const student = getActiveStudent();
+      const itemKey = `${category}:${itemId}`;
+
+      if ((student.gems || 0) < cost) {
+        showToast(`Need ${cost} 💎 EraGems! Click "+ Earn" to get more.`, true);
+        openEraGemsModal();
+        return;
+      }
+
+      student.gems -= cost;
+      if (!Array.isArray(student.unlockedItems)) student.unlockedItems = [];
+      if (!student.unlockedItems.includes(itemKey)) student.unlockedItems.push(itemKey);
+
+      previewState = null;
+      updatePreviewBannerUI();
+      equipOwnedItem(student, category, itemId, extraProps);
+      persistStudents();
+      updateHeaderCardUI(student);
+      renderRosterList();
+      renderCustomizerPanel();
+      rebuild3DSceneForStudent(student);
+      showToast(`Unlocked & Equipped ${itemName} (-${cost} 💎)!`);
+    }
+
+    function equipOwnedItem(student, category, itemId, extraProps = {}) {
+      if (category === 'hair') student.hairStyle = itemId;
+      else if (category === 'top') {
+        student.topStyle = itemId;
+        if (extraProps.primary) student.topPrimary = extraProps.primary;
+        if (extraProps.secondary) student.topSecondary = extraProps.secondary;
+      }
+      else if (category === 'jacket') {
+        student.jacketStyle = itemId;
+      }
+      else if (category === 'bottom') {
+        student.bottomStyle = itemId;
+        if (extraProps.color) student.bottomColor = extraProps.color;
+      }
+      else if (category === 'shoe') {
+        student.shoeStyle = itemId;
+        if (extraProps.color) student.shoeColor = extraProps.color;
+      }
+      else if (category === 'headgear') student.headgear = itemId;
+      else if (category === 'acc') {
+        if (!Array.isArray(student.accessories)) student.accessories = [];
+        const idx = student.accessories.indexOf(itemId);
+        if (idx >= 0) student.accessories.splice(idx, 1);
+        else student.accessories.push(itemId);
+      }
+      else if (category === 'vehicle') student.vehicle = itemId;
+    }
+
+    function updatePreviewBannerUI() {
+      const banner = document.getElementById('preview-purchase-banner');
+      if (!previewState) {
+        banner.classList.add('hidden');
+        return;
+      }
+      banner.classList.remove('hidden');
+      document.getElementById('preview-item-name').textContent = previewState.itemName;
+      document.getElementById('preview-item-cost').textContent = previewState.cost;
+      const buyBtn = document.getElementById('preview-buy-btn');
+      buyBtn.onclick = () => {
+        buyAndEquipItem(previewState.category, previewState.itemId, previewState.cost, previewState.itemName, previewState.extraProps || {});
+      };
+    }
+
+    function clearPreviewItem() {
+      previewState = null;
+      updatePreviewBannerUI();
+      renderCustomizerPanel();
+      rebuild3DSceneForStudent(getActiveStudent());
+    }
+
+    function renderRosterList() {
+      const listEl = document.getElementById('roster-list');
+      const query = (document.getElementById('student-search').value || '').toLowerCase().trim();
+
+      const filtered = studentsData.filter(s => {
+        if (activeRosterFilter === 'featured' && !s.featured) return false;
+        if (activeRosterFilter === 'boy' && s.gender !== 'boy') return false;
+        if (activeRosterFilter === 'girl' && s.gender !== 'girl') return false;
+        if (['IELTS 1', 'IELTS 2'].includes(activeRosterFilter) && s.classLevel !== activeRosterFilter) return false;
+        if (query) {
+          const idStr = `#${String(s.id).padStart(3, '0')}`;
+          return s.name.toLowerCase().includes(query) || idStr.includes(query) || s.classLevel.toLowerCase().includes(query);
+        }
+        return true;
+      });
+
+      document.getElementById('roster-count').textContent = `(${filtered.length})`;
+
+      listEl.innerHTML = filtered.map(s => {
+        const isActive = s.id === activeStudentId;
+        const idFormatted = String(s.id).padStart(3, '0');
+        const hasBike = s.vehicle && s.vehicle !== 'none';
+        return `
+          <div onclick="selectStudentById(${s.id})" class="student-item cursor-pointer p-2.5 rounded-xl border border-slate-800/95 hover:border-slate-600 bg-slate-900/60 flex items-center justify-between transition ${isActive ? 'active' : ''}">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center font-display font-bold text-xs text-white shrink-0 shadow"
+                   style="background: linear-gradient(135deg, ${s.topPrimary || '#FF7A1A'}, ${s.hairColor || '#1e293b'})">
+                #${idFormatted}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <p class="text-xs font-bold text-slate-100 truncate">Character #${idFormatted}</p>
+                  ${s.id <= 7 ? '<span class="px-1.5 py-0.2 text-[9px] font-bold bg-orange-500/30 text-orange-300 rounded">REF</span>' : ''}
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                  <span class="${s.classLevel === 'IELTS 2' ? 'text-purple-300 font-semibold' : 'text-sky-300 font-semibold'}">${s.classLevel}</span>
+                  <span>•</span>
+                  <span class="text-cyan-300 font-bold">💎 ${s.gems}</span>
+                  ${hasBike ? '<span class="text-amber-400"><i class="fa-solid fa-bicycle"></i></span>' : ''}
+                </div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[10px] ${isActive ? 'text-orange-400' : 'text-slate-600'}"></i>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setRosterFilter(filter) {
+      activeRosterFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(btn => {
+        btn.className = 'filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0';
+      });
+      const activeBtn = document.getElementById(`filter-${filter}`);
+      if (activeBtn) activeBtn.className = 'filter-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-orange-500 text-white shrink-0';
+      renderRosterList();
+    }
+
+    function toggleStudentIeltsLevel() {
+      const s = getActiveStudent();
+      s.classLevel = s.classLevel === 'IELTS 1' ? 'IELTS 2' : 'IELTS 1';
+      persistStudents();
+      updateHeaderCardUI(s);
+      renderRosterList();
+      showToast(`${s.name} switched to ${s.classLevel}`);
+    }
+
+    function selectStudentById(id) {
+      activeStudentId = id;
+      previewState = null;
+      updatePreviewBannerUI();
+      const student = getActiveStudent();
+      updateHeaderCardUI(student);
+      renderRosterList();
+      renderCustomizerPanel();
+      rebuild3DSceneForStudent(student);
+    }
+
+    function navigateStudent(delta) {
+      let nextId = activeStudentId + delta;
+      if (nextId < 1) nextId = 100;
+      if (nextId > 100) nextId = 1;
+      selectStudentById(nextId);
+    }
+
+    function updateHeaderCardUI(student) {
+      const idStr = String(student.id).padStart(3, '0');
+      document.getElementById('profile-badge-avatar').textContent = `#${idStr}`;
+      document.getElementById('profile-badge-avatar').style.background = `linear-gradient(135deg, ${student.topPrimary}, ${student.bikeColor || '#6366f1'})`;
+      document.getElementById('profile-name').textContent = `Character #${idStr}`;
+      document.getElementById('profile-class-badge').textContent = student.classLevel;
+      document.getElementById('profile-bio').textContent = student.bio;
+      document.getElementById('profile-stars').textContent = student.xp.toLocaleString();
+      document.getElementById('profile-gems').textContent = (student.gems || 0).toLocaleString();
+      document.getElementById('header-gem-balance').textContent = (student.gems || 0).toLocaleString();
+      document.getElementById('sidebar-gem-balance').textContent = (student.gems || 0).toLocaleString();
+      document.getElementById('profile-owned-count').textContent = 11 + (student.unlockedItems ? student.unlockedItems.length : 0);
+      document.getElementById('active-student-index-label').textContent = `#${idStr} / 100`;
+    }
+
+    function switchCustomTab(tabId) {
+      activeCustomTab = tabId;
+      document.querySelectorAll('.custom-tab').forEach(el => {
+        el.className = 'custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition relative';
+      });
+      const activeEl = document.getElementById(`tab-${tabId}`);
+      if (activeEl) activeEl.className = 'custom-tab flex flex-col items-center justify-center py-2 rounded-xl text-[10px] font-bold bg-sky-500 text-white shadow-lg shadow-sky-500/25 transition relative';
+      renderCustomizerPanel();
+    }
+
+    function setBodySubTab(sub) {
+      activeBodySubTab = sub;
+      renderCustomizerPanel();
+      if (sub === 'skin_body') focusCamera('full');
+      else focusCamera('face');
+    }
+
+    function setClothesSubTab(sub) {
+      activeClothesSubTab = sub;
+      renderCustomizerPanel();
+    }
+
+    function renderPriceOrOwnedBadge(student, itemKey, cost) {
+      if (cost === 0) return `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">FREE</span>`;
+      if (isItemUnlocked(student, itemKey)) return `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/25 text-sky-300 border border-sky-400/40">OWNED ✓</span>`;
+      return `<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">💎 ${cost}</span>`;
+    }
+
+    function renderCustomizerPanel() {
+      const container = document.getElementById('customizer-content');
+      const s = getActiveStudent();
+
+      if (activeCustomTab === 'body') {
+        const bodySubTabsHtml = `
+          <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            ${[
+              { id: 'skin_body',  label: 'Skin & Body',  icon: 'fa-child-reaching' },
+              { id: 'face_head',  label: 'Face & Ears',  icon: 'fa-face-smile' },
+              { id: 'eyes_brows', label: 'Eyes & Brows', icon: 'fa-eye' },
+              { id: 'nose_mouth', label: 'Nose & Mouth', icon: 'fa-lips' }
+            ].map(st => `
+              <button onclick="setBodySubTab('${st.id}')" class="py-2 px-1 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1 transition ${activeBodySubTab === st.id ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}">
+                <i class="fa-solid ${st.icon} text-xs"></i>
+                <span>${st.label}</span>
+              </button>
+            `).join('')}
+          </div>
+        `;
+
+        if (activeBodySubTab === 'skin_body') {
+          container.innerHTML = `
+            ${bodySubTabsHtml}
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Anatomical Base Frame</label>
+                <span class="text-[10px] font-bold text-emerald-400">100% FREE</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="updateStudentProp('gender', 'boy')" class="item-card p-2.5 rounded-xl border border-slate-700 bg-slate-900/70 flex items-center justify-center gap-2 text-xs font-bold ${s.gender === 'boy' ? 'active' : ''}">
+                  <i class="fa-solid fa-mars text-sky-400 text-base"></i> Boy Frame
+                </button>
+                <button onclick="updateStudentProp('gender', 'girl')" class="item-card p-2.5 rounded-xl border border-slate-700 bg-slate-900/70 flex items-center justify-center gap-2 text-xs font-bold ${s.gender === 'girl' ? 'active' : ''}">
+                  <i class="fa-solid fa-venus text-pink-400 text-base"></i> Girl Frame
+                </button>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">16 PBR Subsurface Skin Tones</label>
+                <span class="text-[10px] font-bold text-emerald-400">FREE</span>
+              </div>
+              <div class="grid grid-cols-8 gap-2">
+                ${SKIN_TONES.map(st => `
+                  <button onclick="updateStudentProp('skinTone', '${st.id}')" title="${st.name}"
+                          class="swatch-btn h-8 rounded-xl border border-white/20 flex items-center justify-center ${s.skinTone === st.id ? 'active' : ''}"
+                          style="background-color: ${st.hex}">
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (activeBodySubTab === 'face_head') {
+          container.innerHTML = `
+            ${bodySubTabsHtml}
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">10 Sculpted Face & Jawline Shapes</label>
+                <span class="text-[10px] font-bold text-emerald-400">FREE</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                ${FACE_SHAPES.map(fs => `
+                  <button onclick="updateStudentProp('faceShape', '${fs.id}')"
+                          class="item-card p-2.5 rounded-xl border border-slate-700 bg-slate-900/70 flex items-center gap-2 text-xs font-bold ${(s.faceShape || 'oval') === fs.id ? 'active' : ''}">
+                    <i class="fa-solid ${fs.icon} text-sky-400 text-sm"></i>
+                    <span class="truncate">${fs.name}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (activeBodySubTab === 'eyes_brows') {
+          container.innerHTML = `
+            ${bodySubTabsHtml}
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">6 Eye Shapes & Colors</label>
+                <span class="text-[10px] font-bold text-emerald-400">FREE</span>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                ${EYE_SHAPES.map(es => `
+                  <button onclick="updateStudentProp('eyeShape', '${es.id}')"
+                          class="item-card p-2 rounded-xl border border-slate-700 bg-slate-900/70 text-[11px] font-bold ${(s.eyeShape || 'almond') === es.id ? 'active' : ''}">
+                    ${es.name}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            ${bodySubTabsHtml}
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">6 Sculpted 3D Nose Shapes</label>
+                <span class="text-[10px] font-bold text-emerald-400">FREE</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                ${NOSE_SHAPES.map(ns => `
+                  <button onclick="updateStudentProp('noseShape', '${ns.id}')"
+                          class="item-card p-2.5 rounded-xl border border-slate-700 bg-slate-900/70 text-xs font-bold ${(s.noseShape || 'button') === ns.id ? 'active' : ''}">
+                    ${ns.name}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+      }
+      else if (activeCustomTab === 'hair') {
+        container.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Volumetric 3D Hairstyles</label>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              ${HAIRSTYLES.map(h => {
+                const itemKey = `hair:${h.id}`;
+                const unlocked = isItemUnlocked(s, itemKey);
+                const isEquipped = s.hairStyle === h.id;
+                const safeName = h.name.replace(/'/g, "\\'");
+                return `
+                  <div class="item-card p-3 rounded-2xl border border-slate-700/80 bg-slate-900/70 flex flex-col justify-between gap-2 text-left ${isEquipped ? 'active' : ''}">
+                    <div onclick="handleShopItemClick('hair', '${h.id}', ${h.cost}, '${safeName}')" class="cursor-pointer">
+                      <div class="w-full flex items-center justify-between">
+                        <i class="fa-solid ${h.icon} ${unlocked ? 'text-sky-400' : 'text-amber-400'} text-base"></i>
+                        ${renderPriceOrOwnedBadge(s, itemKey, h.cost)}
+                      </div>
+                      <p class="text-xs font-bold text-slate-100 leading-tight mt-2">${h.name}</p>
+                    </div>
+                    ${!unlocked ? `
+                      <button onclick="buyAndEquipItem('hair', '${h.id}', ${h.cost}, '${safeName}')"
+                              class="w-full py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 border border-cyan-500/40 text-[10px] font-extrabold transition">
+                        Unlock 💎 ${h.cost}
+                      </button>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+      else if (activeCustomTab === 'clothes') {
+        const subTabsHtml = `
+          <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            ${[
+              { id: 'tshirts', label: 'T-Shirts', icon: 'fa-shirt' },
+              { id: 'jackets', label: 'Jackets', icon: 'fa-vest' },
+              { id: 'pants',   label: 'Pants', icon: 'fa-person' },
+              { id: 'shoes',   label: 'Shoes', icon: 'fa-shoe-prints' }
+            ].map(st => `
+              <button onclick="setClothesSubTab('${st.id}')" class="py-2 px-1 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1 transition ${activeClothesSubTab === st.id ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'}">
+                <i class="fa-solid ${st.icon} text-xs"></i>
+                <span>${st.label}</span>
+              </button>
+            `).join('')}
+          </div>
+        `;
+        container.innerHTML = `
+          ${subTabsHtml}
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2.5">T-Shirts & Uniforms</label>
+            <div class="grid grid-cols-2 gap-2.5">
+              ${TOP_STYLES.map(top => {
+                const itemKey = `top:${top.id}`;
+                const unlocked = isItemUnlocked(s, itemKey);
+                const isEquipped = s.topStyle === top.id;
+                const safeName = top.name.replace(/'/g, "\\'");
+                return `
+                  <div class="item-card p-2.5 rounded-2xl border border-slate-700/80 bg-slate-900/70 flex flex-col justify-between gap-2 text-left ${isEquipped ? 'active' : ''}">
+                    <div onclick="handleShopItemClick('top', '${top.id}', ${top.cost}, '${safeName}', {primary:'${top.primary}', secondary:'${top.secondary}'})" class="cursor-pointer">
+                      <div class="w-full flex items-center justify-between">
+                        <i class="fa-solid ${top.icon} text-orange-400 text-sm"></i>
+                        ${renderPriceOrOwnedBadge(s, itemKey, top.cost)}
+                      </div>
+                      <p class="text-xs font-bold text-white leading-tight mt-1.5">${top.name}</p>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+      else if (activeCustomTab === 'headgear') {
+        container.innerHTML = `
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Headgear & Hair Clips (50💎–250💎)</label>
+            <div class="grid grid-cols-2 gap-2.5">
+              ${HEADGEAR_ITEMS.map(hg => {
+                const itemKey = `headgear:${hg.id}`;
+                const unlocked = isItemUnlocked(s, itemKey);
+                const isEquipped = s.headgear === hg.id;
+                const safeName = hg.name.replace(/'/g, "\\'");
+                return `
+                  <div class="item-card p-3 rounded-2xl border border-slate-700/80 bg-slate-900/70 flex flex-col justify-between gap-2 text-left ${isEquipped ? 'active' : ''}">
+                    <div onclick="handleShopItemClick('headgear', '${hg.id}', ${hg.cost}, '${safeName}')" class="cursor-pointer">
+                      <div class="w-full flex items-center justify-between">
+                        <i class="fa-solid ${hg.icon} text-amber-400 text-base"></i>
+                        ${renderPriceOrOwnedBadge(s, itemKey, hg.cost)}
+                      </div>
+                      <p class="text-xs font-bold text-slate-100 mt-2">${hg.name}</p>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+      else if (activeCustomTab === 'accessories') {
+        container.innerHTML = `
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Wearable Accessories (50💎–150💎)</label>
+            <div class="grid grid-cols-2 gap-2.5">
+              ${ACCESSORY_ITEMS.map(item => {
+                const itemKey = `acc:${item.id}`;
+                const unlocked = isItemUnlocked(s, itemKey);
+                const safeName = item.name.replace(/'/g, "\\'");
+                return `
+                  <div class="item-card p-3 rounded-2xl border border-slate-700/80 bg-slate-900/70 flex flex-col justify-between gap-2 text-left">
+                    <div onclick="handleShopItemClick('acc', '${item.id}', ${item.cost}, '${safeName}')" class="cursor-pointer">
+                      <div class="w-full flex items-center justify-between">
+                        <i class="fa-solid ${item.icon} text-amber-400 text-base"></i>
+                        ${renderPriceOrOwnedBadge(s, itemKey, item.cost)}
+                      </div>
+                      <p class="text-xs font-bold text-slate-100 mt-2">${item.name}</p>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+      else if (activeCustomTab === 'bikes') {
+        container.innerHTML = `
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2.5">3D Bicycles & Rides (120💎–500💎)</label>
+            <div class="space-y-2.5">
+              ${VEHICLE_ITEMS.map(v => {
+                const itemKey = `vehicle:${v.id}`;
+                const unlocked = isItemUnlocked(s, itemKey);
+                const isEquipped = s.vehicle === v.id;
+                const safeName = v.name.replace(/'/g, "\\'");
+                return `
+                  <div class="item-card p-3 rounded-2xl border border-slate-700/80 bg-slate-900/70 flex items-center justify-between gap-3 ${isEquipped ? 'active' : ''}">
+                    <div onclick="handleShopItemClick('vehicle', '${v.id}', ${v.cost}, '${safeName}')" class="flex items-center gap-3 flex-1 cursor-pointer">
+                      <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-purple-400 text-lg shrink-0">
+                        <i class="fa-solid ${v.icon}"></i>
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <p class="text-xs font-bold text-white">${v.name}</p>
+                          ${renderPriceOrOwnedBadge(s, itemKey, v.cost)}
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-0.5">${v.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function openEraGemsModal() {
+      const s = getActiveStudent();
+      document.getElementById('gem-modal-student-name').textContent = `${s.name} (${s.classLevel})`;
+      document.getElementById('gem-modal-balance').textContent = (s.gems || 0).toLocaleString();
+      loadNextQuizQuestion();
+      const modal = document.getElementById('eragems-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEraGemsModal() {
+      const modal = document.getElementById('eragems-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function loadNextQuizQuestion() {
+      currentQuizIndex = (currentQuizIndex + 1) % QUIZ_QUESTIONS.length;
+      const item = QUIZ_QUESTIONS[currentQuizIndex];
+      document.getElementById('quiz-question-text').textContent = item.q;
+      const grid = document.getElementById('quiz-options-grid');
+      grid.innerHTML = item.options.map((opt, idx) => `
+        <button onclick="submitQuizAnswer(${idx})" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-left text-slate-200 transition">
+          ${opt}
+        </button>
+      `).join('');
+    }
+
+    function submitQuizAnswer(selectedIndex) {
+      const item = QUIZ_QUESTIONS[currentQuizIndex];
+      if (selectedIndex === item.answer) {
+        awardGems(80, 'Correct IELTS Answer!');
+        loadNextQuizQuestion();
+      } else {
+        showToast('Not quite right — try another option!', true);
+      }
+    }
+
+    let currentQuizIndex = 0;
+    function awardGems(amount, reason) {
+      const s = getActiveStudent();
+      s.gems = (s.gems || 0) + amount;
+      s.xp = (s.xp || 0) + amount * 2;
+      persistStudents();
+      updateHeaderCardUI(s);
+      renderRosterList();
+      const balEl = document.getElementById('gem-modal-balance');
+      if (balEl) balEl.textContent = s.gems.toLocaleString();
+      showToast(`+${amount} 💎 EraGems (${reason})!`);
+    }
+
+    function toggleDirectoryModal() {
+      const modal = document.getElementById('directory-modal');
+      if (modal.classList.contains('hidden')) {
+        renderDirectoryGrid();
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function renderDirectoryGrid() {
+      const grid = document.getElementById('directory-grid');
+      grid.innerHTML = studentsData.map(s => {
+        const idStr = String(s.id).padStart(3, '0');
+        return `
+          <div onclick="selectStudentById(${s.id}); toggleDirectoryModal();"
+               class="cursor-pointer p-3 rounded-2xl border ${s.id === activeStudentId ? 'border-orange-400 bg-orange-500/15' : 'border-slate-800 bg-slate-900/70 hover:border-slate-600'} transition flex flex-col justify-between gap-2">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold text-white" style="background:${s.topPrimary}">#${idStr}</span>
+              <span class="text-[10px] font-bold text-cyan-300">💎 ${s.gems}</span>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-white truncate">Character #${idStr}</p>
+              <p class="text-[10px] text-slate-400">${s.classLevel} • ${s.unlockedItems ? s.unlockedItems.length : 0} Unlocks</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openStudentCardModal() {
+      const s = getActiveStudent();
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+        document.getElementById('idcard-snapshot').src = renderer.domElement.toDataURL('image/png');
+      }
+      document.getElementById('idcard-class').textContent = s.classLevel;
+      document.getElementById('idcard-name').textContent = s.name;
+      document.getElementById('idcard-bio').textContent = s.bio;
+      document.getElementById('idcard-gems').innerHTML = `<i class="fa-solid fa-gem mr-1"></i>${s.gems} EraGems • ${s.xp} XP`;
+
+      const hairObj = HAIRSTYLES.find(h => h.id === s.hairStyle) || HAIRSTYLES[0];
+      const topObj = TOP_STYLES.find(t => t.id === s.topStyle) || TOP_STYLES[0];
+      const vehObj = VEHICLE_ITEMS.find(v => v.id === s.vehicle) || VEHICLE_ITEMS[0];
+
+      document.getElementById('idcard-loadout').innerHTML = `
+        <div><span class="text-slate-400">Hair:</span> <span class="text-white font-semibold">${hairObj.name}</span></div>
+        <div><span class="text-slate-400">Top:</span> <span class="text-white font-semibold">${topObj.name}</span></div>
+        <div><span class="text-slate-400">Ride:</span> <span class="text-white font-semibold">${vehObj.name}</span></div>
+      `;
+
+      const modal = document.getElementById('idcard-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeStudentCardModal() {
+      const modal = document.getElementById('idcard-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function downloadSnapshot() {
+      const s = getActiveStudent();
+      const link = document.createElement('a');
+      link.download = `character-${String(s.id).padStart(3, '0')}-3d.png`;
+      link.href = document.getElementById('idcard-snapshot').src;
+      link.click();
+      showToast('Downloaded 3D Student Portrait PNG!');
+    }
+
+    function openEditProfileModal() {
+      const s = getActiveStudent();
+      document.getElementById('edit-name-input').value = formatCharNumber(s.id);
+      document.getElementById('edit-class-input').value = s.classLevel;
+      document.getElementById('edit-gems-input').value = s.gems || 0;
+      document.getElementById('edit-bio-input').value = s.bio;
+      const modal = document.getElementById('edit-profile-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEditProfileModal() {
+      const modal = document.getElementById('edit-profile-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveStudentMetadata() {
+      const s = getActiveStudent();
+      s.name = formatCharNumber(s.id);
+      s.classLevel = document.getElementById('edit-class-input').value === 'IELTS 2' ? 'IELTS 2' : 'IELTS 1';
+      s.gems = parseInt(document.getElementById('edit-gems-input').value, 10) || 0;
+      s.bio = document.getElementById('edit-bio-input').value.trim() || s.bio;
+      persistStudents();
+      updateHeaderCardUI(s);
+      renderRosterList();
+      closeEditProfileModal();
+      showToast('Character profile & EraGems saved!');
+    }
+
+    let toastTimeout = null;
+    function showToast(msg, isWarning = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toast-icon');
+      document.getElementById('toast-text').textContent = msg;
+      icon.className = isWarning
+        ? 'fa-solid fa-triangle-exclamation text-amber-400'
+        : 'fa-solid fa-circle-check text-emerald-400';
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2600);
+    }
+
+    window.onload = function () {
+      buildInitial100Students();
+      updateHeaderCardUI(getActiveStudent());
+      renderRosterList();
+      renderCustomizerPanel();
+      initThreeJS();
+    };
+  </script>
+</body>
+</html>
