@@ -50,6 +50,7 @@ import { AugustWritingTest } from './AugustWritingTest';
 import { SeptemberWritingTest } from './SeptemberWritingTest';
 import { OctoberWritingTest } from './OctoberWritingTest';
 import { Homework1WritingTest } from './Homework1WritingTest';
+import { Homework2WritingTest } from './Homework2WritingTest';
 import { getReadingTestData } from '../data/readingTestData';
 import { SpeakingTestResult } from './SpeakingTestResult';
 
@@ -216,6 +217,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (aId === '31') return <AugustWritingTest submissionId={id} />;
       if (aId === '35') return <SeptemberWritingTest submissionId={id} />;
       if (aId === 'ielts-writing-homework-1') return <Homework1WritingTest submissionId={id} />;
+      if (aId === 'ielts-writing-homework-2') return <Homework2WritingTest submissionId={id} />;
       if (aId === '39') return <OctoberWritingTest submissionId={id} />;
 
 
@@ -229,6 +231,7 @@ export function TestResult({ isShared = false }: { isShared?: boolean }) {
       if (title.includes('august')) return <AugustWritingTest submissionId={id} />;
       if (title.includes('september')) return <SeptemberWritingTest submissionId={id} />;
       if (title.includes('october')) return <OctoberWritingTest submissionId={id} />;
+      if (title.includes('homework 2')) return <Homework2WritingTest submissionId={id} />;
       if (title.includes('homework')) return <Homework1WritingTest submissionId={id} />;
 
       

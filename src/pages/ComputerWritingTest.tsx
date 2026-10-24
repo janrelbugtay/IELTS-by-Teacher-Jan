@@ -20,6 +20,7 @@ import { AugustWritingTest } from './AugustWritingTest';
 import { SeptemberWritingTest } from './SeptemberWritingTest';
 import { OctoberWritingTest } from './OctoberWritingTest';
 import { Homework1WritingTest } from './Homework1WritingTest';
+import { Homework2WritingTest } from './Homework2WritingTest';
 
 const TEST_DURATION = 3600; // 60 minutes
 const STORAGE_KEY = 'ielts_sim_data';
@@ -186,6 +187,29 @@ const getCustomPrompt = (id: string | undefined) => {
                 ),
                 t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
                 t2Raw: "In some cities and towns all over the world, traffic jam is a problem. What are the causes of this and what actions can be taken to solve this problem? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
+            };
+        case 'ielts-writing-homework-2':
+            return {
+                t1Title: "The chart below shows the prices, in euros, of 800 grams of four types of bread in a European country between 2001 and 2005.",
+                t1Desc: "Provide an overview of the information by identifying and describing the key details, and include comparisons where appropriate.",
+                t1Content: (
+                    <div className="mt-6 mb-6 flex justify-center">
+                        <img
+                            src="/assets/aistudio/Bread_Price_Trends__2001_2005_9e580093.png"
+                            alt="Prices of 800 grams of four types of bread in a European country, 2001-2005"
+                            className="max-w-full h-auto rounded-lg shadow-sm"
+                        />
+                    </div>
+                ),
+                t1Raw: "The chart below shows the prices, in euros, of 800 grams of four types of bread in a European country between 2001 and 2005. Provide an overview of the information by identifying and describing the key details, and include comparisons where appropriate. Data breakdown: Wholegrain (2001: 0.8€, 2002: 1.8€, 2003: 1.0€, 2004: 0.7€, 2005: 0.8€), Brown (2001: 0.6€, 2002: 1.5€, 2003: 1.6€, 2004: 1.4€, 2005: 1.6€), White (2001: 0.6€, 2002: 1.0€, 2003: 1.1€, 2004: 1.2€, 2005: 1.3€), Rye (2001: 0.6€, 2002: 0.5€, 2003: 0.6€, 2004: 0.6€, 2005: 0.7€).",
+                t2Prompt: (
+                    <>
+                        <p className="font-bold mb-4">In many cities and towns around the world, traffic congestion has become a severe problem.</p>
+                        <p className="font-bold mb-4">What are the main causes of traffic congestion, and what measures can governments and individuals take to solve this problem?</p>
+                    </>
+                ),
+                t2Desc: "Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
+                t2Raw: "In many cities and towns around the world, traffic congestion has become a severe problem. What are the main causes of traffic congestion, and what measures can governments and individuals take to solve this problem? Give reasons for your answer and include any relevant examples from your own knowledge or experience."
             };
         default:
             return defaultPrompt;
@@ -596,6 +620,9 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     }
     if (id === 'ielts-writing-homework-1' && !submissionId) {
         return <Homework1WritingTest />;
+    }
+    if (id === 'ielts-writing-homework-2' && !submissionId) {
+        return <Homework2WritingTest />;
     }
     if (id === '39' && !submissionId) {
         return <OctoberWritingTest />;

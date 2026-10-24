@@ -184,6 +184,7 @@ export function CourseDetails() {
     if (activeHomeworkFolder === 'Writing') {
       const tests = [
         { id: 'ielts-writing-homework-1', title: 'IELTS Writing Homework 1', skill: 'Writing', attempts: 1205, difficulty: 'Medium', duration: '60 mins', image: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?w=800&auto=format&fit=crop&q=60' },
+        { id: 'ielts-writing-homework-2', title: 'IELTS Writing Homework 2', skill: 'Writing', attempts: 940, difficulty: 'Medium', duration: '60 mins', image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&auto=format&fit=crop&q=60' },
       ];
       
       return (
