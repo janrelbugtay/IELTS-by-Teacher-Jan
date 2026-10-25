@@ -577,20 +577,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 w-full min-w-0">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 border-4 border-white/30 shadow-2xl overflow-hidden flex items-center justify-center shrink-0 mx-auto md:mx-0 relative">
             <EraVerseAvatar3D
-              shirtColor={eraverseLook.shirtColor}
-              hairColor={eraverseLook.hairColor}
-              skinColor={eraverseLook.skinColor}
-              hatType={eraverseLook.hatType}
-              accessoryType={eraverseLook.accessoryType}
+              {...eraverseLook}
               name={userProfile?.nickname || firstName || eraverseLook.name}
-              cohort={eraverseLook.cohort}
-              gender={eraverseLook.gender}
-              hairStyle={eraverseLook.hairStyle}
-              bodyType={eraverseLook.bodyType}
-              clothingType={eraverseLook.clothingType}
-              pantsColor={eraverseLook.pantsColor}
-              beltType={eraverseLook.beltType}
-              vehicleType={eraverseLook.vehicleType}
               className="w-full h-full"
             />
           </div>

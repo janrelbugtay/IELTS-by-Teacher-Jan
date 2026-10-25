@@ -557,19 +557,20 @@ export function resolveStudentEraVerseAvatar(
       } catch (_e) {}
     }
     return {
+      ...(teacherCustom || {}),
       name: teacherCustom?.name || TEACHER_JAN_PROFILE.name,
       cohort: 'TEACHER (SUPER ADMIN)',
-      shirtColor: teacherCustom?.shirtColor || TEACHER_JAN_PROFILE.shirtColor,
+      shirtColor: teacherCustom?.topColor || teacherCustom?.shirtColor || TEACHER_JAN_PROFILE.shirtColor,
       hairColor: teacherCustom?.hairColor || TEACHER_JAN_PROFILE.hairColor,
-      skinColor: teacherCustom?.skinColor || TEACHER_JAN_PROFILE.skinColor,
-      hatType: teacherCustom?.hatType || TEACHER_JAN_PROFILE.hatType,
+      skinColor: teacherCustom?.skinTone || teacherCustom?.skinColor || TEACHER_JAN_PROFILE.skinColor,
+      hatType: teacherCustom?.hatStyle || teacherCustom?.hatType || TEACHER_JAN_PROFILE.hatType,
       accessoryType: teacherCustom?.accessoryType || TEACHER_JAN_PROFILE.accessoryType,
       gender: teacherCustom?.gender || 'boy',
       hairStyle: teacherCustom?.hairStyle || 'classic',
       bodyType: teacherCustom?.bodyType || 'regular',
       clothingType: teacherCustom?.clothingType || 'varsity',
-      pantsColor: teacherCustom?.pantsColor || '#1e293b',
-      beltType: teacherCustom?.beltType || 'none',
+      pantsColor: teacherCustom?.bottomColor || teacherCustom?.pantsColor || '#1e293b',
+      beltType: teacherCustom?.beltStyle || teacherCustom?.beltType || 'none',
       vehicleType: teacherCustom?.vehicleType || 'none'
     };
   }
@@ -622,19 +623,20 @@ export function resolveStudentEraVerseAvatar(
   const defaultGender = femaleNames.includes(nickname.toLowerCase()) ? 'girl' : 'boy';
 
   return {
+    ...(customLook || {}),
     name: customLook?.name || nickname,
     cohort: baseCohort,
-    shirtColor: customLook?.shirtColor || matchedPreset?.shirtColor || extraShirtColors[hash % extraShirtColors.length],
+    shirtColor: customLook?.topColor || customLook?.shirtColor || matchedPreset?.shirtColor || extraShirtColors[hash % extraShirtColors.length],
     hairColor: customLook?.hairColor || matchedPreset?.hairColor || extraHairColors[hash % extraHairColors.length],
-    skinColor: customLook?.skinColor || matchedPreset?.skinColor || extraSkinColors[hash % extraSkinColors.length],
-    hatType: customLook?.hatType || matchedPreset?.hatType || extraHats[hash % extraHats.length],
+    skinColor: customLook?.skinTone || customLook?.skinColor || matchedPreset?.skinColor || extraSkinColors[hash % extraSkinColors.length],
+    hatType: customLook?.hatStyle || customLook?.hatType || matchedPreset?.hatType || extraHats[hash % extraHats.length],
     accessoryType: customLook?.accessoryType || matchedPreset?.accessoryType || extraAccessories[hash % extraAccessories.length],
     gender: customLook?.gender || matchedPreset?.gender || defaultGender,
-    hairStyle: customLook?.hairStyle || matchedPreset?.hairStyle || (defaultGender === 'girl' ? 'long' : 'classic'),
+    hairStyle: customLook?.hairStyle || matchedPreset?.hairStyle || (defaultGender === 'girl' ? 'twin_buns' : 'fluffy_swept'),
     bodyType: customLook?.bodyType || matchedPreset?.bodyType || 'regular',
     clothingType: customLook?.clothingType || matchedPreset?.clothingType || 'varsity',
-    pantsColor: customLook?.pantsColor || matchedPreset?.pantsColor || '#1e293b',
-    beltType: customLook?.beltType || matchedPreset?.beltType || 'none',
+    pantsColor: customLook?.bottomColor || customLook?.pantsColor || matchedPreset?.pantsColor || '#1e293b',
+    beltType: customLook?.beltStyle || customLook?.beltType || matchedPreset?.beltType || 'none',
     vehicleType: customLook?.vehicleType || matchedPreset?.vehicleType || 'none'
   };
 }
