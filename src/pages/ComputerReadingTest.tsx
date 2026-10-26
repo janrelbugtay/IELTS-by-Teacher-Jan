@@ -1285,11 +1285,13 @@ export function ComputerReadingTest({ submissionId, assignmentId }: { submission
           requiresEvaluation: false
         });
 
+        const isHw = (testId && String(testId).toLowerCase().includes('homework')) ||
+                     (title && String(title).toLowerCase().includes('homework'));
         createSubmissionNotification({
           userId: user.uid,
           studentName: currentStudentName || user.displayName || 'Student',
           assignmentTitle: title,
-          type: 'practice_test',
+          type: isHw ? 'homework' : 'practice_test',
           testType: 'reading',
           bandScore: bandScoreNum,
           score: score,

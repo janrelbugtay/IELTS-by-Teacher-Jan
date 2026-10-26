@@ -292,21 +292,38 @@ class EraSoundEngine {
     osc.stop(now + 0.13);
   }
 
-  public playPickleballHit() {
+  public playTennisHit(isSmash = false) {
     const ctx = this.getContext();
     if (!ctx) return;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(520, now);
-    osc.frequency.exponentialRampToValueAtTime(240, now + 0.055);
-    gain.gain.setValueAtTime(0.09, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    osc.type = 'triangle';
+    const freq = isSmash ? 210 : 170;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(48, now + 0.12);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.065);
+    osc.stop(now + 0.14);
+
+    const chime = ctx.createOscillator();
+    const cGain = ctx.createGain();
+    chime.type = 'sine';
+    chime.frequency.setValueAtTime(isSmash ? 1174.66 : 987.77, now);
+    chime.frequency.exponentialRampToValueAtTime(1567.98, now + 0.18);
+    cGain.gain.setValueAtTime(0.12, now);
+    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+    chime.connect(cGain);
+    cGain.connect(ctx.destination);
+    chime.start(now);
+    chime.stop(now + 0.2);
+  }
+
+  public playPickleballHit() {
+    this.playTennisHit(false);
   }
 
   public playGoalCheer() {
@@ -946,7 +963,7 @@ export function EraVerse() {
   const [aiFootballGoals, setAiFootballGoals] = useState<number>(0);
   const [pickleballScore, setPickleballScore] = useState<number>(0);
   const [aiPickleballScore, setAiPickleballScore] = useState<number>(0);
-  const [inSportsZone, setInSportsZone] = useState<'none' | 'football' | 'pickleball' | 'playground'>('none');
+  const [inSportsZone, setInSportsZone] = useState<'none' | 'football' | 'tennis' | 'pickleball' | 'playground'>('none');
   const [isCrouching, setIsCrouching] = useState<boolean>(false);
   const [showChatModal, setShowChatModal] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
@@ -962,27 +979,50 @@ export function EraVerse() {
   const [toastBanner, setToastBanner] = useState<{ title: string; subtitle: string; color: string } | null>(null);
   const [zoomSliderValue, setZoomSliderValue] = useState<number>(14);
   const [joystickThumbPos, setJoystickThumbPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const [speakingModalTest, setSpeakingModalTest] = useState<{ id: number | string; title: string } | null>(null);
   const [candidateName, setCandidateName] = useState<string>(user?.displayName || 'Student');
   const [eraShopInitialTab, setEraShopInitialTab] = useState<'shop' | 'customizer'>('shop');
   const [eraShopInitialCat, setEraShopInitialCat] = useState<'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories'>('all');
   const [eraGalleryInitialTab, setEraGalleryInitialTab] = useState<'all' | 'photos' | 'videos'>('all');
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(true);
+  const isSuperAdminTeacherJan = Boolean(
+    user?.email?.toLowerCase().trim() === 'janrelbugtay03@gmail.com' ||
+    user?.email?.toLowerCase().trim() === 'khaisangschool.edu.vn@gmail.com' ||
+    user?.uid === 'bDxlNzABwrPrse6l2LmS1CcLxcJ2' ||
+    (isAdmin && (
+      (user?.displayName && user.displayName.toLowerCase().includes('teacher jan')) ||
+      (user?.displayName && user.displayName.toLowerCase().includes('teacher')) ||
+      (user?.email && user.email.toLowerCase().includes('janrel'))
+    ))
+  );
+
   const [eraGems, setEraGems] = useState<number>(() => {
+    if (!isSuperAdminTeacherJan) {
+      try {
+        localStorage.setItem('eraverse_gems_v2', '0');
+      } catch (_e) {}
+      return 0;
+    }
     try {
       const saved = localStorage.getItem('eraverse_gems_v2');
-      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 0;
+      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 1000;
     } catch (_e) {
-      return 0;
+      return 1000;
     }
   });
   const [eraDollars, setEraDollars] = useState<number>(() => {
+    if (!isSuperAdminTeacherJan) {
+      try {
+        localStorage.setItem('eraverse_dollars_v2', '0');
+      } catch (_e) {}
+      return 0;
+    }
     try {
       const saved = localStorage.getItem('eraverse_dollars_v2');
-      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 0;
+      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 1000;
     } catch (_e) {
-      return 0;
+      return 1000;
     }
   });
   const [ownedShopItems, setOwnedShopItems] = useState<string[]>(() => {
@@ -1086,6 +1126,8 @@ export function EraVerse() {
     nextDollars = eraDollars
   ) => {
     const targetUid = profileToSave.realUserId || user?.uid || localStorage.getItem('studentUid') || '';
+    const effectiveGems = isSuperAdminTeacherJan ? nextGems : 0;
+    const effectiveDollars = isSuperAdminTeacherJan ? nextDollars : 0;
     const avatarPayload = {
       ...profileToSave,
       name: profileToSave.name,
@@ -1102,15 +1144,15 @@ export function EraVerse() {
       pantsColor: profileToSave.bottomColor || profileToSave.pantsColor || '#1e293b',
       beltType: profileToSave.beltStyle || profileToSave.beltType || 'none',
       vehicleType: profileToSave.vehicleType || 'none',
-      eraGems: nextGems,
-      eraDollars: nextDollars,
+      eraGems: effectiveGems,
+      eraDollars: effectiveDollars,
       ownedShopItems: nextOwned,
       updatedAt: Date.now()
     };
 
     try {
-      localStorage.setItem('eraverse_gems_v2', String(nextGems));
-      localStorage.setItem('eraverse_dollars_v2', String(nextDollars));
+      localStorage.setItem('eraverse_gems_v2', String(effectiveGems));
+      localStorage.setItem('eraverse_dollars_v2', String(effectiveDollars));
       localStorage.setItem('eraverse_owned_shop_items', JSON.stringify(nextOwned));
       if (targetUid) {
         localStorage.setItem(`eraverse_custom_${targetUid}`, JSON.stringify(avatarPayload));
@@ -1131,7 +1173,11 @@ export function EraVerse() {
       setDoc(
         doc(db, 'users', targetUid),
         {
-          eraverseAvatar: avatarPayload
+          eraverseAvatar: avatarPayload,
+          eraGems: effectiveGems,
+          eraDollars: effectiveDollars,
+          gems: effectiveGems,
+          dollars: effectiveDollars
         },
         { merge: true }
       ).catch(() => {});
@@ -1262,6 +1308,22 @@ export function EraVerse() {
 
     if (Array.isArray(customLook?.ownedShopItems)) {
       setOwnedShopItems(customLook.ownedShopItems);
+    }
+
+    if (!isSuperAdminTeacherJan) {
+      setEraGems(0);
+      setEraDollars(0);
+      try {
+        localStorage.setItem('eraverse_gems_v2', '0');
+        localStorage.setItem('eraverse_dollars_v2', '0');
+      } catch (_e) {}
+    } else {
+      if (typeof customLook?.eraGems === 'number') {
+        setEraGems(customLook.eraGems);
+      }
+      if (typeof customLook?.eraDollars === 'number') {
+        setEraDollars(customLook.eraDollars);
+      }
     }
 
     const femaleNames = ['suzie', 'sophia', 'may', 'emily', 'hailey', 'candy', 'anna', 'lisa', 'ruby', 'chloe'];
@@ -2078,158 +2140,721 @@ export function EraVerse() {
     // 5. OUTDOOR SPORTS & PLAYGROUND PARK (FOOTBALL PITCH, PICKLEBALL COURT, PLAYGROUND)
     // ============================================================================
 
-    // A. Interactive Football (Soccer) Field at West Park (X = -75, Z = 0)
+    // A. Interactive Football (Soccer) Stadium at West Park (X = -75, Z = 0)
+    // Open stadium field where players can walk, run, and play inside seamlessly!
     const PITCH_CENTER = { x: -75, z: 0 };
-    const PITCH_W = 24;
-    const PITCH_L = 36;
+    const PITCH_W = 28.0;
+    const PITCH_L = 44.0;
+    const PITCH_HALF_W = PITCH_W / 2; // 14.0
+    const PITCH_HALF_L = PITCH_L / 2; // 22.0
+    const GOAL_WIDTH = 6.4;
+    const GOAL_HEIGHT = 2.45;
+    const GOAL_DEPTH = 2.1;
 
-    const createFootballPitchTexture = () => {
-      const c = document.createElement('canvas');
-      c.width = 512;
-      c.height = 768;
-      const ctx = c.getContext('2d')!;
+    // High-Resolution 2048x2048 PBR Turf & Crisp White Chalk Pitch Markings
+    const generateHighResFootballPitchTextures = () => {
+      const size = 2048;
+      const colorCanvas = document.createElement('canvas');
+      colorCanvas.width = size;
+      colorCanvas.height = size;
+      const ctx = colorCanvas.getContext('2d')!;
 
-      // Alternating mowed turf stripes
-      for (let i = 0; i < 12; i++) {
-        ctx.fillStyle = i % 2 === 0 ? '#16a34a' : '#22c55e';
-        ctx.fillRect(0, i * 64, 512, 64);
+      // Base championship lawn green
+      ctx.fillStyle = '#68b03b';
+      ctx.fillRect(0, 0, size, size);
+
+      // Dual-directional mowed lawn checkerboard stripes (14 cols x 24 rows)
+      const numCols = 14;
+      const numRows = 24;
+      const colW = size / numCols;
+      const rowH = size / numRows;
+
+      for (let r = 0; r < numRows; r++) {
+        for (let c = 0; c < numCols; c++) {
+          const isLightCol = c % 2 === 0;
+          const isLightRow = r % 2 === 0;
+          let luma = 0;
+          if (isLightCol && isLightRow) luma = 14;
+          else if (!isLightCol && !isLightRow) luma = -12;
+          else if (isLightCol && !isLightRow) luma = 5;
+          else luma = -4;
+
+          const R = Math.min(255, Math.max(0, 104 + luma));
+          const G = Math.min(255, Math.max(0, 175 + luma));
+          const B = Math.min(255, Math.max(0, 56 + Math.round(luma * 0.6)));
+          ctx.fillStyle = `rgb(${R},${G},${B})`;
+          ctx.fillRect(c * colW, r * rowH, colW + 1, rowH + 1);
+        }
       }
 
-      // Crisp white pitch markings
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(24, 24, 464, 720);
+      // Organic micro-blade grass noise
+      const imgData = ctx.getImageData(0, 0, size, size);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const grain = (Math.random() - 0.5) * 16;
+        data[i] = Math.min(255, Math.max(0, data[i] + grain * 0.8));
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + grain));
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + grain * 0.5));
+      }
+      ctx.putImageData(imgData, 0, 0);
 
-      // Halfway line & center circle
+      // Goalmouth & penalty wear patches
+      const wearSpots = [
+        [0.5, 0.12, 140],
+        [0.5, 0.88, 140],
+        [0.5, 0.50, 110]
+      ];
+      wearSpots.forEach(([wx, wy, rad]) => {
+        const grad = ctx.createRadialGradient(size * wx, size * wy, 8, size * wx, size * wy, rad);
+        grad.addColorStop(0, 'rgba(132, 118, 65, 0.22)');
+        grad.addColorStop(1, 'rgba(132, 118, 65, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+      });
+
+      // Crisp chalk white markings
+      const planeW = 32.0;
+      const planeL = 48.0;
+      const toX = (m: number) => (0.5 + m / planeW) * size;
+      const toY = (m: number) => (0.5 + m / planeL) * size;
+      const scaleX = (m: number) => (m / planeW) * size;
+      const scaleY = (m: number) => (m / planeL) * size;
+
+      ctx.strokeStyle = '#f8fafc';
+      ctx.fillStyle = '#f8fafc';
+      ctx.lineWidth = (0.14 / planeW) * size;
+      ctx.lineCap = 'square';
+
+      const hw = PITCH_HALF_W;
+      const hl = PITCH_HALF_L;
+
+      // 1. Outer touchlines & goal lines
+      ctx.strokeRect(toX(-hw), toY(-hl), scaleX(PITCH_W), scaleY(PITCH_L));
+
+      // 2. Halfway line
       ctx.beginPath();
-      ctx.moveTo(24, 384);
-      ctx.lineTo(488, 384);
+      ctx.moveTo(toX(-hw), toY(0));
+      ctx.lineTo(toX(hw), toY(0));
+      ctx.stroke();
+
+      // 3. Center circle & center kickoff spot
+      ctx.beginPath();
+      ctx.ellipse(toX(0), toY(0), scaleX(4.4), scaleY(4.4), 0, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(256, 384, 68, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.arc(toX(0), toY(0), scaleX(0.24), 0, Math.PI * 2);
+      ctx.fill();
 
-      // Penalty boxes
-      ctx.strokeRect(126, 24, 260, 110);
-      ctx.strokeRect(126, 634, 260, 110);
+      // 4. North & South Penalty Boxes & Goal Areas
+      [-1, 1].forEach((dir) => {
+        const goalZ = dir * hl;
+        const penZ = dir * (hl - 6.8);
+        const sixZ = dir * (hl - 2.6);
+        const spotZ = dir * (hl - 4.8);
 
+        // 18-yard penalty box
+        ctx.strokeRect(toX(-6.8), Math.min(toY(goalZ), toY(penZ)), scaleX(13.6), scaleY(6.8));
+
+        // 6-yard goal area
+        ctx.strokeRect(toX(-4.1), Math.min(toY(goalZ), toY(sixZ)), scaleX(8.2), scaleY(2.6));
+
+        // Penalty spot
+        ctx.beginPath();
+        ctx.arc(toX(0), toY(spotZ), scaleX(0.2), 0, Math.PI * 2);
+        ctx.fill();
+
+        // Penalty box D-arc
+        ctx.beginPath();
+        const startAng = dir === -1 ? Math.PI * 0.22 : Math.PI * 1.22;
+        const endAng = dir === -1 ? Math.PI * 0.78 : Math.PI * 1.78;
+        ctx.ellipse(toX(0), toY(spotZ), scaleX(3.4), scaleY(3.4), 0, startAng, endAng);
+        ctx.stroke();
+      });
+
+      // 5. Corner arcs
+      const cRadX = scaleX(0.9);
+      const cRadY = scaleY(0.9);
+      [
+        [-hw, -hl, 0, Math.PI * 0.5],
+        [hw, -hl, Math.PI * 0.5, Math.PI],
+        [hw, hl, Math.PI, Math.PI * 1.5],
+        [-hw, hl, Math.PI * 1.5, Math.PI * 2]
+      ].forEach(([cx, cz, a1, a2]) => {
+        ctx.beginPath();
+        ctx.ellipse(toX(cx), toY(cz), cRadX, cRadY, 0, a1, a2);
+        ctx.stroke();
+      });
+
+      const colorTex = new THREE.CanvasTexture(colorCanvas);
+      colorTex.colorSpace = THREE.SRGBColorSpace;
+      colorTex.anisotropy = maxAnisotropy;
+      return { colorTex, planeW, planeL };
+    };
+
+    const createClubBrandTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 128;
+      const ctx = c.getContext('2d')!;
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(0, 0, 512, 128);
+      ctx.font = 'italic 900 38px sans-serif';
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('Era Football Club', 256, 64);
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = maxAnisotropy;
       return tex;
     };
 
+    const createCorrugatedRoofTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext('2d')!;
+      for (let x = 0; x < 256; x += 8) {
+        ctx.fillStyle = x % 16 === 0 ? '#1e5e22' : '#144617';
+        ctx.fillRect(x, 0, 8, 256);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(12, 4);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    };
+
+    const createHexNetTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 128;
+      c.height = 128;
+      const ctx = c.getContext('2d')!;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, 64);
+      ctx.lineTo(64, 0);
+      ctx.lineTo(128, 64);
+      ctx.lineTo(64, 128);
+      ctx.closePath();
+      ctx.stroke();
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(18, 9);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    };
+
+    // 1. PBR Football Turf Mesh
+    const { colorTex: pitchColorTex, planeW: pitchPlaneW, planeL: pitchPlaneL } = generateHighResFootballPitchTextures();
     const footballPitch = new THREE.Mesh(
-      new THREE.PlaneGeometry(PITCH_W, PITCH_L),
-      new THREE.MeshStandardMaterial({ map: createFootballPitchTexture(), roughness: 0.75 })
+      new THREE.PlaneGeometry(pitchPlaneW, pitchPlaneL),
+      new THREE.MeshStandardMaterial({
+        map: pitchColorTex,
+        roughness: 0.76,
+        metalness: 0.02
+      })
     );
     footballPitch.rotation.x = -Math.PI / 2;
     footballPitch.position.set(PITCH_CENTER.x, 0.08, PITCH_CENTER.z);
     footballPitch.receiveShadow = true;
     scene.add(footballPitch);
 
-    // 3D Goalposts at North (Z - 17) & South (Z + 17) ends of the Football Field
-    const createGoalpost = (gz: number) => {
-      const gGroup = new THREE.Group();
-      gGroup.position.set(PITCH_CENTER.x, 0, gz);
-      const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.4 });
-      const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 3.2, 12), postMat);
-      leftPost.position.set(-3.2, 1.6, 0);
-      const rightPost = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 3.2, 12), postMat);
-      rightPost.position.set(3.2, 1.6, 0);
-      const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 6.6, 12), postMat);
-      crossbar.rotation.z = Math.PI / 2;
-      crossbar.position.set(0, 3.2, 0);
+    // 2. 3D Football Goals with Deformable Hexagonal Nets at North (-Z) & South (+Z) ends
+    const footballGoalNets: any[] = [];
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.35 });
+    const stanchionMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.45, metalness: 0.4 });
+    const hexNetMat = new THREE.MeshStandardMaterial({
+      map: createHexNetTexture(),
+      transparent: true,
+      opacity: 0.86,
+      side: THREE.DoubleSide,
+      roughness: 0.55
+    });
 
-      const netMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(6.4, 3.1, 1.6),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.45 })
-      );
-      netMesh.position.set(0, 1.55, gz < PITCH_CENTER.z ? -0.8 : 0.8);
-      gGroup.add(leftPost, rightPost, crossbar, netMesh);
+    const createDetailedGoal = (zSign: number) => {
+      const gGroup = new THREE.Group();
+      const goalZ = PITCH_CENTER.z + zSign * PITCH_HALF_L;
+      gGroup.position.set(PITCH_CENTER.x, 0, goalZ);
+
+      // Left & Right upright posts
+      const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, GOAL_HEIGHT, 16), postMat);
+      leftPost.position.set(-GOAL_WIDTH / 2, GOAL_HEIGHT / 2, 0);
+      leftPost.castShadow = true;
+
+      const rightPost = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, GOAL_HEIGHT, 16), postMat);
+      rightPost.position.set(GOAL_WIDTH / 2, GOAL_HEIGHT / 2, 0);
+      rightPost.castShadow = true;
+
+      const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, GOAL_WIDTH + 0.22, 16), postMat);
+      crossbar.rotation.z = Math.PI / 2;
+      crossbar.position.set(0, GOAL_HEIGHT, 0);
+      crossbar.castShadow = true;
+      gGroup.add(leftPost, rightPost, crossbar);
+
+      // Stanchions (rear support bars)
+      [-GOAL_WIDTH / 2, GOAL_WIDTH / 2].forEach((px) => {
+        const backBar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, GOAL_HEIGHT, 10), stanchionMat);
+        backBar.position.set(px, GOAL_HEIGHT / 2, zSign * GOAL_DEPTH);
+        gGroup.add(backBar);
+
+        const topStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, GOAL_DEPTH, 10), stanchionMat);
+        topStrut.rotation.x = Math.PI / 2;
+        topStrut.position.set(px, GOAL_HEIGHT - 0.05, zSign * (GOAL_DEPTH / 2));
+        gGroup.add(topStrut);
+      });
+
+      // Deformable back net plane
+      const backNetGeo = new THREE.PlaneGeometry(GOAL_WIDTH, GOAL_HEIGHT, 16, 8);
+      const backNet = new THREE.Mesh(backNetGeo, hexNetMat);
+      backNet.position.set(0, GOAL_HEIGHT / 2, zSign * GOAL_DEPTH);
+      (backNet as any).userData = {
+        basePos: backNetGeo.attributes.position.clone(),
+        rippleIntensity: 0,
+        zSign
+      };
+      gGroup.add(backNet);
+      footballGoalNets.push(backNet);
+
+      // Roof Net & Side Nets
+      const roofNet = new THREE.Mesh(new THREE.PlaneGeometry(GOAL_WIDTH, GOAL_DEPTH), hexNetMat);
+      roofNet.rotation.x = Math.PI / 2;
+      roofNet.position.set(0, GOAL_HEIGHT, zSign * (GOAL_DEPTH / 2));
+      gGroup.add(roofNet);
+
+      [-GOAL_WIDTH / 2, GOAL_WIDTH / 2].forEach((px) => {
+        const sideNet = new THREE.Mesh(new THREE.PlaneGeometry(GOAL_DEPTH, GOAL_HEIGHT), hexNetMat);
+        sideNet.rotation.y = Math.PI / 2;
+        sideNet.position.set(px, GOAL_HEIGHT / 2, zSign * (GOAL_DEPTH / 2));
+        gGroup.add(sideNet);
+      });
+
       scene.add(gGroup);
     };
-    createGoalpost(PITCH_CENTER.z - PITCH_L / 2 + 1.0);
-    createGoalpost(PITCH_CENTER.z + PITCH_L / 2 - 1.0);
+    createDetailedGoal(-1); // North goal (Z = -22)
+    createDetailedGoal(1);  // South goal (Z = +22)
 
-    // Football Field Sign
-    const fbSignTex = makeAttachedBuildingNameTexture('FOOTBALL FIELD', '#14532d', '#22c55e');
-    const fbSign = new THREE.Mesh(
-      new THREE.BoxGeometry(8.5, 1.8, 0.25),
-      new THREE.MeshBasicMaterial({ map: fbSignTex })
+    // 3. Animated Corner Flags
+    const footballCornerFlags: THREE.Mesh[] = [];
+    const cornerPoleMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+    const cornerClothMat = new THREE.MeshStandardMaterial({ color: 0xef4444, side: THREE.DoubleSide, roughness: 0.4 });
+    [
+      [-PITCH_HALF_W, -PITCH_HALF_L],
+      [PITCH_HALF_W, -PITCH_HALF_L],
+      [-PITCH_HALF_W, PITCH_HALF_L],
+      [PITCH_HALF_W, PITCH_HALF_L]
+    ].forEach(([cx, cz]) => {
+      const fg = new THREE.Group();
+      fg.position.set(PITCH_CENTER.x + cx, 0, PITCH_CENTER.z + cz);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 8), cornerPoleMat);
+      pole.position.y = 0.7;
+      fg.add(pole);
+
+      const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.32, 6, 2), cornerClothMat);
+      cloth.position.set(0.24, 1.2, 0);
+      fg.add(cloth);
+      scene.add(fg);
+      footballCornerFlags.push(cloth);
+    });
+
+    // 4. Covered Grandstand on West Side + 3D Animated Spectators
+    const greenWallMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.65 });
+    const whiteCopingMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.15, metalness: 0.75 });
+    const brandTex = createClubBrandTexture();
+    const brandMat = new THREE.MeshBasicMaterial({ map: brandTex, transparent: true });
+
+    const standGroup = new THREE.Group();
+    const westBaseX = PITCH_CENTER.x - PITCH_HALF_W - 2.8; // around X = -91.8
+    const standLen = 42.0;
+
+    // West touchline barrier wall with white coping
+    const westBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.4, standLen), greenWallMat);
+    westBarrier.position.set(westBaseX, 0.7, PITCH_CENTER.z);
+    westBarrier.castShadow = true;
+    westBarrier.receiveShadow = true;
+    standGroup.add(westBarrier);
+
+    const westCoping = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.12, standLen + 0.2), whiteCopingMat);
+    westCoping.position.set(westBaseX, 1.45, PITCH_CENTER.z);
+    standGroup.add(westCoping);
+
+    [-12, 0, 12].forEach((zOffset) => {
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.0), brandMat);
+      sign.position.set(westBaseX + 0.34, 0.75, PITCH_CENTER.z + zOffset);
+      sign.rotation.y = Math.PI / 2;
+      standGroup.add(sign);
+    });
+
+    // 3 Tiered concrete grandstand steps + 3D cheering spectators
+    const stadiumSpectators: any[] = [];
+    const skinPalette = [0xf5cba7, 0xe0ac69, 0xc68642, 0x8d5524, 0xfadbd8];
+    const shirtPalette = [0xef4444, 0xdc2626, 0x3b82f6, 0x2563eb, 0xfacc15, 0x10b981, 0xffffff, 0xf97316];
+    const headGeo = new THREE.SphereGeometry(0.32, 12, 12);
+    const bodyGeo = new THREE.CylinderGeometry(0.24, 0.3, 0.6, 10);
+    const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+
+    for (let row = 0; row < 3; row++) {
+      const stepX = westBaseX - (1.1 + row * 1.15);
+      const stepY = 1.25 + row * 0.75;
+      const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, stepY, standLen - 1.2), concreteMat);
+      stepMesh.position.set(stepX, stepY / 2, PITCH_CENTER.z);
+      stepMesh.receiveShadow = true;
+      standGroup.add(stepMesh);
+
+      for (let z = -18.0; z <= 18.0; z += 2.2) {
+        const spec = new THREE.Group();
+        const skinColor = skinPalette[(Math.abs(Math.round(z * 3)) + row) % skinPalette.length];
+        const shirtColor = shirtPalette[(Math.abs(Math.round(z * 7)) + row * 2) % shirtPalette.length];
+
+        const torso = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.45 }));
+        torso.position.y = 0.3;
+        torso.castShadow = true;
+        spec.add(torso);
+
+        const headPivot = new THREE.Group();
+        headPivot.position.y = 0.78;
+
+        const head = new THREE.Mesh(headGeo, new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.45 }));
+        head.castShadow = true;
+        headPivot.add(head);
+
+        const e1 = new THREE.Mesh(eyeGeo, eyeMat);
+        e1.position.set(0.28, 0.04, -0.1);
+        headPivot.add(e1);
+        const e2 = new THREE.Mesh(eyeGeo, eyeMat);
+        e2.position.set(0.28, 0.04, 0.1);
+        headPivot.add(e2);
+
+        spec.add(headPivot);
+        spec.position.set(stepX + 0.15, stepY, PITCH_CENTER.z + z);
+        (spec as any).userData = {
+          baseY: stepY,
+          phase: Math.random() * Math.PI * 2,
+          headPivot
+        };
+        standGroup.add(spec);
+        stadiumSpectators.push(spec);
+      }
+    }
+
+    // Grandstand back wall & VIP skybox windows
+    const backWallX = westBaseX - 4.6;
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(0.75, 5.5, standLen), greenWallMat);
+    backWall.position.set(backWallX, 2.75, PITCH_CENTER.z);
+    backWall.castShadow = true;
+    standGroup.add(backWall);
+
+    for (let wz = -16; wz <= 16; wz += 6) {
+      const win = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.2, 4.2), glassMat);
+      win.position.set(backWallX + 0.38, 4.2, PITCH_CENTER.z + wz);
+      standGroup.add(win);
+    }
+
+    // Slanted Corrugated Green Canopy Roof
+    const roofMat = new THREE.MeshStandardMaterial({ map: createCorrugatedRoofTexture(), roughness: 0.55 });
+    const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.22, standLen + 0.4), roofMat);
+    roofSlab.position.set(westBaseX - 2.2, 5.8, PITCH_CENTER.z);
+    roofSlab.rotation.z = -0.14;
+    roofSlab.castShadow = true;
+    standGroup.add(roofSlab);
+
+    scene.add(standGroup);
+
+    // 5. Open Stadium Entrances & East Walkway (Facing Main Campus Pathways)
+    // Completely OPEN field design so players and autonomous classmates can easily walk and run inside!
+    const eastBaseX = PITCH_CENTER.x + PITCH_HALF_W + 1.8; // around X = -59.2
+    const entranceGateW = 12.0; // 12-meter wide open gateway!
+
+    // North-East low barrier
+    const neBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, (standLen - entranceGateW) / 2), greenWallMat);
+    neBarrier.position.set(eastBaseX, 0.45, PITCH_CENTER.z - (entranceGateW / 2 + (standLen - entranceGateW) / 4));
+    scene.add(neBarrier);
+
+    // South-East low barrier
+    const seBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, (standLen - entranceGateW) / 2), greenWallMat);
+    seBarrier.position.set(eastBaseX, 0.45, PITCH_CENTER.z + (entranceGateW / 2 + (standLen - entranceGateW) / 4));
+    scene.add(seBarrier);
+
+    // Grand Entrance Archway Pillars with Era Football Club Signage
+    [-entranceGateW / 2, entranceGateW / 2].forEach((pz) => {
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.6, 1.2), greenWallMat);
+      pillar.position.set(eastBaseX, 1.8, PITCH_CENTER.z + pz);
+      pillar.castShadow = true;
+      scene.add(pillar);
+
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 1.4), whiteCopingMat);
+      cap.position.set(eastBaseX, 3.75, PITCH_CENTER.z + pz);
+      scene.add(cap);
+
+      const banner = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), brandMat);
+      banner.position.set(eastBaseX + 0.62, 2.2, PITCH_CENTER.z + pz);
+      banner.rotation.y = Math.PI / 2;
+      scene.add(banner);
+    });
+
+    // Overhead Entrance Welcome Sign
+    const gateSignTex = makeAttachedBuildingNameTexture('ERA FOOTBALL CLUB • OPEN PITCH ⚽', '#14532d', '#22c55e');
+    const gateSign = new THREE.Mesh(
+      new THREE.BoxGeometry(entranceGateW + 0.8, 1.4, 0.3),
+      new THREE.MeshBasicMaterial({ map: gateSignTex })
     );
-    fbSign.position.set(PITCH_CENTER.x + PITCH_W / 2 + 1.2, 3.2, PITCH_CENTER.z);
-    fbSign.rotation.y = Math.PI / 2;
-    scene.add(fbSign);
+    gateSign.position.set(eastBaseX, 3.8, PITCH_CENTER.z);
+    gateSign.rotation.y = Math.PI / 2;
+    scene.add(gateSign);
 
-    // Interactive Physics 3D Soccer Ball
-    const createSoccerBallTexture = () => {
+    // Team Dugout Benches on touchline
+    const createTeamDugout = (x: number, z: number) => {
+      const bGroup = new THREE.Group();
+      bGroup.position.set(x, 0, z);
+      const benchMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.5 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.12, 0.7), benchMat);
+      seat.position.y = 0.45;
+      bGroup.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.55, 0.12), benchMat);
+      back.position.set(0, 0.75, -0.28);
+      bGroup.add(back);
+      scene.add(bGroup);
+    };
+    createTeamDugout(PITCH_CENTER.x - 8, PITCH_CENTER.z - PITCH_HALF_L - 1.8);
+    createTeamDugout(PITCH_CENTER.x + 8, PITCH_CENTER.z - PITCH_HALF_L - 1.8);
+
+    // 6. Interactive Physics 3D Match Football
+    const createClassicSoccerBallTexture = () => {
       const c = document.createElement('canvas');
-      c.width = 256;
+      c.width = 512;
       c.height = 256;
       const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 256, 256);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, 512, 256);
+
       ctx.fillStyle = '#0f172a';
-      [
-        [64, 64], [192, 64], [128, 128], [64, 192], [192, 192]
-      ].forEach(([bx, by]) => {
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+      const spots = [
+        [64, 64], [192, 64], [320, 64], [448, 64],
+        [128, 160], [256, 160], [384, 160], [500, 160]
+      ];
+      spots.forEach(([cx, cy]) => {
         ctx.beginPath();
-        ctx.arc(bx, by, 34, 0, Math.PI * 2);
+        for (let i = 0; i < 5; i++) {
+          const ang = (i / 5) * Math.PI * 2 - Math.PI / 2;
+          const px = cx + Math.cos(ang) * 26;
+          const py = cy + Math.sin(ang) * 26;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
         ctx.fill();
+        ctx.stroke();
       });
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = maxAnisotropy;
       return tex;
     };
 
+    const SOCCER_BALL_RADIUS = 0.46;
     const soccerBallMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.68, 24, 24),
-      new THREE.MeshStandardMaterial({ map: createSoccerBallTexture(), roughness: 0.3, metalness: 0.1 })
+      new THREE.SphereGeometry(SOCCER_BALL_RADIUS, 28, 28),
+      new THREE.MeshStandardMaterial({
+        map: createClassicSoccerBallTexture(),
+        roughness: 0.32,
+        metalness: 0.08
+      })
     );
     soccerBallMesh.castShadow = true;
-    soccerBallMesh.position.set(PITCH_CENTER.x, 0.68, PITCH_CENTER.z);
+    soccerBallMesh.position.set(PITCH_CENTER.x, SOCCER_BALL_RADIUS, PITCH_CENTER.z);
     scene.add(soccerBallMesh);
 
     const soccerBallState = {
       x: PITCH_CENTER.x,
-      y: 0.68,
+      y: SOCCER_BALL_RADIUS,
       z: PITCH_CENTER.z,
       vx: 0,
       vy: 0,
       vz: 0
     };
 
-    // B. Interactive Pickleball Court at East Park (X = 72, Z = 0)
-    const PICKLE_CENTER = { x: 72, z: 0 };
-    const PICKLE_W = 14;
-    const PICKLE_L = 24;
+    // B. Era Tennis Court — Lakeside Center Court PBR at East Park (X = 72, Z = 0)
+    const TENNIS_CENTER = { x: 72, z: 0 };
+    const PICKLE_CENTER = TENNIS_CENTER;
+    const TENNIS_PLANE_W = 19.0;
+    const TENNIS_PLANE_L = 31.0;
+    const PICKLE_W = TENNIS_PLANE_W;
+    const PICKLE_L = TENNIS_PLANE_L;
+    const TENNIS_DOUBLES_W = 13.0;
+    const TENNIS_SINGLES_W = 9.8;
+    const TENNIS_COURT_L = 24.0;
+    const TENNIS_HALF_L = 12.0;
+    const TENNIS_SERVICE_L = 6.2;
+    const TENNIS_NET_H = 1.0;
 
-    const createPickleballCourtTexture = () => {
+    const tennisSpectators: THREE.Group[] = [];
+
+    // Helper for procedural 3D Tennis Racket (Grip, Throat, Hoop, and String Bed)
+    const createTennisRacketMesh = (accentColor = '#10b981') => {
+      const racket = new THREE.Group();
+      const handleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.75 });
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.036, 0.44, 12), handleMat);
+      handle.position.y = -0.22;
+      racket.add(handle);
+
+      const buttcapMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+      const buttcap = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.04, 12), buttcapMat);
+      buttcap.position.y = -0.44;
+      racket.add(buttcap);
+
+      const frameMat = new THREE.MeshStandardMaterial({ color: accentColor, roughness: 0.35, metalness: 0.45 });
+      const throatL = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), frameMat);
+      throatL.position.set(-0.04, 0.06, 0);
+      throatL.rotation.z = -0.25;
+      const throatR = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), frameMat);
+      throatR.position.set(0.04, 0.06, 0);
+      throatR.rotation.z = 0.25;
+      racket.add(throatL, throatR);
+
+      const headRim = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.022, 12, 28), frameMat);
+      headRim.scale.set(0.85, 1.25, 1);
+      headRim.position.y = 0.32;
+      racket.add(headRim);
+
+      const stringCanvas = document.createElement('canvas');
+      stringCanvas.width = 128;
+      stringCanvas.height = 128;
+      const sCtx = stringCanvas.getContext('2d')!;
+      sCtx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      sCtx.lineWidth = 4;
+      for (let i = 16; i < 128; i += 16) {
+        sCtx.beginPath();
+        sCtx.moveTo(i, 8);
+        sCtx.lineTo(i, 120);
+        sCtx.moveTo(8, i);
+        sCtx.lineTo(120, i);
+        sCtx.stroke();
+      }
+      const stringTex = new THREE.CanvasTexture(stringCanvas);
+      const stringMat = new THREE.MeshBasicMaterial({
+        map: stringTex,
+        transparent: true,
+        opacity: 0.72,
+        side: THREE.DoubleSide
+      });
+      const stringBed = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.44), stringMat);
+      stringBed.position.y = 0.32;
+      racket.add(stringBed);
+
+      racket.scale.set(1.15, 1.15, 1.15);
+      return racket;
+    };
+
+    // 1. High-Resolution Grass Court Texture with Dual-Directional Lawn Checkerboard & Chalk Markings
+    const generateHighResGrassCourtTextures = () => {
+      const size = 1024;
       const c = document.createElement('canvas');
-      c.width = 512;
-      c.height = 768;
+      c.width = size;
+      c.height = size;
       const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#1d4ed8'; // Outer tournament blue
-      ctx.fillRect(0, 0, 512, 768);
-      ctx.fillStyle = '#10b981'; // Inner court emerald
-      ctx.fillRect(48, 48, 416, 672);
-      ctx.fillStyle = '#0ea5e9'; // Non-volley kitchen zone
-      ctx.fillRect(48, 274, 416, 220);
 
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(48, 48, 416, 672);
+      // Base lush championship green
+      ctx.fillStyle = '#6db33f';
+      ctx.fillRect(0, 0, size, size);
+
+      // Dual-directional mowed lawn checkerboard stripes
+      const numCols = 14;
+      const numRows = 22;
+      const colW = size / numCols;
+      const rowH = size / numRows;
+
+      for (let r = 0; r < numRows; r++) {
+        for (let col = 0; col < numCols; col++) {
+          const isLightCol = col % 2 === 0;
+          const isLightRow = r % 2 === 0;
+          let luma = 0;
+          if (isLightCol && isLightRow) luma = 14;
+          else if (!isLightCol && !isLightRow) luma = -12;
+          else if (isLightCol && !isLightRow) luma = 4;
+          else luma = -4;
+
+          const R = Math.min(255, Math.max(0, 108 + luma));
+          const G = Math.min(255, Math.max(0, 178 + luma));
+          const B = Math.min(255, Math.max(0, 60 + Math.round(luma * 0.6)));
+          ctx.fillStyle = `rgb(${R},${G},${B})`;
+          ctx.fillRect(col * colW, r * rowH, colW + 1, rowH + 1);
+        }
+      }
+
+      // Micro grass blade organic grain
+      const imgData = ctx.getImageData(0, 0, size, size);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const grain = (Math.random() - 0.5) * 16;
+        data[i] = Math.min(255, Math.max(0, data[i] + grain * 0.8));
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + grain));
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + grain * 0.5));
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      // Baseline footwork wear patches
+      const wearGrad1 = ctx.createRadialGradient(size * 0.5, size * 0.88, 10, size * 0.5, size * 0.88, 120);
+      wearGrad1.addColorStop(0, 'rgba(138, 125, 70, 0.28)');
+      wearGrad1.addColorStop(1, 'rgba(138, 125, 70, 0)');
+      ctx.fillStyle = wearGrad1;
+      ctx.fillRect(0, 0, size, size);
+
+      const wearGrad2 = ctx.createRadialGradient(size * 0.5, size * 0.12, 10, size * 0.5, size * 0.12, 120);
+      wearGrad2.addColorStop(0, 'rgba(138, 125, 70, 0.28)');
+      wearGrad2.addColorStop(1, 'rgba(138, 125, 70, 0)');
+      ctx.fillStyle = wearGrad2;
+      ctx.fillRect(0, 0, size, size);
+
+      // Crisp chalk white court markings
+      const toX = (m: number) => (0.5 + m / TENNIS_PLANE_W) * size;
+      const toY = (m: number) => (0.5 + m / TENNIS_PLANE_L) * size;
+
+      ctx.strokeStyle = '#f8fafc';
+      ctx.fillStyle = '#f8fafc';
+      ctx.lineCap = 'square';
+      ctx.lineWidth = 6;
+
+      const hwDoubles = TENNIS_DOUBLES_W / 2;
+      const hwSingles = TENNIS_SINGLES_W / 2;
+      const hl = TENNIS_HALF_L;
+      const sl = TENNIS_SERVICE_L;
+
+      // Outer Doubles Rectangle
+      ctx.strokeRect(toX(-hwDoubles), toY(-hl), (TENNIS_DOUBLES_W / TENNIS_PLANE_W) * size, (TENNIS_COURT_L / TENNIS_PLANE_L) * size);
+
+      // Singles Sidelines
       ctx.beginPath();
-      ctx.moveTo(48, 274);
-      ctx.lineTo(464, 274);
-      ctx.moveTo(48, 494);
-      ctx.lineTo(464, 494);
-      ctx.moveTo(256, 48);
-      ctx.lineTo(256, 274);
-      ctx.moveTo(256, 494);
-      ctx.lineTo(256, 720);
+      ctx.moveTo(toX(-hwSingles), toY(-hl));
+      ctx.lineTo(toX(-hwSingles), toY(hl));
+      ctx.moveTo(toX(hwSingles), toY(-hl));
+      ctx.lineTo(toX(hwSingles), toY(hl));
+
+      // Service Lines
+      ctx.moveTo(toX(-hwSingles), toY(-sl));
+      ctx.lineTo(toX(hwSingles), toY(-sl));
+      ctx.moveTo(toX(-hwSingles), toY(sl));
+      ctx.lineTo(toX(hwSingles), toY(sl));
+
+      // Center Service Line
+      ctx.moveTo(toX(0), toY(-sl));
+      ctx.lineTo(toX(0), toY(sl));
+
+      // Baseline Center Tick Marks
+      ctx.moveTo(toX(0), toY(-hl));
+      ctx.lineTo(toX(0), toY(-hl + 0.45));
+      ctx.moveTo(toX(0), toY(hl));
+      ctx.lineTo(toX(0), toY(hl - 0.45));
       ctx.stroke();
 
       const tex = new THREE.CanvasTexture(c);
@@ -2238,58 +2863,314 @@ export function EraVerse() {
       return tex;
     };
 
-    const pickleCourt = new THREE.Mesh(
-      new THREE.PlaneGeometry(PICKLE_W, PICKLE_L),
-      new THREE.MeshStandardMaterial({ map: createPickleballCourtTexture(), roughness: 0.5 })
-    );
-    pickleCourt.rotation.x = -Math.PI / 2;
-    pickleCourt.position.set(PICKLE_CENTER.x, 0.08, PICKLE_CENTER.z);
-    pickleCourt.receiveShadow = true;
-    scene.add(pickleCourt);
+    // Helper for "Era Tennis Court" Brand Banners
+    const createTennisBrandTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 128;
+      const ctx = c.getContext('2d')!;
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(0, 0, 512, 128);
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, 500, 116);
+      ctx.font = '900 38px "Outfit", sans-serif';
+      ctx.fillStyle = '#ecfdf5';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎾 ERA TENNIS COURT', 256, 64);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = maxAnisotropy;
+      return tex;
+    };
 
-    // Pickleball Net
-    const pickleNet = new THREE.Mesh(
-      new THREE.BoxGeometry(PICKLE_W - 1.5, 1.1, 0.12),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 })
-    );
-    pickleNet.position.set(PICKLE_CENTER.x, 0.55, PICKLE_CENTER.z);
-    scene.add(pickleNet);
+    // Helper for Corrugated Grandstand Canopy Roof
+    const createTennisRoofTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext('2d')!;
+      for (let x = 0; x < 256; x += 8) {
+        ctx.fillStyle = x % 16 === 0 ? '#166534' : '#14532d';
+        ctx.fillRect(x, 0, 8, 256);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 2);
+      tex.anisotropy = maxAnisotropy;
+      return tex;
+    };
 
-    const netTape = new THREE.Mesh(
-      new THREE.BoxGeometry(PICKLE_W - 1.4, 0.14, 0.16),
-      new THREE.MeshBasicMaterial({ color: 0xffffff })
-    );
-    netTape.position.set(PICKLE_CENTER.x, 1.1, PICKLE_CENTER.z);
-    scene.add(netTape);
+    const tennisCourtGroup = new THREE.Group();
+    tennisCourtGroup.position.set(TENNIS_CENTER.x, 0, TENNIS_CENTER.z);
 
-    const pbSignTex = makeAttachedBuildingNameTexture('PICKLEBALL COURT', '#1e3a8a', '#38bdf8');
-    const pbSign = new THREE.Mesh(
-      new THREE.BoxGeometry(8.5, 1.8, 0.25),
-      new THREE.MeshBasicMaterial({ map: pbSignTex })
-    );
-    pbSign.position.set(PICKLE_CENTER.x - PICKLE_W / 2 - 1.2, 3.2, PICKLE_CENTER.z);
-    pbSign.rotation.y = -Math.PI / 2;
-    scene.add(pbSign);
+    // 2. High-Definition Turf Court Mesh
+    const courtGeo = new THREE.PlaneGeometry(TENNIS_PLANE_W, TENNIS_PLANE_L);
+    const courtMat = new THREE.MeshStandardMaterial({
+      map: generateHighResGrassCourtTextures(),
+      roughness: 0.72,
+      metalness: 0.04
+    });
+    const tennisCourtMesh = new THREE.Mesh(courtGeo, courtMat);
+    tennisCourtMesh.rotation.x = -Math.PI / 2;
+    tennisCourtMesh.position.y = 0.08;
+    tennisCourtMesh.receiveShadow = true;
+    tennisCourtGroup.add(tennisCourtMesh);
 
-    // Active Pickleball Ball
+    // 3. Braided 3D Tennis Net with Catenary Sag, White Top Tape & Center Strap
+    const netWidth = TENNIS_DOUBLES_W + 1.2;
+    const netCanvas = document.createElement('canvas');
+    netCanvas.width = 128;
+    netCanvas.height = 128;
+    const nCtx = netCanvas.getContext('2d')!;
+    nCtx.strokeStyle = '#0f172a';
+    nCtx.lineWidth = 14;
+    nCtx.strokeRect(0, 0, 128, 128);
+    const netTex = new THREE.CanvasTexture(netCanvas);
+    netTex.wrapS = netTex.wrapT = THREE.RepeatWrapping;
+    netTex.repeat.set(40, 4);
+
+    const netGeo = new THREE.PlaneGeometry(netWidth, TENNIS_NET_H - 0.06, 24, 1);
+    const posAttr = netGeo.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const vx = posAttr.getX(i);
+      const vy = posAttr.getY(i);
+      const normX = vx / (netWidth / 2);
+      const sag = (1 - normX * normX) * 0.055;
+      posAttr.setY(i, vy - sag);
+    }
+    netGeo.computeVertexNormals();
+
+    const netMat = new THREE.MeshStandardMaterial({
+      map: netTex,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide,
+      roughness: 0.6
+    });
+    const netMesh = new THREE.Mesh(netGeo, netMat);
+    netMesh.position.set(0, (TENNIS_NET_H - 0.06) / 2 + 0.04, 0);
+    netMesh.castShadow = true;
+    tennisCourtGroup.add(netMesh);
+
+    // White Canvas Top Tape (curved with matching catenary sag)
+    const tapeGeo = new THREE.BoxGeometry(netWidth, 0.075, 0.06, 24, 1, 1);
+    const tapePos = tapeGeo.attributes.position;
+    for (let i = 0; i < tapePos.count; i++) {
+      const vx = tapePos.getX(i);
+      const normX = vx / (netWidth / 2);
+      tapePos.setY(i, tapePos.getY(i) - (1 - normX * normX) * 0.055);
+    }
+    tapeGeo.computeVertexNormals();
+    const tapeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
+    const tapeMesh = new THREE.Mesh(tapeGeo, tapeMat);
+    tapeMesh.position.set(0, TENNIS_NET_H + 0.04, 0);
+    tapeMesh.castShadow = true;
+    tennisCourtGroup.add(tapeMesh);
+
+    // White Center Strap
+    const strapGeo = new THREE.BoxGeometry(0.08, TENNIS_NET_H - 0.04, 0.07);
+    const strapMesh = new THREE.Mesh(strapGeo, tapeMat);
+    strapMesh.position.set(0, (TENNIS_NET_H - 0.04) / 2 + 0.04, 0);
+    tennisCourtGroup.add(strapMesh);
+
+    // Forest-Green Fluted Net Posts & Brass Caps
+    const tennisPostGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.15, 16);
+    const tennisPostMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.35, metalness: 0.45 });
+    const tennisLeftPost = new THREE.Mesh(tennisPostGeo, tennisPostMat);
+    tennisLeftPost.position.set(-netWidth / 2, 0.58, 0);
+    tennisLeftPost.castShadow = true;
+    const tennisRightPost = new THREE.Mesh(tennisPostGeo, tennisPostMat);
+    tennisRightPost.position.set(netWidth / 2, 0.58, 0);
+    tennisRightPost.castShadow = true;
+    tennisCourtGroup.add(tennisLeftPost, tennisRightPost);
+
+    // 4. Stadium Perimeter Walls, Wooden Benches & Open Entrance Pathways
+    const tennisGreenWallMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.65 });
+    const tennisDarkPanelMat = new THREE.MeshStandardMaterial({ color: 0x0f3b1e, roughness: 0.75 });
+    const tennisWhiteCopingMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35 });
+    const tennisBrandMat = new THREE.MeshBasicMaterial({ map: createTennisBrandTexture() });
+
+    // North Wall (-Z) with windscreen panels and "Era Tennis Court" brand
+    const northWall = new THREE.Mesh(new THREE.BoxGeometry(TENNIS_PLANE_W + 1.2, 1.8, 0.5), tennisGreenWallMat);
+    northWall.position.set(0, 0.9, -TENNIS_PLANE_L / 2 - 0.25);
+    northWall.castShadow = true;
+    northWall.receiveShadow = true;
+    tennisCourtGroup.add(northWall);
+
+    const northCoping = new THREE.Mesh(new THREE.BoxGeometry(TENNIS_PLANE_W + 1.4, 0.12, 0.65), tennisWhiteCopingMat);
+    northCoping.position.set(0, 1.86, -TENNIS_PLANE_L / 2 - 0.25);
+    tennisCourtGroup.add(northCoping);
+
+    const northBrand = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.3), tennisBrandMat);
+    northBrand.position.set(0, 1.05, -TENNIS_PLANE_L / 2 + 0.02);
+    tennisCourtGroup.add(northBrand);
+
+    // Court Wooden Benches
+    const createCourtBench = (bx: number, bz: number, rotY: number) => {
+      const bGroup = new THREE.Group();
+      const benchMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.6), benchMat);
+      seat.position.y = 0.45;
+      seat.castShadow = true;
+      bGroup.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.48, 0.08), benchMat);
+      back.position.set(0, 0.72, -0.26);
+      back.castShadow = true;
+      bGroup.add(back);
+      const legL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.52), tennisDarkPanelMat);
+      legL.position.set(-1.05, 0.22, 0);
+      bGroup.add(legL);
+      const legR = legL.clone();
+      legR.position.x = 1.05;
+      bGroup.add(legR);
+      bGroup.position.set(bx, 0, bz);
+      bGroup.rotation.y = rotY;
+      tennisCourtGroup.add(bGroup);
+    };
+
+    createCourtBench(-4.2, -TENNIS_PLANE_L / 2 + 0.9, 0);
+    createCourtBench(4.2, -TENNIS_PLANE_L / 2 + 0.9, 0);
+
+    // West Side (-X, towards central campus avenue): Wide open entrance so players easily walk into court!
+    const westBarrierNorth = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 10.0), tennisGreenWallMat);
+    westBarrierNorth.position.set(-TENNIS_PLANE_W / 2 - 0.25, 0.45, -TENNIS_PLANE_L / 4 - 2.5);
+    westBarrierNorth.castShadow = true;
+    tennisCourtGroup.add(westBarrierNorth);
+
+    const westBarrierSouth = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 10.0), tennisGreenWallMat);
+    westBarrierSouth.position.set(-TENNIS_PLANE_W / 2 - 0.25, 0.45, TENNIS_PLANE_L / 4 + 2.5);
+    westBarrierSouth.castShadow = true;
+    tennisCourtGroup.add(westBarrierSouth);
+
+    // Welcome entrance pillars flanking the wide 10m West gateway
+    [-5.0, 5.0].forEach((pz) => {
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.4, 0.7), tennisWhiteCopingMat);
+      pillar.position.set(-TENNIS_PLANE_W / 2 - 0.25, 0.7, pz);
+      pillar.castShadow = true;
+      tennisCourtGroup.add(pillar);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.7, roughness: 0.2 }));
+      cap.position.set(-TENNIS_PLANE_W / 2 - 0.25, 1.52, pz);
+      tennisCourtGroup.add(cap);
+    });
+
+    // South Barrier (+Z) with open 6m center pathway
+    const southBarrierL = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.9, 0.5), tennisGreenWallMat);
+    southBarrierL.position.set(-TENNIS_PLANE_W / 4 - 1.2, 0.45, TENNIS_PLANE_L / 2 + 0.25);
+    southBarrierL.castShadow = true;
+    tennisCourtGroup.add(southBarrierL);
+
+    const southBarrierR = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.9, 0.5), tennisGreenWallMat);
+    southBarrierR.position.set(TENNIS_PLANE_W / 4 + 1.2, 0.45, TENNIS_PLANE_L / 2 + 0.25);
+    southBarrierR.castShadow = true;
+    tennisCourtGroup.add(southBarrierR);
+
+    // 5. East Covered Grandstand with 3 Tiers, Corrugated Green Canopy Roof & 3D Animated Spectators
+    const grandstandX = TENNIS_PLANE_W / 2 + 1.2;
+    const tennisStandGroup = new THREE.Group();
+    tennisStandGroup.position.set(grandstandX, 0, 0);
+
+    const tennisRoofTex = createTennisRoofTexture();
+    const tennisRoofMat = new THREE.MeshStandardMaterial({ map: tennisRoofTex, roughness: 0.55 });
+    const tennisConcreteMat = new THREE.MeshStandardMaterial({ color: 0xdbe2ea, roughness: 0.7 });
+
+    const tennisSkinPalette = [0xf5cba7, 0xe0ac69, 0xc68642, 0x8d5524, 0xfadbd8];
+    const tennisShirtPalette = [0xef4444, 0x3b82f6, 0xfacc15, 0x10b981, 0xa855f7, 0xf97316, 0xec4899];
+    const tennisHeadGeo = new THREE.SphereGeometry(0.32, 14, 14);
+    const tennisBodyGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.58, 12);
+    const tennisEyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const tennisEyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+
+    for (let row = 0; row < 3; row++) {
+      const stepX = 0.85 + row * 1.1;
+      const stepY = 1.2 + row * 0.75;
+      const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.15, stepY, 28.0), tennisConcreteMat);
+      stepMesh.position.set(stepX, stepY / 2, 0);
+      stepMesh.receiveShadow = true;
+      tennisStandGroup.add(stepMesh);
+
+      // Spectators along the grandstand tier
+      for (let z = -12.5; z <= 12.5; z += 1.8) {
+        const spec = new THREE.Group();
+        const skinColor = tennisSkinPalette[(Math.abs(Math.round(z * 5)) + row) % tennisSkinPalette.length];
+        const shirtColor = tennisShirtPalette[(Math.abs(Math.round(z * 11)) + row * 2) % tennisShirtPalette.length];
+
+        const torsoMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.45 });
+        const charHeadMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.4 });
+
+        const torso = new THREE.Mesh(tennisBodyGeo, torsoMat);
+        torso.position.y = 0.29;
+        torso.castShadow = true;
+        spec.add(torso);
+
+        const headPivot = new THREE.Group();
+        headPivot.position.y = 0.78;
+
+        const head = new THREE.Mesh(tennisHeadGeo, charHeadMat);
+        head.castShadow = true;
+        headPivot.add(head);
+
+        // Eyes looking towards center court
+        const e1 = new THREE.Mesh(tennisEyeGeo, tennisEyeMat);
+        e1.position.set(-0.29, 0.04, -0.1);
+        const e2 = new THREE.Mesh(tennisEyeGeo, tennisEyeMat);
+        e2.position.set(-0.29, 0.04, 0.1);
+        headPivot.add(e1, e2);
+        spec.add(headPivot);
+
+        spec.position.set(stepX - 0.15, stepY, z + (Math.random() - 0.5) * 0.2);
+        spec.userData = {
+          baseY: stepY,
+          phase: Math.random() * Math.PI * 2,
+          headPivot
+        };
+        tennisStandGroup.add(spec);
+        tennisSpectators.push(spec);
+      }
+    }
+
+    // Slanted Grandstand Corrugated Canopy Roof
+    const tennisRoofPivot = new THREE.Group();
+    tennisRoofPivot.position.set(2.0, 5.2, 0);
+    tennisRoofPivot.rotation.z = 0.16;
+    const tennisRoofSlab = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.2, 29.0), tennisRoofMat);
+    tennisRoofSlab.castShadow = true;
+    tennisRoofPivot.add(tennisRoofSlab);
+    const tennisFascia = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.28, 29.1), tennisWhiteCopingMat);
+    tennisFascia.position.set(-2.9, 0, 0);
+    tennisRoofPivot.add(tennisFascia);
+    tennisStandGroup.add(tennisRoofPivot);
+
+    tennisCourtGroup.add(tennisStandGroup);
+    scene.add(tennisCourtGroup);
+
+    // 6. Active Yellow Tennis Ball Mesh
     const pickleBallMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.36, 16, 16),
+      new THREE.SphereGeometry(0.24, 20, 20),
       new THREE.MeshStandardMaterial({
-        color: 0xfacc15,
-        emissive: 0xeab308,
-        emissiveIntensity: 0.4,
-        roughness: 0.2
+        color: 0xd9f905,
+        emissive: 0x84cc16,
+        emissiveIntensity: 0.35,
+        roughness: 0.38
       })
     );
-    pickleBallMesh.position.set(PICKLE_CENTER.x, 1.5, PICKLE_CENTER.z);
+    // Subtle white curved tennis ball seam ring
+    const tennisSeam = new THREE.Mesh(
+      new THREE.TorusGeometry(0.245, 0.014, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    tennisSeam.rotation.x = Math.PI / 4;
+    pickleBallMesh.add(tennisSeam);
+    pickleBallMesh.position.set(TENNIS_CENTER.x, 1.2, TENNIS_CENTER.z - 5);
     scene.add(pickleBallMesh);
 
     const pickleBallState = {
-      x: PICKLE_CENTER.x,
-      y: 1.5,
-      z: PICKLE_CENTER.z - 6,
-      vx: 1.8,
-      vz: 9.5,
+      x: TENNIS_CENTER.x,
+      y: 1.2,
+      z: TENNIS_CENTER.z - 5,
+      vx: 2.0,
+      vz: 9.8,
       phase: 0
     };
 
@@ -2654,17 +3535,21 @@ export function EraVerse() {
       });
     };
 
-    // Pickleball AI Partner Character on North side of Pickleball Court
+    // Tennis AI Partner Character (Coach Leo) on North baseline of Era Tennis Court
     const pickleOpponentRig = buildCharacterAvatar({
-      shirtColor: '#f59e0b',
+      shirtColor: '#059669',
       hairColor: '#1c1917',
       skinColor: '#fcd34d',
       hatType: 'cap',
       accessoryType: 'shades',
-      name: 'Coach Leo (Pickleball)',
+      name: 'Coach Leo (Tennis Pro)',
       cohort: 'IELTS 2'
     });
-    pickleOpponentRig.root.position.set(PICKLE_CENTER.x, 0, PICKLE_CENTER.z - 8.5);
+    pickleOpponentRig.root.position.set(TENNIS_CENTER.x, 0, TENNIS_CENTER.z - 9.5);
+    const coachRacket = createTennisRacketMesh('#10b981');
+    coachRacket.position.set(0.2, -0.42, 0.22);
+    coachRacket.rotation.set(-Math.PI / 2, 0, 0.25);
+    pickleOpponentRig.rightArm.add(coachRacket);
     scene.add(pickleOpponentRig.root);
 
     // Football AI Goalkeeper on North Goal of Football Field
@@ -3355,8 +4240,9 @@ export function EraVerse() {
       hitTimer: 0
     };
 
-    let lastDetectedSportsZone: 'football' | 'pickleball' | null = null;
+    let lastDetectedSportsZone: 'football' | 'tennis' | 'pickleball' | null = null;
     let keeperGoalCooldown = 0;
+    let tennisScoreCooldown = 0;
 
     const camState = {
       yaw: 0,
@@ -3437,7 +4323,7 @@ export function EraVerse() {
       setZoomSliderValue(14);
       setInsideBuilding(null);
       setNearBoardPrompt(null);
-      showToast('Back on EraVerse Campus', 'Visit the Football Field & Pickleball Court in the Sports Park!', '#2563EB');
+      showToast('Back on EraVerse Campus', 'Visit the Football Field & Era Tennis Court in the Sports Park!', '#2563EB');
     };
 
     const teleportToBuilding = (buildingId: string) => {
@@ -3556,16 +4442,17 @@ export function EraVerse() {
       },
       triggerHit: () => {
         playerState.hitTimer = 0.42;
-        soundEngine.playPickleballHit();
+        soundEngine.playTennisHit(true);
         if (!activeInteriorBuilding) {
-          const distPickle = Math.hypot(playerState.x - pickleBallState.x, playerState.z - pickleBallState.z);
-          if (distPickle < 5.6) {
-            pickleBallState.vz = -Math.abs(pickleBallState.vz) * 1.18 - 2.0;
-            pickleBallState.vx = (Math.random() - 0.5) * 6.5;
+          const distTennis = Math.hypot(playerState.x - pickleBallState.x, playerState.z - pickleBallState.z);
+          if (distTennis < 6.8) {
+            pickleBallState.vz = -Math.abs(pickleBallState.vz) * 1.15 - 2.5;
+            pickleBallState.vx = (Math.random() - 0.5) * 7.5;
             pickleBallState.phase = 0.35;
             setPickleballScore((s) => s + 1);
             setXp((x) => x + 30);
-            showToast('Pickleball Power Smash! 🏓 +30 XP', 'Crushed the return over the net!', '#0EA5E9');
+            showToast('Tennis Ace Return! 🎾 +30 XP', 'Crushed the forehand winner past the net!', '#10B981');
+            tennisScoreCooldown = 1.0;
           } else {
             // Also allow hitting soccer ball if right next to it
             const distSoccer = Math.hypot(playerState.x - soccerBallState.x, playerState.z - soccerBallState.z);
@@ -4091,18 +4978,18 @@ export function EraVerse() {
       playerRig.root.position.set(playerState.x, playerState.y, playerState.z);
       playerRig.root.rotation.y = playerState.rotY;
 
-      // Detect whether player is in Football Field or Pickleball Court
+      // Detect whether player is in Football Field or Era Tennis Court
       if (!activeInteriorBuilding) {
         const inFootball =
           Math.abs(playerState.x - PITCH_CENTER.x) < PITCH_W / 2 + 5 &&
           Math.abs(playerState.z - PITCH_CENTER.z) < PITCH_L / 2 + 5;
-        const inPickle =
-          Math.abs(playerState.x - PICKLE_CENTER.x) < PICKLE_W / 2 + 5 &&
-          Math.abs(playerState.z - PICKLE_CENTER.z) < PICKLE_L / 2 + 5;
-        const nextZone: 'football' | 'pickleball' | null = inFootball
+        const inTennis =
+          Math.abs(playerState.x - TENNIS_CENTER.x) < TENNIS_PLANE_W / 2 + 4.0 &&
+          Math.abs(playerState.z - TENNIS_CENTER.z) < TENNIS_PLANE_L / 2 + 4.0;
+        const nextZone: 'football' | 'tennis' | null = inFootball
           ? 'football'
-          : inPickle
-          ? 'pickleball'
+          : inTennis
+          ? 'tennis'
           : null;
         if (nextZone !== lastDetectedSportsZone) {
           lastDetectedSportsZone = nextZone;
@@ -4128,11 +5015,11 @@ export function EraVerse() {
         }
 
         // AI Goalkeeper (Keeper Max) patrols the North Goal line and dives to save or counter-kick!
-        const northGoalZ = PITCH_CENTER.z - PITCH_L / 2 + 1.35;
+        const northGoalZ = PITCH_CENTER.z - PITCH_HALF_L + 1.35;
         const keeperTargetX = THREE.MathUtils.clamp(
           soccerBallState.x,
-          PITCH_CENTER.x - 2.75,
-          PITCH_CENTER.x + 2.75
+          PITCH_CENTER.x - (GOAL_WIDTH / 2 - 0.4),
+          PITCH_CENTER.x + (GOAL_WIDTH / 2 - 0.4)
         );
         footballKeeperRig.root.position.x = THREE.MathUtils.damp(
           footballKeeperRig.root.position.x,
@@ -4162,8 +5049,8 @@ export function EraVerse() {
         soccerBallState.y += soccerBallState.vy * dt;
         soccerBallState.z += soccerBallState.vz * dt;
 
-        if (soccerBallState.y <= 0.68) {
-          soccerBallState.y = 0.68;
+        if (soccerBallState.y <= SOCCER_BALL_RADIUS) {
+          soccerBallState.y = SOCCER_BALL_RADIUS;
           if (Math.abs(soccerBallState.vy) > 1.5) {
             soccerBallState.vy = -soccerBallState.vy * 0.55;
           } else {
@@ -4171,15 +5058,15 @@ export function EraVerse() {
           }
         }
 
-        // Friction
+        // Turf rolling friction
         soccerBallState.vx *= Math.pow(0.22, dt);
         soccerBallState.vz *= Math.pow(0.22, dt);
 
         // Keep ball near pitch bounds & check for GOAL!
-        const minPitchX = PITCH_CENTER.x - PITCH_W / 2;
-        const maxPitchX = PITCH_CENTER.x + PITCH_W / 2;
-        const minPitchZ = PITCH_CENTER.z - PITCH_L / 2;
-        const maxPitchZ = PITCH_CENTER.z + PITCH_L / 2;
+        const minPitchX = PITCH_CENTER.x - PITCH_HALF_W;
+        const maxPitchX = PITCH_CENTER.x + PITCH_HALF_W;
+        const minPitchZ = PITCH_CENTER.z - PITCH_HALF_L;
+        const maxPitchZ = PITCH_CENTER.z + PITCH_HALF_L;
 
         if (soccerBallState.x < minPitchX) {
           soccerBallState.x = minPitchX;
@@ -4190,42 +5077,18 @@ export function EraVerse() {
           soccerBallState.vx = -Math.abs(soccerBallState.vx) * 0.7;
         }
 
-        // Check Goal Scored (Within goalposts X: ±3.1 at North/South ends)
-        if (Math.abs(soccerBallState.x - PITCH_CENTER.x) < 3.1 && keeperGoalCooldown <= 0) {
-          if (soccerBallState.z < minPitchZ + 1.1) {
+        // Check Goal Scored (Within goalposts at North/South ends)
+        if (Math.abs(soccerBallState.x - PITCH_CENTER.x) < GOAL_WIDTH / 2 && keeperGoalCooldown <= 0) {
+          if (soccerBallState.z < minPitchZ + 1.2) {
             // Player scored in North Goal past Keeper Max!
-            keeperGoalCooldown = 1.5;
+            keeperGoalCooldown = 1.8;
             soundEngine.playGoalCheer();
             setFootballGoals((g) => g + 1);
             setXp((x) => x + 100);
-            setEraGems((gm) => {
-              const next = gm + 25;
-              try {
-                localStorage.setItem('eraverse_gems_v2', String(next));
-              } catch (_e) {}
-              return next;
-            });
-            setEraDollars((dl) => {
-              const next = dl + 40;
-              try {
-                localStorage.setItem('eraverse_dollars_v2', String(next));
-              } catch (_e) {}
-              return next;
-            });
-            showToast('GOOOOAL! ⚽ +25 💎 Gems & +$40 💵!', 'You beat Keeper Max on the EraVerse Football Field!', '#16A34A');
-            soccerBallState.x = PITCH_CENTER.x;
-            soccerBallState.y = 2.0;
-            soccerBallState.z = PITCH_CENTER.z;
-            soccerBallState.vx = 0;
-            soccerBallState.vy = 0;
-            soccerBallState.vz = 0;
-          } else if (soccerBallState.z > maxPitchZ - 1.1) {
-            // South goal: if player was far or Keeper counter-attacked
-            keeperGoalCooldown = 1.5;
-            soundEngine.playGoalCheer();
-            if (playerState.z > PITCH_CENTER.z) {
-              setFootballGoals((g) => g + 1);
-              setXp((x) => x + 100);
+            if (footballGoalNets[0]) {
+              footballGoalNets[0].userData.rippleIntensity = 1.0;
+            }
+            if (isSuperAdminTeacherJan) {
               setEraGems((gm) => {
                 const next = gm + 25;
                 try {
@@ -4240,6 +5103,46 @@ export function EraVerse() {
                 } catch (_e) {}
                 return next;
               });
+            } else {
+              setEraGems(0);
+              setEraDollars(0);
+            }
+            showToast('GOOOOAL! ⚽ +25 💎 Gems & +$40 💵!', 'You beat Keeper Max in Era Football Club!', '#16A34A');
+            soccerBallState.x = PITCH_CENTER.x;
+            soccerBallState.y = 2.0;
+            soccerBallState.z = PITCH_CENTER.z;
+            soccerBallState.vx = 0;
+            soccerBallState.vy = 0;
+            soccerBallState.vz = 0;
+          } else if (soccerBallState.z > maxPitchZ - 1.2) {
+            // South goal scored!
+            keeperGoalCooldown = 1.8;
+            soundEngine.playGoalCheer();
+            if (footballGoalNets[1]) {
+              footballGoalNets[1].userData.rippleIntensity = 1.0;
+            }
+            if (playerState.z > PITCH_CENTER.z) {
+              setFootballGoals((g) => g + 1);
+              setXp((x) => x + 100);
+              if (isSuperAdminTeacherJan) {
+                setEraGems((gm) => {
+                  const next = gm + 25;
+                  try {
+                    localStorage.setItem('eraverse_gems_v2', String(next));
+                  } catch (_e) {}
+                  return next;
+                });
+                setEraDollars((dl) => {
+                  const next = dl + 40;
+                  try {
+                    localStorage.setItem('eraverse_dollars_v2', String(next));
+                  } catch (_e) {}
+                  return next;
+                });
+              } else {
+                setEraGems(0);
+                setEraDollars(0);
+              }
               showToast('GOOOOAL! ⚽ +25 💎 Gems & +$40 💵!', 'Awesome shot into the South Goal!', '#16A34A');
             } else {
               setAiFootballGoals((g) => g + 1);
@@ -4267,51 +5170,96 @@ export function EraVerse() {
         soccerBallMesh.rotation.x += soccerBallState.vz * dt * 1.2;
         soccerBallMesh.rotation.z -= soccerBallState.vx * dt * 1.2;
 
-        // 2. Pickleball Rally & Match Scoring Simulation
+        // Animate Corner Flags fluttering in the breeze
+        footballCornerFlags.forEach((cloth, idx) => {
+          cloth.rotation.y = Math.sin(elapsed * 6 + idx) * 0.28;
+        });
+
+        // Dynamic Goal Net ripple waves
+        footballGoalNets.forEach((net) => {
+          const ud = net.userData;
+          if (!ud || ud.rippleIntensity <= 0.01) return;
+          ud.rippleIntensity = Math.max(0, ud.rippleIntensity - dt * 1.2);
+          const posAttr = net.geometry.attributes.position;
+          const baseAttr = ud.basePos;
+          for (let i = 0; i < posAttr.count; i++) {
+            const bx = baseAttr.getX(i);
+            const by = baseAttr.getY(i);
+            const isEdge = Math.abs(bx) > (GOAL_WIDTH / 2 - 0.1) || Math.abs(by) > (GOAL_HEIGHT / 2 - 0.1);
+            if (isEdge) {
+              posAttr.setZ(i, 0);
+            } else {
+              const wave = Math.sin(elapsed * 24 - Math.hypot(bx, by) * 3.0) * 0.45 * ud.rippleIntensity;
+              const bulge = ud.zSign * 0.65 * ud.rippleIntensity;
+              posAttr.setZ(i, bulge + wave);
+            }
+          }
+          posAttr.needsUpdate = true;
+        });
+
+        // 3D Spectators cheering & ball-tracking
+        for (let i = 0; i < stadiumSpectators.length; i++) {
+          const s = stadiumSpectators[i];
+          if (keeperGoalCooldown > 0) {
+            s.position.y = s.userData.baseY + Math.abs(Math.sin(elapsed * 12 + s.userData.phase)) * 0.32;
+          } else {
+            s.position.y = s.userData.baseY;
+          }
+          const lookZ = (soccerBallState.z - s.position.z) * 0.02;
+          s.userData.headPivot.rotation.y = THREE.MathUtils.clamp(lookZ, -0.45, 0.45);
+        }
+
+        // 2. Era Tennis Court Match & Rally Simulation
+        if (tennisScoreCooldown > 0) {
+          tennisScoreCooldown -= dt;
+        }
+
         pickleBallState.x += pickleBallState.vx * dt;
         pickleBallState.z += pickleBallState.vz * dt;
-        pickleBallState.phase += dt * 6.5;
-        pickleBallState.y = 1.15 + Math.abs(Math.sin(pickleBallState.phase)) * 1.45;
+        pickleBallState.phase += dt * 6.2;
+        pickleBallState.y = 1.05 + Math.abs(Math.sin(pickleBallState.phase)) * 1.55;
 
-        // Clamp pickleball X within court width
-        if (pickleBallState.x < PICKLE_CENTER.x - PICKLE_W / 2 + 0.6) {
-          pickleBallState.x = PICKLE_CENTER.x - PICKLE_W / 2 + 0.6;
+        // Clamp tennis ball X within court boundary
+        const maxCourtX = TENNIS_DOUBLES_W / 2 - 0.3;
+        if (pickleBallState.x < TENNIS_CENTER.x - maxCourtX) {
+          pickleBallState.x = TENNIS_CENTER.x - maxCourtX;
           pickleBallState.vx = Math.abs(pickleBallState.vx);
         }
-        if (pickleBallState.x > PICKLE_CENTER.x + PICKLE_W / 2 - 0.6) {
-          pickleBallState.x = PICKLE_CENTER.x + PICKLE_W / 2 - 0.6;
+        if (pickleBallState.x > TENNIS_CENTER.x + maxCourtX) {
+          pickleBallState.x = TENNIS_CENTER.x + maxCourtX;
           pickleBallState.vx = -Math.abs(pickleBallState.vx);
         }
 
-        // AI Coach hits ball back on North side
-        if (pickleBallState.z < PICKLE_CENTER.z - 8.2 && pickleBallState.vz < 0) {
-          pickleBallState.vz = 9.5;
-          pickleBallState.vx = (Math.random() - 0.5) * 4.8;
-          pickleOpponentRig.rightArm.rotation.x = -1.6;
-          if (Math.hypot(playerState.x - PICKLE_CENTER.x, playerState.z - PICKLE_CENTER.z) < 18) {
-            soundEngine.playPickleballHit();
+        // Coach Leo (Tennis Pro) returns ball from North baseline
+        if (pickleBallState.z < TENNIS_CENTER.z - 9.0 && pickleBallState.vz < 0) {
+          pickleBallState.vz = 10.0 + Math.random() * 2.0;
+          pickleBallState.vx = (Math.random() - 0.5) * 5.4;
+          pickleOpponentRig.rightArm.rotation.x = -1.75;
+          if (Math.hypot(playerState.x - TENNIS_CENTER.x, playerState.z - TENNIS_CENTER.z) < 22) {
+            soundEngine.playTennisHit(false);
           }
         } else {
           pickleOpponentRig.rightArm.rotation.x *= 0.85;
         }
 
-        // South side return (if player is near or presses HIT, player returns and scores; if player is on court and misses, Coach Leo scores!)
-        if (pickleBallState.z > PICKLE_CENTER.z + 8.2 && pickleBallState.vz > 0) {
-          pickleBallState.vz = -9.5;
-          pickleBallState.vx = (Math.random() - 0.5) * 4.8;
+        // South baseline return (if player is near or presses SWING (G), player returns and scores; if player is on court and misses, Coach Leo scores)
+        if (pickleBallState.z > TENNIS_CENTER.z + 9.0 && pickleBallState.vz > 0) {
+          pickleBallState.vz = -10.2 - Math.random() * 2.0;
+          pickleBallState.vx = (Math.random() - 0.5) * 5.4;
           const playerDistToBall = Math.hypot(
             playerState.x - pickleBallState.x,
             playerState.z - pickleBallState.z
           );
-          if (playerDistToBall < 4.9 || playerState.hitTimer > 0) {
-            soundEngine.playPickleballHit();
-            playerState.hitTimer = 0.38;
+          if (playerDistToBall < 5.4 || playerState.hitTimer > 0) {
+            soundEngine.playTennisHit(playerState.hitTimer > 0);
+            playerState.hitTimer = 0.4;
             setPickleballScore((s) => s + 1);
             setXp((x) => x + 25);
-            showToast('Pickleball Smash! 🏓 +25 XP', 'Great return over the net!', '#0EA5E9');
-          } else if (lastDetectedSportsZone === 'pickleball') {
+            showToast('Tennis Forehand Winner! 🎾 +25 XP', 'Crisp shot over the net!', '#10B981');
+            tennisScoreCooldown = 1.0;
+          } else if (lastDetectedSportsZone === 'tennis') {
             setAiPickleballScore((s) => s + 1);
-            showToast('Coach Leo Point! 🏓', 'Move closer or press HIT (G) to return the ball!', '#F59E0B');
+            showToast('Coach Leo Point! 🎾', 'Move closer or press SWING (G) to return!', '#F59E0B');
           }
         }
 
@@ -4322,6 +5270,20 @@ export function EraVerse() {
           6,
           dt
         );
+
+        // Animate Grandstand Spectators cheering & tracking the tennis ball
+        for (let i = 0; i < tennisSpectators.length; i++) {
+          const spec = tennisSpectators[i];
+          if (tennisScoreCooldown > 0) {
+            spec.position.y = spec.userData.baseY + Math.abs(Math.sin(elapsed * 12 + spec.userData.phase)) * 0.28;
+          } else {
+            spec.position.y = spec.userData.baseY;
+          }
+          if (spec.userData.headPivot) {
+            const ballRelZ = (pickleBallState.z - spec.position.z) * 0.035;
+            spec.userData.headPivot.rotation.y = THREE.MathUtils.clamp(ballRelZ, -0.5, 0.5);
+          }
+        }
       }
 
       // Dynamic Pop-Up Era Gems (💎) & Era Dollars (💵) Collection & Respawn Loop
@@ -4360,22 +5322,30 @@ export function EraVerse() {
             setXp((x) => x + 30);
 
             if (co.kind === 'gem') {
-              setEraGems((gm) => {
-                const next = gm + co.amount;
-                try {
-                  localStorage.setItem('eraverse_gems_v2', String(next));
-                } catch (_e) {}
-                return next;
-              });
+              if (isSuperAdminTeacherJan) {
+                setEraGems((gm) => {
+                  const next = gm + co.amount;
+                  try {
+                    localStorage.setItem('eraverse_gems_v2', String(next));
+                  } catch (_e) {}
+                  return next;
+                });
+              } else {
+                setEraGems(0);
+              }
               showToast(`💎 +${co.amount} Era Gems Collected!`, 'Walk around campus to collect more popping Era Gems!', '#EC4899');
             } else {
-              setEraDollars((dl) => {
-                const next = dl + co.amount;
-                try {
-                  localStorage.setItem('eraverse_dollars_v2', String(next));
-                } catch (_e) {}
-                return next;
-              });
+              if (isSuperAdminTeacherJan) {
+                setEraDollars((dl) => {
+                  const next = dl + co.amount;
+                  try {
+                    localStorage.setItem('eraverse_dollars_v2', String(next));
+                  } catch (_e) {}
+                  return next;
+                });
+              } else {
+                setEraDollars(0);
+              }
               showToast(`💵 +$${co.amount} Era Dollars Collected!`, 'Spend your Era Dollars & Era Gems in EraSHOP!', '#10B981');
             }
           }
@@ -4708,7 +5678,7 @@ export function EraVerse() {
               <span className="text-[9px] font-extrabold uppercase tracking-wider text-pink-300 leading-none">
                 Era Gems
               </span>
-              <span className="text-sm font-black text-white leading-tight">{eraGems.toLocaleString()}</span>
+              <span className="text-sm font-black text-white leading-tight">{(isSuperAdminTeacherJan ? eraGems : 0).toLocaleString()}</span>
             </div>
           </div>
 
@@ -4719,7 +5689,7 @@ export function EraVerse() {
               <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300 leading-none">
                 Era Dollar
               </span>
-              <span className="text-sm font-black text-white leading-tight">${eraDollars.toLocaleString()}</span>
+              <span className="text-sm font-black text-white leading-tight">${(isSuperAdminTeacherJan ? eraDollars : 0).toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -4752,7 +5722,7 @@ export function EraVerse() {
             className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl shadow-lg border border-pink-400/40 transition-all cursor-pointer animate-bounce"
           >
             <ShoppingBag className="w-4 h-4 text-amber-200" />
-            <span>EraSHOP (💎 {eraGems} • 💵 ${eraDollars})</span>
+            <span>EraSHOP (💎 {isSuperAdminTeacherJan ? eraGems : 0} • 💵 ${isSuperAdminTeacherJan ? eraDollars : 0})</span>
           </button>
         )}
 
@@ -5525,8 +6495,8 @@ export function EraVerse() {
           }}
           initialTab={showCustomizerModal ? 'customizer' : eraShopInitialTab}
           initialCategory={eraShopInitialCat}
-          eraGems={eraGems}
-          eraDollars={eraDollars}
+          eraGems={isSuperAdminTeacherJan ? eraGems : 0}
+          eraDollars={isSuperAdminTeacherJan ? eraDollars : 0}
           ownedItems={ownedShopItems}
           isAdmin={isAdmin}
           playerProfile={playerProfile}
@@ -5604,8 +6574,8 @@ export function EraVerse() {
           }}
           onRewardGems={(gemsWon, dollarsWon, reason) => {
             soundEngine.playGoalCheer();
-            const nextGems = eraGems + gemsWon;
-            const nextDollars = eraDollars + dollarsWon;
+            const nextGems = isSuperAdminTeacherJan ? eraGems + gemsWon : 0;
+            const nextDollars = isSuperAdminTeacherJan ? eraDollars + dollarsWon : 0;
             setEraGems(nextGems);
             setEraDollars(nextDollars);
             persistAvatarCustomization(playerProfile, nextGems, ownedShopItems, nextDollars);
@@ -5647,8 +6617,8 @@ export function EraVerse() {
         <EraGamesModal
           isOpen={activeBuildingModal === 'speaking'}
           onClose={() => setActiveBuildingModal(null)}
-          eraGems={eraGems}
-          eraDollars={eraDollars}
+          eraGems={isSuperAdminTeacherJan ? eraGems : 0}
+          eraDollars={isSuperAdminTeacherJan ? eraDollars : 0}
           onOpenEraShop={() => {
             soundEngine.playUiClick();
             setEraShopInitialTab('shop');
@@ -5657,8 +6627,8 @@ export function EraVerse() {
           }}
           onRewardGems={(gemsWon, xpWon, dollarsWon, gameTitle) => {
             soundEngine.playGoalCheer();
-            const nextGems = eraGems + gemsWon;
-            const nextDollars = eraDollars + dollarsWon;
+            const nextGems = isSuperAdminTeacherJan ? eraGems + gemsWon : 0;
+            const nextDollars = isSuperAdminTeacherJan ? eraDollars + dollarsWon : 0;
             setEraGems(nextGems);
             setEraDollars(nextDollars);
             setXp((x) => x + xpWon);

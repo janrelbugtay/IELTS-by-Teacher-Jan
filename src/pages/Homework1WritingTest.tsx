@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { createSubmissionNotification } from '../lib/notificationService';
 
 export const Homework1WritingTest = ({ submissionId }: { submissionId?: string }) => {
     const navigate = useNavigate();
@@ -197,12 +198,14 @@ export const Homework1WritingTest = ({ submissionId }: { submissionId?: string }
         setIsSubmitted(true);
         if (user) {
             try {
-                await addDoc(collection(db, 'submissions'), {
+                const docRef = await addDoc(collection(db, 'submissions'), {
                     userId: user.uid,
-                    studentName: candidateNameRef.current || 'CANDIDATE',
+                    studentName: candidateNameRef.current || user.displayName || 'CANDIDATE',
                     assignmentId: 'ielts-writing-homework-1',
                     assignmentTitle: 'IELTS Writing Homework 1',
                     assignmentType: 'writing',
+                    isHomework: true,
+                    type: 'homework',
                     createdAt: serverTimestamp(),
                     status: 'submitted',
                     answers: JSON.stringify({ part1: text1Ref.current, part2: text2Ref.current }),
@@ -210,6 +213,15 @@ export const Homework1WritingTest = ({ submissionId }: { submissionId?: string }
                     timeSpent: 3600 - timeLeft,
                     requiresEvaluation: false 
                 });
+
+                createSubmissionNotification({
+                    userId: user.uid,
+                    studentName: candidateNameRef.current || user.displayName || 'Candidate',
+                    assignmentTitle: 'IELTS Writing Homework 1',
+                    type: 'homework',
+                    testType: 'writing',
+                    submissionId: docRef.id
+                }).catch(console.warn);
             } catch (error) {
                 console.error("Failed to save submission", error);
             }

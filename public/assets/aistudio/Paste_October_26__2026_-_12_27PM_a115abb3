@@ -1,0 +1,2792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Era Tennis Court — Lakeside Center Court PBR</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #8bb8e8;
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+        }
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+        #game-canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: pointer;
+        }
+
+        /* Authentic Metallic Dark Glass Pills matching screenshot */
+        .argon-pill {
+            background: linear-gradient(180deg, rgba(38, 43, 51, 0.88) 0%, rgba(18, 21, 26, 0.94) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.22);
+        }
+        .argon-pill-btn {
+            background: linear-gradient(180deg, rgba(32, 37, 44, 0.86) 0%, rgba(15, 18, 22, 0.94) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            transition: all 0.15s ease;
+        }
+        .argon-pill-btn:hover {
+            border-color: rgba(255, 255, 255, 0.48);
+            transform: translateY(-1px);
+            background: linear-gradient(180deg, rgba(48, 55, 65, 0.92) 0%, rgba(22, 26, 32, 0.96) 100%);
+        }
+        .argon-pill-btn:active {
+            transform: translateY(0) scale(0.97);
+        }
+
+        /* Golden Server Floating Tag */
+        .server-tag {
+            background: linear-gradient(180deg, #ffec64 0%, #f5b916 100%);
+            border: 2px solid #9e6b00;
+            color: #1c1917;
+            box-shadow: 0 5px 14px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -100%);
+            transition: opacity 0.15s ease;
+        }
+        .server-tag::after {
+            content: '';
+            position: absolute;
+            bottom: -7px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 7px 6px 0;
+            border-style: solid;
+            border-color: #9e6b00 transparent;
+            display: block;
+            width: 0;
+        }
+
+        /* Floating Shot Feedback */
+        @keyframes floatCallout {
+            0% { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+            20% { transform: translate(-50%, -75%) scale(1.1); opacity: 1; }
+            80% { transform: translate(-50%, -105%) scale(1.0); opacity: 1; }
+            100% { transform: translate(-50%, -135%) scale(0.9); opacity: 0; }
+        }
+        .shot-popup {
+            animation: floatCallout 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="text-white antialiased select-none overflow-hidden">
+
+    <!-- Ultra-Sharp 3D Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- 2D Projected World Labels (Golden "Server" Badge, Active Ring & Timing Popups) -->
+    <div id="world-ui-layer" class="fixed inset-0 pointer-events-none overflow-hidden z-10">
+        <div id="server-badge" class="server-tag absolute px-3.5 py-0.5 rounded-lg font-outfit font-extrabold text-xs sm:text-sm tracking-tight whitespace-nowrap">
+            Server
+        </div>
+        <div id="floating-callouts" class="fixed inset-0"></div>
+    </div>
+
+    <!-- TOP LEFT: Era Tennis Court Brand Pill & Red Team Set / Game Counter -->
+    <div class="fixed top-3.5 left-4 z-30 pointer-events-auto flex items-center gap-2">
+        <div class="argon-pill px-3.5 py-1.5 rounded-full flex items-center gap-2 border border-emerald-400/40">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+            <span class="font-outfit font-extrabold text-xs tracking-wider uppercase text-emerald-300">Era Tennis Court</span>
+        </div>
+        <div class="argon-pill px-3 py-1.5 rounded-full flex items-center gap-2">
+            <div id="red-game-dot-1" class="w-3.5 h-3.5 rounded-full border border-white/40 bg-white/10 transition-colors"></div>
+            <div id="red-game-dot-2" class="w-3.5 h-3.5 rounded-full border border-white/40 bg-white/10 transition-colors"></div>
+            <span id="red-games-count" class="text-[11px] font-bold text-red-300 ml-0.5 font-mono">0</span>
+        </div>
+    </div>
+
+    <!-- TOP CENTER: Main Broadcast Scoreboard with 4 Character Portraits -->
+    <div class="fixed top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+        <div class="argon-pill px-3.5 py-1.5 rounded-full flex items-center gap-3 sm:gap-5 border-2 border-white/30">
+            <!-- Red Team Avatars (2 Portraits) -->
+            <div class="flex items-center gap-1.5">
+                <!-- Red Avatar 1 -->
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-b from-red-500 to-red-800 p-0.5 border border-white/50 shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                        <circle cx="18" cy="18" r="18" fill="#991b1b"/>
+                        <path d="M7 36 C7 26 29 26 29 36" fill="#dc2626"/>
+                        <circle cx="18" cy="15.5" r="8" fill="#f3c6a5"/>
+                        <path d="M10 13 C10 7 26 7 26 13" fill="#4a2511"/>
+                        <rect x="10" y="10.5" width="16" height="2.6" rx="1" fill="#ffffff"/>
+                        <circle cx="15" cy="15.5" r="1.2" fill="#1e293b"/>
+                        <circle cx="21" cy="15.5" r="1.2" fill="#1e293b"/>
+                        <path d="M15.5 19 Q18 20.8 20.5 19" stroke="#7c2d12" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <!-- Red Avatar 2 -->
+                <div id="avatar-red-2" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-b from-red-500 to-red-800 p-0.5 border border-white/50 shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                        <circle cx="18" cy="18" r="18" fill="#7f1d1d"/>
+                        <path d="M7 36 C7 26 29 26 29 36" fill="#ef4444"/>
+                        <circle cx="18" cy="15.5" r="8" fill="#e0a984"/>
+                        <path d="M9.5 14 C9.5 6.5 26.5 6.5 26.5 14" fill="#6b3410"/>
+                        <rect x="10" y="10.8" width="16" height="2.5" rx="1" fill="#ffffff"/>
+                        <circle cx="15" cy="15.5" r="1.2" fill="#1e293b"/>
+                        <circle cx="21" cy="15.5" r="1.2" fill="#1e293b"/>
+                        <path d="M15.5 19 Q18 20.8 20.5 19" stroke="#7c2d12" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Score Digits (00 - 00) -->
+            <div class="px-2 sm:px-3 flex items-center gap-2 font-outfit font-bold text-xl sm:text-2xl tracking-wider text-white drop-shadow">
+                <span id="hud-score-red">00</span>
+                <span class="text-white/50 font-normal">-</span>
+                <span id="hud-score-blue">00</span>
+            </div>
+
+            <!-- Blue Team Avatars (2 Portraits) -->
+            <div class="flex items-center gap-1.5">
+                <!-- Blue Avatar 1 -->
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-b from-blue-500 to-blue-900 p-0.5 border border-white/50 shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                        <circle cx="18" cy="18" r="18" fill="#1e3a8a"/>
+                        <path d="M7 36 C7 26 29 26 29 36" fill="#2563eb"/>
+                        <circle cx="18" cy="15.5" r="8" fill="#f1c27d"/>
+                        <path d="M9.5 13 L12 7 L16 10 L18 6 L21 10 L24 7 L26.5 13 Z" fill="#172554"/>
+                        <rect x="10" y="10.8" width="16" height="2.5" rx="1" fill="#ffffff"/>
+                        <circle cx="15" cy="15.5" r="1.2" fill="#0f172a"/>
+                        <circle cx="21" cy="15.5" r="1.2" fill="#0f172a"/>
+                        <path d="M15.5 19.2 Q18 18 20.5 19.2" stroke="#1e293b" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <!-- Blue Avatar 2 -->
+                <div id="avatar-blue-2" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-b from-blue-500 to-blue-900 p-0.5 border border-white/50 shadow-inner flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 36 36" class="w-full h-full">
+                        <circle cx="18" cy="18" r="18" fill="#172554"/>
+                        <path d="M7 36 C7 26 29 26 29 36" fill="#3b82f6"/>
+                        <circle cx="18" cy="15.5" r="8" fill="#d2996c"/>
+                        <path d="M9.5 13 L13 6.5 L18 9.5 L23 6.5 L26.5 13 Z" fill="#0f172a"/>
+                        <rect x="10" y="10.8" width="16" height="2.5" rx="1" fill="#ffffff"/>
+                        <circle cx="15" cy="15.5" r="1.2" fill="#0f172a"/>
+                        <circle cx="21" cy="15.5" r="1.2" fill="#0f172a"/>
+                        <path d="M15.5 19 Q18 20.5 20.5 19" stroke="#1e293b" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtle Match Status Sub-pill (Deuce / Replay / Mode) -->
+        <div id="sub-status-banner" class="mt-1.5 text-center">
+            <span id="match-status-text" class="px-3 py-0.5 rounded-full bg-black/55 backdrop-blur-md text-[11px] font-semibold tracking-wide text-emerald-300 border border-white/15 shadow">
+                ERA TENNIS COURT • UPWARD FLICK / CLICK OR SPACE TO SERVE
+            </span>
+        </div>
+    </div>
+
+    <!-- TOP RIGHT: Blue Team Set / Game Counter Pill & Tactics -->
+    <div class="fixed top-3.5 right-4 z-30 pointer-events-auto flex items-center gap-2">
+        <button id="btn-tactic" onclick="cycleDoublesTactic()" class="argon-pill-btn px-3 py-1.5 rounded-full text-[11px] font-semibold text-amber-300 hidden md:inline-flex items-center gap-1.5">
+            <span>Tactic:</span>
+            <span id="tactic-label" class="text-white font-bold">Classic</span>
+        </button>
+        <div class="argon-pill px-3 py-1.5 rounded-full flex items-center gap-2">
+            <span id="blue-games-count" class="text-[11px] font-bold text-blue-300 mr-0.5 font-mono">0</span>
+            <div id="blue-game-dot-1" class="w-3.5 h-3.5 rounded-full border border-white/40 bg-white/10 transition-colors"></div>
+            <div id="blue-game-dot-2" class="w-3.5 h-3.5 rounded-full border border-white/40 bg-white/10 transition-colors"></div>
+        </div>
+    </div>
+
+    <!-- WEBCAM MOTION PIP PANEL (Appears above Bottom-Right when enabled) -->
+    <!-- BOTTOM LEFT: Era Audio, Camera Mode, Instant Replay, Switch & Doubles Pills -->
+    <div class="fixed bottom-3.5 left-4 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
+        <button id="btn-lyria" onclick="toggleLyriaAudio()" class="argon-pill-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-white flex items-center gap-2">
+            <span id="lyria-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+            <span id="lyria-label">Era Audio: Center Court</span>
+        </button>
+
+        <button id="btn-camera" onclick="cycleCameraMode()" class="argon-pill-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-white">
+            Cam: <span id="cam-label" class="text-amber-300">Rally</span>
+        </button>
+
+        <button id="btn-replay" onclick="triggerInstantReplay()" class="argon-pill-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-white flex items-center gap-1.5">
+            <span>Replay</span>
+        </button>
+
+        <button id="btn-poach" onclick="triggerNetPoachOrSwitch()" class="argon-pill-btn px-3 py-1.5 rounded-full text-xs font-semibold text-sky-300 flex items-center gap-1" title="Switch Active Player / Net Poach (Tab or E)">
+            <span>Control:</span>
+            <span id="control-label" class="text-white font-bold">Auto-Assist</span>
+        </button>
+
+        <button id="btn-mode" onclick="toggleDoublesMode()" class="argon-pill-btn px-3 py-1.5 rounded-full text-xs font-semibold text-emerald-300 hidden sm:inline-flex items-center gap-1">
+            <span id="mode-label">2v2 Doubles</span>
+        </button>
+    </div>
+
+    <!-- BOTTOM RIGHT: Era Super Shot Charge, Timing Bar Card & Webcam Motion Pill -->
+    <div class="fixed bottom-3.5 right-4 z-30 flex flex-col items-end gap-2 pointer-events-auto">
+        <!-- Timing & Era Energy Meter Box -->
+        <div class="argon-pill px-3.5 py-2.5 rounded-xl w-64 sm:w-76 border border-white/25">
+            <!-- Era Super Shot Charge Bar -->
+            <div class="flex items-center justify-between text-[9px] font-bold tracking-wider uppercase mb-1">
+                <span class="text-cyan-300 flex items-center gap-1">
+                    <span id="super-ready-dot" class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                    <span id="super-status-text">ERA SUPER CHARGE</span>
+                </span>
+                <span class="text-slate-300 font-mono"><span id="super-pct">0</span>% [Q / SHIFT]</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-900/90 overflow-hidden border border-white/15 mb-2">
+                <div id="super-fill-bar" class="h-full bg-gradient-to-r from-cyan-400 via-emerald-400 to-yellow-300 transition-all duration-150" style="width: 0%;"></div>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] font-bold tracking-wider uppercase mb-1">
+                <span id="prompt-action-label" class="text-slate-200">SERVE TOSS</span>
+                <span class="text-amber-400">FLICK / SPACE / J K L</span>
+            </div>
+            <!-- 3-Zone Timing Bar: EARLY (Cross) | SWEET SPOT | LATE (Line) -->
+            <div class="relative w-full h-4 rounded-md overflow-hidden flex text-[9px] font-extrabold tracking-tighter text-white shadow-inner border border-black/60">
+                <div class="w-[36%] bg-gradient-to-r from-blue-600 to-blue-500 flex items-center justify-center border-r border-black/30">
+                    EARLY (Cross)
+                </div>
+                <div class="w-[28%] bg-gradient-to-r from-emerald-500 via-lime-400 to-emerald-500 text-slate-950 flex items-center justify-center font-black">
+                    SWEET SPOT
+                </div>
+                <div class="w-[36%] bg-gradient-to-r from-amber-500 to-red-500 flex items-center justify-center border-l border-black/30">
+                    LATE (Line)
+                </div>
+                <!-- Live Timing Marker Needle -->
+                <div id="timing-needle" class="absolute top-0 bottom-0 w-1.5 -ml-0.5 bg-white shadow-[0_0_8px_#fff] border-x border-slate-900 transition-all duration-75" style="left: 50%;"></div>
+            </div>
+        </div>
+
+        <!-- Webcam Motion Toggle Pill -->
+        <button id="btn-webcam" onclick="toggleWebcam()" class="argon-pill-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-white flex items-center gap-2">
+            <span id="webcam-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+            <span>Webcam Motion</span>
+        </button>
+    </div>
+
+    <script>
+        /***********************************************************************
+         * ERA TENNIS COURT — ULTRA-SHARP LAKESIDE GRASS STADIUM & ARTICULATED 3D CHARACTERS
+         ***********************************************************************/
+
+        // --- COURT DIMENSIONS (Realistic Proportions Matching Screenshot) ---
+        const COURT = {
+            singlesWidth: 10.5,
+            doublesWidth: 13.6,
+            length: 25.0,
+            halfLength: 12.5,
+            serviceLine: 6.4,
+            netHeight: 1.0,
+            gravity: 19.2
+        };
+
+        // --- GAME & MATCH STATE ---
+        const state = {
+            phase: 'SERVE_WAIT',     // 'SERVE_WAIT', 'SERVE_TOSS', 'RALLY', 'POINT_OVER', 'REPLAY'
+            isDoubles: true,         // 2v2 Doubles (4 Players) by default
+            serverIndex: 0,          // 0: Red Baseline, 1: Blue Baseline, 2: Red Partner, 3: Blue Partner
+            serveSide: 1,            // 1 = Deuce (Right side), -1 = Ad (Left side)
+            hittingTeam: 'red',      // 'red' (near court) or 'blue' (far court)
+            bounceCount: 0,
+            rallyCount: 0,
+
+            // Character Control, Formation & Era Super Charge
+            controlledRedIdx: 0,     // 0 = Baseline Red, 2 = Net Partner Red
+            autoSwitchRed: true,     // Automatically routes control to best Red athlete
+            doublesTactic: 'Classic',// 'Classic', 'I-Formation', 'Net Rush'
+            eraCharge: 35,           // 0 to 100% Super Shot meter
+
+            // Scoring
+            redPoints: 0,
+            bluePoints: 0,
+            redGames: 0,
+            blueGames: 0,
+
+            // Camera & Audio
+            cameraMode: 'Rally',     // 'Rally', 'Broadcast', 'Low', 'Flyover'
+            lyriaEnabled: true,
+            webcamEnabled: false,
+
+            // Input & Timing
+            pointerX: 0,
+            pointerY: 0,
+            keys: {},
+            lastTimingValue: 0.5,    // 0.0 = Early (Cross), 0.5 = Sweet Spot, 1.0 = Late (Line)
+
+            // Instant Replay Circular Buffer
+            replayFrames: [],
+            replayPlaybackIdx: 0
+        };
+
+        /***********************************************************************
+         * 1. LYRIA-3 STYLE AMBIENT & ORCHESTRAL SYNTH AUDIO ENGINE
+         ***********************************************************************/
+        class LyriaAudioSystem {
+            constructor() {
+                this.ctx = null;
+                this.timer = null;
+                this.step = 0;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                if (state.lyriaEnabled && !this.timer) {
+                    this.startAmbientSoundtrack();
+                }
+            }
+
+            playRacketHit(quality = 'sweet', isSmash = false) {
+                if (!state.lyriaEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // Crisp string bed thwack
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = quality === 'sweet' ? 'triangle' : 'sine';
+                const freq = isSmash ? 195 : (quality === 'sweet' ? 165 : 140);
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(46, now + 0.12);
+
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.14);
+
+                // Sweet spot crystalline harmonic chime
+                if (quality === 'sweet' || isSmash) {
+                    const chime = this.ctx.createOscillator();
+                    const cGain = this.ctx.createGain();
+                    chime.type = 'sine';
+                    chime.frequency.setValueAtTime(isSmash ? 1174.66 : 987.77, now);
+                    chime.frequency.exponentialRampToValueAtTime(1567.98, now + 0.18);
+                    cGain.gain.setValueAtTime(0.14, now);
+                    cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+                    chime.connect(cGain);
+                    cGain.connect(this.ctx.destination);
+                    chime.start(now);
+                    chime.stop(now + 0.2);
+                }
+            }
+
+            playGrassBounce() {
+                if (!state.lyriaEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(175, now);
+                osc.frequency.exponentialRampToValueAtTime(52, now + 0.075);
+                gain.gain.setValueAtTime(0.24, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.085);
+            }
+
+            playCrowdApplause(isWin = true) {
+                if (!state.lyriaEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // Soft stadium applause noise envelope
+                const bufferSize = this.ctx.sampleRate * 0.65;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(850, now);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.16, now);
+                gain.gain.exponentialRampToValueAtTime(0.005, now + 0.64);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
+
+                // Uplifting chord
+                const chord = isWin ? [523.25, 659.25, 783.99, 1046.5] : [440, 523.25, 659.25, 587.33];
+                chord.forEach((f, idx) => {
+                    const o = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(f, now + idx * 0.06);
+                    g.gain.setValueAtTime(0.1, now + idx * 0.06);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.35);
+                    o.connect(g);
+                    g.connect(this.ctx.destination);
+                    o.start(now + idx * 0.06);
+                    o.stop(now + idx * 0.06 + 0.36);
+                });
+            }
+
+            announce(text) {
+                if (!state.lyriaEnabled || !('speechSynthesis' in window)) return;
+                try {
+                    window.speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.rate = 1.05;
+                    u.pitch = 1.0;
+                    u.volume = 0.6;
+                    window.speechSynthesis.speak(u);
+                } catch (e) {}
+            }
+
+            startAmbientSoundtrack() {
+                if (this.timer) clearInterval(this.timer);
+                // Bright sunny lakeside resort progression ("Center Court Flyover")
+                const chords = [
+                    [261.63, 329.63, 392.00, 493.88], // Cmaj7
+                    [293.66, 369.99, 440.00, 523.25], // D7sus
+                    [220.00, 261.63, 329.63, 392.00], // Am7
+                    [196.00, 246.94, 293.66, 392.00]  // G
+                ];
+                this.timer = setInterval(() => {
+                    if (!state.lyriaEnabled || !this.ctx || this.ctx.state !== 'running') return;
+                    const now = this.ctx.currentTime;
+                    const chord = chords[Math.floor(this.step / 4) % chords.length];
+                    const note = chord[this.step % chord.length];
+
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(note * (state.phase === 'RALLY' ? 2 : 1), now);
+                    gain.gain.setValueAtTime(0.025, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.28);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                    this.step++;
+                }, 260);
+            }
+        }
+
+        const sound = new LyriaAudioSystem();
+
+        /***********************************************************************
+         * 2. ULTRA-SHARP THREE.JS RENDERER & HIGH-RES PROCEDURAL PBR TEXTURES
+         ***********************************************************************/
+        const canvas = document.getElementById('game-canvas');
+        const renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: true,
+            powerPreference: 'high-performance'
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.12;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+
+        const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x9bd1f8);
+        scene.fog = new THREE.FogExp2(0xc4e2f8, 0.0032);
+
+        const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 320);
+        camera.position.set(0, 12.8, 23.8);
+        camera.lookAt(0, 0.6, -1.2);
+
+        // --- NATURAL SUNLIGHT & HEMISPHERE ILLUMINATION ---
+        const hemiLight = new THREE.HemisphereLight(0xf4f9ff, 0x4b7d2c, 0.78);
+        hemiLight.position.set(0, 40, 0);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.35);
+        sunLight.position.set(-16, 28, 14);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 4096;
+        sunLight.shadow.mapSize.height = 4096;
+        sunLight.shadow.camera.near = 4;
+        sunLight.shadow.camera.far = 75;
+        const shadowBounds = 22;
+        sunLight.shadow.camera.left = -shadowBounds;
+        sunLight.shadow.camera.right = shadowBounds;
+        sunLight.shadow.camera.top = shadowBounds;
+        sunLight.shadow.camera.bottom = -shadowBounds;
+        sunLight.shadow.bias = -0.0003;
+        scene.add(sunLight);
+
+        // --- HIGH-DEFINITION 2048x2048 GRASS COURT TEXTURE + BUMP/NORMAL GENERATOR ---
+        function generateHighResGrassCourtTextures() {
+            const size = 2048;
+            const colorCanvas = document.createElement('canvas');
+            colorCanvas.width = size;
+            colorCanvas.height = size;
+            const ctx = colorCanvas.getContext('2d');
+
+            const bumpCanvas = document.createElement('canvas');
+            bumpCanvas.width = 1024;
+            bumpCanvas.height = 1024;
+            const bCtx = bumpCanvas.getContext('2d');
+
+            // Base lush championship lawn green
+            ctx.fillStyle = '#6db33f';
+            ctx.fillRect(0, 0, size, size);
+
+            // Dual-directional mowed grass checkerboard stripes (matching screenshot!)
+            const numCols = 14;
+            const numRows = 22;
+            const colW = size / numCols;
+            const rowH = size / numRows;
+
+            for (let r = 0; r < numRows; r++) {
+                for (let c = 0; c < numCols; c++) {
+                    const isLightCol = c % 2 === 0;
+                    const isLightRow = r % 2 === 0;
+                    let luma = 0;
+                    if (isLightCol && isLightRow) luma = 14;
+                    else if (!isLightCol && !isLightRow) luma = -12;
+                    else if (isLightCol && !isLightRow) luma = 4;
+                    else luma = -4;
+
+                    const R = Math.min(255, Math.max(0, 108 + luma));
+                    const G = Math.min(255, Math.max(0, 178 + luma));
+                    const B = Math.min(255, Math.max(0, 60 + Math.round(luma * 0.6)));
+                    ctx.fillStyle = `rgb(${R},${G},${B})`;
+                    ctx.fillRect(c * colW, r * rowH, colW + 1, rowH + 1);
+                }
+            }
+
+            // Add hundreds of thousands of sharp micro grass blades & organic turf grain
+            const imgData = ctx.getImageData(0, 0, size, size);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const grain = (Math.random() - 0.5) * 18;
+                data[i]     = Math.min(255, Math.max(0, data[i] + grain * 0.8));
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + grain));
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + grain * 0.5));
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            // Subtle baseline footwork wear patches
+            const wearGrad1 = ctx.createRadialGradient(size * 0.5, size * 0.82, 10, size * 0.5, size * 0.82, 190);
+            wearGrad1.addColorStop(0, 'rgba(138, 125, 70, 0.22)');
+            wearGrad1.addColorStop(1, 'rgba(138, 125, 70, 0)');
+            ctx.fillStyle = wearGrad1;
+            ctx.fillRect(0, 0, size, size);
+
+            const wearGrad2 = ctx.createRadialGradient(size * 0.5, size * 0.18, 10, size * 0.5, size * 0.18, 190);
+            wearGrad2.addColorStop(0, 'rgba(138, 125, 70, 0.22)');
+            wearGrad2.addColorStop(1, 'rgba(138, 125, 70, 0)');
+            ctx.fillStyle = wearGrad2;
+            ctx.fillRect(0, 0, size, size);
+
+            // --- CRISP CHALK WHITE COURT LINES ---
+            // Plane dimensions: 34m wide x 38m long
+            const planeW = 34.0;
+            const planeL = 38.0;
+            const toX = (m) => (0.5 + m / planeW) * size;
+            const toY = (m) => (0.5 + m / planeL) * size;
+
+            ctx.strokeStyle = '#fafdff';
+            ctx.fillStyle = '#fafdff';
+            ctx.lineCap = 'square';
+
+            const lineWidthPx = (0.11 / planeW) * size;
+            ctx.lineWidth = lineWidthPx;
+
+            const hwDoubles = COURT.doublesWidth / 2;
+            const hwSingles = COURT.singlesWidth / 2;
+            const hl = COURT.halfLength;
+            const sl = COURT.serviceLine;
+
+            // Outer Doubles Rectangle
+            ctx.strokeRect(
+                toX(-hwDoubles),
+                toY(-hl),
+                (COURT.doublesWidth / planeW) * size,
+                (COURT.length / planeL) * size
+            );
+
+            // Singles Sidelines
+            ctx.beginPath();
+            ctx.moveTo(toX(-hwSingles), toY(-hl));
+            ctx.lineTo(toX(-hwSingles), toY(hl));
+            ctx.moveTo(toX(hwSingles), toY(-hl));
+            ctx.lineTo(toX(hwSingles), toY(hl));
+
+            // Service Lines
+            ctx.moveTo(toX(-hwSingles), toY(-sl));
+            ctx.lineTo(toX(hwSingles), toY(-sl));
+            ctx.moveTo(toX(-hwSingles), toY(sl));
+            ctx.lineTo(toX(hwSingles), toY(sl));
+
+            // Center Service Line
+            ctx.moveTo(toX(0), toY(-sl));
+            ctx.lineTo(toX(0), toY(sl));
+
+            // Baseline Center Marks
+            ctx.moveTo(toX(0), toY(-hl));
+            ctx.lineTo(toX(0), toY(-hl + 0.45));
+            ctx.moveTo(toX(0), toY(hl));
+            ctx.lineTo(toX(0), toY(hl - 0.45));
+            ctx.stroke();
+
+            // High-Frequency Grass Blade Bump Map
+            const bImg = bCtx.createImageData(1024, 1024);
+            for (let i = 0; i < bImg.data.length; i += 4) {
+                const v = Math.floor(110 + Math.random() * 145);
+                bImg.data[i] = v;
+                bImg.data[i + 1] = v;
+                bImg.data[i + 2] = v;
+                bImg.data[i + 3] = 255;
+            }
+            bCtx.putImageData(bImg, 0, 0);
+
+            const colorTex = new THREE.CanvasTexture(colorCanvas);
+            colorTex.anisotropy = maxAnisotropy;
+            colorTex.encoding = THREE.sRGBEncoding;
+            colorTex.needsUpdate = true;
+
+            const bumpTex = new THREE.CanvasTexture(bumpCanvas);
+            bumpTex.anisotropy = maxAnisotropy;
+            bumpTex.wrapS = bumpTex.wrapT = THREE.RepeatWrapping;
+            bumpTex.repeat.set(6, 6);
+
+            return { colorTex, bumpTex, planeW, planeL };
+        }
+
+        // Helper for "Era Tennis Court" Wall Branding Banners
+        function createWallBrandTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512;
+            c.height = 128;
+            const ctx = c.getContext('2d');
+            ctx.clearRect(0, 0, 512, 128);
+            ctx.font = 'italic 700 42px "Outfit", Georgia, serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.48)';
+            ctx.shadowBlur = 5;
+            ctx.fillText('Era Tennis Court', 256, 64);
+            const tex = new THREE.CanvasTexture(c);
+            tex.anisotropy = maxAnisotropy;
+            return tex;
+        }
+
+        // Helper for Corrugated Roof Normal/Bump Texture
+        function createCorrugatedRoofTexture() {
+            const c = document.createElement('canvas');
+            c.width = 256;
+            c.height = 256;
+            const ctx = c.getContext('2d');
+            for (let x = 0; x < 256; x += 8) {
+                ctx.fillStyle = x % 16 === 0 ? '#38762b' : '#2c5e21';
+                ctx.fillRect(x, 0, 8, 256);
+            }
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(14, 4);
+            tex.anisotropy = maxAnisotropy;
+            return tex;
+        }
+
+        /***********************************************************************
+         * 3. BUILD LAKESIDE STADIUM, GRANDSTANDS, 140+ SPECTATORS, TREES & LAKE
+         ***********************************************************************/
+        const spectators = [];
+
+        function buildLakesideStadium() {
+            const worldGroup = new THREE.Group();
+
+            // 1. Grass Court Ground Plane
+            const { colorTex, bumpTex, planeW, planeL } = generateHighResGrassCourtTextures();
+            const courtGeo = new THREE.PlaneGeometry(planeW, planeL);
+            const courtMat = new THREE.MeshStandardMaterial({
+                map: colorTex,
+                bumpMap: bumpTex,
+                bumpScale: 0.025,
+                roughness: 0.78,
+                metalness: 0.02
+            });
+            const courtMesh = new THREE.Mesh(courtGeo, courtMat);
+            courtMesh.rotation.x = -Math.PI / 2;
+            courtMesh.receiveShadow = true;
+            worldGroup.add(courtMesh);
+
+            // 2. Detailed Braided Tennis Net with Catenary Sag & Center Strap
+            const netGroup = new THREE.Group();
+            const netWidth = COURT.doublesWidth + 1.4;
+
+            // Create crisp braided alpha net texture
+            const netCanvas = document.createElement('canvas');
+            netCanvas.width = 128;
+            netCanvas.height = 128;
+            const nCtx = netCanvas.getContext('2d');
+            nCtx.strokeStyle = '#18181b';
+            nCtx.lineWidth = 14;
+            nCtx.strokeRect(0, 0, 128, 128);
+            const netTex = new THREE.CanvasTexture(netCanvas);
+            netTex.wrapS = netTex.wrapT = THREE.RepeatWrapping;
+            netTex.repeat.set(48, 4);
+            netTex.anisotropy = maxAnisotropy;
+
+            const netGeo = new THREE.PlaneGeometry(netWidth, COURT.netHeight - 0.06, 24, 1);
+            // Apply subtle realistic catenary dip in the center of the net
+            const posAttr = netGeo.attributes.position;
+            for (let i = 0; i < posAttr.count; i++) {
+                const vx = posAttr.getX(i);
+                const vy = posAttr.getY(i);
+                const normX = vx / (netWidth / 2);
+                const sag = (1 - normX * normX) * 0.05;
+                posAttr.setY(i, vy - sag);
+            }
+            netGeo.computeVertexNormals();
+
+            const netMat = new THREE.MeshStandardMaterial({
+                map: netTex,
+                transparent: true,
+                opacity: 0.88,
+                side: THREE.DoubleSide,
+                roughness: 0.6
+            });
+            const netMesh = new THREE.Mesh(netGeo, netMat);
+            netMesh.position.y = (COURT.netHeight - 0.06) / 2;
+            netMesh.castShadow = true;
+            netGroup.add(netMesh);
+
+            // White Canvas Top Tape (also curved with catenary sag)
+            const tapeGeo = new THREE.BoxGeometry(netWidth, 0.085, 0.055, 24, 1, 1);
+            const tapePos = tapeGeo.attributes.position;
+            for (let i = 0; i < tapePos.count; i++) {
+                const vx = tapePos.getX(i);
+                const normX = vx / (netWidth / 2);
+                tapePos.setY(i, tapePos.getY(i) - (1 - normX * normX) * 0.05);
+            }
+            tapeGeo.computeVertexNormals();
+            const tapeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+            const tapeMesh = new THREE.Mesh(tapeGeo, tapeMat);
+            tapeMesh.position.y = COURT.netHeight;
+            tapeMesh.castShadow = true;
+            netGroup.add(tapeMesh);
+
+            // White Center Strap
+            const strapGeo = new THREE.BoxGeometry(0.08, COURT.netHeight - 0.04, 0.065);
+            const strapMesh = new THREE.Mesh(strapGeo, tapeMat);
+            strapMesh.position.set(0, (COURT.netHeight - 0.04) / 2, 0);
+            netGroup.add(strapMesh);
+
+            // Forest-Green Fluted Net Posts & Brass Caps
+            const postGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.12, 16);
+            const postMat = new THREE.MeshStandardMaterial({ color: 0x1b4d20, roughness: 0.35, metalness: 0.4 });
+            const leftPost = new THREE.Mesh(postGeo, postMat);
+            leftPost.position.set(-netWidth / 2, 0.56, 0);
+            leftPost.castShadow = true;
+            netGroup.add(leftPost);
+
+            const rightPost = new THREE.Mesh(postGeo, postMat);
+            rightPost.position.set(netWidth / 2, 0.56, 0);
+            rightPost.castShadow = true;
+            netGroup.add(rightPost);
+
+            worldGroup.add(netGroup);
+
+            // 3. Perimeter Green Stadium Walls, Benches & "Argon Tennis" Branding
+            const greenWallMat = new THREE.MeshStandardMaterial({ color: 0x26631f, roughness: 0.65 });
+            const darkPanelMat = new THREE.MeshStandardMaterial({ color: 0x184715, roughness: 0.75 });
+            const whiteCopingMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 });
+            const brandTex = createWallBrandTexture();
+            const brandMat = new THREE.MeshBasicMaterial({ map: brandTex, transparent: true });
+
+            // Back North Wall (-Z)
+            const backWallGroup = new THREE.Group();
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(28.5, 2.5, 0.6), greenWallMat);
+            backWall.position.set(0, 1.25, -17.5);
+            backWall.castShadow = true;
+            backWall.receiveShadow = true;
+            backWallGroup.add(backWall);
+
+            // Recessed Windscreen Panels on North Wall
+            for (let px = -11; px <= 11; px += 4.4) {
+                if (Math.abs(px) < 1) continue;
+                const panel = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.4, 0.08), darkPanelMat);
+                panel.position.set(px, 1.35, -17.18);
+                backWallGroup.add(panel);
+            }
+
+            // "Argon Tennis" Logo on North Wall
+            const northBrand = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), brandMat);
+            northBrand.position.set(0, 1.48, -17.16);
+            backWallGroup.add(northBrand);
+            worldGroup.add(backWallGroup);
+
+            // Player Benches (North Wall & Side Walls matching screenshot)
+            function createCourtBench(x, z, rotY) {
+                const bGroup = new THREE.Group();
+                const benchMat = new THREE.MeshStandardMaterial({ color: 0x245e1e, roughness: 0.5 });
+                const seat = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.12, 0.65), benchMat);
+                seat.position.y = 0.5;
+                seat.castShadow = true;
+                bGroup.add(seat);
+                const back = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.55, 0.1), benchMat);
+                back.position.set(0, 0.8, -0.28);
+                back.castShadow = true;
+                bGroup.add(back);
+                const legL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.55), darkPanelMat);
+                legL.position.set(-1.15, 0.25, 0);
+                bGroup.add(legL);
+                const legR = legL.clone();
+                legR.position.x = 1.15;
+                bGroup.add(legR);
+                bGroup.position.set(x, 0, z);
+                bGroup.rotation.y = rotY;
+                worldGroup.add(bGroup);
+            }
+
+            createCourtBench(-4.8, -16.6, 0);
+            createCourtBench(4.8, -16.6, 0);
+            createCourtBench(-13.1, 4.5, Math.PI / 2);
+            createCourtBench(13.1, 4.5, -Math.PI / 2);
+
+            // 4. Left & Right Covered Grandstands + 140+ Expressive 3D Chibi Spectators
+            const roofTex = createCorrugatedRoofTexture();
+            const roofMat = new THREE.MeshStandardMaterial({ map: roofTex, roughness: 0.55 });
+            const concreteMat = new THREE.MeshStandardMaterial({ color: 0xdbe2ea, roughness: 0.7 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x3b6998, roughness: 0.15, metalness: 0.8 });
+
+            const skinPalette = [0xf5cba7, 0xe0ac69, 0xc68642, 0x8d5524, 0x5c3818, 0xfadbd8];
+            const shirtPalette = [
+                0xef4444, 0x3b82f6, 0xfacc15, 0x10b981, 0xa855f7,
+                0xf97316, 0xec4899, 0x06b6d4, 0x84cc16, 0xffffff
+            ];
+
+            function buildGrandstandSide(sideSign) {
+                // sideSign: -1 = Left Stand, +1 = Right Stand
+                const standGroup = new THREE.Group();
+                const baseX = sideSign * 14.2;
+
+                // Lower Court-Side Green Barrier Wall with White Coping
+                const barrier = new THREE.Mesh(new THREE.BoxGeometry(0.7, 2.0, 35.6), greenWallMat);
+                barrier.position.set(baseX, 1.0, 0);
+                barrier.castShadow = true;
+                barrier.receiveShadow = true;
+                standGroup.add(barrier);
+
+                const coping = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.14, 35.7), whiteCopingMat);
+                coping.position.set(baseX, 2.05, 0);
+                standGroup.add(coping);
+
+                // "Argon Tennis" Signage along Side Barrier Walls
+                [-6.5, 4.5].forEach(zPos => {
+                    const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 0.95), brandMat);
+                    sign.position.set(baseX - sideSign * 0.37, 1.15, zPos);
+                    sign.rotation.y = -sideSign * Math.PI / 2;
+                    standGroup.add(sign);
+                });
+
+                // 3 Tiered Concrete Steps + Seated Expressive 3D Spectators
+                const headGeo = new THREE.SphereGeometry(0.34, 16, 16);
+                const bodyGeo = new THREE.CylinderGeometry(0.24, 0.31, 0.62, 14);
+                const eyeGeo = new THREE.SphereGeometry(0.045, 8, 8);
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111827 });
+
+                for (let row = 0; row < 3; row++) {
+                    const stepX = baseX + sideSign * (1.25 + row * 1.25);
+                    const stepY = 1.6 + row * 0.85;
+
+                    const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.3, stepY, 34.8), concreteMat);
+                    stepMesh.position.set(stepX, stepY / 2, 0);
+                    stepMesh.receiveShadow = true;
+                    standGroup.add(stepMesh);
+
+                    // Populate row with Chibi Spectators
+                    for (let z = -15.5; z <= 15.5; z += 1.32) {
+                        const spec = new THREE.Group();
+                        const skinColor = skinPalette[(Math.abs(Math.round(z * 7)) + row) % skinPalette.length];
+                        const shirtColor = shirtPalette[(Math.abs(Math.round(z * 13)) + row * 3) % shirtPalette.length];
+
+                        const torsoMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.4 });
+                        const headMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.45 });
+
+                        const torso = new THREE.Mesh(bodyGeo, torsoMat);
+                        torso.position.y = 0.31;
+                        torso.castShadow = true;
+                        spec.add(torso);
+
+                        const headPivot = new THREE.Group();
+                        headPivot.position.y = 0.82;
+
+                        const head = new THREE.Mesh(headGeo, headMat);
+                        head.castShadow = true;
+                        headPivot.add(head);
+
+                        // Eyes facing court center
+                        const e1 = new THREE.Mesh(eyeGeo, eyeMat);
+                        e1.position.set(-sideSign * 0.31, 0.04, -0.11);
+                        headPivot.add(e1);
+                        const e2 = new THREE.Mesh(eyeGeo, eyeMat);
+                        e2.position.set(-sideSign * 0.31, 0.04, 0.11);
+                        headPivot.add(e2);
+
+                        spec.add(headPivot);
+
+                        spec.position.set(stepX - sideSign * 0.15, stepY, z + (Math.random() - 0.5) * 0.15);
+                        spec.userData = {
+                            baseY: stepY,
+                            phase: Math.random() * Math.PI * 2,
+                            headPivot,
+                            sideSign
+                        };
+                        standGroup.add(spec);
+                        spectators.push(spec);
+                    }
+                }
+
+                // Back Grandstand Wall & VIP Skybox Windows
+                const backStandX = baseX + sideSign * 4.8;
+                const backStandWall = new THREE.Mesh(new THREE.BoxGeometry(0.8, 6.6, 35.6), greenWallMat);
+                backStandWall.position.set(backStandX, 3.3, 0);
+                backStandWall.castShadow = true;
+                standGroup.add(backStandWall);
+
+                for (let wz = -12; wz <= 12; wz += 6) {
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.35, 4.2), whiteCopingMat);
+                    frame.position.set(backStandX - sideSign * 0.38, 4.9, wz);
+                    standGroup.add(frame);
+                    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.1, 3.9), glassMat);
+                    glass.position.set(backStandX - sideSign * 0.38, 4.9, wz);
+                    standGroup.add(glass);
+                }
+
+                // Slanted Corrugated Green Canopy Roof
+                const roofPivot = new THREE.Group();
+                roofPivot.position.set(baseX + sideSign * 2.2, 6.3, 0);
+                roofPivot.rotation.z = sideSign * 0.16;
+
+                const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.24, 36.2), roofMat);
+                roofSlab.castShadow = true;
+                roofPivot.add(roofSlab);
+
+                const fascia = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.32, 36.3), whiteCopingMat);
+                fascia.position.set(-sideSign * 3.3, 0, 0);
+                roofPivot.add(fascia);
+
+                standGroup.add(roofPivot);
+                worldGroup.add(standGroup);
+            }
+
+            buildGrandstandSide(-1);
+            buildGrandstandSide(1);
+
+            // 5. Lush Deciduous & Cypress Trees + Clubhouse + Lake + Mountain Panorama
+            const foliageColors = [0x3d7a2a, 0x4d8f35, 0x2e631e, 0x5da142];
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+
+            function createLushTree(x, z, scale = 1.0) {
+                const tree = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25 * scale, 0.4 * scale, 2.6 * scale, 8), trunkMat);
+                trunk.position.y = 1.3 * scale;
+                trunk.castShadow = true;
+                tree.add(trunk);
+
+                // Multi-cluster leafy canopy
+                const puffCount = 7;
+                for (let i = 0; i < puffCount; i++) {
+                    const col = foliageColors[i % foliageColors.length];
+                    const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85 });
+                    const r = (1.35 - (i * 0.08)) * scale;
+                    const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 1), mat);
+                    const angle = (i / puffCount) * Math.PI * 2;
+                    const rad = i === 0 ? 0 : 0.75 * scale;
+                    puff.position.set(
+                        Math.cos(angle) * rad,
+                        (2.8 + (i % 3) * 0.95) * scale,
+                        Math.sin(angle) * rad
+                    );
+                    puff.castShadow = true;
+                    tree.add(puff);
+                }
+                tree.position.set(x, 0, z);
+                worldGroup.add(tree);
+            }
+
+            // Dense treeline behind the North Wall matching screenshot
+            const treeCoords = [
+                [-14.5, -20.5, 1.45], [-11.2, -19.5, 1.3], [-8.0, -20.2, 1.5],
+                [-4.5, -19.6, 1.25],  [-1.8, -20.0, 1.15], [1.8, -20.0, 1.15],
+                [4.6, -19.6, 1.28],   [8.2, -20.2, 1.48],  [11.4, -19.5, 1.32],
+                [14.6, -20.5, 1.45],  [-17.5, -22.5, 1.6], [17.5, -22.5, 1.6]
+            ];
+            treeCoords.forEach(([tx, tz, ts]) => createLushTree(tx, tz, ts));
+
+            // Modern Center Clubhouse Building rising behind North Trees
+            const clubGroup = new THREE.Group();
+            const clubBody = new THREE.Mesh(
+                new THREE.BoxGeometry(10.5, 11.5, 6.0),
+                new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 })
+            );
+            clubBody.position.set(0, 5.75, -25.5);
+            clubGroup.add(clubBody);
+
+            for (let wy = 3.5; wy <= 9.5; wy += 2.2) {
+                const winBand = new THREE.Mesh(new THREE.BoxGeometry(8.8, 1.2, 0.2), glassMat);
+                winBand.position.set(0, wy, -22.45);
+                clubGroup.add(winBand);
+            }
+            worldGroup.add(clubGroup);
+
+            // Shimmering Lakeside Water Expanse
+            const lakeGeo = new THREE.PlaneGeometry(320, 260);
+            const lakeMat = new THREE.MeshStandardMaterial({
+                color: 0x4a89c7,
+                roughness: 0.18,
+                metalness: 0.35
+            });
+            const lakeMesh = new THREE.Mesh(lakeGeo, lakeMat);
+            lakeMesh.rotation.x = -Math.PI / 2;
+            lakeMesh.position.set(0, -0.15, -65);
+            worldGroup.add(lakeMesh);
+
+            // Distant Lakeside Villas & Mountain Ridge Panorama
+            const mountainMat = new THREE.MeshStandardMaterial({ color: 0x6c8ba3, roughness: 0.92 });
+            const hillMat = new THREE.MeshStandardMaterial({ color: 0x5c7c4e, roughness: 0.88 });
+
+            for (let mx = -140; mx <= 140; mx += 22) {
+                const distZ = -115 - Math.abs(mx) * 0.1;
+                const height = 16 + (Math.sin(mx * 0.15) + 1) * 9;
+                const peak = new THREE.Mesh(new THREE.ConeGeometry(24, height, 7), mountainMat);
+                peak.position.set(mx, height / 2 - 1, distZ);
+                peak.scale.set(1.4, 1, 0.7);
+                worldGroup.add(peak);
+
+                const foothill = new THREE.Mesh(new THREE.ConeGeometry(18, height * 0.55, 7), hillMat);
+                foothill.position.set(mx + 8, height * 0.25 - 1, distZ + 12);
+                foothill.scale.set(1.6, 1, 0.6);
+                worldGroup.add(foothill);
+            }
+
+            // Mediterranean Lakeside Houses along the far shore
+            const wallVillaMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.7 });
+            const roofVillaMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
+            for (let vx = -95; vx <= 95; vx += 11) {
+                if (Math.abs(vx) < 24) continue;
+                const vz = -92 + (Math.sin(vx) * 4);
+                const house = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 2.6), wallVillaMat);
+                house.position.set(vx, 1.0, vz);
+                worldGroup.add(house);
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(2.6, 1.2, 4), roofVillaMat);
+                roof.position.set(vx, 2.7, vz);
+                roof.rotation.y = Math.PI / 4;
+                worldGroup.add(roof);
+            }
+
+            scene.add(worldGroup);
+        }
+
+        buildLakesideStadium();
+
+        /***********************************************************************
+         * 4. ARTICULATED 3D TENNIS CHARACTERS WITH KINEMATICS, EXPRESSIONS & EMOTES
+         ***********************************************************************/
+        // Procedural Polo Fabric Weave Bump Texture for High-Detail Clothing
+        function createFabricBumpTexture() {
+            const c = document.createElement('canvas');
+            c.width = 128;
+            c.height = 128;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#9c9c9c';
+            for (let y = 0; y < 128; y += 4) {
+                for (let x = (y % 8 === 0 ? 0 : 2); x < 128; x += 4) {
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(8, 8);
+            return tex;
+        }
+        const fabricBumpTex = createFabricBumpTexture();
+
+        class StylizedTennisAthlete {
+            constructor(config) {
+                this.id = config.id;
+                this.name = config.name;
+                this.team = config.team;           // 'red' (near) or 'blue' (far)
+                this.role = config.role;           // 'baseline' or 'net'
+                this.zSide = this.team === 'red' ? 1 : -1;
+                this.shirtColor = this.team === 'red' ? 0xd92626 : 0x2563eb;
+                this.trimColor = this.team === 'red' ? 0xfecaca : 0xbfdbfe;
+                this.hairColor = config.hairColor;
+                this.skinColor = config.skinColor;
+                this.hairStyle = config.hairStyle; // 'round', 'spiky', 'ponytail', 'visor'
+
+                this.group = new THREE.Group();
+                this.homeX = config.homeX;
+                this.homeZ = config.homeZ;
+                this.targetX = config.homeX;
+                this.targetZ = config.homeZ;
+                this.group.position.set(this.homeX, 0, this.homeZ);
+
+                // Advanced Articulated Kinematics State
+                this.isSwinging = false;
+                this.swingProgress = 0;
+                this.swingSide = 1;        // 1 = Forehand, -1 = Backhand, 0 = Overhead Smash, 2 = Reflex Volley
+                this.prepCoil = 0;         // Shoulder unit-turn coil (-1 to +1)
+                this.splitStepTimer = 0;   // Hop timer when opponent strikes ball
+                this.lungeFactor = 0;      // Wide reach knee bend & stretch
+                this.jumpHeight = 0;       // Jump smash elevation
+                this.emoteState = 'none';  // 'none', 'fistpump', 'twirl', 'slump'
+                this.emoteTimer = 0;
+                this.blinkTimer = Math.random() * 3;
+                this.expression = 'neutral'; // 'neutral', 'effort', 'happy', 'shock'
+
+                this.buildCharacterMesh();
+                scene.add(this.group);
+            }
+
+            buildCharacterMesh() {
+                // Ground Contact Shadow + Active Player Aura Ring
+                const shadowGeo = new THREE.CircleGeometry(0.58, 28);
+                const shadowMat = new THREE.MeshBasicMaterial({
+                    color: 0x15320d,
+                    transparent: true,
+                    opacity: 0.42
+                });
+                this.footShadow = new THREE.Mesh(shadowGeo, shadowMat);
+                this.footShadow.rotation.x = -Math.PI / 2;
+                this.footShadow.position.y = 0.02;
+                this.group.add(this.footShadow);
+
+                // Controlled Player Highlight Ring
+                const ringGeo = new THREE.RingGeometry(0.60, 0.72, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: this.team === 'red' ? 0x34d399 : 0x60a5fa,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.0
+                });
+                this.activeRing = new THREE.Mesh(ringGeo, ringMat);
+                this.activeRing.rotation.x = -Math.PI / 2;
+                this.activeRing.position.y = 0.03;
+                this.group.add(this.activeRing);
+
+                this.bodyRoot = new THREE.Group();
+                this.group.add(this.bodyRoot);
+
+                const skinMat = new THREE.MeshStandardMaterial({ color: this.skinColor, roughness: 0.42 });
+                const shirtMat = new THREE.MeshStandardMaterial({
+                    color: this.shirtColor,
+                    bumpMap: fabricBumpTex,
+                    bumpScale: 0.008,
+                    roughness: 0.52
+                });
+                const shortsMat = new THREE.MeshStandardMaterial({
+                    color: 0xf8fafc,
+                    bumpMap: fabricBumpTex,
+                    bumpScale: 0.006,
+                    roughness: 0.55
+                });
+                const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+                const darkSoleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+                const shoeMat = new THREE.MeshStandardMaterial({ color: this.shirtColor, roughness: 0.35 });
+
+                // --- ARTICULATED LEGS (Hip -> Thigh -> Knee -> Shin/Sock -> Detailed Tennis Shoe) ---
+                const createArticulatedLeg = (sideX) => {
+                    const hipGroup = new THREE.Group();
+                    hipGroup.position.set(sideX, 0.58, 0);
+
+                    // Athletic Shorts Leg Cuff
+                    const shortCuff = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.14, 0.24, 14), shortsMat);
+                    shortCuff.position.y = -0.08;
+                    shortCuff.castShadow = true;
+                    hipGroup.add(shortCuff);
+
+                    // Upper Thigh
+                    const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.10, 0.24, 12), skinMat);
+                    thigh.position.y = -0.20;
+                    thigh.castShadow = true;
+                    hipGroup.add(thigh);
+
+                    // Knee Joint Pivot
+                    const kneeGroup = new THREE.Group();
+                    kneeGroup.position.set(0, -0.30, 0);
+                    hipGroup.add(kneeGroup);
+
+                    const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.082, 0.22, 12), skinMat);
+                    shin.position.y = -0.10;
+                    shin.castShadow = true;
+                    kneeGroup.add(shin);
+
+                    // Ribbed Crew Tennis Sock
+                    const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.085, 0.14, 12), whiteMat);
+                    sock.position.y = -0.18;
+                    kneeGroup.add(sock);
+
+                    // Tennis Shoe with White Outsole & Toe Cap
+                    const shoeGroup = new THREE.Group();
+                    shoeGroup.position.set(0, -0.25, -this.zSide * 0.05);
+                    const upperShoe = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.11, 0.35), shoeMat);
+                    upperShoe.castShadow = true;
+                    shoeGroup.add(upperShoe);
+                    const outsole = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.045, 0.38), whiteMat);
+                    outsole.position.y = -0.055;
+                    shoeGroup.add(outsole);
+                    const tread = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.015, 0.37), darkSoleMat);
+                    tread.position.y = -0.08;
+                    shoeGroup.add(tread);
+
+                    kneeGroup.add(shoeGroup);
+                    return { hipGroup, kneeGroup, shoeGroup };
+                };
+
+                this.leftLegRig = createArticulatedLeg(-0.165);
+                this.rightLegRig = createArticulatedLeg(0.165);
+                this.bodyRoot.add(this.leftLegRig.hipGroup);
+                this.bodyRoot.add(this.rightLegRig.hipGroup);
+
+                // --- PELVIS / SHORTS WAIST & ARTICULATED SPINE / UPPER TORSO ---
+                const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.32, 0.22, 16), shortsMat);
+                pelvis.position.y = 0.62;
+                pelvis.castShadow = true;
+                this.bodyRoot.add(pelvis);
+
+                this.spineGroup = new THREE.Group();
+                this.spineGroup.position.set(0, 0.70, 0);
+                this.bodyRoot.add(this.spineGroup);
+
+                // Tailored Tennis Polo Torso
+                const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.31, 0.56, 18), shirtMat);
+                torso.position.y = 0.26;
+                torso.castShadow = true;
+                this.spineGroup.add(torso);
+
+                // Chest Stripe Detail
+                const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.306, 0.308, 0.07, 18), whiteMat);
+                stripe.position.y = 0.36;
+                this.spineGroup.add(stripe);
+
+                // Polo Collar & Placket
+                const collar = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.045, 10, 20), whiteMat);
+                collar.rotation.x = Math.PI / 2;
+                collar.position.y = 0.52;
+                this.spineGroup.add(collar);
+
+                // --- EXPRESSIVE HEAD WITH BLINKING EYELIDS, TRACKING PUPILS, MOUTH & HAIRSTYLES ---
+                this.headGroup = new THREE.Group();
+                this.headGroup.position.set(0, 0.85, 0);
+                this.spineGroup.add(this.headGroup);
+
+                const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.355, 28, 28), skinMat);
+                headMesh.castShadow = true;
+                this.headGroup.add(headMesh);
+
+                // Ears
+                const earGeo = new THREE.SphereGeometry(0.075, 10, 10);
+                const leftEar = new THREE.Mesh(earGeo, skinMat);
+                leftEar.position.set(-0.34, 0.0, 0);
+                this.headGroup.add(leftEar);
+                const rightEar = new THREE.Mesh(earGeo, skinMat);
+                rightEar.position.set(0.34, 0.0, 0);
+                this.headGroup.add(rightEar);
+
+                // Distinct 3D Hairstyles
+                const hairMat = new THREE.MeshStandardMaterial({ color: this.hairColor, roughness: 0.6 });
+                const hairCap = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.372, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.58),
+                    hairMat
+                );
+                hairCap.rotation.x = this.zSide * 0.16;
+                hairCap.castShadow = true;
+                this.headGroup.add(hairCap);
+
+                if (this.hairStyle === 'spiky') {
+                    const spikeGeo = new THREE.ConeGeometry(0.115, 0.28, 7);
+                    for (let s = 0; s < 7; s++) {
+                        const spike = new THREE.Mesh(spikeGeo, hairMat);
+                        const ang = (s / 7) * Math.PI * 2;
+                        spike.position.set(Math.cos(ang) * 0.22, 0.36, Math.sin(ang) * 0.22);
+                        spike.rotation.z = -Math.cos(ang) * 0.48;
+                        spike.rotation.x = Math.sin(ang) * 0.48;
+                        this.headGroup.add(spike);
+                    }
+                } else if (this.hairStyle === 'ponytail') {
+                    // Dynamic Ponytail on back of head
+                    this.ponytailPivot = new THREE.Group();
+                    this.ponytailPivot.position.set(0, 0.14, this.zSide * 0.35);
+                    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.34, 10), hairMat);
+                    tail.rotation.x = -this.zSide * 1.1;
+                    tail.position.z = this.zSide * 0.12;
+                    this.ponytailPivot.add(tail);
+                    this.headGroup.add(this.ponytailPivot);
+                } else {
+                    // Textured Wavy Crown Top
+                    const waveTop = new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 14), hairMat);
+                    waveTop.position.set(0, 0.24, -this.zSide * 0.06);
+                    waveTop.scale.set(1.2, 0.65, 1.1);
+                    this.headGroup.add(waveTop);
+                }
+
+                // Crisp Athletic Sweatband with Team Accent Line
+                const headband = new THREE.Mesh(new THREE.CylinderGeometry(0.376, 0.376, 0.105, 28), whiteMat);
+                headband.position.y = 0.10;
+                this.headGroup.add(headband);
+                const bandStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.379, 0.379, 0.028, 28), shirtMat);
+                bandStripe.position.y = 0.10;
+                this.headGroup.add(bandStripe);
+
+                // Expressive Facial Rig (Whites, Pupils, Eyelids, Eyebrows & Dynamic Mouth)
+                const faceZ = -this.zSide * 0.335;
+                const scleraGeo = new THREE.SphereGeometry(0.058, 12, 12);
+                const pupilGeo = new THREE.SphereGeometry(0.032, 10, 10);
+                const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+                const browGeo = new THREE.BoxGeometry(0.11, 0.025, 0.025);
+
+                const buildEye = (xOffset) => {
+                    const eyeRoot = new THREE.Group();
+                    eyeRoot.position.set(xOffset, 0.01, faceZ);
+                    const sclera = new THREE.Mesh(scleraGeo, whiteMat);
+                    sclera.scale.set(1.0, 1.1, 0.5);
+                    eyeRoot.add(sclera);
+
+                    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+                    pupil.position.z = -this.zSide * 0.025;
+                    eyeRoot.add(pupil);
+
+                    const eyelid = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.062, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
+                        skinMat
+                    );
+                    eyelid.scale.set(1.02, 0.1, 0.6);
+                    eyelid.visible = false;
+                    eyeRoot.add(eyelid);
+
+                    const brow = new THREE.Mesh(browGeo, hairMat);
+                    brow.position.set(0, 0.075, -this.zSide * 0.015);
+                    eyeRoot.add(brow);
+
+                    this.headGroup.add(eyeRoot);
+                    return { pupil, eyelid, brow };
+                };
+
+                this.leftEyeRig = buildEye(-0.125);
+                this.rightEyeRig = buildEye(0.125);
+
+                // Mouth Mesh (Morphs between neutral smile, effort 'O' grunt, and big victory grin)
+                const mouthMat = new THREE.MeshBasicMaterial({ color: 0x451a03 });
+                this.mouthMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.028, 0.02), mouthMat);
+                this.mouthMesh.position.set(0, -0.13, faceZ - this.zSide * 0.01);
+                this.headGroup.add(this.mouthMesh);
+
+                // --- LEFT BALANCE & TOSS ARM (Shoulder -> Upper Arm -> Elbow -> Forearm + Wristband + Hand) ---
+                this.leftShoulder = new THREE.Group();
+                this.leftShoulder.position.set(-0.36, 0.46, 0);
+                this.spineGroup.add(this.leftShoulder);
+
+                const lSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.095, 0.20, 12), shirtMat);
+                lSleeve.position.y = -0.07;
+                this.leftShoulder.add(lSleeve);
+
+                const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.072, 0.22, 12), skinMat);
+                lUpperArm.position.y = -0.18;
+                this.leftShoulder.add(lUpperArm);
+
+                this.leftElbow = new THREE.Group();
+                this.leftElbow.position.set(0, -0.26, 0);
+                this.leftShoulder.add(this.leftElbow);
+
+                const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.062, 0.22, 12), skinMat);
+                lForearm.position.y = -0.10;
+                this.leftElbow.add(lForearm);
+
+                const lWristband = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.07, 12), whiteMat);
+                lWristband.position.y = -0.17;
+                this.leftElbow.add(lWristband);
+
+                const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.088, 12, 12), skinMat);
+                lHand.position.set(0, -0.23, 0);
+                this.leftElbow.add(lHand);
+
+                // --- RIGHT RACKET ARM (Shoulder -> Upper Arm -> Elbow -> Forearm -> Wrist -> Pro Carbon Racket) ---
+                this.racketPivot = new THREE.Group();
+                this.racketPivot.position.set(0.36, 0.46, 0);
+                this.spineGroup.add(this.racketPivot);
+
+                const rSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.095, 0.20, 12), shirtMat);
+                rSleeve.position.y = -0.07;
+                this.racketPivot.add(rSleeve);
+
+                const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.074, 0.24, 12), skinMat);
+                rUpperArm.position.y = -0.14;
+                this.racketPivot.add(rUpperArm);
+
+                const rWristband = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.082, 0.075, 12), whiteMat);
+                rWristband.position.y = -0.04;
+                this.racketPivot.add(rWristband);
+
+                const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 12), skinMat);
+                this.racketPivot.add(rHand);
+
+                // Detailed Pro Carbon-Fiber Racket Assembly
+                this.racketGroup = new THREE.Group();
+                const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.038, 0.36, 12), whiteMat);
+                grip.position.y = 0.18;
+                this.racketGroup.add(grip);
+
+                const frameColor = this.team === 'red' ? 0x38bdf8 : 0x60a5fa;
+                const frameMat = new THREE.MeshStandardMaterial({ color: frameColor, roughness: 0.2, metalness: 0.65 });
+                const throat = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.032, 0.22, 10), frameMat);
+                throat.position.y = 0.42;
+                this.racketGroup.add(throat);
+
+                const hoopGeo = new THREE.TorusGeometry(0.305, 0.034, 12, 32);
+                const hoop = new THREE.Mesh(hoopGeo, frameMat);
+                hoop.scale.set(0.82, 1.12, 1);
+                hoop.position.y = 0.82;
+                hoop.castShadow = true;
+                this.racketGroup.add(hoop);
+
+                const stringGeo = new THREE.CircleGeometry(0.29, 22);
+                const stringMat = new THREE.MeshBasicMaterial({
+                    color: 0xf8fafc,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.46,
+                    side: THREE.DoubleSide
+                });
+                const strings = new THREE.Mesh(stringGeo, stringMat);
+                strings.scale.set(0.80, 1.10, 1);
+                strings.position.y = 0.82;
+                this.racketGroup.add(strings);
+
+                this.racketPivot.add(this.racketGroup);
+            }
+
+            setFacialExpression(expr) {
+                this.expression = expr;
+                if (expr === 'effort') {
+                    // Open 'O' mouth + focused angled eyebrows
+                    this.mouthMesh.scale.set(0.75, 2.6, 1.2);
+                    this.leftEyeRig.brow.rotation.z = -0.22;
+                    this.rightEyeRig.brow.rotation.z = 0.22;
+                } else if (expr === 'happy') {
+                    // Wide smile + raised brows
+                    this.mouthMesh.scale.set(1.45, 1.5, 1.0);
+                    this.leftEyeRig.brow.rotation.z = 0.12;
+                    this.rightEyeRig.brow.rotation.z = -0.12;
+                } else if (expr === 'shock') {
+                    this.mouthMesh.scale.set(0.65, 2.9, 1.2);
+                    this.leftEyeRig.brow.rotation.z = 0.25;
+                    this.rightEyeRig.brow.rotation.z = -0.25;
+                } else {
+                    // Neutral focused athlete
+                    this.mouthMesh.scale.set(1.0, 1.0, 1.0);
+                    this.leftEyeRig.brow.rotation.z = 0;
+                    this.rightEyeRig.brow.rotation.z = 0;
+                }
+            }
+
+            triggerSplitStep() {
+                this.splitStepTimer = 0.26;
+            }
+
+            triggerEmote(type) {
+                this.emoteState = type; // 'fistpump', 'twirl', 'slump'
+                this.emoteTimer = 1.75;
+                this.setFacialExpression(type === 'slump' ? 'shock' : 'happy');
+            }
+
+            triggerSwing(ballPos, isVolley = false) {
+                this.isSwinging = true;
+                this.swingProgress = 0;
+                this.setFacialExpression('effort');
+
+                const relX = (ballPos.x - this.group.position.x) * this.zSide;
+                const reachDist = Math.hypot(ballPos.x - this.group.position.x, ballPos.z - this.group.position.z);
+                this.lungeFactor = THREE.MathUtils.clamp((reachDist - 1.6) * 0.5, 0, 1);
+
+                if (ballPos.y > 2.02) {
+                    this.swingSide = 0; // Jumping Overhead Smash
+                    this.jumpHeight = 0.55;
+                } else if (isVolley || this.role === 'net') {
+                    this.swingSide = relX >= -0.15 ? 1 : -1;
+                } else {
+                    this.swingSide = relX >= -0.2 ? 1 : -1;
+                }
+            }
+
+            update(dt, ballPos, elapsed) {
+                const prevX = this.group.position.x;
+                const prevZ = this.group.position.z;
+
+                const moveSpeed = this.role === 'net' ? 10.4 : 11.8;
+                this.group.position.x += (this.targetX - this.group.position.x) * Math.min(1, dt * moveSpeed);
+                this.group.position.z += (this.targetZ - this.group.position.z) * Math.min(1, dt * moveSpeed);
+
+                const vx = (this.group.position.x - prevX) / Math.max(dt, 0.001);
+                const vz = (this.group.position.z - prevZ) / Math.max(dt, 0.001);
+                const speed = Math.hypot(vx, vz);
+
+                // Highlight ring for currently controlled Red Team athlete
+                const isControlled = this.team === 'red' && state.controlledRedIdx === this.id;
+                this.activeRing.material.opacity = isControlled ? (0.45 + Math.sin(elapsed * 6) * 0.18) : 0.0;
+                this.activeRing.rotation.z = elapsed * 1.2;
+
+                // Natural Blinking Eyelids
+                this.blinkTimer -= dt;
+                if (this.blinkTimer <= 0) {
+                    const blinking = this.blinkTimer > -0.12;
+                    this.leftEyeRig.eyelid.visible = blinking;
+                    this.rightEyeRig.eyelid.visible = blinking;
+                    if (!blinking) this.blinkTimer = 2.4 + Math.random() * 3.2;
+                }
+
+                // Dynamic Pupil Tracking toward the ball
+                const dx = ballPos.x - this.group.position.x;
+                const dz = ballPos.z - this.group.position.z;
+                const pupilShiftX = THREE.MathUtils.clamp(dx * 0.004, -0.018, 0.018);
+                const pupilShiftY = THREE.MathUtils.clamp((ballPos.y - 1.3) * 0.006, -0.015, 0.018);
+                this.leftEyeRig.pupil.position.x = pupilShiftX;
+                this.leftEyeRig.pupil.position.y = pupilShiftY;
+                this.rightEyeRig.pupil.position.x = pupilShiftX;
+                this.rightEyeRig.pupil.position.y = pupilShiftY;
+
+                // Ponytail Physics Sway
+                if (this.ponytailPivot) {
+                    this.ponytailPivot.rotation.z = THREE.MathUtils.clamp(-vx * 0.06, -0.45, 0.45);
+                    this.ponytailPivot.rotation.x = THREE.MathUtils.clamp(speed * 0.04, 0, 0.35);
+                }
+
+                // Post-Point Celebration / Emote Animations
+                if (this.emoteTimer > 0) {
+                    this.emoteTimer -= dt;
+                    if (this.emoteState === 'fistpump') {
+                        const jump = Math.abs(Math.sin(elapsed * 11)) * 0.34;
+                        this.bodyRoot.position.y = jump;
+                        this.leftShoulder.rotation.x = -Math.PI * 0.82;
+                        this.leftElbow.rotation.x = -0.5;
+                        this.racketPivot.rotation.z = -0.8 + Math.sin(elapsed * 16) * 0.25;
+                    } else if (this.emoteState === 'twirl') {
+                        this.bodyRoot.rotation.y = (1.75 - this.emoteTimer) * Math.PI * 2.2;
+                        this.racketGroup.rotation.z = elapsed * 18;
+                    } else if (this.emoteState === 'slump') {
+                        this.spineGroup.rotation.x = this.zSide * 0.28;
+                        this.headGroup.rotation.x = this.zSide * 0.25;
+                    }
+                    if (this.emoteTimer <= 0) {
+                        this.emoteState = 'none';
+                        this.bodyRoot.rotation.y = 0;
+                        this.racketGroup.rotation.z = 0;
+                        this.spineGroup.rotation.x = 0;
+                        this.headGroup.rotation.x = 0;
+                        this.setFacialExpression('neutral');
+                    }
+                    return;
+                }
+
+                // Split-Step Hop Decay
+                let splitHopY = 0;
+                if (this.splitStepTimer > 0) {
+                    this.splitStepTimer -= dt;
+                    splitHopY = Math.sin((this.splitStepTimer / 0.26) * Math.PI) * 0.18;
+                }
+
+                // Jump Smash Elevation Decay
+                if (this.jumpHeight > 0) {
+                    this.jumpHeight = Math.max(0, this.jumpHeight - dt * 1.4);
+                }
+
+                // Articulated Hip, Knee & Footwork Stride
+                if (speed > 0.35) {
+                    const phase = elapsed * 17;
+                    const stride = Math.sin(phase) * Math.min(speed * 0.095, 0.55);
+                    this.leftLegRig.hipGroup.rotation.x = stride;
+                    this.rightLegRig.hipGroup.rotation.x = -stride;
+                    this.leftLegRig.kneeGroup.rotation.x = Math.max(0, -stride * 0.85) * this.zSide;
+                    this.rightLegRig.kneeGroup.rotation.x = Math.max(0, stride * 0.85) * this.zSide;
+                    this.bodyRoot.position.y = Math.abs(Math.cos(phase)) * 0.10 + splitHopY + this.jumpHeight;
+                } else {
+                    const idleKnee = this.splitStepTimer > 0 ? 0.25 : 0.08;
+                    this.leftLegRig.hipGroup.rotation.x = THREE.MathUtils.lerp(this.leftLegRig.hipGroup.rotation.x, -idleKnee * this.zSide, dt * 10);
+                    this.rightLegRig.hipGroup.rotation.x = THREE.MathUtils.lerp(this.rightLegRig.hipGroup.rotation.x, -idleKnee * this.zSide, dt * 10);
+                    this.leftLegRig.kneeGroup.rotation.x = THREE.MathUtils.lerp(this.leftLegRig.kneeGroup.rotation.x, idleKnee * 1.4 * this.zSide, dt * 10);
+                    this.rightLegRig.kneeGroup.rotation.x = THREE.MathUtils.lerp(this.rightLegRig.kneeGroup.rotation.x, idleKnee * 1.4 * this.zSide, dt * 10);
+                    this.bodyRoot.position.y = Math.abs(Math.sin(elapsed * 3.8 + this.id)) * 0.032 + splitHopY + this.jumpHeight;
+                }
+
+                this.bodyRoot.rotation.z = THREE.MathUtils.lerp(this.bodyRoot.rotation.z, -vx * 0.028, dt * 10);
+
+                // Automatic Unit-Turn Shoulder Coil Preparation when ball is incoming
+                const isBallIncoming = (this.team === 'red' && state.hittingTeam === 'blue') ||
+                                       (this.team === 'blue' && state.hittingTeam === 'red');
+                if (state.phase === 'RALLY' && isBallIncoming && !this.isSwinging) {
+                    const relBallX = (ballPos.x - this.group.position.x) * this.zSide;
+                    const desiredCoil = relBallX >= -0.15 ? -0.48 : 0.52;
+                    this.prepCoil = THREE.MathUtils.lerp(this.prepCoil, desiredCoil, dt * 8);
+                } else if (!this.isSwinging) {
+                    this.prepCoil = THREE.MathUtils.lerp(this.prepCoil, 0, dt * 8);
+                }
+
+                // Head Tracking Ball
+                this.headGroup.rotation.y = THREE.MathUtils.clamp(Math.atan2(dx, Math.abs(dz)) * 0.48 - this.prepCoil * 0.4, -0.6, 0.6);
+
+                // Left Arm Serve Ball-Toss Animation vs Balance Arm
+                const isServingToss = (state.phase === 'SERVE_TOSS' && state.serverIndex === this.id);
+                if (isServingToss) {
+                    this.leftShoulder.rotation.x = THREE.MathUtils.lerp(this.leftShoulder.rotation.x, -this.zSide * 1.45, dt * 10);
+                    this.leftElbow.rotation.x = THREE.MathUtils.lerp(this.leftElbow.rotation.x, -this.zSide * 0.35, dt * 10);
+                } else {
+                    this.leftShoulder.rotation.x = THREE.MathUtils.lerp(this.leftShoulder.rotation.x, -this.zSide * 0.25, dt * 8);
+                    this.leftShoulder.rotation.z = THREE.MathUtils.lerp(this.leftShoulder.rotation.z, 0.22 + this.prepCoil * 0.3, dt * 8);
+                    this.leftElbow.rotation.x = THREE.MathUtils.lerp(this.leftElbow.rotation.x, -this.zSide * 0.45, dt * 8);
+                }
+
+                // Full Articulated Racket Swing & Unit-Turn Follow-Through Kinematics
+                if (this.isSwinging) {
+                    this.swingProgress += dt * 4.6;
+                    const p = Math.min(1, this.swingProgress);
+                    const arc = Math.sin(p * Math.PI);
+
+                    if (this.swingSide === 0) {
+                        // Jumping Overhead Smash / Serve Kinetic Chain
+                        this.spineGroup.rotation.y = (0.5 - p) * 0.85;
+                        this.spineGroup.rotation.x = -this.zSide * (p - 0.3) * 0.35;
+                        this.racketPivot.position.set(0.36, 0.72 + arc * 0.42, -this.zSide * arc * 0.48);
+                        this.racketPivot.rotation.set(-this.zSide * (p * 2.45 - 0.7), 0, -0.15);
+                    } else {
+                        // Forehand / Backhand Whip with Torso Uncoiling & Lunge Stretch
+                        const s = this.swingSide;
+                        this.spineGroup.rotation.y = s * (0.55 - p * 1.25);
+                        this.spineGroup.rotation.x = -this.zSide * this.lungeFactor * 0.28 * arc;
+
+                        this.racketPivot.position.set(
+                            s * (0.42 + this.lungeFactor * 0.18 * arc),
+                            0.46 + p * 0.26,
+                            -this.zSide * arc * 0.58
+                        );
+                        this.racketPivot.rotation.z = -s * (0.38 + arc * 0.68);
+                        this.racketPivot.rotation.y = s * (1.15 - p * 2.3);
+                        this.racketPivot.rotation.x = -this.zSide * arc * 0.48;
+                    }
+
+                    if (this.swingProgress >= 1) {
+                        this.isSwinging = false;
+                        this.lungeFactor = 0;
+                        this.setFacialExpression('neutral');
+                    }
+                } else {
+                    // Ready Split-Step / Unit-Turn Pose
+                    this.spineGroup.rotation.y = THREE.MathUtils.lerp(this.spineGroup.rotation.y, this.prepCoil, dt * 10);
+                    this.spineGroup.rotation.x = THREE.MathUtils.lerp(this.spineGroup.rotation.x, 0, dt * 10);
+
+                    this.racketPivot.position.x = THREE.MathUtils.lerp(this.racketPivot.position.x, 0.38 - this.prepCoil * 0.18, dt * 10);
+                    this.racketPivot.position.y = THREE.MathUtils.lerp(this.racketPivot.position.y, 0.46, dt * 10);
+                    this.racketPivot.position.z = THREE.MathUtils.lerp(this.racketPivot.position.z, -this.zSide * 0.18, dt * 10);
+
+                    this.racketPivot.rotation.z = THREE.MathUtils.lerp(this.racketPivot.rotation.z, -0.35, dt * 10);
+                    this.racketPivot.rotation.x = THREE.MathUtils.lerp(this.racketPivot.rotation.x, -this.zSide * 0.25, dt * 10);
+                    this.racketPivot.rotation.y = THREE.MathUtils.lerp(this.racketPivot.rotation.y, 0.2 + this.prepCoil * 0.6, dt * 10);
+                }
+            }
+        }
+
+        // Instantiate the 4 Distinct Articulated Era Tennis Court Athletes:
+        const athletes = [
+            new StylizedTennisAthlete({
+                id: 0, name: 'Leo', team: 'red', role: 'baseline',
+                homeX: 2.3, homeZ: 11.8,
+                hairColor: 0x4a2511, skinColor: 0xf3c6a5, hairStyle: 'round'
+            }),
+            new StylizedTennisAthlete({
+                id: 1, name: 'Kai', team: 'blue', role: 'baseline',
+                homeX: -2.4, homeZ: -11.8,
+                hairColor: 0x172554, skinColor: 0xf1c27d, hairStyle: 'spiky'
+            }),
+            new StylizedTennisAthlete({
+                id: 2, name: 'Maya', team: 'red', role: 'net',
+                homeX: -2.2, homeZ: 4.2,
+                hairColor: 0x6b3410, skinColor: 0xe0a984, hairStyle: 'ponytail'
+            }),
+            new StylizedTennisAthlete({
+                id: 3, name: 'Zane', team: 'blue', role: 'net',
+                homeX: 2.2, homeZ: -5.2,
+                hairColor: 0x0f172a, skinColor: 0xd2996c, hairStyle: 'spiky'
+            })
+        ];
+
+        /***********************************************************************
+         * 5. TENNIS BALL WITH FELT SHADER, GROUND SHADOW & SPIN RIBBON TRAIL
+         ***********************************************************************/
+        class FeltTennisBall {
+            constructor() {
+                const geo = new THREE.SphereGeometry(0.17, 24, 24);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0xd9f905,
+                    emissive: 0x84cc16,
+                    emissiveIntensity: 0.35,
+                    roughness: 0.65
+                });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.castShadow = true;
+                scene.add(this.mesh);
+
+                // Crisp Ground Target Ring
+                const shadowGeo = new THREE.CircleGeometry(0.24, 20);
+                const shadowMat = new THREE.MeshBasicMaterial({
+                    color: 0x143309,
+                    transparent: true,
+                    opacity: 0.55
+                });
+                this.shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+                this.shadowMesh.rotation.x = -Math.PI / 2;
+                this.shadowMesh.position.y = 0.025;
+                scene.add(this.shadowMesh);
+
+                // Aerodynamic Trail Ribbon
+                this.trailCount = 20;
+                this.trailPts = Array.from({ length: this.trailCount }, () => new THREE.Vector3(0, 1, 10));
+                const trailGeo = new THREE.BufferGeometry().setFromPoints(this.trailPts);
+                const trailMat = new THREE.LineBasicMaterial({
+                    color: 0xfef08a,
+                    transparent: true,
+                    opacity: 0.72
+                });
+                this.trailLine = new THREE.Line(trailGeo, trailMat);
+                scene.add(this.trailLine);
+
+                this.pos = this.mesh.position;
+                this.vel = new THREE.Vector3();
+                this.spinY = 0;
+                this.curveX = 0;
+            }
+
+            attachToServer() {
+                const server = athletes[state.serverIndex];
+                const zSign = server.zSide;
+                this.pos.set(
+                    server.group.position.x - 0.42 * zSign,
+                    1.02 + Math.sin(performance.now() * 0.005) * 0.04,
+                    server.group.position.z - 0.25 * zSign
+                );
+                this.vel.set(0, 0, 0);
+                this.shadowMesh.position.set(this.pos.x, 0.025, this.pos.z);
+                for (let i = 0; i < this.trailCount; i++) {
+                    this.trailPts[i].copy(this.pos);
+                }
+                this.trailLine.geometry.setFromPoints(this.trailPts);
+            }
+
+            launchToTarget(targetX, targetZ, flightTime, topspin = 4.5, sidespin = 0, trailHex = 0xfef08a) {
+                const dx = targetX - this.pos.x;
+                const dz = targetZ - this.pos.z;
+                const effG = COURT.gravity + topspin;
+
+                this.vel.x = dx / flightTime - 0.5 * sidespin * flightTime;
+                this.vel.z = dz / flightTime;
+                this.vel.y = (0.17 - this.pos.y + 0.5 * effG * flightTime * flightTime) / flightTime;
+
+                this.spinY = topspin;
+                this.curveX = sidespin;
+                this.trailLine.material.color.setHex(trailHex);
+            }
+
+            update(dt) {
+                if (state.phase === 'SERVE_WAIT') {
+                    this.attachToServer();
+                    return;
+                }
+                if (state.phase === 'REPLAY') return;
+
+                const prevZ = this.pos.z;
+                const effG = state.phase === 'SERVE_TOSS' ? COURT.gravity : (COURT.gravity + this.spinY);
+                this.vel.y -= effG * dt;
+                this.vel.x += this.curveX * dt;
+                this.pos.addScaledVector(this.vel, dt);
+
+                // Net Collision Check at Z = 0
+                if ((prevZ > 0 && this.pos.z <= 0) || (prevZ < 0 && this.pos.z >= 0)) {
+                    if (this.pos.y < COURT.netHeight + 0.08) {
+                        if (this.pos.y >= COURT.netHeight - 0.10) {
+                            // Net cord clip over
+                            this.pos.y = COURT.netHeight + 0.12;
+                            this.vel.z *= 0.52;
+                            this.vel.y = 2.6;
+                            spawnWorldCallout('NET CORD!', this.pos, '#facc15');
+                        } else {
+                            // Into the net
+                            this.vel.z *= -0.25;
+                            this.vel.x *= 0.4;
+                            this.pos.z = prevZ > 0 ? 0.2 : -0.2;
+                            if (state.phase === 'RALLY') {
+                                const winner = state.hittingTeam === 'red' ? 'blue' : 'red';
+                                finishPoint(winner, 'NET!');
+                            }
+                        }
+                    }
+                }
+
+                // Grass Court Bounce
+                if (this.pos.y <= 0.17 && this.vel.y < 0) {
+                    this.pos.y = 0.17;
+
+                    if (state.phase === 'SERVE_TOSS') {
+                        // Let toss drop without hitting -> reset toss
+                        state.phase = 'SERVE_WAIT';
+                        updateActionPrompt('SERVE TOSS');
+                        return;
+                    }
+
+                    this.vel.y = -this.vel.y * 0.72;
+                    this.vel.x *= 0.86;
+                    this.vel.z *= 0.84;
+
+                    sound.playGrassBounce();
+                    spawnChalkBurst(this.pos.x, this.pos.z);
+
+                    if (state.phase === 'RALLY') {
+                        evaluateBounceRules(this.pos.x, this.pos.z);
+                    }
+                }
+
+                this.shadowMesh.position.set(this.pos.x, 0.025, this.pos.z);
+                this.trailPts.pop();
+                this.trailPts.unshift(this.pos.clone());
+                this.trailLine.geometry.setFromPoints(this.trailPts);
+            }
+        }
+
+        const ball = new FeltTennisBall();
+
+        // Chalk / Grass Puff Particles on Bounce
+        const puffs = [];
+        const puffGeo = new THREE.SphereGeometry(0.055, 6, 6);
+
+        function spawnChalkBurst(x, z, count = 10) {
+            for (let i = 0; i < count; i++) {
+                const mat = new THREE.MeshBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.85 });
+                const m = new THREE.Mesh(puffGeo, mat);
+                m.position.set(x, 0.06, z);
+                const ang = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+                const spd = 1.0 + Math.random() * 2.2;
+                scene.add(m);
+                puffs.push({
+                    mesh: m,
+                    vel: new THREE.Vector3(Math.cos(ang) * spd, 1.2 + Math.random() * 1.8, Math.sin(ang) * spd),
+                    life: 1.0
+                });
+            }
+        }
+
+        function updatePuffs(dt) {
+            for (let i = puffs.length - 1; i >= 0; i--) {
+                const p = puffs[i];
+                p.life -= dt * 2.6;
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    p.mesh.material.dispose();
+                    puffs.splice(i, 1);
+                } else {
+                    p.vel.y -= 9.8 * dt;
+                    p.mesh.position.addScaledVector(p.vel, dt);
+                    p.mesh.material.opacity = p.life * 0.8;
+                    p.mesh.scale.setScalar(p.life);
+                }
+            }
+        }
+
+        /***********************************************************************
+         * 6. TIMING-BASED SHOT DIRECTION, DOUBLES AI & SCORING SYSTEM
+         ***********************************************************************/
+        function spawnWorldCallout(text, pos3D, color = '#4ade80') {
+            const container = document.getElementById('floating-callouts');
+            const div = document.createElement('div');
+            div.className = 'shot-popup absolute px-3 py-1 rounded-full font-outfit font-extrabold text-xs sm:text-sm tracking-wide bg-slate-950/85 border border-white/25 shadow-lg';
+            div.style.color = color;
+            div.textContent = text;
+
+            const v = pos3D.clone().project(camera);
+            const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+            div.style.left = `${THREE.MathUtils.clamp(x, 70, window.innerWidth - 70)}px`;
+            div.style.top = `${THREE.MathUtils.clamp(y, 70, window.innerHeight - 70)}px`;
+
+            container.appendChild(div);
+            setTimeout(() => div.remove(), 1050);
+        }
+
+        function updateTimingNeedle(normZeroToOne) {
+            state.lastTimingValue = THREE.MathUtils.clamp(normZeroToOne, 0.04, 0.96);
+            const needle = document.getElementById('timing-needle');
+            if (needle) {
+                needle.style.left = `${(state.lastTimingValue * 100).toFixed(1)}%`;
+            }
+        }
+
+        function updateActionPrompt(text) {
+            const el = document.getElementById('prompt-action-label');
+            if (el) el.textContent = text;
+        }
+
+        function updateEraSuperUI(deltaCharge = 0) {
+            state.eraCharge = THREE.MathUtils.clamp(state.eraCharge + deltaCharge, 0, 100);
+            const pctEl = document.getElementById('super-pct');
+            const barEl = document.getElementById('super-fill-bar');
+            const textEl = document.getElementById('super-status-text');
+            const dotEl = document.getElementById('super-ready-dot');
+            if (pctEl) pctEl.textContent = Math.round(state.eraCharge);
+            if (barEl) barEl.style.width = `${state.eraCharge}%`;
+            if (state.eraCharge >= 100) {
+                if (textEl) textEl.textContent = 'ERA SUPER SHOT READY!';
+                if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-yellow-300 animate-ping';
+            } else {
+                if (textEl) textEl.textContent = 'ERA SUPER CHARGE';
+                if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-cyan-400';
+            }
+        }
+
+        function triggerTeamSplitStep(team) {
+            athletes.forEach(a => {
+                if (a.team === team) a.triggerSplitStep();
+            });
+        }
+
+        function cycleDoublesTactic() {
+            const tactics = ['Classic', 'I-Formation', 'Net Rush'];
+            const next = (tactics.indexOf(state.doublesTactic) + 1) % tactics.length;
+            state.doublesTactic = tactics[next];
+            const el = document.getElementById('tactic-label');
+            if (el) el.textContent = state.doublesTactic;
+            if (state.phase === 'SERVE_WAIT') setupPlayersForServe();
+            spawnWorldCallout(`TACTIC: ${state.doublesTactic.toUpperCase()}`, athletes[2].group.position, '#fbbf24');
+        }
+
+        function triggerNetPoachOrSwitch() {
+            if (!state.isDoubles) return;
+            if (state.autoSwitchRed) {
+                state.autoSwitchRed = false;
+                state.controlledRedIdx = 2; // Lock onto Net Partner
+                document.getElementById('control-label').textContent = 'Net Partner';
+                spawnWorldCallout('CONTROLLING NET PARTNER!', athletes[2].group.position, '#38bdf8');
+            } else if (state.controlledRedIdx === 2) {
+                state.controlledRedIdx = 0; // Lock onto Baseline Player
+                document.getElementById('control-label').textContent = 'Baseline';
+                spawnWorldCallout('CONTROLLING BASELINE!', athletes[0].group.position, '#34d399');
+            } else {
+                state.autoSwitchRed = true;
+                document.getElementById('control-label').textContent = 'Auto-Assist';
+                spawnWorldCallout('AUTO-ASSIST CONTROL', athletes[0].group.position, '#a7f3d0');
+            }
+        }
+
+        // Position all 4 players cleanly for the current serve side & tactic
+        function setupPlayersForServe() {
+            const side = state.serveSide; // 1 = Deuce (Right), -1 = Ad (Left)
+            const isServerRed = (state.serverIndex === 0 || state.serverIndex === 2);
+            state.serverIndex = isServerRed ? 0 : 1;
+
+            // Red Baseline
+            athletes[0].homeX = side * 2.5;
+            athletes[0].homeZ = 11.8;
+            // Blue Baseline
+            athletes[1].homeX = -side * 2.6;
+            athletes[1].homeZ = -11.8;
+
+            // Red Net Partner (Responds to Selected Doubles Tactic)
+            if (state.doublesTactic === 'I-Formation' && isServerRed) {
+                athletes[2].homeX = 0.0;
+                athletes[2].homeZ = 5.4;
+            } else if (state.doublesTactic === 'Net Rush') {
+                athletes[2].homeX = -side * 1.9;
+                athletes[2].homeZ = 3.1;
+            } else {
+                athletes[2].homeX = -side * 2.3;
+                athletes[2].homeZ = 4.4;
+            }
+
+            // Blue Net Partner
+            athletes[3].homeX = side * 2.3;
+            athletes[3].homeZ = -5.0;
+
+            athletes.forEach(a => {
+                a.targetX = a.homeX;
+                a.targetZ = a.homeZ;
+                a.group.position.set(a.homeX, 0, a.homeZ);
+                a.group.visible = state.isDoubles || a.role === 'baseline';
+                a.emoteTimer = 0;
+                a.setFacialExpression('neutral');
+            });
+
+            if (state.autoSwitchRed) state.controlledRedIdx = 0;
+
+            state.phase = 'SERVE_WAIT';
+            state.hittingTeam = isServerRed ? 'red' : 'blue';
+            state.bounceCount = 0;
+            state.rallyCount = 0;
+            state.replayFrames = [];
+            ball.attachToServer();
+
+            updateActionPrompt('SERVE TOSS');
+            updateEraSuperUI(0);
+            document.getElementById('server-badge').style.opacity = '1';
+        }
+
+        // Player Input Swing (Handles Serve Toss, Serve Smash, Super Shot, and Timing-Based Groundstrokes/Volleys)
+        function executeUserSwing(shotStyle = 'topspin') {
+            if (state.phase === 'POINT_OVER' || state.phase === 'REPLAY') return;
+            sound.init();
+
+            const server = athletes[state.serverIndex];
+
+            // 1. SERVE TOSS
+            if (state.phase === 'SERVE_WAIT' && server.team === 'red') {
+                state.phase = 'SERVE_TOSS';
+                ball.vel.set(0, 7.5, 0);
+                updateActionPrompt('HIT SERVE');
+                return;
+            }
+
+            // 2. SERVE STRIKE AT APEX
+            if (state.phase === 'SERVE_TOSS' && server.team === 'red') {
+                server.triggerSwing(ball.pos);
+                triggerTeamSplitStep('blue');
+                document.getElementById('server-badge').style.opacity = '0';
+
+                // Timing quality based on toss height near apex (y ~ 2.4m)
+                const apexError = Math.abs(ball.pos.y - 2.35);
+                const isSweet = apexError < 0.48;
+                const timingVal = ball.vel.y > 0.5 ? 0.22 : (isSweet ? 0.50 : 0.80);
+                updateTimingNeedle(timingVal);
+                updateEraSuperUI(isSweet ? 22 : 12);
+
+                const targetX = -state.serveSide * (1.7 + Math.random() * 1.6);
+                const targetZ = -(COURT.serviceLine - 1.1);
+                const flightTime = isSweet ? 0.65 : 0.78;
+
+                sound.playRacketHit(isSweet ? 'sweet' : 'normal', true);
+                ball.launchToTarget(targetX, targetZ, flightTime, 4.5, 0, isSweet ? 0xfacc15 : 0xfef08a);
+                spawnWorldCallout(isSweet ? 'ERA ACE SERVE!' : 'SERVE', server.group.position, isSweet ? '#4ade80' : '#facc15');
+
+                state.phase = 'RALLY';
+                state.hittingTeam = 'red';
+                state.bounceCount = 0;
+                state.rallyCount = 1;
+                updateActionPrompt('TIMING SWING');
+                return;
+            }
+
+            // 3. RALLY TIMING-BASED SHOT (Either Red Net Partner Volley or Red Baseline Groundstroke)
+            if (state.phase === 'RALLY' && state.hittingTeam === 'blue') {
+                let hitter = athletes[state.controlledRedIdx];
+                if (state.isDoubles && state.autoSwitchRed) {
+                    const d0 = athletes[0].group.position.distanceTo(ball.pos);
+                    const d2 = athletes[2].group.position.distanceTo(ball.pos);
+                    if (d2 < d0 && ball.pos.z < 7.2) {
+                        hitter = athletes[2];
+                        state.controlledRedIdx = 2;
+                    } else {
+                        hitter = athletes[0];
+                        state.controlledRedIdx = 0;
+                    }
+                }
+
+                const dist = hitter.group.position.distanceTo(ball.pos);
+                if (ball.pos.z > -1.2 && dist < 5.0) {
+                    const isNetVolley = hitter.id === 2 && ball.pos.z < 6.8;
+                    hitter.triggerSwing(ball.pos, isNetVolley);
+                    triggerTeamSplitStep('blue');
+
+                    // Calculate Early (Cross) / Sweet Spot / Late (Line) based on Z offset relative to hitter
+                    const zDelta = ball.pos.z - (hitter.group.position.z - 0.65);
+                    const normTiming = THREE.MathUtils.clamp(0.5 + zDelta * 0.35, 0.08, 0.92);
+                    updateTimingNeedle(normTiming);
+
+                    const courtLimitW = state.isDoubles ? COURT.doublesWidth * 0.42 : COURT.singlesWidth * 0.42;
+                    const hitterSideSign = hitter.group.position.x >= 0 ? 1 : -1;
+
+                    let targetX = 0;
+                    let targetZ = -(COURT.halfLength - 1.8);
+                    let flightTime = isNetVolley ? 0.60 : 0.78;
+                    let topspin = 5.5;
+                    let sidespin = 0;
+                    let trailHex = 0xfef08a;
+                    let callText = isNetVolley ? 'REFLEX VOLLEY!' : 'SWEET SPOT!';
+                    let callColor = '#4ade80';
+
+                    if (normTiming < 0.36) {
+                        // EARLY -> Sharp Cross-Court Angle!
+                        targetX = -hitterSideSign * courtLimitW * (0.78 + Math.random() * 0.18);
+                        flightTime = isNetVolley ? 0.58 : 0.75;
+                        callText = isNetVolley ? 'CROSS VOLLEY!' : 'EARLY (Cross)';
+                        callColor = '#60a5fa';
+                        trailHex = 0x60a5fa;
+                        updateEraSuperUI(14);
+                    } else if (normTiming > 0.64) {
+                        // LATE -> Down the Line!
+                        targetX = hitterSideSign * courtLimitW * (0.70 + Math.random() * 0.18);
+                        flightTime = isNetVolley ? 0.60 : 0.77;
+                        callText = isNetVolley ? 'LINE VOLLEY!' : 'LATE (Line)';
+                        callColor = '#fb923c';
+                        trailHex = 0xfb923c;
+                        updateEraSuperUI(14);
+                    } else {
+                        // SWEET SPOT -> Blistering Power Winner away from Blue Baseline!
+                        const openDir = athletes[1].group.position.x > 0 ? -1 : 1;
+                        targetX = openDir * courtLimitW * 0.84;
+                        flightTime = isNetVolley ? 0.52 : 0.61;
+                        topspin = 7.8;
+                        callText = isNetVolley ? 'SWEET VOLLEY!' : 'SWEET SPOT!';
+                        callColor = '#4ade80';
+                        trailHex = 0xfacc15;
+                        updateEraSuperUI(25);
+                    }
+
+                    // Apply Shot Style Modifiers (Super Shot, Lob, Drop Shot, Slice)
+                    if (shotStyle === 'super' && state.eraCharge >= 100) {
+                        updateEraSuperUI(-100);
+                        const openDir = athletes[1].group.position.x > 0 ? -1 : 1;
+                        targetX = openDir * courtLimitW * 0.88;
+                        targetZ = -(COURT.halfLength - 1.2);
+                        flightTime = 0.44;
+                        topspin = 11.5;
+                        sidespin = -openDir * 3.8;
+                        trailHex = 0x22d3ee;
+                        callText = '⚡ ERA SUPER SHOT!';
+                        callColor = '#22d3ee';
+                        spawnChalkBurst(hitter.group.position.x, hitter.group.position.z, 18);
+                    } else if (shotStyle === 'lob') {
+                        flightTime = 1.32;
+                        topspin = 1.8;
+                        targetZ = -(COURT.halfLength - 1.0);
+                        callText = 'MOON LOB!';
+                        callColor = '#c084fc';
+                    } else if (shotStyle === 'slice') {
+                        flightTime = 0.90;
+                        topspin = -3.8;
+                        sidespin = hitterSideSign * 2.4;
+                        targetZ = -(COURT.serviceLine - 1.6); // Drop-slice short ball
+                        callText = 'CARVE DROP SLICE!';
+                        callColor = '#38bdf8';
+                    }
+
+                    const isSmash = (ball.pos.y > 2.02 && shotStyle !== 'lob') || shotStyle === 'super';
+                    if (ball.pos.y > 2.02 && shotStyle !== 'lob' && shotStyle !== 'super') {
+                        flightTime = 0.48;
+                        topspin = 9.0;
+                        callText = 'JUMP OVERHEAD SMASH!';
+                        callColor = '#facc15';
+                    }
+
+                    sound.playRacketHit(normTiming >= 0.36 && normTiming <= 0.64 ? 'sweet' : 'normal', isSmash);
+                    ball.launchToTarget(targetX, targetZ, flightTime, topspin, sidespin, trailHex);
+                    spawnWorldCallout(callText, hitter.group.position, callColor);
+
+                    state.hittingTeam = 'red';
+                    state.bounceCount = 0;
+                    state.rallyCount++;
+                } else {
+                    hitter.triggerSwing(ball.pos);
+                }
+            }
+        }
+
+        function evaluateBounceRules(bx, bz) {
+            state.bounceCount++;
+            // If Red hit the ball last, it must land on Blue side (bz < 0)
+            const expectedSide = state.hittingTeam === 'red' ? -1 : 1;
+            const actualSide = bz < 0 ? -1 : 1;
+
+            const maxW = (state.isDoubles ? COURT.doublesWidth : COURT.singlesWidth) / 2 + 0.25;
+            const maxL = COURT.halfLength + 0.28;
+
+            if (state.bounceCount === 1) {
+                if (actualSide !== expectedSide || Math.abs(bx) > maxW || Math.abs(bz) > maxL) {
+                    const winner = state.hittingTeam === 'red' ? 'blue' : 'red';
+                    finishPoint(winner, 'OUT!');
+                }
+            } else if (state.bounceCount >= 2) {
+                const winner = state.hittingTeam === 'red' ? 'red' : 'blue';
+                finishPoint(winner, 'WINNER!');
+            }
+        }
+
+        // --- AI TEAM & PARTNER MOVEMENT + AUTO-ASSIST ---
+        let aiServeDelay = 0;
+
+        function updateAllAthletesAI(dt) {
+            // 1. Blue AI Serve when it is Blue's turn to serve
+            const server = athletes[state.serverIndex];
+            if (state.phase === 'SERVE_WAIT' && server.team === 'blue') {
+                aiServeDelay += dt;
+                if (aiServeDelay > 1.15) {
+                    state.phase = 'SERVE_TOSS';
+                    ball.vel.set(0, 7.3, 0);
+                    aiServeDelay = 0;
+                }
+                return;
+            }
+
+            if (state.phase === 'SERVE_TOSS' && server.team === 'blue') {
+                if (ball.vel.y < 1.0 && ball.pos.y > 1.9) {
+                    server.triggerSwing(ball.pos);
+                    triggerTeamSplitStep('red');
+                    document.getElementById('server-badge').style.opacity = '0';
+                    sound.playRacketHit('sweet', true);
+
+                    const tx = state.serveSide * (1.8 + Math.random() * 1.5);
+                    const tz = COURT.serviceLine - 1.1;
+                    ball.launchToTarget(tx, tz, 0.74, 4.2, 0, 0x60a5fa);
+
+                    state.phase = 'RALLY';
+                    state.hittingTeam = 'blue';
+                    state.bounceCount = 0;
+                    state.rallyCount = 1;
+                    updateActionPrompt('TIMING SWING');
+                }
+                return;
+            }
+
+            if (state.phase !== 'RALLY') return;
+
+            // 2. Red Team Movement (Baseline Player + Net Partner with Poaching & Formation)
+            let manualX = 0;
+            let manualZ = 0;
+            if (state.keys['KeyA'] || state.keys['ArrowLeft']) manualX -= 1;
+            if (state.keys['KeyD'] || state.keys['ArrowRight']) manualX += 1;
+            if (state.keys['KeyW'] || state.keys['ArrowUp']) manualZ -= 1;
+            if (state.keys['KeyS'] || state.keys['ArrowDown']) manualZ += 1;
+
+            if (state.hittingTeam === 'blue') {
+                // Ball is coming toward Red Court (+Z)
+                const netInterceptable = state.isDoubles && ball.pos.z > 0.2 && ball.pos.z < 6.4 &&
+                    Math.abs(ball.pos.x - athletes[2].group.position.x) < 3.1;
+
+                if (state.autoSwitchRed) {
+                    state.controlledRedIdx = netInterceptable ? 2 : 0;
+                }
+
+                if (state.controlledRedIdx === 2 && state.isDoubles) {
+                    athletes[2].targetX = THREE.MathUtils.clamp(ball.pos.x + manualX * 2.6, -6.2, 6.2);
+                    athletes[2].targetZ = THREE.MathUtils.clamp(athletes[2].homeZ + manualZ * 1.8, 2.2, 7.2);
+                    athletes[0].targetX = THREE.MathUtils.clamp(ball.pos.x * 0.75, -6.2, 6.2);
+                    athletes[0].targetZ = 11.4;
+                } else {
+                    athletes[0].targetX = THREE.MathUtils.clamp(ball.pos.x + manualX * 2.5, -6.5, 6.5);
+                    athletes[0].targetZ = ball.pos.z > 2.5
+                        ? THREE.MathUtils.clamp(ball.pos.z + 1.0 + manualZ * 1.5, 5.2, 13.5)
+                        : 11.5;
+
+                    if (state.isDoubles) {
+                        const poachInfluence = state.doublesTactic === 'Net Rush' ? 0.65 : 0.42;
+                        athletes[2].targetX = THREE.MathUtils.clamp(
+                            athletes[2].homeX * (1 - poachInfluence) + ball.pos.x * poachInfluence,
+                            -5.2, 5.2
+                        );
+                        athletes[2].targetZ = state.doublesTactic === 'Net Rush' ? 3.2 : 4.2;
+                    }
+                }
+
+                // Live Timing Bar Preview Needle while ball approaches Red Player
+                if (ball.pos.z > 0) {
+                    const activeRed = athletes[state.controlledRedIdx];
+                    const previewNorm = THREE.MathUtils.clamp(0.5 + (ball.pos.z - (activeRed.group.position.z - 0.65)) * 0.18, 0.05, 0.95);
+                    updateTimingNeedle(previewNorm);
+                }
+            } else {
+                // Recover toward home positions after hitting
+                athletes[0].targetX = athletes[0].homeX * 0.35 + manualX * 3.0;
+                athletes[0].targetZ = state.doublesTactic === 'Net Rush' ? 6.8 : 11.6;
+                if (state.isDoubles) {
+                    athletes[2].targetX = athletes[2].homeX * 0.70 + manualX * 2.0;
+                    athletes[2].targetZ = state.doublesTactic === 'Net Rush' ? 3.2 : 4.2;
+                }
+            }
+
+            // 3. Blue AI Team Movement & Shot Return (Far Court -Z)
+            if (state.hittingTeam === 'red') {
+                // Blue Net Partner checks if they can intercept a volley at the net
+                if (state.isDoubles) {
+                    athletes[3].targetX = THREE.MathUtils.clamp(athletes[3].homeX * 0.55 + ball.pos.x * 0.45, -5.2, 5.2);
+                    athletes[3].targetZ = -4.6;
+
+                    const netDistX = Math.abs(athletes[3].group.position.x - ball.pos.x);
+                    const netDistZ = Math.abs(athletes[3].group.position.z - ball.pos.z);
+                    if (ball.pos.z < -2.0 && ball.pos.z > -6.2 && netDistX < 1.85 && netDistZ < 1.7 && ball.pos.y < 2.2) {
+                        athletes[3].triggerSwing(ball.pos, true);
+                        triggerTeamSplitStep('red');
+                        sound.playRacketHit('sweet', false);
+                        const aimX = (Math.random() - 0.5) * 8.5;
+                        ball.launchToTarget(aimX, 9.2, 0.68, 4.0, 0, 0x60a5fa);
+                        spawnWorldCallout('NET VOLLEY!', athletes[3].group.position, '#60a5fa');
+                        state.hittingTeam = 'blue';
+                        state.bounceCount = 0;
+                        state.rallyCount++;
+                        return;
+                    }
+                }
+
+                // Blue Baseline AI tracks ball
+                athletes[1].targetX = THREE.MathUtils.clamp(ball.pos.x, -6.5, 6.5);
+                athletes[1].targetZ = ball.pos.z < -2.5
+                    ? THREE.MathUtils.clamp(ball.pos.z - 0.6, -13.5, -4.5)
+                    : -11.5;
+
+                const baseDistX = Math.abs(athletes[1].group.position.x - ball.pos.x);
+                const baseDistZ = Math.abs(athletes[1].group.position.z - ball.pos.z);
+                if (ball.pos.z < -2.0 && baseDistX < 2.35 && baseDistZ < 2.25 && ball.pos.y < 2.5) {
+                    athletes[1].triggerSwing(ball.pos, false);
+                    triggerTeamSplitStep('red');
+                    sound.playRacketHit('normal', false);
+
+                    const courtLimit = (state.isDoubles ? COURT.doublesWidth : COURT.singlesWidth) * 0.38;
+                    const aimX = THREE.MathUtils.clamp((athletes[0].group.position.x > 0 ? -1 : 1) * courtLimit * (0.5 + Math.random() * 0.45), -courtLimit, courtLimit);
+                    const aimZ = 10.2 + Math.random() * 1.5;
+                    ball.launchToTarget(aimX, aimZ, 0.80, 5.5, 0, 0x60a5fa);
+
+                    state.hittingTeam = 'blue';
+                    state.bounceCount = 0;
+                    state.rallyCount++;
+                }
+            } else {
+                // Blue Team recovers to ready positions
+                athletes[1].targetX = ball.pos.x * 0.25;
+                athletes[1].targetZ = -11.6;
+                if (state.isDoubles) {
+                    athletes[3].targetX = athletes[3].homeX * 0.75;
+                    athletes[3].targetZ = -4.8;
+                }
+            }
+        }
+
+        // --- POINT SCORING, CHARACTER CELEBRATION EMOTES & SCOREBOARD UPDATES ---
+        const SCORE_STRINGS = ['00', '15', '30', '40'];
+
+        function finishPoint(winningTeam, reasonLabel) {
+            if (state.phase === 'POINT_OVER') return;
+            state.phase = 'POINT_OVER';
+
+            const redWon = winningTeam === 'red';
+            sound.playCrowdApplause(redWon);
+            spawnWorldCallout(`${reasonLabel} (${redWon ? 'RED POINT' : 'BLUE POINT'})`, ball.pos, redWon ? '#4ade80' : '#60a5fa');
+
+            // Trigger Character Emotes (Fist pump & racket twirl for winners, slump for losers)
+            athletes.forEach((a, idx) => {
+                if (a.team === winningTeam) {
+                    a.triggerEmote(idx % 2 === 0 ? 'fistpump' : 'twirl');
+                } else {
+                    a.triggerEmote('slump');
+                }
+            });
+
+            if (redWon) state.redPoints++;
+            else state.bluePoints++;
+
+            let gameWinner = null;
+            if (state.redPoints >= 4 && state.redPoints - state.bluePoints >= 2) gameWinner = 'red';
+            else if (state.bluePoints >= 4 && state.bluePoints - state.redPoints >= 2) gameWinner = 'blue';
+
+            if (gameWinner) {
+                if (gameWinner === 'red') state.redGames++;
+                else state.blueGames++;
+                state.redPoints = 0;
+                state.bluePoints = 0;
+                state.serverIndex = state.serverIndex === 0 ? 1 : 0;
+                state.serveSide = 1;
+                sound.announce(gameWinner === 'red' ? 'Game, Red Team on Era Tennis Court!' : 'Game, Blue Team on Era Tennis Court!');
+            } else {
+                state.serveSide *= -1;
+            }
+
+            refreshScoreboardHUD();
+
+            setTimeout(() => {
+                if (state.phase !== 'REPLAY') {
+                    setupPlayersForServe();
+                }
+            }, 2100);
+        }
+
+        function refreshScoreboardHUD() {
+            const r = state.redPoints;
+            const b = state.bluePoints;
+            const rEl = document.getElementById('hud-score-red');
+            const bEl = document.getElementById('hud-score-blue');
+
+            if (r >= 3 && b >= 3) {
+                if (r === b) {
+                    rEl.textContent = '40';
+                    bEl.textContent = '40';
+                } else if (r > b) {
+                    rEl.textContent = 'AD';
+                    bEl.textContent = '40';
+                } else {
+                    rEl.textContent = '40';
+                    bEl.textContent = 'AD';
+                }
+            } else {
+                rEl.textContent = SCORE_STRINGS[Math.min(r, 3)];
+                bEl.textContent = SCORE_STRINGS[Math.min(b, 3)];
+            }
+
+            document.getElementById('red-games-count').textContent = state.redGames;
+            document.getElementById('blue-games-count').textContent = state.blueGames;
+
+            document.getElementById('red-game-dot-1').className = `w-3.5 h-3.5 rounded-full border border-white/40 ${state.redGames >= 1 ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-white/10'}`;
+            document.getElementById('red-game-dot-2').className = `w-3.5 h-3.5 rounded-full border border-white/40 ${state.redGames >= 2 ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-white/10'}`;
+            document.getElementById('blue-game-dot-1').className = `w-3.5 h-3.5 rounded-full border border-white/40 ${state.blueGames >= 1 ? 'bg-blue-500 shadow-[0_0_8px_#3b82f6]' : 'bg-white/10'}`;
+            document.getElementById('blue-game-dot-2').className = `w-3.5 h-3.5 rounded-full border border-white/40 ${state.blueGames >= 2 ? 'bg-blue-500 shadow-[0_0_8px_#3b82f6]' : 'bg-white/10'}`;
+        }
+
+        /***********************************************************************
+         * 7. INSTANT REPLAY SYSTEM, CAMERA MODES & UI CONTROLS
+         ***********************************************************************/
+        function recordReplaySnapshot() {
+            if (state.phase !== 'RALLY' && state.phase !== 'SERVE_TOSS') return;
+            state.replayFrames.push({
+                ballPos: ball.pos.clone(),
+                athletesPos: athletes.map(a => ({
+                    x: a.group.position.x,
+                    z: a.group.position.z,
+                    swing: a.isSwinging,
+                    swingProg: a.swingProgress
+                }))
+            });
+            if (state.replayFrames.length > 260) {
+                state.replayFrames.shift();
+            }
+        }
+
+        function triggerInstantReplay() {
+            if (state.replayFrames.length < 15) {
+                spawnWorldCallout('PLAY A RALLY FIRST!', athletes[0].group.position, '#facc15');
+                return;
+            }
+            state.phase = 'REPLAY';
+            state.replayPlaybackIdx = 0;
+            document.getElementById('match-status-text').textContent = '🎥 INSTANT SLOW-MO REPLAY';
+            document.getElementById('server-badge').style.opacity = '0';
+        }
+
+        function updateReplayPlayback() {
+            if (state.phase !== 'REPLAY') return;
+            const idx = Math.floor(state.replayPlaybackIdx);
+            if (idx >= state.replayFrames.length) {
+                document.getElementById('match-status-text').textContent = 'ERA TENNIS COURT • UPWARD FLICK / CLICK OR SPACE TO SERVE';
+                setupPlayersForServe();
+                return;
+            }
+            const frame = state.replayFrames[idx];
+            ball.pos.copy(frame.ballPos);
+            ball.shadowMesh.position.set(ball.pos.x, 0.025, ball.pos.z);
+            frame.athletesPos.forEach((ap, i) => {
+                athletes[i].group.position.x = ap.x;
+                athletes[i].group.position.z = ap.z;
+            });
+            state.replayPlaybackIdx += 0.55; // Smooth slow-motion
+        }
+
+        function toggleLyriaAudio() {
+            state.lyriaEnabled = !state.lyriaEnabled;
+            const dot = document.getElementById('lyria-dot');
+            if (state.lyriaEnabled) {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]';
+                sound.init();
+            } else {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+            }
+        }
+
+        function cycleCameraMode() {
+            const modes = ['Rally', 'Broadcast', 'Low', 'Flyover'];
+            const next = (modes.indexOf(state.cameraMode) + 1) % modes.length;
+            state.cameraMode = modes[next];
+            document.getElementById('cam-label').textContent = state.cameraMode;
+        }
+
+        function toggleDoublesMode() {
+            state.isDoubles = !state.isDoubles;
+            document.getElementById('mode-label').textContent = state.isDoubles ? '2v2 Doubles' : '1v1 Singles';
+            document.getElementById('avatar-red-2').classList.toggle('hidden', !state.isDoubles);
+            document.getElementById('avatar-blue-2').classList.toggle('hidden', !state.isDoubles);
+            setupPlayersForServe();
+        }
+
+        // --- WEBCAM MOTION TRACKER ---
+        let camStream = null;
+        let prevCamFrame = null;
+        let lastCamSwing = 0;
+
+        async function toggleWebcam() {
+            const pip = document.getElementById('webcam-pip');
+            const dot = document.getElementById('webcam-dot');
+            const video = document.getElementById('webcam-video');
+
+            if (state.webcamEnabled) {
+                state.webcamEnabled = false;
+                pip.classList.add('hidden');
+                dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+                if (camStream) {
+                    camStream.getTracks().forEach(t => t.stop());
+                    camStream = null;
+                }
+                return;
+            }
+
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 160, height: 120, facingMode: 'user' },
+                    audio: false
+                });
+                video.srcObject = camStream;
+                state.webcamEnabled = true;
+                pip.classList.remove('hidden');
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+            } catch (e) {
+                spawnWorldCallout('WEBCAM PERMISSION DENIED', athletes[0].group.position, '#f87171');
+            }
+        }
+
+        function processWebcamFrame() {
+            if (!state.webcamEnabled) return;
+            const video = document.getElementById('webcam-video');
+            const cCanvas = document.getElementById('webcam-canvas');
+            if (video.readyState < 2) return;
+
+            const ctx = cCanvas.getContext('2d', { willReadFrequently: true });
+            const w = cCanvas.width;
+            const h = cCanvas.height;
+
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -w, 0, w, h);
+            ctx.restore();
+
+            const frame = ctx.getImageData(0, 0, w, h);
+            const data = frame.data;
+
+            if (prevCamFrame) {
+                let sx = 0, sy = 0, count = 0;
+                for (let y = 0; y < h; y += 2) {
+                    for (let x = 0; x < w; x += 2) {
+                        const i = (y * w + x) * 4;
+                        const diff = Math.abs(data[i] - prevCamFrame[i]) +
+                                     Math.abs(data[i + 1] - prevCamFrame[i + 1]) +
+                                     Math.abs(data[i + 2] - prevCamFrame[i + 2]);
+                        if (diff > 75) {
+                            sx += x; sy += y; count++;
+                            data[i] = 52; data[i + 1] = 211; data[i + 2] = 153;
+                        }
+                    }
+                }
+                ctx.putImageData(frame, 0, 0);
+
+                if (count > 25) {
+                    const cx = (sx / count) / w;
+                    const cy = (sy / count) / h;
+                    const marker = document.getElementById('webcam-marker');
+                    marker.style.left = `${cx * 100}%`;
+                    marker.style.top = `${cy * 100}%`;
+
+                    const now = performance.now();
+                    if (count > 165 && now - lastCamSwing > 360) {
+                        lastCamSwing = now;
+                        document.getElementById('webcam-state-text').textContent = 'SWING!';
+                        executeUserSwing('topspin');
+                    } else {
+                        document.getElementById('webcam-state-text').textContent = 'ACTIVE';
+                    }
+                }
+            }
+            prevCamFrame = new Uint8ClampedArray(data);
+        }
+
+        // --- MOUSE FLICK & KEYBOARD INPUT LISTENERS ---
+        let dragStart = null;
+
+        canvas.addEventListener('pointerdown', (e) => {
+            dragStart = { x: e.clientX, y: e.clientY, t: performance.now() };
+            if (state.phase === 'SERVE_WAIT' || state.phase === 'SERVE_TOSS') {
+                executeUserSwing('topspin');
+            }
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (!dragStart) return;
+            const dy = e.clientY - dragStart.y;
+            const dt = performance.now() - dragStart.t;
+            dragStart = null;
+
+            if (state.phase === 'RALLY' && dt < 450) {
+                if (state.eraCharge >= 100 && dy < -60) {
+                    executeUserSwing('super');
+                } else {
+                    const style = dy > 45 ? 'slice' : 'topspin';
+                    executeUserSwing(style);
+                }
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            state.keys[e.code] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                executeUserSwing(state.eraCharge >= 100 && e.shiftKey ? 'super' : 'topspin');
+            } else if (e.code === 'KeyQ' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                if (state.eraCharge >= 100) executeUserSwing('super');
+                else executeUserSwing('topspin');
+            } else if (e.code === 'KeyJ') {
+                executeUserSwing('topspin');
+            } else if (e.code === 'KeyK') {
+                executeUserSwing('slice');
+            } else if (e.code === 'KeyL') {
+                executeUserSwing('lob');
+            } else if (e.code === 'KeyE' || e.code === 'Tab') {
+                e.preventDefault();
+                triggerNetPoachOrSwitch();
+            } else if (e.code === 'KeyT') {
+                cycleDoublesTactic();
+            } else if (e.code === 'KeyC') {
+                cycleCameraMode();
+            } else if (e.code === 'KeyR') {
+                triggerInstantReplay();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            state.keys[e.code] = false;
+        });
+
+        /***********************************************************************
+         * 8. MAIN RENDER, SPECTATOR WAVE & FLOATING SERVER TAG LOOP
+         ***********************************************************************/
+        function updateFloatingServerBadge(elapsed) {
+            const badge = document.getElementById('server-badge');
+            if (!badge || state.phase === 'RALLY' || state.phase === 'REPLAY') return;
+
+            const server = athletes[state.serverIndex];
+            const worldPos = server.group.position.clone();
+            worldPos.y += 2.35 + Math.sin(elapsed * 4.5) * 0.08;
+
+            const proj = worldPos.project(camera);
+            const x = (proj.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-proj.y * 0.5 + 0.5) * window.innerHeight;
+
+            badge.style.left = `${x}px`;
+            badge.style.top = `${y}px`;
+        }
+
+        function updateCameraView(dt, elapsed) {
+            const targetPos = new THREE.Vector3();
+            const lookTarget = new THREE.Vector3();
+
+            if (state.phase === 'REPLAY') {
+                // Dramatic Orbiting Replay Camera
+                targetPos.set(Math.sin(elapsed * 0.65) * 16, 8.5, Math.cos(elapsed * 0.65) * 18);
+                lookTarget.copy(ball.pos);
+            } else if (state.cameraMode === 'Rally') {
+                // Exact Camera Framing from Reference Screenshot
+                targetPos.set(athletes[0].group.position.x * 0.16, 12.6, 23.6);
+                lookTarget.set(ball.pos.x * 0.15, 0.5, -1.2);
+            } else if (state.cameraMode === 'Broadcast') {
+                targetPos.set(0, 15.5, 26.8);
+                lookTarget.set(0, 0.2, -1.5);
+            } else if (state.cameraMode === 'Low') {
+                targetPos.set(athletes[0].group.position.x * 0.55, 4.6, athletes[0].group.position.z + 6.8);
+                lookTarget.set(ball.pos.x * 0.35, 1.0, ball.pos.z * 0.3 - 3.0);
+            } else if (state.cameraMode === 'Flyover') {
+                // Center Court Flyover Drone Orbit
+                targetPos.set(Math.sin(elapsed * 0.35) * 24, 15.0, Math.cos(elapsed * 0.35) * 24);
+                lookTarget.set(0, 1.0, 0);
+            }
+
+            camera.position.lerp(targetPos, Math.min(1, dt * 5.5));
+            camera.lookAt(lookTarget);
+        }
+
+        let prevTime = performance.now();
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+            const dt = Math.min((now - prevTime) / 1000, 0.05);
+            prevTime = now;
+            const elapsed = now * 0.001;
+
+            processWebcamFrame();
+
+            if (state.phase === 'REPLAY') {
+                updateReplayPlayback();
+            } else {
+                updateAllAthletesAI(dt);
+                ball.update(dt);
+                recordReplaySnapshot();
+            }
+
+            athletes.forEach(a => a.update(dt, ball.pos, elapsed));
+            updatePuffs(dt);
+
+            // Animate 140+ Spectators (Head-turning to follow ball + Cheering on Points)
+            const isCheering = state.phase === 'POINT_OVER';
+            for (let i = 0; i < spectators.length; i++) {
+                const s = spectators[i];
+                if (isCheering) {
+                    s.position.y = s.userData.baseY + Math.abs(Math.sin(elapsed * 12 + s.userData.phase)) * 0.22;
+                } else {
+                    s.position.y = s.userData.baseY;
+                }
+                // Subtle head turn following the tennis ball along Z
+                const lookZ = (ball.pos.z - s.position.z) * 0.025 * s.userData.sideSign;
+                s.userData.headPivot.rotation.y = THREE.MathUtils.clamp(lookZ, -0.45, 0.45);
+            }
+
+            updateCameraView(dt, elapsed);
+            updateFloatingServerBadge(elapsed);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = function () {
+            setupPlayersForServe();
+            refreshScoreboardHUD();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>

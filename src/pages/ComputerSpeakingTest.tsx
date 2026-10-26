@@ -229,11 +229,13 @@ export function ComputerSpeakingTest() {
                     });
 
                     if (user) {
+                      const isHw = (id && String(id).toLowerCase().includes('homework')) ||
+                                   (assignmentTitle && String(assignmentTitle).toLowerCase().includes('homework'));
                       createSubmissionNotification({
                         userId: user.uid,
                         studentName: activeCandidateName,
                         assignmentTitle: assignmentTitle,
-                        type: 'practice_test',
+                        type: isHw ? 'homework' : 'practice_test',
                         testType: 'speaking',
                         submissionId: docRef.id
                       }).catch(console.warn);

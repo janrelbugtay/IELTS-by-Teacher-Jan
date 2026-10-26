@@ -331,11 +331,13 @@ export function ComputerListeningTest({ submissionId }: { submissionId?: string 
         requiresEvaluation: false
       });
 
+      const isHw = (id && String(id).toLowerCase().includes('homework')) ||
+                   (title && String(title).toLowerCase().includes('homework'));
       createSubmissionNotification({
         userId: user.uid,
         studentName: currentState.studentName || user.displayName || 'Student',
         assignmentTitle: title,
-        type: 'practice_test',
+        type: isHw ? 'homework' : 'practice_test',
         testType: 'listening',
         bandScore: bandScore,
         score: score,

@@ -646,8 +646,6 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
             >
               <EraVerseAvatar3D
                 {...activePreview}
-                width={440}
-                height={360}
                 interactive={true}
                 showPedestal={true}
                 animationMode={animMode}

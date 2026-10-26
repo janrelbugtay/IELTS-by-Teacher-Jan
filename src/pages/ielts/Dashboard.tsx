@@ -579,6 +579,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <EraVerseAvatar3D
               {...eraverseLook}
               name={userProfile?.nickname || firstName || eraverseLook.name}
+              cameraFocus="full"
+              showPedestal={true}
               className="w-full h-full"
             />
           </div>
@@ -2476,6 +2478,9 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       accessoryType={editAvatarAccessoryType}
                       name={editNickname || eraverseLook.name}
                       cohort={eraverseLook.cohort}
+                      cameraFocus="full"
+                      showPedestal={true}
+                      className="w-full h-full"
                     />
                   </div>
                   <div>

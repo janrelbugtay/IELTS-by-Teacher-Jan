@@ -10,6 +10,16 @@ import multer from "multer";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+process.env.DISABLE_HMR = "true";
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 dotenv.config();
 
 const ai = new GoogleGenAI({ 
@@ -1018,9 +1028,20 @@ ${text}`
     console.log(`Server running on http://localhost:${PORT}`);
   });
 
+  server.on("error", (err: any) => {
+    console.error("HTTP Server error:", err);
+  });
+
   const wss = new WebSocketServer({ server, path: '/live' });
 
+  wss.on("error", (err) => {
+    console.error("WebSocket server error:", err);
+  });
+
   wss.on("connection", async (clientWs) => {
+    clientWs.on("error", (err) => {
+      console.error("Client WS error:", err);
+    });
     console.log("New client connected to /live");
     clientWs.send(JSON.stringify({ text: 'Hello from server /live' }));
     try {

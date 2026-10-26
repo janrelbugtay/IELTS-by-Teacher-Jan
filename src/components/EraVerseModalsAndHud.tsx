@@ -28,7 +28,7 @@ import {
 } from '../utils/eraverseFeatures';
 
 interface SportsSideActionsHudProps {
-  inSportsZone: 'none' | 'football' | 'pickleball' | 'playground';
+  inSportsZone: 'none' | 'football' | 'tennis' | 'pickleball' | 'playground';
   isCrouching: boolean;
   footballGoals: number;
   aiFootballGoals: number;
@@ -58,8 +58,8 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
 }) => {
   return (
     <>
-      {/* Live Sports Match Scoreboard Banner when on the Football Field or Pickleball Court */}
-      {(inSportsZone === 'football' || inSportsZone === 'pickleball') && (
+      {/* Live Sports Match Scoreboard Banner when on the Football Field or Era Tennis Court */}
+      {(inSportsZone === 'football' || inSportsZone === 'tennis' || inSportsZone === 'pickleball') && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
           {inSportsZone === 'football' ? (
             <div className="bg-slate-950/95 border-2 border-emerald-400/70 rounded-2xl px-6 py-2.5 text-white shadow-2xl flex items-center gap-5">
@@ -77,17 +77,17 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
               </div>
             </div>
           ) : (
-            <div className="bg-slate-950/95 border-2 border-cyan-400/70 rounded-2xl px-6 py-2.5 text-white shadow-2xl flex items-center gap-5">
+            <div className="bg-slate-950/95 border-2 border-emerald-400/80 rounded-2xl px-6 py-2.5 text-white shadow-2xl flex items-center gap-5">
               <div className="text-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-300">YOU</div>
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">YOU (TENNIS)</div>
                 <div className="text-2xl font-black text-white">{pickleballScore}</div>
               </div>
-              <div className="px-3 py-1 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-center">
-                <div className="text-[10px] font-black uppercase tracking-widest text-cyan-300">🏓 PICKLEBALL COURT</div>
-                <div className="text-[11px] text-slate-200 font-bold">Press HIT (G) when ball is near!</div>
+              <div className="px-3.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-center">
+                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300">🎾 ERA TENNIS COURT</div>
+                <div className="text-[11px] text-slate-100 font-bold">Press SWING (G) when ball is near!</div>
               </div>
               <div className="text-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">COACH LEO</div>
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">COACH LEO (PRO)</div>
                 <div className="text-2xl font-black text-white">{aiPickleballScore}</div>
               </div>
             </div>
@@ -111,11 +111,11 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
         </div>
 
         {inSportsZone !== 'none' && (
-          <div className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow">
+          <div className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shadow">
             {inSportsZone === 'football'
               ? '⚽ Football Field Actions Active'
-              : inSportsZone === 'pickleball'
-              ? '🏓 Pickleball Court Actions Active'
+              : inSportsZone === 'tennis' || inSportsZone === 'pickleball'
+              ? '🎾 Era Tennis Court Actions Active'
               : '🎪 Playground Actions Active'}
           </div>
         )}
@@ -152,21 +152,21 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
             <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">JUMP</span>
           </button>
 
-          {/* HIT / SMASH BUTTON (G) */}
+          {/* HIT / SWING BUTTON (G) */}
           <button
             type="button"
             onClick={onHit}
-            title="Hit / Smash Pickleball (Key: G)"
+            title="Swing Tennis Racket / Power Return (Key: G)"
             className={`w-16 h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
-              inSportsZone === 'pickleball'
-                ? 'bg-[#3b1d06]/95 border-amber-400 text-amber-400 ring-4 ring-amber-400/30 scale-105'
+              inSportsZone === 'tennis' || inSportsZone === 'pickleball'
+                ? 'bg-emerald-950/95 border-emerald-400 text-emerald-300 ring-4 ring-emerald-400/40 scale-105'
                 : 'bg-[#2a1505]/90 border-amber-500/80 text-amber-400 hover:border-amber-300'
             }`}
           >
             <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
               <path d="M8.5 5A2.5 2.5 0 0 0 6 7.5v4.2l-1.3-.8a2 2 0 0 0-2.7.7c-.6.9-.3 2.1.6 2.7l5.2 3.5c1.2.8 2.6 1.2 4 1.2h3.2c2.8 0 5-2.2 5-5V9.5a2.5 2.5 0 0 0-4.3-1.7A2.5 2.5 0 0 0 12.2 6a2.5 2.5 0 0 0-3.7-1Z" />
             </svg>
-            <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">HIT (G)</span>
+            <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">SWING (G)</span>
           </button>
 
           {/* CROUCH BUTTON (C) */}

@@ -70,142 +70,186 @@ export function NotificationDropdown() {
     return () => { isMounted = false; };
   }, [user, userCourse]);
 
-  // Listen to Firestore notifications & filter out invalid teacher test records
+  // Listen to Firestore notifications & submissions in real-time
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
+    // Cache to hold user docs (name, nickname, folderName, course)
+    const userCache: Record<string, any> = {};
+
+    let rawNotifs: NotificationItem[] = [];
+    let rawSubs: any[] = [];
+
+    const mergeAndSet = async () => {
+      if (!isMounted) return;
+
+      const itemsMap = new Map<string, NotificationItem>();
+
+      // 1. Process items from `notifications` collection
+      for (const n of rawNotifs) {
+        // Strictly exclude teacher and admin test attempts
+        if (isTeacherOrAdmin(n.userId, undefined, n.userName, n.userNickname)) {
+          continue;
+        }
+
+        const isHw = n.type === 'homework' ||
+          (n.title && n.title.toLowerCase().includes('homework'));
+        
+        const item: NotificationItem = {
+          ...n,
+          type: isHw ? 'homework' : 'practice_test'
+        };
+
+        const key = item.submissionId || item.id || `notif_${Math.random()}`;
+        itemsMap.set(key, item);
+      }
+
+      // 2. Process items from `submissions` collection
+      for (const s of rawSubs) {
+        const sDocId = s.id;
+        const sUserId = s.userId || '';
+        const rawStudentName = s.studentName || s.candidateName || '';
+
+        // Strictly exclude teacher and admin test attempts
+        if (isTeacherOrAdmin(sUserId, undefined, rawStudentName)) {
+          continue;
+        }
+
+        // If already exists from notifications with matching submissionId or id, ensure type is accurate
+        if (itemsMap.has(sDocId)) {
+          const existing = itemsMap.get(sDocId)!;
+          const isHw = existing.type === 'homework' ||
+            (s.assignmentId && String(s.assignmentId).toLowerCase().includes('homework')) ||
+            (s.assignmentTitle && String(s.assignmentTitle).toLowerCase().includes('homework')) ||
+            s.assignmentType === 'homework' ||
+            s.isHomework === true;
+          if (isHw) existing.type = 'homework';
+          continue;
+        }
+
+        let uInfo = userCache[sUserId];
+        if (!uInfo && sUserId) {
+          try {
+            const uSnap = await getDoc(doc(db, 'users', sUserId));
+            uInfo = uSnap.exists() ? uSnap.data() : {};
+            userCache[sUserId] = uInfo;
+          } catch {
+            userCache[sUserId] = {};
+            uInfo = {};
+          }
+        }
+        uInfo = uInfo || {};
+
+        // Strictly skip if user document is teacher/admin
+        if (
+          uInfo.role === 'admin' ||
+          uInfo.isAdmin === true ||
+          isTeacherOrAdmin(sUserId, uInfo.email || uInfo.authEmail, rawStudentName, uInfo.nickname)
+        ) {
+          continue;
+        }
+
+        let studentName = s.studentName || s.candidateName || uInfo.name || uInfo.displayName || 'Student';
+        if (studentName.toUpperCase() === 'CANDIDATE' && (uInfo.name || uInfo.displayName)) {
+          studentName = uInfo.name || uInfo.displayName;
+        }
+
+        if (isTeacherOrAdmin(sUserId, undefined, studentName, uInfo.nickname)) {
+          continue;
+        }
+
+        const isHw = (s.assignmentId && String(s.assignmentId).toLowerCase().includes('homework')) ||
+                     (s.assignmentTitle && String(s.assignmentTitle).toLowerCase().includes('homework')) ||
+                     (s.title && String(s.title).toLowerCase().includes('homework')) ||
+                     s.assignmentType === 'homework' ||
+                     s.type === 'homework' ||
+                     s.isHomework === true;
+
+        let testType: any = s.assignmentType || 'general';
+        const at = (s.assignmentType || '').toLowerCase();
+        const aid = (s.assignmentId || '').toLowerCase();
+        if (at.includes('writing') || aid.includes('writing')) testType = 'writing';
+        else if (at.includes('speaking') || aid.includes('speaking')) testType = 'speaking';
+        else if (at.includes('reading') || aid.includes('reading')) testType = 'reading';
+        else if (at.includes('listening') || aid.includes('listening')) testType = 'listening';
+
+        const fallbackItem: NotificationItem = {
+          id: `sub_${sDocId}`,
+          submissionId: sDocId,
+          userId: sUserId,
+          userName: studentName,
+          userNickname: uInfo.nickname || '',
+          userPhotoURL: uInfo.photoURL || '',
+          course: s.course || uInfo.course || 'IELTS',
+          folderId: s.folderId || uInfo.folderId || null,
+          folderName: s.folderName || uInfo.folderName || null,
+          type: isHw ? 'homework' : 'practice_test',
+          testType: testType,
+          title: s.assignmentTitle || s.title || (isHw ? 'IELTS Homework' : 'Practice Test'),
+          bandScore: s.bandScore,
+          score: s.score,
+          createdAt: s.createdAt
+        };
+
+        itemsMap.set(sDocId, fallbackItem);
+      }
+
+      const combined = Array.from(itemsMap.values());
+      combined.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (typeof a.createdAt === 'number' ? a.createdAt : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0));
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (typeof b.createdAt === 'number' ? b.createdAt : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0));
+        return timeB - timeA;
+      });
+
+      if (isMounted) {
+        setNotifications(combined);
+      }
+    };
+
+    // 1. Subscribe to notifications
     const notifQ = query(
       collection(db, 'notifications'),
       orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(100)
     );
-
-    const unsubscribe = onSnapshot(notifQ, async (snapshot) => {
-      if (!isMounted) return;
-      
-      const firestoreItems: NotificationItem[] = [];
-      
-      snapshot.forEach((docSnap) => {
-        const d = docSnap.data();
-        const item = { id: docSnap.id, ...d } as NotificationItem;
-
-        // Auto-clean & exclude teacher/admin internal testing attempts
-        if (isTeacherOrAdmin(item.userId, undefined, item.userName, item.userNickname)) {
-          if (docSnap.id) {
-            deleteDoc(doc(db, 'notifications', docSnap.id)).catch(console.warn);
-          }
-          return;
-        }
-
-        firestoreItems.push(item);
-      });
-
-      // If very few notifications exist in collection, check recent student submissions
-      if (firestoreItems.length < 3) {
-        try {
-          const subQ = query(collection(db, 'submissions'), orderBy('createdAt', 'desc'), limit(20));
-          const subSnap = await getDocs(subQ);
-          const userCache: Record<string, any> = {};
-
-          const fallbackItems: NotificationItem[] = [];
-          for (const sDoc of subSnap.docs) {
-            const sData = sDoc.data();
-            const sUserId = sData.userId;
-            const sStudentName = sData.studentName || '';
-
-            // STRICT: Skip any teacher/admin submissions
-            if (isTeacherOrAdmin(sUserId, undefined, sStudentName)) {
-              continue;
-            }
-
-            // Check if already in firestoreItems
-            if (firestoreItems.some(item => item.submissionId === sDoc.id || item.id === sDoc.id)) {
-              continue;
-            }
-
-            if (!userCache[sUserId]) {
-              try {
-                const uSnap = await getDoc(doc(db, 'users', sUserId));
-                userCache[sUserId] = uSnap.exists() ? uSnap.data() : {};
-              } catch {
-                userCache[sUserId] = {};
-              }
-            }
-
-            const uInfo = userCache[sUserId] || {};
-
-            // STRICT: Skip if user document is teacher/admin
-            if (
-              uInfo.role === 'admin' || 
-              uInfo.isAdmin === true || 
-              isTeacherOrAdmin(sUserId, uInfo.email || uInfo.authEmail, uInfo.name || uInfo.displayName, uInfo.nickname)
-            ) {
-              continue;
-            }
-
-            const isHw = (sData.assignmentId && String(sData.assignmentId).toLowerCase().includes('homework')) ||
-                         (sData.assignmentTitle && String(sData.assignmentTitle).toLowerCase().includes('homework')) ||
-                         sData.assignmentType === 'homework';
-
-            fallbackItems.push({
-              id: `sub_${sDoc.id}`,
-              userId: sUserId,
-              userName: sStudentName || uInfo.name || uInfo.displayName || 'Student',
-              userNickname: uInfo.nickname || '',
-              userPhotoURL: uInfo.photoURL || '',
-              course: uInfo.course || 'IELTS',
-              folderId: uInfo.folderId || null,
-              folderName: uInfo.folderName || null,
-              type: isHw ? 'homework' : 'practice_test',
-              testType: sData.assignmentType || 'writing',
-              title: sData.assignmentTitle || (isHw ? 'Homework Submission' : 'Practice Test'),
-              bandScore: sData.bandScore,
-              score: sData.score,
-              submissionId: sDoc.id,
-              createdAt: sData.createdAt
-            });
-          }
-
-          const combined = [...firestoreItems, ...fallbackItems];
-          combined.sort((a, b) => {
-            const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (typeof a.createdAt === 'number' ? a.createdAt : 0);
-            const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (typeof b.createdAt === 'number' ? b.createdAt : 0);
-            return timeB - timeA;
-          });
-
-          if (isMounted) {
-            setNotifications(combined);
-          }
-          return;
-        } catch (e) {
-          console.warn('Error fetching fallback student submissions:', e);
-        }
-      }
-
-      if (isMounted) {
-        setNotifications(firestoreItems);
-      }
+    const unsubNotifs = onSnapshot(notifQ, (snapshot) => {
+      rawNotifs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as NotificationItem));
+      mergeAndSet();
     }, (error) => {
-      console.warn('Notifications subscription error:', error);
+      console.warn('Notifications snapshot error:', error);
+    });
+
+    // 2. Subscribe to submissions
+    const subQ = query(
+      collection(db, 'submissions'),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+    const unsubSubs = onSnapshot(subQ, (snapshot) => {
+      rawSubs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      mergeAndSet();
+    }, (error) => {
+      console.warn('Submissions snapshot error:', error);
     });
 
     return () => {
       isMounted = false;
-      unsubscribe();
+      unsubNotifs();
+      unsubSubs();
     };
   }, [user]);
 
   // RESTRICTED FILTER LOGIC:
   // Admin sees all student notifications.
   // Regular students ONLY see notifications for students in the SAME CLASS FOLDER.
-  const filteredNotifications = notifications.filter((item) => {
-    // 0. Double protection: Never display teacher/admin self-notifications
+  const availableNotifications = notifications.filter((item) => {
+    // 0. Double protection: NEVER display teacher/admin self-notifications
     if (isTeacherOrAdmin(item.userId, undefined, item.userName, item.userNickname)) {
       return false;
     }
 
-    // 1. Role-based folder restriction
+    // Role-based folder restriction for non-admins
     if (!isAdmin) {
       if (!userFolder) return false;
 
@@ -236,13 +280,22 @@ export function NotificationDropdown() {
       }
     }
 
-    // 2. Activity Type Filter (All, Homework, Practice Tests)
-    if (filterType !== 'all' && item.type !== filterType) {
-      return false;
-    }
-
     return true;
   });
+
+  // Calculate counts for tabs
+  const allCount = availableNotifications.length;
+  const practiceCount = availableNotifications.filter(n => n.type !== 'homework').length;
+  const hwCount = availableNotifications.filter(n => n.type === 'homework').length;
+
+  // Filter based on active tab
+  const filteredNotifications = availableNotifications.filter((item) => {
+    if (filterType === 'all') return true;
+    if (filterType === 'homework') return item.type === 'homework';
+    if (filterType === 'practice_test') return item.type !== 'homework';
+    return true;
+  });
+
 
   const unreadCount = filteredNotifications.filter(n => n.id && !readIds.includes(n.id)).length;
 
@@ -393,35 +446,50 @@ export function NotificationDropdown() {
             <button
               type="button"
               onClick={() => setFilterType('all')}
-              className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 filterType === 'all' 
                   ? 'bg-blue-600 text-white font-semibold shadow-sm' 
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              All
+              <span>All</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                filterType === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {allCount}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setFilterType('practice_test')}
-              className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 filterType === 'practice_test' 
                   ? 'bg-blue-600 text-white font-semibold shadow-sm' 
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              Practice Tests
+              <span>Practice Tests</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                filterType === 'practice_test' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {practiceCount}
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setFilterType('homework')}
-              className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1 rounded-full font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                 filterType === 'homework' 
                   ? 'bg-blue-600 text-white font-semibold shadow-sm' 
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              Homework
+              <span>Homework</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                filterType === 'homework' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+                {hwCount}
+              </span>
             </button>
           </div>
 
@@ -432,9 +500,20 @@ export function NotificationDropdown() {
                 <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-3">
                   <Bell className="w-6 h-6" />
                 </div>
-                <h4 className="text-sm font-bold text-slate-700 mb-1">No student notifications</h4>
+                <h4 className="text-sm font-bold text-slate-700 mb-1">
+                  {filterType === 'homework' 
+                    ? 'No homework notifications' 
+                    : filterType === 'practice_test'
+                    ? 'No practice test notifications'
+                    : 'No student notifications'
+                  }
+                </h4>
                 <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-                  {isAdmin 
+                  {filterType === 'homework'
+                    ? 'Student submissions from homework tasks will appear here as soon as they are submitted.'
+                    : filterType === 'practice_test'
+                    ? 'Student submissions from practice tests will appear here.'
+                    : isAdmin 
                     ? "Student submissions from practice tests and homework will appear here."
                     : `When classmates in ${userFolder?.name || 'your class folder'} submit tests or homework, you'll be notified here.`
                   }
