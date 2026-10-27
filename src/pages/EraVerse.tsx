@@ -3799,6 +3799,55 @@ export function EraVerse() {
       rightWall.position.set(roomW / 2, roomH / 2, 0);
       interiorGroup.add(rightWall);
 
+      // Enclose Room Completely: Ceiling & Front Wall Wings around the Exit Door Frame
+      const ceiling = new THREE.Mesh(
+        new THREE.BoxGeometry(roomW, 0.4, roomD),
+        new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.85
+        })
+      );
+      ceiling.position.set(0, roomH, 0);
+      interiorGroup.add(ceiling);
+
+      // Recessed Soft Ceiling Panels
+      for (let cx = -8; cx <= 8; cx += 8) {
+        for (let cz = -6; cz <= 6; cz += 6) {
+          const ceilPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(4.2, 0.08, 3.2),
+            new THREE.MeshBasicMaterial({ color: 0xfffbeb })
+          );
+          ceilPanel.position.set(cx, roomH - 0.05, cz);
+          interiorGroup.add(ceilPanel);
+        }
+      }
+
+      // Front Walls flanking the central Exit Door Frame (prevents exterior sky from showing)
+      const frontDoorW = 5.15;
+      const frontWingW = (roomW - frontDoorW) / 2;
+      const frontLeftWall = new THREE.Mesh(
+        new THREE.BoxGeometry(frontWingW, roomH, 0.5),
+        wallMat
+      );
+      frontLeftWall.position.set(-roomW / 2 + frontWingW / 2, roomH / 2, roomD / 2);
+      interiorGroup.add(frontLeftWall);
+
+      const frontRightWall = new THREE.Mesh(
+        new THREE.BoxGeometry(frontWingW, roomH, 0.5),
+        wallMat
+      );
+      frontRightWall.position.set(roomW / 2 - frontWingW / 2, roomH / 2, roomD / 2);
+      interiorGroup.add(frontRightWall);
+
+      // Lintel Wall above the Exit Door Frame
+      const lintelH = roomH - 5.35;
+      const frontLintel = new THREE.Mesh(
+        new THREE.BoxGeometry(frontDoorW, lintelH, 0.5),
+        wallMat
+      );
+      frontLintel.position.set(0, 5.35 + lintelH / 2, roomD / 2);
+      interiorGroup.add(frontLintel);
+
       // Baseboard trim along walls
       const trimMat = new THREE.MeshStandardMaterial({ color: building.accentColor, roughness: 0.4 });
       const backTrim = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.45, 0.6), trimMat);
@@ -4170,6 +4219,194 @@ export function EraVerse() {
 
         createShopPedestal(-6.8, 0.5, 'bike');
         createShopPedestal(6.8, 0.5, 'skateboard');
+
+        // Additional Showroom Vehicles on Floor: Gold Cruiser Bike & Pro Scooter
+        const createExtraVehiclePedestal = (px: number, pz: number, vKind: 'gold_bike' | 'scooter', label: string, price: string) => {
+          const vGroup = new THREE.Group();
+          vGroup.position.set(px, 0, pz);
+          const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.9, 2.1, 0.45, 24),
+            new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.6 })
+          );
+          base.position.y = 0.22;
+          base.userData = { isCandyShop: true };
+          clickableBoardMeshes.push(base);
+          vGroup.add(base);
+
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(1.95, 0.07, 10, 28),
+            new THREE.MeshBasicMaterial({ color: vKind === 'gold_bike' ? 0xfacc15 : 0x10b981 })
+          );
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = 0.45;
+          vGroup.add(ring);
+
+          const rig = buildCharacterAvatar({
+            shirtColor: vKind === 'gold_bike' ? '#f59e0b' : '#10b981',
+            hairColor: '#0f172a',
+            skinColor: '#fef08a',
+            hatType: vKind === 'gold_bike' ? 'crown' : 'headphones',
+            accessoryType: 'glasses',
+            name: `${label} - ${price}`,
+            cohort: 'ERASHOP',
+            gender: 'boy',
+            clothingType: 'cyber_jacket',
+            beltType: 'gold_belt',
+            vehicleType: vKind === 'gold_bike' ? 'bike' : 'skateboard'
+          });
+          rig.root.position.y = 0.45;
+          rig.root.rotation.y = px > 0 ? -0.4 : 0.4;
+          vGroup.add(rig.root);
+          interiorGroup.add(vGroup);
+        };
+        createExtraVehiclePedestal(-7.2, 5.2, 'gold_bike', 'Gold Cruiser Bike', '150 💎');
+        createExtraVehiclePedestal(7.2, 5.2, 'scooter', 'Pro Street Scooter', '95 💎');
+
+        // ====================================================================
+        // LEFT WALL: BOUTIQUE CLOTHES RACKS & SIGNATURE OUTFIT MANNEQUINS
+        // ====================================================================
+        const leftWallGroup = new THREE.Group();
+        leftWallGroup.position.set(-roomW / 2 + 0.9, 0, 0);
+
+        // Gold boutique clothing rack rail
+        const rackMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.85 });
+        const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.8, 12), rackMat);
+        leftPost.position.set(0, 1.9, -4.5);
+        const rightPost = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.8, 12), rackMat);
+        rightPost.position.set(0, 1.9, 4.5);
+        const topRail = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 9.2, 12), rackMat);
+        topRail.rotation.x = Math.PI / 2;
+        topRail.position.set(0, 3.65, 0);
+        leftWallGroup.add(leftPost, rightPost, topRail);
+
+        // Boutique wall signboard
+        const boutiqueSign = new THREE.Mesh(
+          new THREE.BoxGeometry(0.15, 0.9, 7.8),
+          new THREE.MeshStandardMaterial({ color: 0x831843, roughness: 0.3 })
+        );
+        boutiqueSign.position.set(0.1, 5.8, 0);
+        leftWallGroup.add(boutiqueSign);
+
+        // Mannequins showcasing signature clothes
+        const outfitsShowcase = [
+          { z: -2.8, name: 'Floral Mandarin Top (Ref #3)', shirt: '#38bdf8', hair: '#1c1917', bottom: '#ffffff', hat: 'halo' },
+          { z: 0.0, name: 'Academy Sailor Blouse', shirt: '#ffffff', hair: '#7c2d12', bottom: '#1e3a8a', hat: 'crown' },
+          { z: 2.8, name: 'Prep Crest Blazer', shirt: '#1e293b', hair: '#0f172a', bottom: '#e2e8f0', hat: 'headphones' }
+        ];
+
+        outfitsShowcase.forEach((outfit) => {
+          const mPlatform = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.9, 1.0, 0.25, 20),
+            new THREE.MeshStandardMaterial({ color: 0xfce7f3, roughness: 0.4 })
+          );
+          mPlatform.position.set(0.2, 0.125, outfit.z);
+          mPlatform.userData = { isCandyShop: true };
+          clickableBoardMeshes.push(mPlatform);
+          leftWallGroup.add(mPlatform);
+
+          const mannequin = buildCharacterAvatar({
+            shirtColor: outfit.shirt,
+            hairColor: outfit.hair,
+            skinColor: '#ffe4e6',
+            hatType: outfit.hat as any,
+            accessoryType: 'glasses',
+            name: outfit.name,
+            cohort: 'OUTFITS',
+            gender: 'girl',
+            clothingType: outfit.shirt === '#38bdf8' ? 'tshirt' : 'skirt_outfit',
+            beltType: 'star_belt'
+          });
+          mannequin.root.position.set(0.2, 0.25, outfit.z);
+          mannequin.root.rotation.y = Math.PI / 2;
+          leftWallGroup.add(mannequin.root);
+        });
+
+        // Full-Length Boutique Mirror with glowing rose frame
+        const mirrorFrame = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 4.5, 2.2),
+          new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.25, metalness: 0.5 })
+        );
+        mirrorFrame.position.set(0.08, 2.35, -5.8);
+        const mirrorGlass = new THREE.Mesh(
+          new THREE.PlaneGeometry(2.0, 4.2),
+          new THREE.MeshStandardMaterial({ color: 0xe0e7ff, roughness: 0.05, metalness: 0.95 })
+        );
+        mirrorGlass.rotation.y = Math.PI / 2;
+        mirrorGlass.position.set(0.15, 2.35, -5.8);
+        leftWallGroup.add(mirrorFrame, mirrorGlass);
+        interiorGroup.add(leftWallGroup);
+
+        // ====================================================================
+        // RIGHT WALL: HEADGEAR, CROWNS, PROPS & ACCESSORIES DISPLAY SHELVES
+        // ====================================================================
+        const rightWallGroup = new THREE.Group();
+        rightWallGroup.position.set(roomW / 2 - 0.9, 0, 0);
+
+        // 3 Glowing Glass Wall Shelves
+        const shelfHeights = [1.8, 3.2, 4.6];
+        const shelfLabels = ['Waist Belts & Gear', 'Eyewear & Visors', 'Royal Crowns & Headgear'];
+        shelfHeights.forEach((shY, sIdx) => {
+          const shelfGlass = new THREE.Mesh(
+            new THREE.BoxGeometry(0.9, 0.08, 8.5),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.85 })
+          );
+          shelfGlass.position.set(-0.2, shY, 0);
+          rightWallGroup.add(shelfGlass);
+
+          // Gold wall brackets supporting shelf
+          [-3.5, 0, 3.5].forEach((bz) => {
+            const bracket = new THREE.Mesh(
+              new THREE.BoxGeometry(0.85, 0.35, 0.06),
+              new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.7 })
+            );
+            bracket.position.set(-0.2, shY - 0.18, bz);
+            rightWallGroup.add(bracket);
+          });
+        });
+
+        // 3D Headgear & Props showcased on velvet display blocks
+        const showcaseItems = [
+          { z: -2.8, y: 4.8, col: 0xfacc15, name: 'Champion Crown', geom: new THREE.CylinderGeometry(0.35, 0.45, 0.4, 6) },
+          { z: 0.0, y: 4.8, col: 0xfffbeb, name: 'Angel Halo', geom: new THREE.TorusGeometry(0.4, 0.06, 12, 24) },
+          { z: 2.8, y: 4.8, col: 0x06b6d4, name: 'Cat Headphones', geom: new THREE.BoxGeometry(0.65, 0.5, 0.45) },
+          { z: -2.0, y: 3.4, col: 0x22d3ee, name: 'Cyber Visor', geom: new THREE.BoxGeometry(0.7, 0.22, 0.3) },
+          { z: 1.5, y: 3.4, col: 0xf59e0b, name: 'Aviator Shades', geom: new THREE.BoxGeometry(0.6, 0.18, 0.25) },
+          { z: -1.5, y: 2.0, col: 0xfacc15, name: 'Gold Championship Belt', geom: new THREE.TorusGeometry(0.5, 0.12, 10, 20) },
+          { z: 1.5, y: 2.0, col: 0x38bdf8, name: 'Sport Cyber Belt', geom: new THREE.TorusGeometry(0.48, 0.1, 10, 20) }
+        ];
+
+        showcaseItems.forEach((it) => {
+          const ped = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.32, 0.36, 0.15, 16),
+            new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 })
+          );
+          ped.position.set(-0.25, it.y - 0.075, it.z);
+          ped.userData = { isCandyShop: true };
+          clickableBoardMeshes.push(ped);
+          rightWallGroup.add(ped);
+
+          const itemMesh = new THREE.Mesh(
+            it.geom,
+            new THREE.MeshStandardMaterial({ color: it.col, roughness: 0.2, metalness: 0.85 })
+          );
+          itemMesh.position.set(-0.25, it.y + 0.15, it.z);
+          if (it.name.includes('Halo') || it.name.includes('Belt')) {
+            itemMesh.rotation.x = Math.PI / 2;
+          }
+          itemMesh.userData = { isCandyShop: true };
+          clickableBoardMeshes.push(itemMesh);
+          rightWallGroup.add(itemMesh);
+        });
+
+        // Boutique wall signboard for gear
+        const gearSign = new THREE.Mesh(
+          new THREE.BoxGeometry(0.15, 0.9, 7.8),
+          new THREE.MeshStandardMaterial({ color: 0x0369a1, roughness: 0.3 })
+        );
+        gearSign.position.set(-0.1, 5.8, 0);
+        rightWallGroup.add(gearSign);
+
+        interiorGroup.add(rightWallGroup);
       } else if (building.id === 'listening') {
         // Era Gallery: Add a central 3D Exhibition Sculpture & Photo Display Stand
         const galleryStand = new THREE.Group();
@@ -4285,6 +4522,16 @@ export function EraVerse() {
       setZoomSliderValue(b.id === 'dashboard' ? 14 : 12);
       setInsideBuilding(b);
       setNearBuildingPrompt(null);
+
+      // Snap camera instantly to interior room to prevent any camera lerp through exterior mountains
+      const initHoriz = camState.distance * Math.cos(camState.pitch);
+      const initVert = camState.distance * Math.sin(camState.pitch);
+      camera.position.set(
+        playerState.x + Math.sin(camState.yaw) * initHoriz,
+        playerState.y + 1.8 + initVert,
+        playerState.z + Math.cos(camState.yaw) * initHoriz
+      );
+      camera.lookAt(playerState.x, playerState.y + 1.8, playerState.z);
       if (lastDetectedSportsZone !== null) {
         lastDetectedSportsZone = null;
         setInSportsZone('none');
@@ -4323,6 +4570,17 @@ export function EraVerse() {
       setZoomSliderValue(14);
       setInsideBuilding(null);
       setNearBoardPrompt(null);
+
+      // Snap camera instantly back to exterior door position
+      const exitHoriz = camState.distance * Math.cos(camState.pitch);
+      const exitVert = camState.distance * Math.sin(camState.pitch);
+      camera.position.set(
+        playerState.x + Math.sin(camState.yaw) * exitHoriz,
+        playerState.y + 1.8 + exitVert,
+        playerState.z + Math.cos(camState.yaw) * exitHoriz
+      );
+      camera.lookAt(playerState.x, playerState.y + 1.8, playerState.z);
+
       showToast('Back on EraVerse Campus', 'Visit the Football Field & Era Tennis Court in the Sports Park!', '#2563EB');
     };
 
@@ -5469,7 +5727,7 @@ export function EraVerse() {
           camOcclusionRaycaster.far = rayLen;
           const hits = camOcclusionRaycaster.intersectObjects(allBuildingOccluderMeshes, false);
           if (hits.length > 0) {
-            const safeDist = Math.max(3.2, hits[0].distance - 0.85);
+            const safeDist = Math.max(1.0, hits[0].distance - 0.35);
             _desiredCamPos.copy(_camTarget).addScaledVector(_rayDir, safeDist);
             const hitBuildingId = hits[0].object.userData?.buildingId;
             const dc = doorControllers.find((d) => d.building.id === hitBuildingId);

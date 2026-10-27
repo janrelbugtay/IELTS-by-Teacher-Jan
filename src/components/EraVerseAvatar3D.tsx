@@ -47,8 +47,8 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
   const camFocusRef = useRef(cameraFocus);
   const autoSpinRef = useRef(autoSpin);
   const targetRotYRef = useRef(0.18);
-  const zoomDistanceRef = useRef(4.55);
-  const defaultFullBodyZRef = useRef(4.55);
+  const zoomDistanceRef = useRef(4.35);
+  const defaultFullBodyZRef = useRef(4.35);
   const isDraggingRef = useRef(false);
   const prevMouseXRef = useRef(0);
 
@@ -72,14 +72,13 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
     const container = containerRef.current;
     if (!container) return;
 
-    const w = width || container.clientWidth || size;
-    const h = height || container.clientHeight || size;
+    const rect = container.getBoundingClientRect();
+    const w = width || (rect.width > 0 ? rect.width : container.clientWidth) || size;
+    const h = height || (rect.height > 0 ? rect.height : container.clientHeight) || size;
 
-    // Detect square/circular avatar containers (such as the student dashboard profile avatar)
-    // To fit completely inside a rounded-full circle without clipping head or feet, we use 4.75m distance.
-    // For rectangular studio viewports, 4.45m frames head-to-toe with clean margins.
-    const isSquareOrPortrait = (w <= 240 || h <= 240 || (w / h) <= 1.1);
-    const fullBodyDistance = isSquareOrPortrait ? 4.75 : 4.45;
+    // Frame the full character (Y = -0.08 pedestal to Y = +2.52 top of hair/hat) squarely in the center
+    const isSmallBadge = w <= 160 || h <= 160;
+    const fullBodyDistance = isSmallBadge ? 4.55 : 4.35;
     defaultFullBodyZRef.current = fullBodyDistance;
     if (camFocusRef.current === 'full') {
       zoomDistanceRef.current = fullBodyDistance;
@@ -88,9 +87,9 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(34, w / h, 0.1, 100);
-    camera.position.set(0, 1.08, zoomDistanceRef.current);
-    camera.lookAt(0, 1.04, 0);
+    const camera = new THREE.PerspectiveCamera(36, w / h, 0.1, 100);
+    camera.position.set(0, 1.22, zoomDistanceRef.current);
+    camera.lookAt(0, 1.18, 0);
     cameraRef.current = camera;
 
     let renderer: THREE.WebGLRenderer;
@@ -115,6 +114,9 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    renderer.domElement.style.display = 'block';
     rendererRef.current = renderer;
 
     container.innerHTML = '';
@@ -160,15 +162,16 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
 
     const updateSize = () => {
       if (!container || !rendererRef.current || !cameraRef.current) return;
-      const nw = width || container.clientWidth || size;
-      const nh = height || container.clientHeight || size;
+      const rect = container.getBoundingClientRect();
+      const nw = width || (rect.width > 0 ? rect.width : container.clientWidth) || size;
+      const nh = height || (rect.height > 0 ? rect.height : container.clientHeight) || size;
       if (nw > 0 && nh > 0) {
         cameraRef.current.aspect = nw / nh;
         cameraRef.current.updateProjectionMatrix();
         rendererRef.current.setSize(nw, nh);
 
-        const isSquareOrPortrait = (nw <= 260 || nh <= 260 || (nw / nh) <= 1.15);
-        const fullBodyDistance = isSquareOrPortrait ? 4.85 : 4.45;
+        const isSmallBadge = nw <= 160 || nh <= 160;
+        const fullBodyDistance = isSmallBadge ? 4.55 : 4.35;
         defaultFullBodyZRef.current = fullBodyDistance;
         if (camFocusRef.current === 'full') {
           zoomDistanceRef.current = fullBodyDistance;
@@ -286,8 +289,8 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
       // Smooth Camera Focus Interpolation
       if (cameraRef.current) {
         const isFace = camFocusRef.current === 'face';
-        const targetY = isFace ? 1.72 : 1.08;
-        const lookY = isFace ? 1.68 : 1.04;
+        const targetY = isFace ? 2.06 : 1.22;
+        const lookY = isFace ? 2.03 : 1.18;
         const targetZ = isFace ? 1.55 : zoomDistanceRef.current;
 
         cameraRef.current.position.y += (targetY - cameraRef.current.position.y) * 0.1;
@@ -430,6 +433,9 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
     zoomDistanceRef.current = Math.max(1.5, Math.min(6.5, zoomDistanceRef.current + e.deltaY * 0.0025));
   };
 
+  const isFullWidth = className.includes('w-full');
+  const isFullHeight = className.includes('h-full');
+
   return (
     <div
       ref={containerRef}
@@ -439,10 +445,10 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
       onPointerLeave={handlePointerUp}
       onWheel={handleWheel}
       style={{
-        width: width ? `${width}px` : height ? '100%' : `${size}px`,
-        height: height ? `${height}px` : `${size}px`,
+        width: width !== undefined ? `${width}px` : isFullWidth ? '100%' : `${size}px`,
+        height: height !== undefined ? `${height}px` : isFullHeight ? '100%' : `${size}px`,
       }}
-      className={`relative select-none ${interactive ? 'cursor-grab active:cursor-grabbing' : ''} ${className}`}
+      className={`relative select-none overflow-hidden ${interactive ? 'cursor-grab active:cursor-grabbing' : ''} ${className}`}
       title={interactive ? 'Drag to rotate 360° • Scroll to zoom' : undefined}
     />
   );

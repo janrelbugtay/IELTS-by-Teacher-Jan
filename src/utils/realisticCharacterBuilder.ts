@@ -1844,27 +1844,31 @@ export function buildRealisticCharacter3D(
   }
 
   // ------------------------------------------
-  // E. VOLUMETRIC CURVED HAIRSTYLES
+  // E. VOLUMETRIC CURVED HAIRSTYLES (CLEAN FOREHEAD HAIRLINE & ZERO CHEEK CLIPPING)
   // ------------------------------------------
   const hairGroup = new THREE.Group();
   headGroup.add(hairGroup);
 
+  // Upper crown cap: covers only the top cranium (Y > +0.20) so it never touches eyes, glasses, or cheeks
   const hairCap = new THREE.Mesh(
-    new THREE.SphereGeometry(0.365, 28, 24, 0, Math.PI * 2, 0, Math.PI * 0.62),
+    new THREE.SphereGeometry(0.358, 30, 24, 0, Math.PI * 2, 0, Math.PI * 0.36),
     hairMat
   );
-  hairCap.scale.set(1.03, 1.07, 1.02);
-  hairCap.position.set(0, 0.02, -0.015);
-  hairCap.rotation.x = -0.18;
+  hairCap.scale.set(1.01, 1.02, 0.98);
+  hairCap.position.set(0, 0.05, -0.025);
+  hairCap.rotation.x = -0.26;
   hairCap.castShadow = true;
   hairGroup.add(hairCap);
 
+  // Back cranium cap: hemisphere oriented strictly toward the back of the head (Z < -0.02) so cheeks/jaw are 100% clear
   const backHair = new THREE.Mesh(
-    new THREE.SphereGeometry(0.355, 24, 20),
+    new THREE.SphereGeometry(0.352, 28, 22, 0, Math.PI * 2, 0, Math.PI * 0.46),
     hairMat
   );
-  backHair.scale.set(1.01, 1.04, 0.92);
-  backHair.position.set(0, 0.01, -0.045);
+  backHair.scale.set(0.95, 0.98, 0.94);
+  backHair.position.set(0, 0.02, -0.035);
+  backHair.rotation.x = -Math.PI * 0.42;
+  backHair.castShadow = true;
   hairGroup.add(backHair);
 
   const hsId = opts.hairStyle;
@@ -1873,66 +1877,72 @@ export function buildRealisticCharacter3D(
     const fringeLocks: [number, number, number][][] =
       hsId === 'kpop_curtain'
         ? [
-            [[0.02, 0.34, 0.16], [0.14, 0.24, 0.31], [0.22, 0.08, 0.28]],
-            [[-0.02, 0.34, 0.16], [-0.14, 0.24, 0.31], [-0.22, 0.08, 0.28]],
-            [[0.08, 0.36, 0.12], [0.24, 0.20, 0.24], [0.31, 0.02, 0.16]],
-            [[-0.08, 0.36, 0.12], [-0.24, 0.20, 0.24], [-0.31, 0.02, 0.16]],
+            [[0.02, 0.36, 0.15], [0.13, 0.28, 0.31], [0.21, 0.17, 0.29]],
+            [[-0.02, 0.36, 0.15], [-0.13, 0.28, 0.31], [-0.21, 0.17, 0.29]],
+            [[0.09, 0.36, 0.11], [0.23, 0.25, 0.24], [0.30, 0.12, 0.14]],
+            [[-0.09, 0.36, 0.11], [-0.23, 0.25, 0.24], [-0.30, 0.12, 0.14]],
           ]
         : hsId === 'Pompadour'
         ? [
-            [[0.0, 0.34, 0.22], [0.02, 0.44, 0.16], [0.04, 0.40, -0.05]],
-            [[-0.10, 0.32, 0.20], [-0.08, 0.42, 0.14], [-0.06, 0.38, -0.05]],
-            [[0.10, 0.32, 0.20], [0.12, 0.42, 0.14], [0.10, 0.38, -0.05]],
+            [[0.0, 0.35, 0.20], [0.02, 0.44, 0.16], [0.04, 0.40, -0.05]],
+            [[-0.10, 0.33, 0.18], [-0.08, 0.42, 0.14], [-0.06, 0.38, -0.05]],
+            [[0.10, 0.33, 0.18], [0.12, 0.42, 0.14], [0.10, 0.38, -0.05]],
           ]
         : [
-            [[-0.06, 0.36, 0.14], [-0.02, 0.26, 0.32], [0.06, 0.14, 0.34]],
-            [[0.05, 0.36, 0.14], [0.12, 0.25, 0.30], [0.19, 0.13, 0.29]],
-            [[-0.12, 0.35, 0.12], [-0.14, 0.24, 0.29], [-0.10, 0.13, 0.32]],
-            [[-0.18, 0.32, 0.08], [-0.25, 0.20, 0.23], [-0.26, 0.06, 0.21]],
-            [[0.16, 0.32, 0.08], [0.25, 0.20, 0.23], [0.27, 0.06, 0.21]],
-            [[0.0, 0.39, 0.02], [0.08, 0.42, 0.14], [0.16, 0.32, 0.24]],
+            [[-0.06, 0.37, 0.14], [-0.02, 0.29, 0.31], [0.05, 0.18, 0.33]],
+            [[0.05, 0.37, 0.14], [0.11, 0.28, 0.30], [0.17, 0.18, 0.29]],
+            [[-0.12, 0.36, 0.12], [-0.14, 0.28, 0.29], [-0.10, 0.18, 0.31]],
+            [[-0.18, 0.34, 0.08], [-0.25, 0.24, 0.21], [-0.28, 0.13, 0.16]],
+            [[0.16, 0.34, 0.08], [0.25, 0.24, 0.21], [0.28, 0.13, 0.16]],
+            [[0.0, 0.39, 0.02], [0.08, 0.42, 0.14], [0.15, 0.33, 0.24]],
           ];
 
     fringeLocks.forEach((pts) => {
-      hairGroup.add(createHairLock(pts, 0.068, hairMat, 14));
+      hairGroup.add(createHairLock(pts, 0.062, hairMat, 14));
     });
   } else if (hsId === 'twin_buns') {
     const bangLocks: [number, number, number][][] = [
-      [[-0.08, 0.34, 0.16], [-0.08, 0.24, 0.32], [-0.06, 0.14, 0.33]],
-      [[0.0, 0.35, 0.16], [0.0, 0.25, 0.33], [0.01, 0.14, 0.34]],
-      [[0.08, 0.34, 0.16], [0.08, 0.24, 0.32], [0.06, 0.14, 0.33]],
-      [[-0.22, 0.24, 0.14], [-0.31, 0.06, 0.18], [-0.28, -0.14, 0.16]],
-      [[0.22, 0.24, 0.14], [0.31, 0.06, 0.18], [0.28, -0.14, 0.16]],
+      [[-0.08, 0.36, 0.15], [-0.08, 0.28, 0.31], [-0.06, 0.18, 0.32]],
+      [[0.0, 0.37, 0.15], [0.0, 0.29, 0.32], [0.01, 0.18, 0.33]],
+      [[0.08, 0.36, 0.15], [0.08, 0.28, 0.31], [0.06, 0.18, 0.32]],
+      [[-0.22, 0.27, 0.10], [-0.32, 0.12, 0.08], [-0.31, -0.06, 0.04]],
+      [[0.22, 0.27, 0.10], [0.32, 0.12, 0.08], [0.31, -0.06, 0.04]],
     ];
-    bangLocks.forEach((pts) => hairGroup.add(createHairLock(pts, 0.056, hairMat, 14)));
+    bangLocks.forEach((pts) => hairGroup.add(createHairLock(pts, 0.052, hairMat, 14)));
 
     [-1, 1].forEach((side) => {
       const bun = new THREE.Mesh(new THREE.SphereGeometry(0.155, 20, 20), hairMat);
-      bun.position.set(side * 0.29, 0.31, -0.04);
+      bun.position.set(side * 0.29, 0.32, -0.05);
       bun.castShadow = true;
       hairGroup.add(bun);
     });
   } else if (hsId === 'long_wavy' || hsId === 'wolf_cut') {
     const waveLocks: [number, number, number][][] = [
-      [[-0.06, 0.34, 0.16], [-0.14, 0.22, 0.30], [-0.20, 0.12, 0.28]],
-      [[0.06, 0.34, 0.16], [0.14, 0.22, 0.30], [0.20, 0.12, 0.28]],
-      [[-0.26, 0.20, 0.05], [-0.34, -0.05, 0.08], [-0.30, -0.35, 0.12]],
-      [[0.26, 0.20, 0.05], [0.34, -0.05, 0.08], [0.30, -0.35, 0.12]],
+      [[-0.06, 0.36, 0.15], [-0.14, 0.27, 0.29], [-0.21, 0.17, 0.26]],
+      [[0.06, 0.36, 0.15], [0.14, 0.27, 0.29], [0.21, 0.17, 0.26]],
+      [[-0.27, 0.22, 0.02], [-0.35, -0.04, 0.02], [-0.32, -0.35, 0.05]],
+      [[0.27, 0.22, 0.02], [0.35, -0.04, 0.02], [0.32, -0.35, 0.05]],
       [[-0.22, 0.15, -0.18], [-0.28, -0.15, -0.22], [-0.24, -0.45, -0.18]],
       [[0.22, 0.15, -0.18], [0.28, -0.15, -0.22], [0.24, -0.45, -0.18]],
       [[0.0, 0.15, -0.24], [0.0, -0.18, -0.28], [0.0, -0.48, -0.22]],
     ];
-    waveLocks.forEach((pts) => hairGroup.add(createHairLock(pts, 0.082, hairMat, 16)));
+    waveLocks.forEach((pts) => hairGroup.add(createHairLock(pts, 0.078, hairMat, 16)));
   } else if (hsId === 'french_bob') {
     const bobLocks: [number, number, number][][] = [
-      [[-0.08, 0.34, 0.16], [-0.08, 0.23, 0.32], [-0.07, 0.14, 0.33]],
-      [[0.0, 0.35, 0.16], [0.0, 0.24, 0.33], [0.0, 0.14, 0.34]],
-      [[0.08, 0.34, 0.16], [0.08, 0.23, 0.32], [0.07, 0.14, 0.33]],
-      [[-0.28, 0.22, 0.04], [-0.35, 0.0, 0.08], [-0.26, -0.18, 0.12]],
-      [[0.28, 0.22, 0.04], [0.35, 0.0, 0.08], [0.26, -0.18, 0.12]],
+      [[-0.08, 0.36, 0.15], [-0.08, 0.28, 0.31], [-0.07, 0.18, 0.32]],
+      [[0.0, 0.37, 0.15], [0.0, 0.29, 0.32], [0.0, 0.18, 0.33]],
+      [[0.08, 0.36, 0.15], [0.08, 0.28, 0.31], [0.07, 0.18, 0.32]],
+      [[-0.28, 0.24, 0.02], [-0.36, 0.02, 0.03], [-0.30, -0.16, 0.05]],
+      [[0.28, 0.24, 0.02], [0.36, 0.02, 0.03], [0.30, -0.16, 0.05]],
     ];
-    bobLocks.forEach((pts) => hairGroup.add(createHairLock(pts, 0.075, hairMat, 14)));
+    bobLocks.forEach((pts) => hairGroup.add(createHairLock(pts, 0.07, hairMat, 14)));
   } else if (hsId === 'high_ponytail') {
+    const ponyBangs: [number, number, number][][] = [
+      [[-0.06, 0.36, 0.15], [-0.12, 0.28, 0.30], [-0.18, 0.18, 0.27]],
+      [[0.06, 0.36, 0.15], [0.12, 0.28, 0.30], [0.18, 0.18, 0.27]],
+    ];
+    ponyBangs.forEach((pts) => hairGroup.add(createHairLock(pts, 0.055, hairMat, 12)));
+
     const ponyCurve: [number, number, number][] = [
       [0.0, 0.28, -0.28],
       [0.0, 0.34, -0.44],
@@ -1941,25 +1951,32 @@ export function buildRealisticCharacter3D(
     ];
     hairGroup.add(createHairLock(ponyCurve, 0.11, hairMat, 18));
   } else if (hsId === 'twin_tails' || hsId === 'braided_crown') {
+    const twinBangs: [number, number, number][][] = [
+      [[-0.07, 0.36, 0.15], [-0.08, 0.28, 0.31], [-0.06, 0.18, 0.32]],
+      [[0.0, 0.37, 0.15], [0.0, 0.29, 0.32], [0.0, 0.18, 0.33]],
+      [[0.07, 0.36, 0.15], [0.08, 0.28, 0.31], [0.06, 0.18, 0.32]],
+    ];
+    twinBangs.forEach((pts) => hairGroup.add(createHairLock(pts, 0.052, hairMat, 12)));
+
     [-1, 1].forEach((side) => {
       const tailCurve: [number, number, number][] = [
-        [side * 0.28, 0.16, -0.06],
-        [side * 0.38, -0.04, 0.02],
-        [side * 0.34, -0.34, 0.08],
+        [side * 0.29, 0.16, -0.06],
+        [side * 0.38, -0.04, -0.01],
+        [side * 0.35, -0.34, 0.04],
       ];
       hairGroup.add(createHairLock(tailCurve, 0.085, hairMat, 16));
     });
   } else if (hsId === 'afro_curls') {
-    for (let i = 0; i < 26; i++) {
-      const phi = Math.acos(1 - (2 * (i + 0.5)) / 26) * 0.68;
+    for (let i = 0; i < 24; i++) {
+      const phi = Math.acos(1 - (2 * (i + 0.5)) / 24) * 0.55;
       const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      const r = 0.38;
-      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), hairMat);
-      puff.position.set(
-        r * Math.sin(phi) * Math.cos(theta),
-        r * Math.cos(phi) + 0.06,
-        r * Math.sin(phi) * Math.sin(theta) - 0.03
-      );
+      const r = 0.37;
+      const px = r * Math.sin(phi) * Math.cos(theta);
+      const py = r * Math.cos(phi) + 0.09;
+      const pz = r * Math.sin(phi) * Math.sin(theta) - 0.05;
+      if (pz > 0.16 && py < 0.24) continue;
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.115, 12, 12), hairMat);
+      puff.position.set(px, py, pz);
       hairGroup.add(puff);
     }
   }

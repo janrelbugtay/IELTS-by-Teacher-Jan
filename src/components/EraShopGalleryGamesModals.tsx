@@ -51,7 +51,6 @@ import {
   VEHICLE_ITEMS,
   CLOTHING_PALETTE,
   STUDIO_THEMES,
-  REFERENCE_PRESETS,
   IELTS_QUIZ_QUESTIONS,
   normalizeCharacterOptions
 } from '../utils/realisticCharacterBuilder';
@@ -333,6 +332,449 @@ export const ERA_GALLERY_VIDEOS = [
   { id: '1UV_enof7q1KvsshgHkSE1ly5qOZKSLBc', title: 'Life at Kỷ Nguyên Era — Highlight Video 5' },
   { id: '1nlYKmV4DLV3xIqRTSYM_AOvvj9ig_qBJ', title: 'Life at Kỷ Nguyên Era — Highlight Video 6' }
 ];
+
+// ============================================================================
+// VISUAL GARMENT & ITEM ILLUSTRATION THUMBNAILS FOR WARDROBE CARDS
+// ============================================================================
+const WardrobeItemVisualPreview: React.FC<{
+  itemId: string;
+  category: 'hair' | 'tops' | 'jackets' | 'bottoms' | 'belts' | 'shoes' | 'headgear' | 'props' | 'bikes';
+  primaryColor?: string;
+  secondaryColor?: string;
+}> = ({ itemId, category, primaryColor, secondaryColor }) => {
+  const renderArtwork = () => {
+    // 1. INNER TOPS (INCLUDING FLORAL MANDARIN TOP REF #3)
+    if (category === 'tops') {
+      if (itemId === 'qipao_daisy') {
+        const bg = primaryColor || '#38BDF8';
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            {/* Garment Silhouette - Sky-Blue Mandarin Top */}
+            <path
+              d="M36 18 L47 14 Q60 17 73 14 L84 18 L104 34 L94 49 L82 41 L82 88 Q60 91 38 88 L38 41 L26 49 L16 34 Z"
+              fill={bg}
+              stroke="#0284C7"
+              strokeWidth="2.2"
+            />
+            {/* Standing Mandarin Collar */}
+            <path
+              d="M46 10 Q60 15 74 10 L75 19 Q60 24 45 19 Z"
+              fill={bg}
+              stroke="#FFFFFF"
+              strokeWidth="2"
+            />
+            {/* Sleeve White Piping Cuffs */}
+            <path d="M17 35 L27 48" stroke="#FFFFFF" strokeWidth="3.2" strokeLinecap="round" />
+            <path d="M103 35 L93 48" stroke="#FFFFFF" strokeWidth="3.2" strokeLinecap="round" />
+            {/* Traditional Curved White Qipao Diagonal Piping */}
+            <path
+              d="M58 20 Q44 30 39 50"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            {/* White Frog-Knot Buttons */}
+            <ellipse cx="51" cy="27" rx="4.5" ry="2.2" fill="#FFFFFF" transform="rotate(-24 51 27)" />
+            <circle cx="51" cy="27" r="1.5" fill="#FACC15" />
+            <ellipse cx="44" cy="37" rx="4.5" ry="2.2" fill="#FFFFFF" transform="rotate(-32 44 37)" />
+            <circle cx="44" cy="37" r="1.5" fill="#FACC15" />
+            {/* Signature White & Gold Daisy Blossoms */}
+            {[
+              { cx: 68, cy: 42, r: 7.5 },
+              { cx: 49, cy: 62, r: 6.5 },
+              { cx: 70, cy: 71, r: 6.0 },
+              { cx: 54, cy: 79, r: 4.8 }
+            ].map((fl, idx) => (
+              <g key={idx} transform={`translate(${fl.cx}, ${fl.cy})`}>
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((ang) => (
+                  <ellipse
+                    key={ang}
+                    cx="0"
+                    cy={-fl.r * 0.72}
+                    rx={fl.r * 0.28}
+                    ry={fl.r * 0.48}
+                    fill="#FFFFFF"
+                    transform={`rotate(${ang})`}
+                  />
+                ))}
+                <circle cx="0" cy="0" r={fl.r * 0.34} fill="#FACC15" />
+              </g>
+            ))}
+          </svg>
+        );
+      }
+
+      if (itemId === 'sailor_blouse') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path
+              d="M35 16 L85 16 L104 35 L93 49 L82 40 L82 88 L38 88 L38 40 L27 49 L16 35 Z"
+              fill="#FFFFFF"
+              stroke="#CBD5E1"
+              strokeWidth="2.2"
+            />
+            {/* Nautical Navy Sailor Collar with White Stripes */}
+            <path d="M36 16 L60 44 L84 16 L73 15 L60 32 L47 15 Z" fill="#1E3A8A" />
+            <path d="M40 19 L60 40 L80 19" fill="none" stroke="#FFFFFF" strokeWidth="1.6" />
+            {/* Navy Cuff Trim */}
+            <path d="M18 36 L28 48" stroke="#1E3A8A" strokeWidth="4" />
+            <path d="M102 36 L92 48" stroke="#1E3A8A" strokeWidth="4" />
+            {/* Crimson Satin Bow */}
+            <polygon points="60,41 48,35 48,47" fill="#E11D48" />
+            <polygon points="60,41 72,35 72,47" fill="#E11D48" />
+            <path d="M58 43 L53 56 M62 43 L67 56" stroke="#BE123C" strokeWidth="3.5" strokeLinecap="round" />
+            <circle cx="60" cy="41" r="3.5" fill="#F43F5E" />
+          </svg>
+        );
+      }
+
+      if (itemId === 'era_uniform') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path
+              d="M35 16 L85 16 L104 35 L93 49 L82 40 L82 88 L38 88 L38 40 L27 49 L16 35 Z"
+              fill="#F97316"
+              stroke="#C2410C"
+              strokeWidth="2.2"
+            />
+            {/* White Polo Placket & Collar */}
+            <rect x="56" y="20" width="8" height="28" rx="3" fill="#FFFFFF" />
+            <polygon points="44,14 60,24 52,29 38,19" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+            <polygon points="76,14 60,24 68,29 82,19" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+            {/* Chest Pocket with White Trim */}
+            <rect x="66" y="38" width="11" height="13" rx="2" fill="#EA580C" stroke="#FFFFFF" strokeWidth="1.5" />
+            <line x1="66" y1="41" x2="77" y2="41" stroke="#FFFFFF" strokeWidth="2.5" />
+            {/* White Cuff Bands */}
+            <path d="M18 35 L28 48" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M102 35 L92 48" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" />
+          </svg>
+        );
+      }
+
+      if (itemId === 'casual_tee') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path
+              d="M36 16 Q60 24 84 16 L104 34 L93 48 L82 40 L82 88 L38 88 L38 40 L27 48 L16 34 Z"
+              fill="#FFFFFF"
+              stroke="#CBD5E1"
+              strokeWidth="2.2"
+            />
+            <path d="M44 16 Q60 25 76 16" fill="none" stroke="#94A3B8" strokeWidth="3.5" />
+            {/* Nature Emblem Badge */}
+            <circle cx="60" cy="48" r="13" fill="#16A34A" />
+            <path d="M60 39 C65 44 65 52 60 56 C55 52 55 44 60 39 Z" fill="#BBF7D0" />
+          </svg>
+        );
+      }
+
+      if (itemId === 'knit_sweater') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path
+              d="M36 16 Q60 22 84 16 L105 58 L93 64 L82 38 L82 88 L38 88 L38 38 L27 64 L15 58 Z"
+              fill="#F43F5E"
+              stroke="#BE123C"
+              strokeWidth="2.2"
+            />
+            {/* Ribbed Knit Texture Lines */}
+            <line x1="48" y1="22" x2="48" y2="86" stroke="#FFE4E6" strokeWidth="2" strokeDasharray="4 3" />
+            <line x1="60" y1="22" x2="60" y2="86" stroke="#FFE4E6" strokeWidth="2" strokeDasharray="4 3" />
+            <line x1="72" y1="22" x2="72" y2="86" stroke="#FFE4E6" strokeWidth="2" strokeDasharray="4 3" />
+            <rect x="38" y="81" width="44" height="7" rx="2" fill="#FFE4E6" />
+          </svg>
+        );
+      }
+
+      if (itemId === 'sport_jersey') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path
+              d="M36 16 L84 16 L104 35 L93 49 L82 40 L82 88 L38 88 L38 40 L27 49 L16 35 Z"
+              fill="#10B981"
+              stroke="#047857"
+              strokeWidth="2.2"
+            />
+            <path d="M36 18 L18 35 M84 18 L102 35" stroke="#FFFFFF" strokeWidth="4" />
+            <text x="60" y="57" textAnchor="middle" fill="#FFFFFF" fontSize="20" fontWeight="900">09</text>
+          </svg>
+        );
+      }
+
+      // oxford_shirt
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <path
+            d="M36 16 L84 16 L104 54 L92 60 L82 38 L82 88 L38 88 L38 38 L28 60 L16 54 Z"
+            fill="#E0F2FE"
+            stroke="#0284C7"
+            strokeWidth="2.2"
+          />
+          <line x1="60" y1="22" x2="60" y2="88" stroke="#1E40AF" strokeWidth="3" />
+          <polygon points="45,14 60,24 51,30 39,18" fill="#FFFFFF" stroke="#1E40AF" strokeWidth="1.5" />
+          <polygon points="75,14 60,24 69,30 81,18" fill="#FFFFFF" stroke="#1E40AF" strokeWidth="1.5" />
+          <circle cx="60" cy="36" r="2" fill="#1E40AF" />
+          <circle cx="60" cy="50" r="2" fill="#1E40AF" />
+          <circle cx="60" cy="64" r="2" fill="#1E40AF" />
+        </svg>
+      );
+    }
+
+    // 2. OUTER JACKETS & VESTS
+    if (category === 'jackets') {
+      const pCol = primaryColor || '#1E3A8A';
+      const sCol = secondaryColor || '#38BDF8';
+      if (itemId === 'none') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full">
+            <circle cx="60" cy="50" r="28" fill="#F1F5F9" stroke="#94A3B8" strokeWidth="2.5" strokeDasharray="5 4" />
+            <line x1="42" y1="32" x2="78" y2="68" stroke="#64748B" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+        );
+      }
+      const isVest = itemId === 'hoodie_vest' || itemId === 'puffer_vest';
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          {isVest ? (
+            <path
+              d="M36 16 L50 14 L56 86 L34 86 L34 36 Z M84 16 L70 14 L64 86 L86 86 L86 36 Z"
+              fill={pCol}
+              stroke="#0F172A"
+              strokeWidth="2"
+            />
+          ) : (
+            <path
+              d="M35 16 L85 16 L106 58 L94 64 L84 38 L84 86 L36 86 L36 38 L26 64 L14 58 Z"
+              fill={pCol}
+              stroke="#0F172A"
+              strokeWidth="2"
+            />
+          )}
+          {/* Open Front Zipper / Lapel */}
+          <rect x="56" y="16" width="8" height="70" fill={sCol} />
+          <rect x="39" y="58" width="13" height="15" rx="2" fill={sCol} />
+          <rect x="68" y="58" width="13" height="15" rx="2" fill={sCol} />
+        </svg>
+      );
+    }
+
+    // 3. BOTTOMS (JEANS, SHORTS, PLEATED SKIRTS)
+    if (category === 'bottoms') {
+      const col = primaryColor || '#2563EB';
+      if (itemId === 'pleated_skirt' || itemId === 'plaid_skirt') {
+        const skCol = itemId === 'plaid_skirt' ? '#991B1B' : '#F8FAFC';
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <rect x="38" y="18" width="44" height="10" rx="2" fill={skCol} stroke="#475569" strokeWidth="2" />
+            <polygon points="38,28 82,28 96,82 24,82" fill={skCol} stroke="#475569" strokeWidth="2" />
+            <line x1="46" y1="28" x2="38" y2="82" stroke="#94A3B8" strokeWidth="1.8" />
+            <line x1="55" y1="28" x2="52" y2="82" stroke="#94A3B8" strokeWidth="1.8" />
+            <line x1="65" y1="28" x2="68" y2="82" stroke="#94A3B8" strokeWidth="1.8" />
+            <line x1="74" y1="28" x2="82" y2="82" stroke="#94A3B8" strokeWidth="1.8" />
+          </svg>
+        );
+      }
+      const isShorts = itemId === 'cargo_shorts' || itemId === 'denim_shorts';
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <path
+            d={
+              isShorts
+                ? 'M36 16 L84 16 L88 60 L63 60 L60 40 L57 60 L32 60 Z'
+                : 'M38 14 L82 14 L86 88 L64 88 L60 42 L56 88 L34 88 Z'
+            }
+            fill={col}
+            stroke="#0F172A"
+            strokeWidth="2"
+          />
+          {itemId === 'cuffed_jeans' && (
+            <>
+              <rect x="33" y="81" width="23" height="7" rx="1.5" fill="#F8FAFC" stroke="#64748B" strokeWidth="1.2" />
+              <rect x="64" y="81" width="23" height="7" rx="1.5" fill="#F8FAFC" stroke="#64748B" strokeWidth="1.2" />
+            </>
+          )}
+        </svg>
+      );
+    }
+
+    // 4. BELTS
+    if (category === 'belts') {
+      const strap =
+        itemId === 'Belt_Brown'
+          ? '#78350F'
+          : itemId === 'Belt_White'
+          ? '#F8FAFC'
+          : '#18181B';
+      const buckle = itemId === 'Belt_Gold' ? '#FACC15' : '#CBD5E1';
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <rect x="16" y="40" width="88" height="20" rx="6" fill={strap} stroke="#475569" strokeWidth="2" />
+          <rect x="46" y="34" width="28" height="32" rx="5" fill="none" stroke={buckle} strokeWidth="6" />
+          <line x1="60" y1="50" x2="72" y2="50" stroke={buckle} strokeWidth="4" strokeLinecap="round" />
+        </svg>
+      );
+    }
+
+    // 5. SHOES
+    if (category === 'shoes') {
+      const sCol = primaryColor || '#EA580C';
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <path
+            d="M24 36 L54 36 L66 56 L96 60 Q102 62 102 74 L20 74 Q18 56 24 36 Z"
+            fill={sCol}
+            stroke="#0F172A"
+            strokeWidth="2"
+          />
+          <rect x="18" y="70" width="85" height="9" rx="4" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="1.5" />
+          <line x1="52" y1="44" x2="62" y2="41" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+          <line x1="58" y1="51" x2="68" y2="48" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      );
+    }
+
+    // 6. HAIRSTYLES
+    if (category === 'hair') {
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          {/* Head silhouette */}
+          <circle cx="60" cy="56" r="22" fill="#FFE7D6" stroke="#E2E8F0" strokeWidth="1.5" />
+          {/* Hair crown & locks */}
+          <path d="M36 52 Q36 22 60 22 Q84 22 84 52 Q72 38 60 40 Q48 38 36 52 Z" fill="#1C1917" />
+          {itemId === 'twin_buns' && (
+            <>
+              <circle cx="34" cy="28" r="10" fill="#1C1917" />
+              <circle cx="86" cy="28" r="10" fill="#1C1917" />
+            </>
+          )}
+          {(itemId === 'long_wavy' || itemId === 'twin_tails' || itemId === 'braided_crown' || itemId === 'wolf_cut') && (
+            <>
+              <path d="M37 48 Q28 68 34 86" stroke="#1C1917" strokeWidth="9" strokeLinecap="round" fill="none" />
+              <path d="M83 48 Q92 68 86 86" stroke="#1C1917" strokeWidth="9" strokeLinecap="round" fill="none" />
+            </>
+          )}
+          {itemId === 'high_ponytail' && (
+            <path d="M68 24 Q96 20 92 56" stroke="#1C1917" strokeWidth="10" strokeLinecap="round" fill="none" />
+          )}
+        </svg>
+      );
+    }
+
+    // 7. HEADGEAR
+    if (category === 'headgear') {
+      if (itemId === 'gold_crown') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <polygon points="24,72 30,32 48,52 60,24 72,52 90,32 96,72" fill="#FACC15" stroke="#B45309" strokeWidth="2.5" />
+            <circle cx="60" cy="58" r="4.5" fill="#E11D48" />
+            <circle cx="42" cy="60" r="3.5" fill="#2563EB" />
+            <circle cx="78" cy="60" r="3.5" fill="#2563EB" />
+          </svg>
+        );
+      }
+      if (itemId === 'angel_halo') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <ellipse cx="60" cy="48" rx="34" ry="12" fill="none" stroke="#FACC15" strokeWidth="7" />
+            <ellipse cx="60" cy="48" rx="34" ry="12" fill="none" stroke="#FEF08A" strokeWidth="2.5" />
+          </svg>
+        );
+      }
+      if (itemId === 'sprout_clip') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path d="M60 78 Q60 48 64 36" stroke="#16A34A" strokeWidth="5" fill="none" strokeLinecap="round" />
+            <ellipse cx="48" cy="34" rx="14" ry="8" fill="#22C55E" transform="rotate(-20 48 34)" />
+            <ellipse cx="76" cy="34" rx="14" ry="8" fill="#22C55E" transform="rotate(20 76 34)" />
+          </svg>
+        );
+      }
+      if (itemId === 'daisy_clips') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            {[44, 76].map((cx, i) => (
+              <g key={i} transform={`translate(${cx}, 50)`}>
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+                  <ellipse key={a} cx="0" cy="-11" rx="4.5" ry="7" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1" transform={`rotate(${a})`} />
+                ))}
+                <circle cx="0" cy="0" r="5.5" fill="#FACC15" />
+              </g>
+            ))}
+          </svg>
+        );
+      }
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <path d="M30 58 Q30 26 60 26 Q90 26 90 58 Z" fill="#2563EB" stroke="#1E3A8A" strokeWidth="2.2" />
+          <path d="M22 58 Q60 66 98 58" stroke="#1E3A8A" strokeWidth="6" strokeLinecap="round" fill="none" />
+        </svg>
+      );
+    }
+
+    // 8. PROPS
+    if (category === 'props') {
+      if (itemId === 'round_glasses' || itemId === 'aviator_sun' || itemId === 'cyber_visor') {
+        const isVisor = itemId === 'cyber_visor';
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            {isVisor ? (
+              <rect x="20" y="36" width="80" height="26" rx="12" fill="#22D3EE" stroke="#0891B2" strokeWidth="3" />
+            ) : (
+              <>
+                <circle cx="40" cy="50" r="16" fill={itemId === 'aviator_sun' ? '#0F172A' : '#E0F2FE'} stroke="#1E293B" strokeWidth="4" />
+                <circle cx="80" cy="50" r="16" fill={itemId === 'aviator_sun' ? '#0F172A' : '#E0F2FE'} stroke="#1E293B" strokeWidth="4" />
+                <line x1="56" y1="48" x2="64" y2="48" stroke="#1E293B" strokeWidth="4" />
+              </>
+            )}
+          </svg>
+        );
+      }
+      if (itemId === 'angel_wings') {
+        return (
+          <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+            <path d="M54 56 Q20 20 16 48 Q20 72 52 68 Z" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="2" />
+            <path d="M66 56 Q100 20 104 48 Q100 72 68 68 Z" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="2" />
+          </svg>
+        );
+      }
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <rect x="38" y="24" width="44" height="52" rx="10" fill="#0284C7" stroke="#0F172A" strokeWidth="2.5" />
+          <rect x="46" y="42" width="28" height="22" rx="4" fill="#38BDF8" />
+        </svg>
+      );
+    }
+
+    // 9. BIKES & RIDES
+    const bikeCol = itemId === 'gold_bike' ? '#FACC15' : '#F97316';
+    if (itemId === 'skateboard') {
+      return (
+        <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+          <rect x="20" y="44" width="80" height="12" rx="6" fill="#F43F5E" stroke="#881337" strokeWidth="2" />
+          <circle cx="36" cy="64" r="7" fill="#0F172A" stroke="#38BDF8" strokeWidth="2.5" />
+          <circle cx="84" cy="64" r="7" fill="#0F172A" stroke="#38BDF8" strokeWidth="2.5" />
+        </svg>
+      );
+    }
+    return (
+      <svg viewBox="0 0 120 100" className="w-full h-full drop-shadow-sm">
+        <circle cx="32" cy="64" r="16" fill="none" stroke="#1E293B" strokeWidth="4" />
+        <circle cx="88" cy="64" r="16" fill="none" stroke="#1E293B" strokeWidth="4" />
+        <path d="M32 64 L54 40 L82 40 L60 64 Z" fill="none" stroke={bikeCol} strokeWidth="4" strokeLinejoin="round" />
+        <line x1="88" y1="64" x2="78" y2="28" stroke={bikeCol} strokeWidth="4" strokeLinecap="round" />
+        <line x1="72" y1="28" x2="86" y2="28" stroke="#0F172A" strokeWidth="4" strokeLinecap="round" />
+        <line x1="48" y1="34" x2="60" y2="34" stroke="#0F172A" strokeWidth="5" strokeLinecap="round" />
+      </svg>
+    );
+  };
+
+  return (
+    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-50 via-white to-sky-50/70 border border-slate-200/90 shadow-inner flex items-center justify-center p-1.5 shrink-0">
+      {renderArtwork()}
+    </div>
+  );
+};
 
 // ============================================================================
 // 1. ERASHOP & REALISTIC 3D CHARACTER WARDROBE STUDIO (REALISTIC MESH v10+)
@@ -639,9 +1081,9 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
               LEFT COLUMN (5 cols): INTERACTIVE 3D STUDIO VIEWPORT & PRESETS
              ============================================================== */}
           <div className="lg:col-span-5 p-4 sm:p-5 bg-slate-50 flex flex-col justify-between gap-3 overflow-y-auto">
-            {/* Live 3D Stage */}
+            {/* Live 3D Stage - Enlarged Viewport */}
             <div
-              className="relative w-full h-72 sm:h-80 lg:h-[360px] rounded-3xl overflow-hidden border-2 border-slate-200/80 shadow-inner shrink-0"
+              className="relative w-full flex-1 min-h-[440px] sm:min-h-[480px] lg:min-h-[520px] rounded-3xl overflow-hidden border-2 border-slate-200/80 shadow-inner shrink-0"
               style={{ background: currentStudioTheme.bg }}
             >
               <EraVerseAvatar3D
@@ -767,36 +1209,7 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
               </div>
             )}
 
-            {/* Quick Reference Archetype Presets (#001 - #004) */}
-            <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                  Quick Reference Archetypes (1-Click Style)
-                </span>
-                <span className="text-[10px] font-bold text-indigo-600">Instant Morph</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {REFERENCE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      updateAvatarFields({
-                        ...preset.config,
-                        gender: preset.config.gender === 'female' ? 'girl' : 'boy'
-                      });
-                    }}
-                    className="p-2 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 text-left transition-all cursor-pointer"
-                  >
-                    <div className="text-[9px] font-black uppercase text-indigo-600">{preset.badge}</div>
-                    <div className="text-xs font-black text-slate-900 truncate">{preset.name}</div>
-                    <div className="text-[10px] text-slate-500 truncate">{preset.subtitle}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Candy Boutique Greeting + Save & Sync Button */}
+            {/* Candy Boutique Greeting + Save Changes Button */}
             <div className="space-y-2.5">
               <div className="bg-white rounded-2xl p-3 border border-pink-200 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-pink-400 shrink-0 bg-pink-50">
@@ -834,7 +1247,7 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                 className="w-full py-3.5 bg-gradient-to-r from-pink-600 via-rose-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white font-black text-sm rounded-2xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Save & Sync 3D Character to EraVerse & Dashboard</span>
+                <span>Save Changes</span>
               </button>
             </div>
           </div>
@@ -1345,23 +1758,32 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                                 : 'border-slate-200 hover:border-pink-400 bg-slate-50/60'
                             }`}
                           >
-                            <div>
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                                  {h.badge}
-                                </span>
-                                {owned ? (
-                                  <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
-                                    <Check className="w-3.5 h-3.5" /> {h.price === 0 ? 'FREE' : 'Owned'}
-                                  </span>
-                                ) : (
-                                  <span className="text-[11px] font-black text-pink-700">
-                                    💎 {h.price} • 💵 ${h.dollarPrice}
-                                  </span>
-                                )}
+                            <div className="flex items-start gap-3">
+                              <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-xs">
+                                <WardrobeItemVisualPreview
+                                  itemId={h.id}
+                                  category="hair"
+                                  primaryColor={activePreview.hairColor}
+                                />
                               </div>
-                              <div className="text-sm font-black text-slate-900">{h.name}</div>
-                              <div className="text-[11px] text-slate-500 mt-0.5">{h.desc}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                                    {h.badge}
+                                  </span>
+                                  {owned ? (
+                                    <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
+                                      <Check className="w-3.5 h-3.5" /> {h.price === 0 ? 'FREE' : 'Owned'}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] font-black text-pink-700">
+                                      💎 {h.price} • 💵 ${h.dollarPrice}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm font-black text-slate-900 truncate">{h.name}</div>
+                                <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{h.desc}</div>
+                              </div>
                             </div>
 
                             {!owned && (
@@ -1578,8 +2000,11 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                     {(clothesSubTab === 'tops'
                       ? TOP_STYLES.map((it) => ({
                           ...it,
+                          category: 'tops' as const,
                           applyKey: 'topStyle',
                           equipped: activePreview.topStyle === it.id,
+                          primaryColor: activePreview.topColor,
+                          secondaryColor: activePreview.topSecondary,
                           extra: {
                             topStyle: it.id,
                             topColor: it.defaultPrimary,
@@ -1589,8 +2014,11 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                       : clothesSubTab === 'jackets'
                       ? JACKET_STYLES.map((it) => ({
                           ...it,
+                          category: 'jackets' as const,
                           applyKey: 'jacketStyle',
                           equipped: activePreview.jacketStyle === it.id,
+                          primaryColor: activePreview.jacketPrimary,
+                          secondaryColor: activePreview.jacketSecondary,
                           extra: {
                             jacketStyle: it.id,
                             jacketPrimary: it.defaultPrimary,
@@ -1600,21 +2028,26 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                       : clothesSubTab === 'bottoms'
                       ? BOTTOM_STYLES.map((it) => ({
                           ...it,
+                          category: 'bottoms' as const,
                           applyKey: 'bottomStyle',
                           equipped: activePreview.bottomStyle === it.id,
+                          primaryColor: activePreview.bottomColor,
                           extra: { bottomStyle: it.id, bottomColor: it.defaultColor }
                         }))
                       : clothesSubTab === 'belts'
                       ? BELT_STYLES.map((it) => ({
                           ...it,
+                          category: 'belts' as const,
                           applyKey: 'beltStyle',
                           equipped: activePreview.beltStyle === it.id,
                           extra: { beltStyle: it.id }
                         }))
                       : SHOE_STYLES.map((it) => ({
                           ...it,
+                          category: 'shoes' as const,
                           applyKey: 'shoeStyle',
                           equipped: activePreview.shoeStyle === it.id,
+                          primaryColor: activePreview.shoeColor,
                           extra: { shoeStyle: it.id, shoeColor: it.defaultColor }
                         }))
                     ).map((item) => {
@@ -1643,23 +2076,33 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                               : 'border-slate-200 hover:border-pink-400 bg-slate-50/60'
                           }`}
                         >
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                                {item.badge}
-                              </span>
-                              {owned ? (
-                                <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
-                                  <Check className="w-3.5 h-3.5" /> {item.price === 0 ? 'FREE' : 'Owned'}
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-black text-pink-700">
-                                  💎 {item.price} • 💵 ${item.dollarPrice}
-                                </span>
-                              )}
+                          <div className="flex items-start gap-3">
+                            <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-xs">
+                              <WardrobeItemVisualPreview
+                                itemId={item.id}
+                                category={item.category}
+                                primaryColor={item.primaryColor}
+                                secondaryColor={item.secondaryColor}
+                              />
                             </div>
-                            <div className="text-sm font-black text-slate-900">{item.name}</div>
-                            <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                                  {item.badge}
+                                </span>
+                                {owned ? (
+                                  <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
+                                    <Check className="w-3.5 h-3.5" /> {item.price === 0 ? 'FREE' : 'Owned'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-black text-pink-700">
+                                    💎 {item.price} • 💵 ${item.dollarPrice}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm font-black text-slate-900 truncate">{item.name}</div>
+                              <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{item.desc}</div>
+                            </div>
                           </div>
 
                           {!owned && (
@@ -1752,23 +2195,32 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                             : 'border-slate-200 hover:border-pink-400 bg-slate-50/60'
                         }`}
                       >
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                              {item.badge}
-                            </span>
-                            {owned ? (
-                              <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
-                                <Check className="w-3.5 h-3.5" /> {item.price === 0 ? 'FREE' : 'Owned'}
-                              </span>
-                            ) : (
-                              <span className="text-[11px] font-black text-pink-700">
-                                💎 {item.price} • 💵 ${item.dollarPrice}
-                              </span>
-                            )}
+                        <div className="flex items-start gap-3">
+                          <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-xs">
+                            <WardrobeItemVisualPreview
+                              itemId={item.id}
+                              category="headgear"
+                              primaryColor={activePreview.hairColor}
+                            />
                           </div>
-                          <div className="text-sm font-black text-slate-900">{item.name}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                                {item.badge}
+                              </span>
+                              {owned ? (
+                                <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
+                                  <Check className="w-3.5 h-3.5" /> {item.price === 0 ? 'FREE' : 'Owned'}
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-black text-pink-700">
+                                  💎 {item.price} • 💵 ${item.dollarPrice}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm font-black text-slate-900 truncate">{item.name}</div>
+                            <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{item.desc}</div>
+                          </div>
                         </div>
 
                         {!owned && (
@@ -1890,23 +2342,32 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                               : 'border-slate-200 hover:border-pink-400 bg-slate-50/60'
                           }`}
                         >
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                                {item.badge} • {item.slot.toUpperCase()}
-                              </span>
-                              {owned ? (
-                                <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
-                                  <Check className="w-3.5 h-3.5" /> {equipped ? 'Equipped' : 'Owned'}
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-black text-pink-700">
-                                  💎 {item.price} • 💵 ${item.dollarPrice}
-                                </span>
-                              )}
+                          <div className="flex items-start gap-3">
+                            <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-xs">
+                              <WardrobeItemVisualPreview
+                                itemId={item.id}
+                                category="props"
+                                primaryColor="#f59e0b"
+                              />
                             </div>
-                            <div className="text-sm font-black text-slate-900">{item.name}</div>
-                            <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                                  {item.badge} • {item.slot.toUpperCase()}
+                                </span>
+                                {owned ? (
+                                  <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
+                                    <Check className="w-3.5 h-3.5" /> {equipped ? 'Equipped' : 'Owned'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-black text-pink-700">
+                                    💎 {item.price} • 💵 ${item.dollarPrice}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm font-black text-slate-900 truncate">{item.name}</div>
+                              <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{item.desc}</div>
+                            </div>
                           </div>
 
                           {!owned && (
@@ -2032,23 +2493,32 @@ export const EraShopModal: React.FC<EraShopModalProps> = ({
                               : 'border-slate-200 hover:border-pink-400 bg-slate-50/60'
                           }`}
                         >
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                                {item.badge}
-                              </span>
-                              {owned ? (
-                                <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
-                                  <Check className="w-3.5 h-3.5" /> {item.price === 0 ? 'FREE' : 'Owned'}
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-black text-pink-700">
-                                  💎 {item.price} • 💵 ${item.dollarPrice}
-                                </span>
-                              )}
+                          <div className="flex items-start gap-3">
+                            <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-xs">
+                              <WardrobeItemVisualPreview
+                                itemId={item.id}
+                                category="bikes"
+                                primaryColor={activePreview.bikeColor}
+                              />
                             </div>
-                            <div className="text-sm font-black text-slate-900">{item.name}</div>
-                            <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                                  {item.badge}
+                                </span>
+                                {owned ? (
+                                  <span className="text-[11px] font-black text-emerald-700 flex items-center gap-1">
+                                    <Check className="w-3.5 h-3.5" /> {item.price === 0 ? 'FREE' : 'Owned'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-black text-pink-700">
+                                    💎 {item.price} • 💵 ${item.dollarPrice}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm font-black text-slate-900 truncate">{item.name}</div>
+                              <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{item.desc}</div>
+                            </div>
                           </div>
 
                           {!owned && (
