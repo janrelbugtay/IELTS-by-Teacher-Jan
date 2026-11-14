@@ -47,8 +47,8 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
   const camFocusRef = useRef(cameraFocus);
   const autoSpinRef = useRef(autoSpin);
   const targetRotYRef = useRef(0.18);
-  const zoomDistanceRef = useRef(4.35);
-  const defaultFullBodyZRef = useRef(4.35);
+  const zoomDistanceRef = useRef(4.75);
+  const defaultFullBodyZRef = useRef(4.75);
   const isDraggingRef = useRef(false);
   const prevMouseXRef = useRef(0);
 
@@ -76,9 +76,11 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
     const w = width || (rect.width > 0 ? rect.width : container.clientWidth) || size;
     const h = height || (rect.height > 0 ? rect.height : container.clientHeight) || size;
 
-    // Frame the full character (Y = -0.08 pedestal to Y = +2.52 top of hair/hat) squarely in the center
+    // Frame the full character (Y = -0.08 pedestal to Y = +2.35 top of hair/hat) squarely in the center
+    const aspect = w > 0 && h > 0 ? w / h : 1;
     const isSmallBadge = w <= 160 || h <= 160;
-    const fullBodyDistance = isSmallBadge ? 4.55 : 4.35;
+    const baseDist = isSmallBadge ? 4.85 : 4.75;
+    const fullBodyDistance = aspect < 0.82 ? baseDist * Math.min(1.18, 0.85 / Math.max(0.55, aspect)) : baseDist;
     defaultFullBodyZRef.current = fullBodyDistance;
     if (camFocusRef.current === 'full') {
       zoomDistanceRef.current = fullBodyDistance;
@@ -87,9 +89,9 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(36, w / h, 0.1, 100);
-    camera.position.set(0, 1.22, zoomDistanceRef.current);
-    camera.lookAt(0, 1.18, 0);
+    const camera = new THREE.PerspectiveCamera(38, aspect, 0.1, 100);
+    camera.position.set(0, 1.12, zoomDistanceRef.current);
+    camera.lookAt(0, 1.08, 0);
     cameraRef.current = camera;
 
     let renderer: THREE.WebGLRenderer;
@@ -166,12 +168,15 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
       const nw = width || (rect.width > 0 ? rect.width : container.clientWidth) || size;
       const nh = height || (rect.height > 0 ? rect.height : container.clientHeight) || size;
       if (nw > 0 && nh > 0) {
-        cameraRef.current.aspect = nw / nh;
+        const nextAspect = nw / nh;
+        cameraRef.current.aspect = nextAspect;
         cameraRef.current.updateProjectionMatrix();
         rendererRef.current.setSize(nw, nh);
 
         const isSmallBadge = nw <= 160 || nh <= 160;
-        const fullBodyDistance = isSmallBadge ? 4.55 : 4.35;
+        const baseDist = isSmallBadge ? 4.85 : 4.75;
+        const fullBodyDistance =
+          nextAspect < 0.82 ? baseDist * Math.min(1.18, 0.85 / Math.max(0.55, nextAspect)) : baseDist;
         defaultFullBodyZRef.current = fullBodyDistance;
         if (camFocusRef.current === 'full') {
           zoomDistanceRef.current = fullBodyDistance;
@@ -242,35 +247,35 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
         headGroup.rotation.set(0, 0, 0);
 
         if (mode === 'idle') {
-          hipsGroup.position.y = 1.06 + Math.sin(t * 2.1) * 0.014;
+          hipsGroup.position.y = 0.98 + Math.sin(t * 2.1) * 0.014;
           torsoGroup.rotation.x = Math.sin(t * 2.1) * 0.02;
           headGroup.rotation.y = Math.sin(t * 0.85) * 0.08;
           headGroup.rotation.z = Math.cos(t * 1.1) * 0.03;
-          leftArmGroup.rotation.z = -0.14 - Math.sin(t * 2.1) * 0.025;
-          rightArmGroup.rotation.z = 0.14 + Math.sin(t * 2.1) * 0.025;
+          leftArmGroup.rotation.z = -0.10 - Math.sin(t * 2.1) * 0.025;
+          rightArmGroup.rotation.z = 0.10 + Math.sin(t * 2.1) * 0.025;
           leftArmGroup.rotation.x = Math.cos(t * 1.6) * 0.04;
           rightArmGroup.rotation.x = -Math.cos(t * 1.6) * 0.04;
         } else if (mode === 'walk') {
           const ws = t * 5.2;
-          hipsGroup.position.y = 1.06 + Math.abs(Math.sin(ws)) * 0.038;
+          hipsGroup.position.y = 0.98 + Math.abs(Math.sin(ws)) * 0.035;
           torsoGroup.rotation.y = Math.sin(ws) * 0.09;
           leftLegGroup.rotation.x = Math.sin(ws) * 0.52;
           rightLegGroup.rotation.x = -Math.sin(ws) * 0.52;
           leftArmGroup.rotation.x = -Math.sin(ws) * 0.45;
           rightArmGroup.rotation.x = Math.sin(ws) * 0.45;
-          leftArmGroup.rotation.z = -0.1;
-          rightArmGroup.rotation.z = 0.1;
+          leftArmGroup.rotation.z = -0.08;
+          rightArmGroup.rotation.z = 0.08;
           headGroup.rotation.y = -Math.sin(ws) * 0.05;
         } else if (mode === 'wave') {
-          hipsGroup.position.y = 1.06 + Math.sin(t * 2.4) * 0.015;
+          hipsGroup.position.y = 0.98 + Math.sin(t * 2.4) * 0.015;
           headGroup.rotation.z = -0.06;
           headGroup.rotation.y = 0.08;
-          leftArmGroup.rotation.z = -0.15;
+          leftArmGroup.rotation.z = -0.12;
           rightArmGroup.rotation.z = 2.45 + Math.sin(t * 8.5) * 0.26;
           rightArmGroup.rotation.x = -0.25;
         } else if (mode === 'ride') {
           const rs = t * 5.5;
-          hipsGroup.position.y = 1.12 + Math.sin(rs * 2) * 0.015;
+          hipsGroup.position.y = 1.06 + Math.sin(rs * 2) * 0.015;
           torsoGroup.rotation.x = 0.18;
           leftArmGroup.rotation.x = -0.72;
           rightArmGroup.rotation.x = -0.72;
@@ -280,7 +285,7 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
             w.rotation.x += dt * 5.5;
           });
         } else if (mode === 'tpose') {
-          hipsGroup.position.y = 1.06;
+          hipsGroup.position.y = 0.98;
           leftArmGroup.rotation.z = -1.35;
           rightArmGroup.rotation.z = 1.35;
         }
@@ -289,8 +294,8 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
       // Smooth Camera Focus Interpolation
       if (cameraRef.current) {
         const isFace = camFocusRef.current === 'face';
-        const targetY = isFace ? 2.06 : 1.22;
-        const lookY = isFace ? 2.03 : 1.18;
+        const targetY = isFace ? 1.88 : 1.12;
+        const lookY = isFace ? 1.86 : 1.08;
         const targetZ = isFace ? 1.55 : zoomDistanceRef.current;
 
         cameraRef.current.position.y += (targetY - cameraRef.current.position.y) * 0.1;

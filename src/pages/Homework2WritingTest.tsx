@@ -318,9 +318,22 @@ export const Homework2WritingTest = ({ submissionId }: { submissionId?: string }
                 let errText = await response.text();
                 try {
                     const parsedErr = JSON.parse(errText);
-                    if (parsedErr.error) errText = parsedErr.error;
+                    if (parsedErr.message) errText = parsedErr.message;
+                    else if (parsedErr.error) {
+                        errText = typeof parsedErr.error === 'object' ? (parsedErr.error.message || JSON.stringify(parsedErr.error)) : parsedErr.error;
+                    }
                 } catch (e) {}
-                throw new Error(`Evaluation failed: ${errText}`);
+                const cleanMsg = errText.includes("402") || errText.includes("prepayment")
+                    ? "AI Studio prepayment credits depleted. Please manage your project and billing at ai.studio/projects."
+                    : errText;
+                if (taskNum === 1) {
+                    setError1(cleanMsg);
+                    setLoadingReport1(false);
+                } else {
+                    setError2(cleanMsg);
+                    setLoadingReport2(false);
+                }
+                return;
             }
 
             const data = await response.json();

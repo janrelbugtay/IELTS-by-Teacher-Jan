@@ -31,6 +31,31 @@ export function EmbedTest() {
   
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'STARTERS_TEST_SUBMITTED' && user) {
+        const { testId, score, maxScore, studentName, shields } = event.data.payload || {};
+        try {
+          await addDoc(collection(db, 'submissions'), {
+            userId: user.uid,
+            studentName: studentName || user.displayName || 'Student',
+            assignmentId: testId || 'STARTERS-SPEAKING-001',
+            assignmentTitle: 'Pre-A1 Starters Speaking - Practice Test 1',
+            assignmentType: 'speaking',
+            course: 'starters',
+            answers: JSON.stringify({ rawScore: score, maxScore: maxScore || 200, shields: shields || 5 }),
+            bandScore: shields || 5,
+            overallBand: shields || 5,
+            score: score,
+            maxScore: maxScore || 200,
+            status: 'completed',
+            createdAt: serverTimestamp(),
+          });
+          alert('Starters Speaking Practice Test 1 completed successfully!');
+          navigate('/practice-tests?course=starters&skill=Speaking');
+        } catch (error) {
+          console.error('Error saving Starters submission:', error);
+        }
+      }
+
       // Validate origin if needed, here we accept from same origin
       if (event.data?.type === 'PET_TEST_SUBMITTED' && user) {
         const { testId, score, maxScore, studentName } = event.data.payload;

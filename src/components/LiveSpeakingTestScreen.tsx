@@ -194,12 +194,12 @@ export const LiveSpeakingTestScreen = ({
     return () => {
       if (!hasSubmittedRef.current && Object.keys(responsesRef.current).length > 0) {
         hasSubmittedRef.current = true;
-        onComplete(responsesRef.current).catch(err => {
+        onComplete(responsesRef.current, testMode, candidateName).catch(err => {
             console.error("Auto-save on back failed", err);
         });
       }
     };
-  }, [onComplete]);
+  }, [onComplete, testMode, candidateName]);
 
   const getCurrentQId = () => {
     if (phase === 'p1') return MOCK_QUESTIONS.part1[qIndex].id;
@@ -211,6 +211,17 @@ export const LiveSpeakingTestScreen = ({
   // Simulated AI reading and then auto-start recording
   useEffect(() => {
     let timer: any;
+    let fallbackTimer: any;
+    let voiceInitTimer: any;
+    let isEffectCancelled = false;
+
+    const clearAllTimers = () => {
+      if (timer) clearTimeout(timer);
+      if (timer) clearInterval(timer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (voiceInitTimer) clearTimeout(voiceInitTimer);
+    };
+
     if (qState === 'ai_speaking') {
         let textToRead = '';
         if (phase === 'p1') {
@@ -236,7 +247,42 @@ export const LiveSpeakingTestScreen = ({
             const utterance = new SpeechSynthesisUtterance(textToRead);
             utterance.rate = 0.95;
             
+            // Track across the entire effect so setVoiceAndSpeak cannot run twice
+            let hasSpoken = false;
+            let recordingStarted = false;
+
+            const startRec = () => {
+                if (isEffectCancelled || recordingStarted) return;
+                recordingStarted = true;
+                clearAllTimers();
+                if (phase === 'p2-prep') {
+                    setQState('prep');
+                    if (testMode === 'mock') {
+                      setIsPrepTimerRunning(true);
+                    }
+                } else if (phase === 'completed') {
+                    setQState('reviewing');
+                    if (!hasSubmittedRef.current) {
+                        hasSubmittedRef.current = true;
+                        setIsSubmitting(true);
+                        onComplete(responsesRef.current, testMode, candidateName).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
+                    }
+                } else {
+                    if (testMode === 'mock') {
+                        setQState('auto_starting');
+                        setAutoStartCount(2);
+                    } else {
+                        setQState('waiting_to_record');
+                    }
+                }
+            };
+
             const setVoiceAndSpeak = () => {
+                if (isEffectCancelled || hasSpoken) return;
+                hasSpoken = true;
+                if (voiceInitTimer) clearTimeout(voiceInitTimer);
+                window.speechSynthesis.onvoiceschanged = null;
+
                 const voices = window.speechSynthesis.getVoices();
                 // Prefer Google UK English Female if available, or any UK English voice
                 const ukVoice = voices.find(v => (v.lang === 'en-GB' || v.lang === 'en-UK') && v.name.includes('Google')) || 
@@ -244,37 +290,10 @@ export const LiveSpeakingTestScreen = ({
                 if (ukVoice) {
                     utterance.voice = ukVoice;
                 }
-                
-                // Track if we already started recording to prevent double firing
-                let recordingStarted = false;
-                
-                const startRec = () => {
-                    if (!recordingStarted && qState === 'ai_speaking') {
-                        recordingStarted = true;
-                        if (phase === 'p2-prep') {
-                            setQState('prep');
-                            if (testMode === 'mock') {
-                              setIsPrepTimerRunning(true);
-                            }
-                        } else if (phase === 'completed') {
-                            setQState('reviewing'); // or just leave it
-                            if (!hasSubmittedRef.current) {
-                                hasSubmittedRef.current = true;
-                                setIsSubmitting(true);
-                                onComplete(responsesRef.current, testMode).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
-                            }
-                        } else {
-                            if (testMode === 'mock') {
-                                setQState('auto_starting');
-                                setAutoStartCount(2);
-                            } else {
-                                setQState('waiting_to_record');
-                            }
-                        }
-                    }
-                };
 
                 utterance.onend = () => {
+                    if (isEffectCancelled) return;
+                    if (fallbackTimer) clearTimeout(fallbackTimer);
                     timer = setTimeout(() => {
                         startRec();
                     }, 500);
@@ -282,7 +301,7 @@ export const LiveSpeakingTestScreen = ({
                 
                 // Fallback duration timeout in case onend doesn't fire reliably
                 const fallbackDuration = textToRead.length * 80 + 2000;
-                timer = setTimeout(() => {
+                fallbackTimer = setTimeout(() => {
                     startRec();
                 }, fallbackDuration);
                 
@@ -296,18 +315,19 @@ export const LiveSpeakingTestScreen = ({
                     setVoiceAndSpeak();
                 };
                 // Fallback if event doesn't fire
-                setTimeout(() => {
-                    if (qState === 'ai_speaking') setVoiceAndSpeak();
+                voiceInitTimer = setTimeout(() => {
+                    setVoiceAndSpeak();
                 }, 1000);
             }
         } else {
             timer = setTimeout(() => {
+              if (isEffectCancelled) return;
               if (phase === 'completed') {
                   setQState('reviewing');
                   if (!hasSubmittedRef.current) {
                       hasSubmittedRef.current = true;
                       setIsSubmitting(true);
-                      onComplete(responsesRef.current, testMode).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
+                      onComplete(responsesRef.current, testMode, candidateName).then(() => navigate('/ielts/dashboard?tab=speaking')).finally(() => setIsSubmitting(false));
                   }
               } else if (phase === 'p2-prep') {
                   setQState('prep');
@@ -336,10 +356,13 @@ export const LiveSpeakingTestScreen = ({
         }
       }
     return () => { 
-        clearTimeout(timer); 
-        clearInterval(timer); 
-        if (qState === 'ai_speaking' && 'speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
+        isEffectCancelled = true;
+        clearAllTimers();
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = null;
+            if (qState === 'ai_speaking') {
+                window.speechSynthesis.cancel();
+            }
         }
     };
   }, [phase, qState, qIndex, testMode]);
@@ -393,6 +416,16 @@ export const LiveSpeakingTestScreen = ({
     setQState('recording');
     setRecordingTime(0);
     if (!streamRef.current) return;
+
+    // Safely terminate any prior active MediaRecorder so two instances never push to audioChunksRef simultaneously
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current.onstop = null;
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+    }
+
     try {
       let options: MediaRecorderOptions = {};
       if (typeof MediaRecorder !== 'undefined') {
@@ -408,7 +441,7 @@ export const LiveSpeakingTestScreen = ({
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
+        if (mediaRecorderRef.current === mediaRecorder && e.data && e.data.size > 0) {
           audioChunksRef.current.push(e.data);
         }
       };
@@ -420,7 +453,9 @@ export const LiveSpeakingTestScreen = ({
         mediaRecorderRef.current = fallbackRecorder;
         audioChunksRef.current = [];
         fallbackRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+          if (mediaRecorderRef.current === fallbackRecorder && e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
         };
         fallbackRecorder.start(500);
       } catch (err2) {

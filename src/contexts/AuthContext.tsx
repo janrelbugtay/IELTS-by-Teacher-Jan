@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let detectedCourse: string | null = null;
       const studentUid = localStorage.getItem('studentUid');
       
+      let hasFirestorePhoto = false;
       if (studentUid) {
         // We have a student logged in via custom auth
         try {
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (userDoc.exists()) {
             const data = userDoc.data();
             detectedCourse = data.course || null;
+            hasFirestorePhoto = Boolean(data.photoURL);
             activeUser = {
               uid: studentUid,
               email: data.email || data.authEmail || null,
@@ -101,8 +103,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         activeUser = currentUser;
         try {
           const ud = await getDoc(doc(db, 'users', currentUser.uid));
-          if (ud.exists() && ud.data().course) {
-            detectedCourse = ud.data().course;
+          if (ud.exists()) {
+            if (ud.data().course) {
+              detectedCourse = ud.data().course;
+            }
+            if (ud.data().photoURL) {
+              hasFirestorePhoto = true;
+            }
           }
         } catch (e) { }
       }
@@ -126,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         if (activeUser.displayName) updateData.name = activeUser.displayName;
         if (activeUser.email) updateData.email = activeUser.email;
-        if (activeUser.photoURL) updateData.photoURL = activeUser.photoURL;
+        if (isUserAdmin && activeUser.photoURL && !hasFirestorePhoto) updateData.photoURL = activeUser.photoURL;
         if (isUserAdmin) updateData.role = 'admin';
         
         setDoc(userRef, updateData, { merge: true }).catch((e) => {

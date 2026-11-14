@@ -1,16 +1,16 @@
 import { PerformanceTable } from '../../components/PerformanceTable';
 import React, { useEffect, useState, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs, where, addDoc, deleteDoc, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, where, addDoc, deleteDoc, doc, updateDoc, setDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../lib/firebase';
 import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, Edit2, X, Camera, Upload, Play, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff, ExternalLink, Award } from 'lucide-react';
+import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, RotateCcw, Edit2, X, Camera, Upload, Play, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff, ExternalLink, Award, QrCode, ShieldCheck, AlertCircle, Lock, Printer } from 'lucide-react';
 import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
-import { EraVerseAvatar3D } from '../../components/EraVerseAvatar3D';
-import { resolveStudentEraVerseAvatar } from '../../utils/eraverseFeatures';
+import { ParentAccessModal } from '../../components/ParentAccessModal';
+import { useParentLang } from '../../lib/parentLocale';
 import { format } from 'date-fns';
 import { createSubmissionNotification } from '../../lib/notificationService';
 
@@ -108,7 +108,7 @@ const getSubmissionThumbnailInfo = (url?: string) => {
 };
 
 
-export function Dashboard({ isShared = false }: { isShared?: boolean }) {
+export function Dashboard({ isShared = false, isParentView = false }: { isShared?: boolean; isParentView?: boolean }) {
   const { user, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -119,17 +119,35 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
   const { userId: urlUserId } = useParams();
   const searchParams = new URLSearchParams(location.search);
+  const isParentMode = Boolean(isParentView || isShared);
+  const canAdminEdit = Boolean(isAdmin && !isParentMode);
+  const parentKey = searchParams.get('key') || '';
+  const [parentLang, setParentLang] = useParentLang(isParentMode);
+  const isVi = isParentMode && parentLang === 'vi';
   const rawTab = searchParams.get('tab') || 'overview';
-  const currentTab = isAdmin ? rawTab : 'overview';
+  const allowedParentTabs = ['overview', 'reading', 'listening', 'writing', 'speaking', 'results'];
+  const currentTab = isParentMode
+    ? (allowedParentTabs.includes(rawTab) ? rawTab : 'overview')
+    : (canAdminEdit ? rawTab : 'overview');
   
   const paramUid = searchParams.get('userId') || searchParams.get('user');
-  let targetUserId = (isAdmin && paramUid) ? paramUid : user?.uid;
-  if (isShared && urlUserId) {
+  let targetUserId = (canAdminEdit && paramUid) ? paramUid : user?.uid;
+  if (isParentMode && urlUserId) {
     targetUserId = urlUserId;
   }
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
+  const submissions = React.useMemo(() => allSubmissions.filter((s) => !s.isDeleted), [allSubmissions]);
+  const trashedSubmissions = React.useMemo(() => {
+    return allSubmissions
+      .filter((s) => Boolean(s.isDeleted))
+      .sort((a, b) => {
+        const aDel = a.deletedAt?.toMillis ? a.deletedAt.toMillis() : (typeof a.deletedAt === 'number' ? a.deletedAt : (a.createdAt as number) || 0);
+        const bDel = b.deletedAt?.toMillis ? b.deletedAt.toMillis() : (typeof b.deletedAt === 'number' ? b.deletedAt : (b.createdAt as number) || 0);
+        return bDel - aDel;
+      });
+  }, [allSubmissions]);
   const [loading, setLoading] = useState(true);
   const [targetUserName, setTargetUserName] = useState<string | null>(null);
   
@@ -145,7 +163,25 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [uploadingSubmissionId, setUploadingSubmissionId] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [showParentAccessModal, setShowParentAccessModal] = useState(false);
   const [activeVideoModal, setActiveVideoModal] = useState<{ title: string; embedUrl?: string | null; directUrl?: string | null } | null>(null);
+
+  const getTabUrl = (tabName: string) => {
+    if (isParentMode) {
+      const base = location.pathname.startsWith('/shared/')
+        ? `/shared/dashboard/${targetUserId}`
+        : `/parent/dashboard/${targetUserId}`;
+      return `${base}?tab=${tabName}${parentKey ? `&key=${encodeURIComponent(parentKey)}` : ''}`;
+    }
+    return `/ielts/dashboard?tab=${tabName}${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`;
+  };
+
+  const getResultUrl = (submissionId: string) => {
+    if (isParentMode) {
+      return `/parent/results/${submissionId}?student=${encodeURIComponent(targetUserId || '')}${parentKey ? `&key=${encodeURIComponent(parentKey)}` : ''}`;
+    }
+    return `/results/${submissionId}`;
+  };
 
   const handleEditTitle = async (subId: string) => {
     if (!editTitleValue) {
@@ -242,8 +278,12 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [testToDelete, setTestToDelete] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [isRestoringAll, setIsRestoringAll] = useState(false);
+  const [permanentDeleteId, setPermanentDeleteId] = useState<string | null>(null);
+  const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
 
-  const [userProfile, setUserProfile] = useState<{nickname?: string, motto?: string, photoURL?: string, name?: string, needsPasswordReset?: boolean, email?: string, phone?: string, course?: string, username?: string, tempPassword?: string, password?: string, studentId?: string, eraverseAvatar?: any, folderName?: string} | null>(null);
+  const [userProfile, setUserProfile] = useState<{nickname?: string, motto?: string, photoURL?: string, name?: string, needsPasswordReset?: boolean, email?: string, phone?: string, course?: string, username?: string, tempPassword?: string, password?: string, studentId?: string, eraverseAvatar?: any, folderName?: string, parentAccess?: { enabled?: boolean; token?: string; updatedAt?: number }} | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editNickname, setEditNickname] = useState('');
   const [editUsername, setEditUsername] = useState('');
@@ -253,13 +293,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const [profileError, setProfileError] = useState('');
   const [editMotto, setEditMotto] = useState('');
   const [editPhotoURL, setEditPhotoURL] = useState('');
-  const [avatarSyncTick, setAvatarSyncTick] = useState(0);
+  const [photoLoadError, setPhotoLoadError] = useState(false);
 
-  const [editAvatarShirtColor, setEditAvatarShirtColor] = useState('#2563eb');
-  const [editAvatarHairColor, setEditAvatarHairColor] = useState('#1c1917');
-  const [editAvatarSkinColor, setEditAvatarSkinColor] = useState('#fde68a');
-  const [editAvatarHatType, setEditAvatarHatType] = useState<string>('cap');
-  const [editAvatarAccessoryType, setEditAvatarAccessoryType] = useState<string>('glasses');
+  useEffect(() => {
+    setPhotoLoadError(false);
+  }, [userProfile?.photoURL]);
 
   useEffect(() => {
     // Auto-clear January writing test content per user request
@@ -267,45 +305,29 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         localStorage.removeItem('ielts_writing_progress_3');
         localStorage.removeItem('ielts_writing_progress_1');
     }
-
-    const onAvatarSync = () => setAvatarSyncTick((t) => t + 1);
-    window.addEventListener('eraverse-avatar-updated', onAvatarSync);
-    window.addEventListener('storage', onAvatarSync);
-    window.addEventListener('focus', onAvatarSync);
-    return () => {
-      window.removeEventListener('eraverse-avatar-updated', onAvatarSync);
-      window.removeEventListener('storage', onAvatarSync);
-      window.removeEventListener('focus', onAvatarSync);
-    };
   }, []);
-
-  const eraverseLook = React.useMemo(() => {
-    return resolveStudentEraVerseAvatar(
-      targetUserId,
-      userProfile || { name: targetUserName || user?.displayName, email: user?.email },
-      Boolean(isAdmin && (!targetUserId || targetUserId === user?.uid))
-    );
-  }, [targetUserId, userProfile, targetUserName, user?.displayName, user?.email, isAdmin, user?.uid, avatarSyncTick]);
 
   useEffect(() => {
     if (!targetUserId) return;
-    if (!isShared && !user) return;
+    if (!isParentMode && !user) return;
     
-    // Auto-delete January mock test submission from db to fully wipe the content
-    getDocs(query(collection(db, 'submissions'), where('userId', '==', targetUserId))).then(snap => {
-        snap.forEach(d => {
-            if (d.data().assignmentId === '3' || (d.data().title || '').includes('January Writing')) {
-                deleteDoc(doc(db, 'submissions', d.id)).catch(console.error);
-            }
-        });
-    }).catch(console.error);
+    // Auto-delete January mock test submission from db to fully wipe the content (never run in parent view)
+    if (!isParentMode) {
+      getDocs(query(collection(db, 'submissions'), where('userId', '==', targetUserId))).then(snap => {
+          snap.forEach(d => {
+              if (d.data().assignmentId === '3' || (d.data().title || '').includes('January Writing')) {
+                  deleteDoc(doc(db, 'submissions', d.id)).catch(console.error);
+              }
+          });
+      }).catch(console.error);
+    }
 
     // Fetch user details
     const unsubscribeUser = onSnapshot(doc(db, 'users', targetUserId), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setUserProfile(data as any);
-        if (isAdmin && targetUserId !== user?.uid) {
+        if (canAdminEdit && targetUserId !== user?.uid) {
             setTargetUserName(data.name || data.displayName || data.email);
         } else {
             setTargetUserName(null);
@@ -349,7 +371,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
       });
       // sort desc in memory
       data.sort((a, b) => (b.createdAt as number) - (a.createdAt as number));
-      setSubmissions(data);
+      setAllSubmissions(data);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'submissions');
     });
@@ -359,7 +381,30 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
       unsubscribeAssignments();
       unsubscribeSubmissions();
     };
-  }, [user, targetUserId, isAdmin]);
+  }, [user, targetUserId, canAdminEdit, isParentMode]);
+
+  useEffect(() => {
+    if (!isParentMode || isAdmin || !targetUserId || !userProfile) return;
+    const pAccess = userProfile.parentAccess;
+    if (pAccess?.enabled === false) return;
+    if (pAccess?.token && parentKey !== pAccess.token && location.pathname.startsWith('/parent/')) return;
+
+    const visitKey = `parent_ielts_visit_${targetUserId}`;
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(visitKey)) {
+      sessionStorage.setItem(visitKey, '1');
+      setDoc(
+        doc(db, 'users', targetUserId),
+        {
+          parentAccess: {
+            ...(pAccess || {}),
+            viewCount: increment(1),
+            lastViewedAt: Date.now(),
+          },
+        },
+        { merge: true }
+      ).catch(() => {});
+    }
+  }, [isParentMode, isAdmin, targetUserId, userProfile, parentKey, location.pathname]);
 
   if (loading) {
     return (
@@ -379,6 +424,56 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </div>
       </div>
     );
+  }
+
+  if (isParentMode) {
+    if (!targetUserId || !userProfile) {
+      return (
+        <div className="max-w-lg mx-auto my-10 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 text-center shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-2">
+            {isVi ? 'Không tìm thấy hồ sơ học tập' : 'Student Report Not Found'}
+          </h2>
+          <p className="text-sm text-slate-500">
+            {isVi
+              ? 'Đường dẫn truy cập không đầy đủ hoặc hồ sơ học viên hiện không khả dụng.'
+              : 'This parent access link may be incomplete or the student profile is unavailable.'}
+          </p>
+        </div>
+      );
+    }
+
+    const parentAccess = userProfile.parentAccess;
+    const accessDeniedMessage =
+      parentAccess?.enabled === false
+        ? isVi
+          ? 'Quyền xem báo cáo dành cho Phụ huynh hiện đang tạm dừng. Vui lòng liên hệ giáo viên hoặc trung tâm để mở lại.'
+          : 'Parent access is currently paused by the teacher. Please contact your teacher to re-enable access.'
+        : parentAccess?.token && parentKey && parentKey !== parentAccess.token
+        ? isVi
+          ? 'Mã QR hoặc đường dẫn này đã được làm mới. Vui lòng sử dụng mã QR mới nhất từ giáo viên.'
+          : 'This parent access link has been replaced. Please scan the latest QR code from the teacher.'
+        : parentAccess?.token && !parentKey && location.pathname.startsWith('/parent/')
+        ? isVi
+          ? 'Vui lòng quét mã QR hoặc mở đúng đường dẫn dành cho Phụ huynh để xem báo cáo học tập.'
+          : 'A valid Parent Access QR code or link is required to view this student report.'
+        : null;
+
+    if (accessDeniedMessage) {
+      return (
+        <div className="max-w-lg mx-auto my-10 bg-white rounded-3xl border border-amber-200 p-6 sm:p-8 text-center shadow-lg">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-2">
+            {isVi ? 'Tạm thời không thể truy cập' : 'Access Unavailable'}
+          </h2>
+          <p className="text-sm text-slate-600 leading-relaxed">{accessDeniedMessage}</p>
+        </div>
+      );
+    }
   }
 
   const handleSaveProfile = async () => {
@@ -413,44 +508,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         updateData.password = editPassword.trim();
       }
 
-      const eraverseAvatarPayload = {
-        name: editNickname.trim() || eraverseLook.name,
-        cohort: eraverseLook.cohort,
-        shirtColor: editAvatarShirtColor,
-        hairColor: editAvatarHairColor,
-        skinColor: editAvatarSkinColor,
-        hatType: editAvatarHatType,
-        accessoryType: editAvatarAccessoryType,
-        updatedAt: Date.now()
-      };
-      updateData.eraverseAvatar = eraverseAvatarPayload;
-
-      try {
-        if (targetUserId) {
-          localStorage.setItem(`eraverse_custom_${targetUserId}`, JSON.stringify(eraverseAvatarPayload));
-        }
-        if (eraverseAvatarPayload.name) {
-          localStorage.setItem(`eraverse_custom_nick_${eraverseAvatarPayload.name.toLowerCase()}`, JSON.stringify(eraverseAvatarPayload));
-        }
-        window.dispatchEvent(
-          new CustomEvent('eraverse-avatar-updated', {
-            detail: { uid: targetUserId, name: eraverseAvatarPayload.name, avatar: eraverseAvatarPayload }
-          })
-        );
-      } catch (_e) {}
-
       // Profile photo ONLY updated if admin
-      if (isAdmin) {
+      if (canAdminEdit) {
         updateData.photoURL = editPhotoURL.trim();
       }
 
       await setDoc(doc(db, 'users', targetUserId), updateData, { merge: true });
       setUserProfile((prev: any) => prev ? ({ ...prev, ...updateData }) : updateData);
-      setAvatarSyncTick((t) => t + 1);
 
       if (user && targetUserId === user.uid && !(user as any).customAuth) {
         const authUpdates: any = { displayName: editNickname.trim() || user.displayName };
-        if (isAdmin && editPhotoURL.trim()) {
+        if (canAdminEdit && editPhotoURL.trim()) {
           authUpdates.photoURL = editPhotoURL.trim();
         }
         await updateProfile(user as any, authUpdates).catch(console.error);
@@ -520,13 +588,70 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      await deleteDoc(doc(db, 'submissions', testToDelete));
+      await updateDoc(doc(db, 'submissions', testToDelete), {
+        isDeleted: true,
+        deletedAt: Date.now(),
+        deletedBy: user?.uid || 'admin',
+      });
       setTestToDelete(null);
     } catch (err: any) {
-      console.error("Error deleting test:", err);
+      console.error("Error moving test to trash:", err);
       setDeleteError(err.message || "Failed to delete test. It may be due to permission settings.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRestoreTest = async (submissionId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!submissionId) return;
+    setRestoringId(submissionId);
+    try {
+      await updateDoc(doc(db, 'submissions', submissionId), {
+        isDeleted: false,
+        deletedAt: null,
+      });
+    } catch (err: any) {
+      console.error("Error restoring test:", err);
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const handleRestoreAllTests = async () => {
+    if (trashedSubmissions.length === 0) return;
+    setIsRestoringAll(true);
+    try {
+      await Promise.all(
+        trashedSubmissions.map((sub) =>
+          sub.id
+            ? updateDoc(doc(db, 'submissions', sub.id), {
+                isDeleted: false,
+                deletedAt: null,
+              })
+            : Promise.resolve()
+        )
+      );
+    } catch (err: any) {
+      console.error("Error restoring all tests:", err);
+    } finally {
+      setIsRestoringAll(false);
+    }
+  };
+
+  const confirmPermanentDeleteTest = async () => {
+    if (!permanentDeleteId) return;
+    setIsPermanentDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'submissions', permanentDeleteId));
+      setPermanentDeleteId(null);
+    } catch (err: any) {
+      console.error("Error permanently deleting test:", err);
+    } finally {
+      setIsPermanentDeleting(false);
     }
   };
 
@@ -557,40 +682,123 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
   const pendingCount = assignments.length - submissions.length;
   const firstName = targetUserName ? targetUserName.split(' ')[0] : (user?.displayName?.split(' ')[0] || 'Student');
 
+  const studentDisplayName = userProfile?.nickname || userProfile?.name || targetUserName || firstName || 'Student';
+
   return (
-    <div className="space-y-8 sm:space-y-12 pb-24 sm:pb-16 max-w-7xl mx-auto px-1 sm:px-0">
+    <div className="space-y-5 sm:space-y-10 pb-20 sm:pb-16 max-w-7xl mx-auto">
       
-      {isAdmin && targetUserName && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-800 px-6 py-4 rounded-2xl flex items-center gap-3">
-          <FileText className="w-5 h-5 text-blue-600" />
+      {isParentMode && (
+        <div className="bg-white border border-slate-200/90 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-2xl flex items-center justify-between gap-2 shadow-2xs print:hidden">
+          <p className="text-xs sm:text-sm font-bold text-slate-700 truncate">
+            {isVi ? `Báo cáo học tập · ${studentDisplayName}` : `Progress Report · ${studentDisplayName}`}
+          </p>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="inline-flex rounded-xl bg-slate-100 p-0.5 border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setParentLang('en')}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  parentLang === 'en' ? 'bg-[#1E4DB7] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setParentLang('vi')}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  parentLang === 'vi' ? 'bg-[#1E4DB7] text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tiếng Việt
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              title={isVi ? 'In báo cáo' : 'Print report'}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isVi ? 'In báo cáo' : 'Print'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {canAdminEdit && targetUserName && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 sm:px-6 py-3.5 sm:py-4 rounded-2xl flex items-center gap-3 text-sm">
+          <FileText className="w-5 h-5 text-blue-600 shrink-0" />
           <p className="font-medium">
             You are viewing <strong>{targetUserName}</strong>'s dashboard. Any tests you start from here will be saved to your own account, not theirs.
           </p>
         </div>
       )}
 
-      {/* Welcome area */}
       {/* Welcome Section */}
-      <section className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-6 bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl relative overflow-hidden group text-center md:text-left">
+      <section className="flex flex-col lg:flex-row justify-between items-center lg:items-center gap-5 sm:gap-6 bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white p-5 sm:p-8 md:p-11 rounded-3xl sm:rounded-[2rem] shadow-xl relative overflow-hidden group text-center md:text-left">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-indigo-500 rounded-full blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 w-full min-w-0">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 border-4 border-white/30 shadow-2xl overflow-hidden flex items-center justify-center shrink-0 mx-auto md:mx-0 relative">
-            <EraVerseAvatar3D
-              {...eraverseLook}
-              name={userProfile?.nickname || firstName || eraverseLook.name}
-              cameraFocus="full"
-              showPedestal={true}
-              className="w-full h-full"
-            />
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-3.5 sm:gap-6 md:gap-8 w-full min-w-0">
+          <div
+            onClick={() => {
+              if (!canAdminEdit) return;
+              setEditNickname(userProfile?.nickname || firstName || '');
+              setEditUsername(userProfile?.username || '');
+              setEditPassword(userProfile?.tempPassword || userProfile?.password || '');
+              setShowEditPassword(false);
+              setProfileError('');
+              setEditMotto(userProfile?.motto || '');
+              setEditPhotoURL(userProfile?.photoURL || '');
+              setIsEditingProfile(true);
+            }}
+            title={canAdminEdit ? 'Admin: Add or edit Profile Photo URL' : undefined}
+            className={`w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 border-4 border-white/30 shadow-2xl overflow-hidden flex items-center justify-center shrink-0 mx-auto md:mx-0 relative ${canAdminEdit ? 'cursor-pointer group/avatar' : ''}`}
+          >
+            {userProfile?.photoURL && !photoLoadError ? (
+              <img
+                src={userProfile.photoURL}
+                alt={userProfile?.nickname || firstName || 'Student'}
+                referrerPolicy="no-referrer"
+                onError={() => setPhotoLoadError(true)}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white select-none">
+                {(userProfile?.nickname || studentDisplayName || 'S').charAt(0).toUpperCase()}
+              </span>
+            )}
+            {canAdminEdit && (
+              <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider gap-1">
+                <Camera className="w-4 h-4" />
+                <span>Photo Link</span>
+              </div>
+            )}
           </div>
           <div className="flex flex-col items-center md:items-start w-full min-w-0">
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mb-3">
-              <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-blue-200 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-inner">
-                {targetUserName ? 'Viewing Student Profile' : 'Student Profile'}
-              </div>
+            <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mb-2 sm:mb-3">
+              {isParentMode ? (
+                <span className="text-xs font-semibold text-blue-200/90">
+                  {isVi ? 'Hồ sơ Học viên · Kỷ Nguyên Era' : 'Student Progress Overview'}
+                </span>
+              ) : (
+                <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-blue-200 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-inner">
+                  {targetUserName ? 'Viewing Student Profile' : 'Student Profile'}
+                </div>
+              )}
+              {/* Parent QR button: ONLY visible to admin */}
+              {canAdminEdit && (
+                <button
+                  type="button"
+                  onClick={() => setShowParentAccessModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 active:scale-95 rounded-full transition-all text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer border border-indigo-300/30"
+                  title="Generate Parent Instant Access QR Code & Link"
+                >
+                  <QrCode className="w-3.5 h-3.5" /> Parent QR
+                </button>
+              )}
               {/* Credentials button: ONLY visible to admin */}
-              {isAdmin && (
+              {canAdminEdit && (
                 <button
                   type="button"
                   onClick={() => setShowCredentialsModal(true)}
@@ -600,7 +808,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   <Key className="w-3.5 h-3.5" /> Credentials
                 </button>
               )}
-              {(!targetUserId || targetUserId === user?.uid || isAdmin) && (
+              {!isParentMode && (!targetUserId || targetUserId === user?.uid || canAdminEdit) && (
                 <button 
                   onClick={() => {
                     setEditNickname(userProfile?.nickname || firstName || '');
@@ -610,11 +818,6 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     setProfileError('');
                     setEditMotto(userProfile?.motto || '');
                     setEditPhotoURL(userProfile?.photoURL || '');
-                    setEditAvatarShirtColor(eraverseLook.shirtColor);
-                    setEditAvatarHairColor(eraverseLook.hairColor);
-                    setEditAvatarSkinColor(eraverseLook.skinColor);
-                    setEditAvatarHatType(eraverseLook.hatType);
-                    setEditAvatarAccessoryType(eraverseLook.accessoryType);
                     setIsEditingProfile(true);
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-blue-200 hover:text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider cursor-pointer"
@@ -623,26 +826,39 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 </button>
               )}
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-white leading-tight mb-2 tracking-tight break-words max-w-full">
-              {targetUserName ? `Viewing ${userProfile?.nickname || firstName}'s Dashboard` : `Welcome back, ${userProfile?.nickname || firstName}`}
+            <h1 className="text-xl sm:text-3xl md:text-5xl font-extrabold text-white leading-tight mb-1.5 sm:mb-2 tracking-tight break-words max-w-full">
+              {isParentMode
+                ? isVi
+                  ? `Kết quả học tập của ${studentDisplayName}`
+                  : `${studentDisplayName}'s Progress`
+                : targetUserName
+                ? `Viewing ${userProfile?.nickname || firstName}'s Dashboard`
+                : `Welcome back, ${userProfile?.nickname || firstName}`}
             </h1>
-            <p className="text-blue-100 text-sm sm:text-base md:text-xl font-medium max-w-lg">
-              {userProfile?.motto || (targetUserName ? `Tracking progress for ${targetUserName}.` : `Track your progress and continue your journey to Band 7.5. You're doing great!`)}
+            <p className="text-blue-100 text-xs sm:text-base md:text-lg font-medium max-w-lg leading-relaxed">
+              {userProfile?.motto ||
+                (isParentMode
+                  ? isVi
+                    ? 'Tổng hợp điểm số các kỹ năng và kết quả kiểm tra tại Kỷ Nguyên Era.'
+                    : `Overview of ${studentDisplayName}'s skill scores and completed assessments.`
+                  : targetUserName
+                  ? `Tracking progress for ${targetUserName}.`
+                  : `Track your progress and continue your journey to Band 7.5. You're doing great!`)}
             </p>
           </div>
         </div>
         
         {/* Overall Band Card - Fluid on mobile, prevents overflow and overlapping */}
         <div className="relative z-10 w-full sm:w-auto shrink-0 flex justify-center">
-          <div className="bg-white rounded-3xl p-4 sm:p-5 md:p-6 border border-red-100/90 shadow-[0_12px_35px_rgba(0,0,0,0.18)] hover:shadow-[0_16px_45px_rgba(239,68,68,0.22)] transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-3 sm:gap-4 group w-full sm:w-auto sm:min-w-[280px]">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 md:p-6 border border-red-100/90 shadow-[0_12px_35px_rgba(0,0,0,0.18)] hover:shadow-[0_16px_45px_rgba(239,68,68,0.22)] transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-3 sm:gap-4 group w-full sm:w-auto sm:min-w-[270px]">
             {/* Subtle ambient red background tint */}
             <div className="absolute -top-12 -right-12 w-28 h-28 bg-red-100/40 rounded-full blur-2xl pointer-events-none group-hover:bg-red-100/60 transition-colors"></div>
 
             {/* Left Column: Squircle icon + Title/Subtitle */}
-            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 relative z-10">
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 relative z-10 text-left">
               {/* Squircle Icon Container */}
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-b from-white to-red-50/80 border border-red-100 shadow-[0_4px_16px_rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-b from-white to-red-50/80 border border-red-100 shadow-[0_4px_16px_rgba(239,68,68,0.12)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-7 sm:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M16 4L19.5 11.5L27.5 12.5L21.5 18L23 26L16 22L9 26L10.5 18L4.5 12.5L12.5 11.5L16 4Z" fill="#D8001B" />
                   <circle cx="16" cy="15" r="4" fill="white" />
                   <circle cx="16" cy="15" r="2.2" fill="#D8001B" />
@@ -651,17 +867,23 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
               {/* Text column */}
               <div className="flex flex-col min-w-0">
-                <span className="text-sm sm:text-base font-black uppercase tracking-tight text-[#D8001B] truncate leading-tight">
-                  {userProfile?.course === 'PET' ? 'OVERALL GRADE' : 'OVERALL BAND'}
+                <span className="text-xs sm:text-base font-black uppercase tracking-tight text-[#D8001B] truncate leading-tight">
+                  {userProfile?.course === 'PET'
+                    ? isVi
+                      ? 'ĐIỂM TỔNG KẾT'
+                      : 'OVERALL GRADE'
+                    : isVi
+                    ? 'ĐIỂM TỔNG (BAND)'
+                    : 'OVERALL BAND'}
                 </span>
-                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap mt-0.5">
-                  Skill Score
+                <span className="text-[11px] sm:text-xs font-semibold text-slate-500 whitespace-nowrap mt-0.5">
+                  {isVi ? 'Trung bình kỹ năng' : 'Skill Score'}
                 </span>
               </div>
             </div>
 
             {/* Circular Score Disc */}
-            <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 rounded-full bg-gradient-to-br from-white via-white to-red-50/50 border border-red-100 shadow-[0_6px_20px_rgba(239,68,68,0.08)] flex items-center justify-center shrink-0 relative z-10">
+            <div className="w-13 h-13 sm:w-16 sm:h-16 md:w-18 md:h-18 rounded-full bg-gradient-to-br from-white via-white to-red-50/50 border border-red-100 shadow-[0_6px_20px_rgba(239,68,68,0.08)] flex items-center justify-center shrink-0 relative z-10">
               <span className="text-2xl sm:text-3xl md:text-4xl font-black text-[#B90014] tracking-tight">
                 {userProfile?.course === 'PET' ? Math.round(overallBand()) : overallBand().toFixed(1)}
               </span>
@@ -670,25 +892,59 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </div>
       </section>
 
-      {/* Dashboard Tabs - Only visible to Admin */}
-      {isAdmin && (
-        <div className="flex gap-2 overflow-x-auto pb-4 border-b-2 border-slate-100 scrollbar-hide pt-4">
-          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=overview` : `/ielts/dashboard?tab=overview${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'overview' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Dashboard</Link>
-          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : `/ielts/dashboard?tab=reading${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'reading' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Reading</Link>
-          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : `/ielts/dashboard?tab=listening${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Listening</Link>
-          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : `/ielts/dashboard?tab=writing${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Writing</Link>
-          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : `/ielts/dashboard?tab=speaking${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>Speaking</Link>
-          <Link to={isShared ? `/shared/dashboard/${targetUserId}?tab=results` : `/ielts/dashboard?tab=results${targetUserId !== user?.uid ? `&userId=${targetUserId}` : ''}`} className={`px-6 py-3 text-[0.95rem] font-bold rounded-2xl whitespace-nowrap transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>History</Link>
+      {/* Dashboard Tabs - Visible to Admin and Parent View */}
+      {(canAdminEdit || isParentMode) && (
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-3 border-b border-slate-200/80 scrollbar-hide pt-1">
+          <Link to={getTabUrl('overview')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 ${currentTab === 'overview' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+            {isVi ? 'Tổng quan' : 'Dashboard'}
+          </Link>
+          <Link to={getTabUrl('reading')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 ${currentTab === 'reading' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+            {isVi ? 'Kỹ năng Đọc' : 'Reading'}
+          </Link>
+          <Link to={getTabUrl('listening')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 ${currentTab === 'listening' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+            {isVi ? 'Kỹ năng Nghe' : 'Listening'}
+          </Link>
+          <Link to={getTabUrl('writing')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 ${currentTab === 'writing' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+            {isVi ? 'Kỹ năng Viết' : 'Writing'}
+          </Link>
+          <Link to={getTabUrl('speaking')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 ${currentTab === 'speaking' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+            {isVi ? 'Kỹ năng Nói' : 'Speaking'}
+          </Link>
+          <Link to={getTabUrl('results')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 ${currentTab === 'results' ? 'bg-[#1E4DB7] text-white shadow-md hover:bg-blue-800' : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+            {isVi ? 'Lịch sử làm bài' : 'History'}
+          </Link>
+          {canAdminEdit && (
+            <Link
+              to={getTabUrl('trash')}
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-[0.95rem] font-bold rounded-xl sm:rounded-2xl whitespace-nowrap shrink-0 transition-all duration-200 flex items-center gap-2 ${
+                currentTab === 'trash'
+                  ? 'bg-rose-600 text-white shadow-md hover:bg-rose-700'
+                  : 'bg-transparent text-slate-500 hover:bg-rose-50 hover:text-rose-600'
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Trash Bin</span>
+              {trashedSubmissions.length > 0 && (
+                <span
+                  className={`px-2 py-0.5 text-xs font-extrabold rounded-full ${
+                    currentTab === 'trash' ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-700'
+                  }`}
+                >
+                  {trashedSubmissions.length}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
       )}
 
       {currentTab === 'overview' && (
       <>
         {/* Statistics Grid - Colored according to Progress: Reading Blue, Listening Green, Writing Orange, Speaking Purple */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-6">
         {[
           {
-            title: 'READING',
+            title: isVi ? 'KỸ NĂNG ĐỌC' : 'READING',
             score: rScore,
             cardBg: 'bg-gradient-to-b from-white via-blue-50/30 to-blue-50/70 border-2 border-blue-300/80 shadow-[0_8px_25px_rgba(37,99,235,0.08)] hover:shadow-[0_16px_38px_rgba(37,99,235,0.16)] hover:border-blue-400',
             ambientGlow: 'bg-blue-200/40 group-hover:bg-blue-200/60',
@@ -697,7 +953,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             discBg: 'from-white via-white to-blue-50/80 border-2 border-blue-200 shadow-[0_4px_16px_rgba(30,77,183,0.10)]',
             scoreColor: 'text-[#1E4DB7]',
             icon: (
-              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M6 7.5C6 6.39543 6.89543 5.5 8 5.5C10.5 5.5 13.5 6.5 15 8.2V24.5C13.5 23 10.5 22 8 22C6.89543 22 6 22.8954 6 24V7.5Z" fill="#1E4DB7" />
                 <path d="M26 7.5C26 6.39543 25.1046 5.5 24 5.5C21.5 5.5 18.5 6.5 17 8.2V24.5C18.5 23 21.5 22 24 22C25.1046 22 26 22.8954 26 24V7.5Z" fill="#2563EB" />
                 <path d="M16 8V24.5" stroke="#1D4ED8" strokeWidth="1" />
@@ -708,7 +964,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             )
           },
           {
-            title: 'LISTENING',
+            title: isVi ? 'KỸ NĂNG NGHE' : 'LISTENING',
             score: lScore,
             cardBg: 'bg-gradient-to-b from-white via-emerald-50/30 to-emerald-50/70 border-2 border-emerald-300/80 shadow-[0_8px_25px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_38px_rgba(16,185,129,0.16)] hover:border-emerald-400',
             ambientGlow: 'bg-emerald-200/40 group-hover:bg-emerald-200/60',
@@ -717,7 +973,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             discBg: 'from-white via-white to-emerald-50/80 border-2 border-emerald-200 shadow-[0_4px_16px_rgba(5,150,105,0.10)]',
             scoreColor: 'text-[#047857]',
             icon: (
-              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M6 16C6 10.4772 10.4772 6 16 6C21.5228 6 26 10.4772 26 16V22C26 24.2091 24.2091 26 22 26H21C19.8954 26 19 25.1046 19 24V18C19 16.8954 19.8954 16 21 16H23V16C23 12.134 19.866 9 16 9C12.134 9 9 12.134 9 16V16H11C12.1046 16 13 16.8954 13 18V24C13 25.1046 12.1046 26 11 26H10C7.79086 26 6 24.2091 6 22V16Z" fill="#059669" />
                 <circle cx="21" cy="20" r="1.5" fill="white" />
                 <circle cx="11" cy="20" r="1.5" fill="white" />
@@ -725,7 +981,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             )
           },
           {
-            title: 'WRITING',
+            title: isVi ? 'KỸ NĂNG VIẾT' : 'WRITING',
             score: wScore,
             cardBg: 'bg-gradient-to-b from-white via-orange-50/30 to-orange-50/70 border-2 border-orange-300/80 shadow-[0_8px_25px_rgba(249,115,22,0.08)] hover:shadow-[0_16px_38px_rgba(249,115,22,0.16)] hover:border-orange-400',
             ambientGlow: 'bg-orange-200/40 group-hover:bg-orange-200/60',
@@ -734,7 +990,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             discBg: 'from-white via-white to-orange-50/80 border-2 border-orange-200 shadow-[0_4px_16px_rgba(234,88,12,0.10)]',
             scoreColor: 'text-[#C2410C]',
             icon: (
-              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.8 5.7C23.6 4.9 24.9 4.9 25.7 5.7C26.5 6.5 26.5 7.8 25.7 8.6L13.8 20.5C13.5 20.8 13.1 21.0 12.7 21.1L7.5 22.5C6.9 22.7 6.3 22.1 6.5 21.5L7.9 16.3C8.0 15.9 8.2 15.5 8.5 15.2L20.4 3.3" fill="#EA580C" />
                 <path d="M19 8L23 12" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
                 <line x1="7" y1="26" x2="25" y2="26" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
@@ -742,7 +998,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             )
           },
           {
-            title: 'SPEAKING',
+            title: isVi ? 'KỸ NĂNG NÓI' : 'SPEAKING',
             score: sScore,
             cardBg: 'bg-gradient-to-b from-white via-purple-50/30 to-purple-50/70 border-2 border-purple-300/80 shadow-[0_8px_25px_rgba(168,85,247,0.08)] hover:shadow-[0_16px_38px_rgba(168,85,247,0.16)] hover:border-purple-400',
             ambientGlow: 'bg-purple-200/40 group-hover:bg-purple-200/60',
@@ -751,7 +1007,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             discBg: 'from-white via-white to-purple-50/80 border-2 border-purple-200 shadow-[0_4px_16px_rgba(147,51,234,0.10)]',
             scoreColor: 'text-[#7E22CE]',
             icon: (
-              <svg viewBox="0 0 32 32" className="w-6 h-6 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg viewBox="0 0 32 32" className="w-5 h-5 sm:w-7 sm:h-7 xl:w-6 xl:h-6 2xl:w-7 2xl:h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="11.5" y="5" width="9" height="14" rx="4.5" fill="#9333EA" />
                 <line x1="14" y1="9" x2="18" y2="9" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
                 <line x1="14" y1="12" x2="18" y2="12" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
@@ -768,32 +1024,32 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           return (
             <div 
               key={idx}
-              className={`rounded-3xl p-4 sm:p-5 xl:p-4 2xl:p-6 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-2.5 sm:gap-3 group ${card.cardBg}`}
+              className={`rounded-2xl sm:rounded-3xl p-3 sm:p-5 xl:p-4 2xl:p-6 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex items-center justify-between gap-2 sm:gap-3 group ${card.cardBg}`}
             >
               {/* Subtle ambient background glow */}
               <div className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl pointer-events-none transition-colors ${card.ambientGlow}`}></div>
 
               {/* Left Column: Squircle icon + Title/Subtitle (flex-1 min-w-0 to prevent any overlap) */}
-              <div className="flex items-center gap-2.5 sm:gap-3 xl:gap-2.5 2xl:gap-3.5 min-w-0 flex-1 relative z-10">
+              <div className="flex items-center gap-2 sm:gap-3 xl:gap-2.5 2xl:gap-3.5 min-w-0 flex-1 relative z-10">
                 {/* Squircle Icon Container */}
-                <div className={`w-11 h-11 sm:w-13 sm:h-13 xl:w-11 xl:h-11 2xl:w-14 2xl:h-14 rounded-2xl bg-gradient-to-b flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.squircleBg}`}>
+                <div className={`w-9 h-9 sm:w-13 sm:h-13 xl:w-11 xl:h-11 2xl:w-14 2xl:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-b flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${card.squircleBg}`}>
                   {card.icon}
                 </div>
 
                 {/* Text column - properly flexible with no risk of collision */}
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className={`text-xs sm:text-base xl:text-xs 2xl:text-base font-black uppercase tracking-tight truncate leading-tight ${card.titleColor}`}>
+                  <span className={`text-[11px] sm:text-base xl:text-xs 2xl:text-base font-black uppercase tracking-tight truncate leading-tight ${card.titleColor}`}>
                     {card.title}
                   </span>
                   <span className="text-[10px] sm:text-xs xl:text-[10px] 2xl:text-xs font-semibold text-slate-500 truncate mt-0.5">
-                    Skill Score
+                    {isVi ? 'Điểm TB' : 'Skill Score'}
                   </span>
                 </div>
               </div>
 
               {/* Circular Score Disc - Dedicated shrink-0 container that NEVER overlaps */}
-              <div className={`w-13 h-13 sm:w-16 sm:h-16 xl:w-13 xl:h-13 2xl:w-16 2xl:h-16 rounded-full bg-gradient-to-br flex items-center justify-center shrink-0 relative z-10 ${card.discBg}`}>
-                <span className={`text-xl sm:text-3xl xl:text-xl 2xl:text-3xl font-black tracking-tight ${card.scoreColor}`}>
+              <div className={`w-11 h-11 sm:w-16 sm:h-16 xl:w-13 xl:h-13 2xl:w-16 2xl:h-16 rounded-full bg-gradient-to-br flex items-center justify-center shrink-0 relative z-10 ${card.discBg}`}>
+                <span className={`text-lg sm:text-3xl xl:text-xl 2xl:text-3xl font-black tracking-tight ${card.scoreColor}`}>
                   {displayScore}
                 </span>
               </div>
@@ -803,16 +1059,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
       </section>
 
       {/* Progress Section */}
-      <section className="space-y-6 mt-12">
+      <section className="space-y-4 sm:space-y-6 mt-6 sm:mt-10">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900">Progress</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{isVi ? 'Biểu đồ tiến độ' : 'Progress'}</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-blue-600 flex items-center justify-between">
-              <span>Reading</span>
+              <span>{isVi ? 'Kỹ năng Đọc' : 'Reading'}</span>
             </h3>
-            <div className="flex items-end gap-2.5 h-36 pt-7">
+            <div className="flex items-end gap-2.5 h-32 sm:h-36 pt-7">
               {getSubmissionsByType('reading').slice(0, 5).reverse().map((sub, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
                   <div 
@@ -825,15 +1081,15 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                 </div>
               ))}
-              {getSubmissionsByType('reading').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No reading data yet</div>}
+              {getSubmissionsByType('reading').length === 0 && <div className="text-slate-400 text-sm py-10 w-full text-center">{isVi ? 'Chưa có dữ liệu bài Đọc' : 'No reading data yet'}</div>}
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-emerald-600 flex items-center justify-between">
-              <span>Listening</span>
+              <span>{isVi ? 'Kỹ năng Nghe' : 'Listening'}</span>
             </h3>
-            <div className="flex items-end gap-2.5 h-36 pt-7">
+            <div className="flex items-end gap-2.5 h-32 sm:h-36 pt-7">
               {getSubmissionsByType('listening').slice(0, 5).reverse().map((sub, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
                   <div 
@@ -846,15 +1102,15 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                 </div>
               ))}
-              {getSubmissionsByType('listening').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No listening data yet</div>}
+              {getSubmissionsByType('listening').length === 0 && <div className="text-slate-400 text-sm py-10 w-full text-center">{isVi ? 'Chưa có dữ liệu bài Nghe' : 'No listening data yet'}</div>}
             </div>
           </div>
         
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-orange-600 flex items-center justify-between">
-              <span>Writing</span>
+              <span>{isVi ? 'Kỹ năng Viết' : 'Writing'}</span>
             </h3>
-            <div className="flex items-end gap-2.5 h-36 pt-7">
+            <div className="flex items-end gap-2.5 h-32 sm:h-36 pt-7">
               {getSubmissionsByType('writing').slice(0, 5).reverse().map((sub, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end relative h-full">
                   <div 
@@ -867,15 +1123,15 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                 </div>
               ))}
-              {getSubmissionsByType('writing').length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No writing data yet</div>}
+              {getSubmissionsByType('writing').length === 0 && <div className="text-slate-400 text-sm py-10 w-full text-center">{isVi ? 'Chưa có dữ liệu bài Viết' : 'No writing data yet'}</div>}
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <h3 className="font-bold mb-4 text-sm uppercase tracking-widest text-purple-600 flex items-center justify-between">
-              <span>Speaking</span>
+              <span>{isVi ? 'Kỹ năng Nói' : 'Speaking'}</span>
             </h3>
-            <div className="flex items-end gap-2.5 h-36 pt-7">
+            <div className="flex items-end gap-2.5 h-32 sm:h-36 pt-7">
               {allSpeakingSubs.slice(0, 5).reverse().map((sub, i) => {
                 const evaluated = isSpeakingEvaluated(sub);
                 const scoreToReflect = evaluated && sub.bandScore !== undefined && sub.bandScore !== null ? Number(sub.bandScore) : null;
@@ -892,75 +1148,75 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   </div>
                 );
               })}
-              {allSpeakingSubs.length === 0 && <div className="text-slate-400 text-sm py-12 w-full text-center">No speaking data yet</div>}
+              {allSpeakingSubs.length === 0 && <div className="text-slate-400 text-sm py-10 w-full text-center">{isVi ? 'Chưa có dữ liệu bài Nói' : 'No speaking data yet'}</div>}
             </div>
           </div>
         </div>
       </section>
 
       {/* Independent Sections for Skills */}
-      <div className="space-y-12 mt-12">
+      <div className="space-y-8 sm:space-y-12 mt-8 sm:mt-12">
         {/* Speaking Recordings - Immersive Purple Theme */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-purple-100 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs">
-                <Mic className="w-5 h-5 text-purple-600" />
+        <section className="space-y-4 sm:space-y-6">
+          <div className="flex items-center justify-between border-b border-purple-100 pb-3 sm:pb-4 gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs shrink-0">
+                <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900">Online Speaking Tests</h2>
+              <h2 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{isVi ? 'Bài thi Nói trực tuyến' : 'Online Speaking Tests'}</h2>
             </div>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=speaking` : '/ielts/dashboard?tab=speaking')} className="text-sm font-bold text-purple-600 hover:text-purple-800 transition-colors uppercase tracking-widest flex items-center gap-1">
-              View All <ArrowRight className="w-4 h-4" />
+            <button onClick={() => navigate(getTabUrl('speaking'))} className="text-xs sm:text-sm font-bold text-purple-600 hover:text-purple-800 transition-colors uppercase tracking-wider sm:tracking-widest flex items-center gap-1 shrink-0 cursor-pointer">
+              {isVi ? 'Xem tất cả' : 'View All'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-gradient-to-b from-white via-purple-50/20 to-purple-50/40 rounded-[2rem] border border-purple-200/80 shadow-[0_10px_30px_rgba(168,85,247,0.08)] overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-purple-50/20 to-purple-50/40 rounded-3xl sm:rounded-[2rem] border border-purple-200/80 shadow-[0_10px_30px_rgba(168,85,247,0.08)] overflow-hidden">
             <div 
-              className="p-6 flex items-center justify-between bg-gradient-to-r from-purple-50 via-purple-100/40 to-fuchsia-50/30 border-b border-purple-100 cursor-pointer hover:bg-purple-100/50 transition-colors"
+              className="p-4 sm:p-6 flex items-center justify-between gap-3 bg-gradient-to-r from-purple-50 via-purple-100/40 to-fuchsia-50/30 border-b border-purple-100 cursor-pointer hover:bg-purple-100/50 transition-colors"
               onClick={() => setSpeakingFolderOpen(!speakingFolderOpen)}
             >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-600 text-white rounded-xl shadow-xs">
-                  <Folder className="w-6 h-6" />
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="p-2.5 sm:p-3 bg-purple-600 text-white rounded-xl shadow-xs shrink-0">
+                  <Folder className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <div>
-                  <h3 className="font-black text-lg text-slate-900">IELTS Speaking</h3>
-                  <p className="text-sm text-slate-500">Your online speaking test submissions</p>
+                <div className="min-w-0">
+                  <h3 className="font-black text-base sm:text-lg text-slate-900 truncate">IELTS Speaking</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 truncate">{isVi ? 'Danh sách bài thi Nói trực tuyến đã nộp' : 'Your online speaking test submissions'}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="bg-purple-600 text-white font-black px-4 py-1.5 rounded-full text-xs shadow-xs tracking-wide">
-                  {speakingSubs.length} items
+              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                <span className="bg-purple-600 text-white font-black px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs shadow-xs tracking-wide whitespace-nowrap">
+                  {isVi ? `${speakingSubs.length} bài` : `${speakingSubs.length} items`}
                 </span>
                 {speakingFolderOpen ? <ChevronDown className="w-5 h-5 text-purple-600" /> : <ChevronRight className="w-5 h-5 text-purple-600" />}
               </div>
             </div>
             {speakingFolderOpen && (
-              <div className="p-6 bg-purple-50/30">
-                <div className="space-y-4">
+              <div className="p-4 sm:p-6 bg-purple-50/30">
+                <div className="space-y-3 sm:space-y-4">
                   {speakingSubs.slice(0, 4).map(sub => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
                       <div 
                         key={sub.id} 
-                        onClick={() => navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)}
-                        className="bg-white rounded-[1.25rem] border border-purple-100/90 shadow-xs hover:border-purple-300 hover:shadow-md hover:bg-purple-50/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 cursor-pointer"
+                        onClick={() => navigate(getResultUrl(sub.id))}
+                        className="bg-white rounded-[1.25rem] border border-purple-100/90 shadow-xs hover:border-purple-300 hover:shadow-md hover:bg-purple-50/20 transition-all flex items-center justify-between gap-3 p-3.5 sm:p-4 cursor-pointer"
                       >
-                        <div className="flex flex-col">
-                          <h3 className="font-bold text-slate-900 mb-1">{title}</h3>
+                        <div className="flex flex-col min-w-0">
+                          <h3 className="font-bold text-slate-900 mb-1 text-sm sm:text-base truncate">{title}</h3>
                           
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
                             <span className="text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m 0s'}</span>
                             <span className="text-purple-300">•</span>
                             <span className="text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <button className="bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-bold py-2.5 px-6 rounded-xl transition-colors text-center pointer-events-none">
-                            Feedback
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button className="bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-xl transition-colors text-center pointer-events-none">
+                            {isVi ? 'Nhận xét' : 'Feedback'}
                           </button>
-                          {isAdmin && (
+                          {canAdminEdit && (
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteTest(sub.id, e); }} className="bg-slate-100/70 hover:bg-red-50 text-slate-400 hover:text-red-600 p-2.5 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
                               <Trash2 className="w-[18px] h-[18px]" />
                             </button>
@@ -970,8 +1226,8 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     );
                   })}
                   {speakingSubs.length === 0 && (
-                    <div className="py-12 text-center text-slate-500 bg-white rounded-[1.5rem] border border-purple-200 border-dashed">
-                      No online speaking tests yet.
+                    <div className="py-10 sm:py-12 text-center text-sm text-slate-500 bg-white rounded-[1.5rem] border border-purple-200 border-dashed">
+                      {isVi ? 'Chưa có bài thi Nói trực tuyến nào.' : 'No online speaking tests yet.'}
                     </div>
                   )}
                 </div>
@@ -982,16 +1238,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
         {/* Offline Speaking Assignments - Immersive Purple Theme */}
         {offlineSpeakingSubs.length > 0 && (
-          <section className="space-y-6 mt-12">
-            <div className="flex items-center justify-between border-b border-purple-100 pb-4">
+          <section className="space-y-4 sm:space-y-6 mt-8 sm:mt-12">
+            <div className="flex items-center justify-between border-b border-purple-100 pb-3 sm:pb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs">
-                  <Mic className="w-5 h-5 text-purple-600" />
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs">
+                  <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 </div>
-                <h2 className="text-2xl font-black text-slate-900">Offline Speaking Assignments</h2>
+                <h2 className="text-lg sm:text-2xl font-black text-slate-900">{isVi ? 'Bài thi Nói tại lớp' : 'Offline Speaking Assignments'}</h2>
               </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {offlineSpeakingSubs.slice(0, 4).map(sub => {
                 const title = sub.assignmentTitle || 'Offline Speaking Assignment';
                 const thumbInfo = getSubmissionThumbnailInfo(sub.audioUrl);
@@ -1007,7 +1263,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       directUrl: sub.audioUrl,
                     });
                   } else {
-                    navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
+                    navigate(getResultUrl(sub.id));
                   }
                 };
 
@@ -1055,19 +1311,19 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           <Play className="w-6 h-6 text-white ml-0.5" fill="currentColor" />
                         </div>
                         <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-xs shadow-xs">
-                          Watch Video
+                          {isVi ? 'Xem video' : 'Watch Video'}
                         </span>
                       </div>
 
                       {/* Top Corner Badge */}
                       <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20 text-white text-[11px] font-semibold">
                         <Video className="w-3.5 h-3.5 text-purple-300" />
-                        <span>Offline Test</span>
+                        <span>{isVi ? 'Tại lớp' : 'Offline Test'}</span>
                       </div>
                     </div>
 
                     {/* Information Side */}
-                    <div className="p-5 sm:w-[54%] flex flex-col justify-between">
+                    <div className="p-4 sm:p-5 sm:w-[54%] flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start mb-1 gap-2">
                           <h3 
@@ -1076,7 +1332,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           >
                             {title}
                           </h3>
-                          {isAdmin && (
+                          {canAdminEdit && (
                               <button onClick={(e) => {
                                   e.stopPropagation();
                                   setOfflineForm({
@@ -1099,7 +1355,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? (
                             <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-black text-xs shadow-xs">Band {Number(sub.bandScore).toFixed(1)}</span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-extrabold text-xs">Pending</span>
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-extrabold text-xs">{isVi ? 'Chờ chấm' : 'Pending'}</span>
                           )}
                           <span className="text-purple-300">•</span>
                           <span className="text-xs font-medium text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '15m'}</span>
@@ -1113,14 +1369,14 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           onClick={handleOpenFeedback} 
                           className="flex-1 bg-purple-100 hover:bg-purple-600 hover:text-white text-purple-800 text-xs font-black py-2.5 px-3 rounded-xl transition-all text-center whitespace-nowrap shadow-xs cursor-pointer"
                         >
-                          Feedback
+                          {isVi ? 'Nhận xét' : 'Feedback'}
                         </button>
                         {sub.audioUrl && (
                           <a href={sub.audioUrl} onClick={(e) => e.stopPropagation()} target="_blank" rel="noopener noreferrer" className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center border border-purple-200/60" title="Open Original Video Link">
                             <Upload className="w-3.5 h-3.5" />
                           </a>
                         )}
-                        {isAdmin && (
+                        {canAdminEdit && (
                           <button onClick={(e) => handleDeleteTest(sub.id, e)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1135,57 +1391,57 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         )}
 
         {/* Reading Activity - Immersive Blue Theme */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-blue-100 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shadow-xs">
-                <Book className="w-5 h-5 text-blue-600" />
+        <section className="space-y-4 sm:space-y-6">
+          <div className="flex items-center justify-between border-b border-blue-100 pb-3 sm:pb-4 gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-100 flex items-center justify-center shadow-xs shrink-0">
+                <Book className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900">Reading Activity</h2>
+              <h2 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{isVi ? 'Kết quả Kỹ năng Đọc' : 'Reading Activity'}</h2>
             </div>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=reading` : '/ielts/dashboard?tab=reading')} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-widest flex items-center gap-1">
-              View All <ArrowRight className="w-4 h-4" />
+            <button onClick={() => navigate(getTabUrl('reading'))} className="text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-wider sm:tracking-widest flex items-center gap-1 shrink-0 cursor-pointer">
+              {isVi ? 'Xem tất cả' : 'View All'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-gradient-to-b from-white via-blue-50/20 to-blue-50/40 rounded-[2rem] border border-blue-200/80 shadow-[0_10px_30px_rgba(37,99,235,0.08)] overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-blue-50/20 to-blue-50/40 rounded-3xl sm:rounded-[2rem] border border-blue-200/80 shadow-[0_10px_30px_rgba(37,99,235,0.08)] overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gradient-to-r from-blue-50 via-blue-100/50 to-indigo-50/30 border-b border-blue-100">
-                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest">Test Name</th>
-                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest">Score</th>
-                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest hidden sm:table-cell">Correct</th>
-                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest hidden sm:table-cell">Time</th>
-                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest text-right">Date</th>
-                    <th className="px-6 py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest text-right"></th>
+                    <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-blue-900/70 uppercase tracking-wider sm:tracking-widest">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                    <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-blue-900/70 uppercase tracking-wider sm:tracking-widest">{isVi ? 'Điểm' : 'Score'}</th>
+                    <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest hidden sm:table-cell">{isVi ? 'Số câu đúng' : 'Correct'}</th>
+                    <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest hidden sm:table-cell">{isVi ? 'Thời gian' : 'Time'}</th>
+                    <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-blue-900/70 uppercase tracking-wider sm:tracking-widest text-right">{isVi ? 'Ngày làm' : 'Date'}</th>
+                    {canAdminEdit && <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-blue-900/70 uppercase tracking-widest text-right"></th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-blue-100/60 bg-white/70 backdrop-blur-xs">
                   {getSubmissionsByType('reading').length === 0 ? (
                     <tr>
-                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No reading activity yet.</td>
+                       <td colSpan={6} className="px-6 py-10 sm:py-12 text-center text-sm text-slate-500">{isVi ? 'Chưa có bài kiểm tra Đọc nào.' : 'No reading activity yet.'}</td>
                     </tr>
                   ) : getSubmissionsByType('reading').slice(0, 5).map((sub) => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
-                      <tr key={sub.id} className="hover:bg-blue-50/60 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
-                        <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 font-black text-sm">
+                      <tr key={sub.id} className="hover:bg-blue-50/60 transition-colors cursor-pointer" onClick={() => { navigate(getResultUrl(sub.id)); }}>
+                        <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 font-bold text-slate-900 text-xs sm:text-sm">{title}</td>
+                        <td className="px-3 sm:px-6 py-3.5 sm:py-4">
+                          <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-blue-100 text-blue-700 font-black text-xs sm:text-sm">
                             {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-slate-600 font-semibold hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-500 text-right text-sm font-medium">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
-                        <td className="px-6 py-4 text-right">
-                          {isAdmin && (
+                        <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-slate-600 font-semibold hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
+                        <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-slate-500 text-right text-xs sm:text-sm font-medium whitespace-nowrap">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        {canAdminEdit && (
+                          <td className="px-3 sm:px-6 py-3.5 sm:py-4 text-right">
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-                        </td>
+                          </td>
+                        )}
                       </tr>
                     )
                   })}
@@ -1196,57 +1452,57 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </section>
 
         {/* Listening Activity - Immersive Green Theme */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-emerald-100 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shadow-xs">
-                <Headphones className="w-5 h-5 text-emerald-600" />
+        <section className="space-y-4 sm:space-y-6">
+          <div className="flex items-center justify-between border-b border-emerald-100 pb-3 sm:pb-4 gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 flex items-center justify-center shadow-xs shrink-0">
+                <Headphones className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900">Listening Activity</h2>
+              <h2 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{isVi ? 'Kết quả Kỹ năng Nghe' : 'Listening Activity'}</h2>
             </div>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=listening` : '/ielts/dashboard?tab=listening')} className="text-sm font-bold text-emerald-600 hover:text-emerald-800 transition-colors uppercase tracking-widest flex items-center gap-1">
-              View All <ArrowRight className="w-4 h-4" />
+            <button onClick={() => navigate(getTabUrl('listening'))} className="text-xs sm:text-sm font-bold text-emerald-600 hover:text-emerald-800 transition-colors uppercase tracking-wider sm:tracking-widest flex items-center gap-1 shrink-0 cursor-pointer">
+              {isVi ? 'Xem tất cả' : 'View All'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-gradient-to-b from-white via-emerald-50/20 to-emerald-50/40 rounded-[2rem] border border-emerald-200/80 shadow-[0_10px_30px_rgba(16,185,129,0.08)] overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-emerald-50/20 to-emerald-50/40 rounded-3xl sm:rounded-[2rem] border border-emerald-200/80 shadow-[0_10px_30px_rgba(16,185,129,0.08)] overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gradient-to-r from-emerald-50 via-emerald-100/50 to-teal-50/30 border-b border-emerald-100">
-                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest">Test Name</th>
-                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest">Score</th>
-                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest hidden sm:table-cell">Correct</th>
-                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest hidden sm:table-cell">Time</th>
-                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest text-right">Date</th>
-                    <th className="px-6 py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest text-right"></th>
+                    <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-emerald-900/70 uppercase tracking-wider sm:tracking-widest">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                    <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-emerald-900/70 uppercase tracking-wider sm:tracking-widest">{isVi ? 'Điểm' : 'Score'}</th>
+                    <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest hidden sm:table-cell">{isVi ? 'Số câu đúng' : 'Correct'}</th>
+                    <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest hidden sm:table-cell">{isVi ? 'Thời gian' : 'Time'}</th>
+                    <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-emerald-900/70 uppercase tracking-wider sm:tracking-widest text-right">{isVi ? 'Ngày làm' : 'Date'}</th>
+                    {canAdminEdit && <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-emerald-900/70 uppercase tracking-widest text-right"></th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-emerald-100/60 bg-white/70 backdrop-blur-xs">
                   {getSubmissionsByType('listening').length === 0 ? (
                     <tr>
-                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No listening activity yet.</td>
+                       <td colSpan={6} className="px-6 py-10 sm:py-12 text-center text-sm text-slate-500">{isVi ? 'Chưa có bài kiểm tra Nghe nào.' : 'No listening activity yet.'}</td>
                     </tr>
                   ) : getSubmissionsByType('listening').slice(0, 5).map((sub) => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
                     const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
                     return (
-                      <tr key={sub.id} className="hover:bg-emerald-50/60 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
-                        <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 font-black text-sm">
+                      <tr key={sub.id} className="hover:bg-emerald-50/60 transition-colors cursor-pointer" onClick={() => { navigate(getResultUrl(sub.id)); }}>
+                        <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 font-bold text-slate-900 text-xs sm:text-sm">{title}</td>
+                        <td className="px-3 sm:px-6 py-3.5 sm:py-4">
+                          <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-emerald-100 text-emerald-700 font-black text-xs sm:text-sm">
                             {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : '-'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-slate-600 font-semibold hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-500 text-right text-sm font-medium">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
-                        <td className="px-6 py-4 text-right">
-                          {isAdmin && (
+                        <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-slate-600 font-semibold hidden sm:table-cell">{sub.percentage !== undefined && sub.percentage !== null ? `${Math.round((sub.percentage / 100) * 40)}/40` : '-'}</td>
+                        <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-slate-500 text-right text-xs sm:text-sm font-medium whitespace-nowrap">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        {canAdminEdit && (
+                          <td className="px-3 sm:px-6 py-3.5 sm:py-4 text-right">
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-                        </td>
+                          </td>
+                        )}
                       </tr>
                     )
                   })}
@@ -1257,35 +1513,35 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </section>
 
         {/* Writing Activity - Immersive Orange Theme */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b border-orange-100 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shadow-xs">
-                <PenTool className="w-5 h-5 text-orange-600" />
+        <section className="space-y-4 sm:space-y-6">
+          <div className="flex items-center justify-between border-b border-orange-100 pb-3 sm:pb-4 gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-100 flex items-center justify-center shadow-xs shrink-0">
+                <PenTool className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-900">Writing Activity</h2>
+              <h2 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{isVi ? 'Kết quả Kỹ năng Viết' : 'Writing Activity'}</h2>
             </div>
-            <button onClick={() => navigate(isShared ? `/shared/dashboard/${targetUserId}?tab=writing` : '/ielts/dashboard?tab=writing')} className="text-sm font-bold text-orange-600 hover:text-orange-800 transition-colors uppercase tracking-widest flex items-center gap-1">
-              View All <ArrowRight className="w-4 h-4" />
+            <button onClick={() => navigate(getTabUrl('writing'))} className="text-xs sm:text-sm font-bold text-orange-600 hover:text-orange-800 transition-colors uppercase tracking-wider sm:tracking-widest flex items-center gap-1 shrink-0 cursor-pointer">
+              {isVi ? 'Xem tất cả' : 'View All'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-gradient-to-b from-white via-orange-50/20 to-orange-50/40 rounded-[2rem] border border-orange-200/80 shadow-[0_10px_30px_rgba(249,115,22,0.08)] overflow-hidden">
+          <div className="bg-gradient-to-b from-white via-orange-50/20 to-orange-50/40 rounded-3xl sm:rounded-[2rem] border border-orange-200/80 shadow-[0_10px_30px_rgba(249,115,22,0.08)] overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gradient-to-r from-orange-50 via-orange-100/50 to-amber-50/30 border-b border-orange-100">
-                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest">Test Name</th>
-                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest">Score</th>
-                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest hidden sm:table-cell">Words</th>
-                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest hidden sm:table-cell">Time</th>
-                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest text-right">Date</th>
-                    <th className="px-6 py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest text-right"></th>
+                    <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-orange-900/70 uppercase tracking-wider sm:tracking-widest">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                    <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-orange-900/70 uppercase tracking-wider sm:tracking-widest">{isVi ? 'Điểm' : 'Score'}</th>
+                    <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest hidden sm:table-cell">{isVi ? 'Số từ' : 'Words'}</th>
+                    <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest hidden sm:table-cell">{isVi ? 'Thời gian' : 'Time'}</th>
+                    <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-black text-orange-900/70 uppercase tracking-wider sm:tracking-widest text-right">{isVi ? 'Ngày làm' : 'Date'}</th>
+                    {canAdminEdit && <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-xs font-black text-orange-900/70 uppercase tracking-widest text-right"></th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-orange-100/60 bg-white/70 backdrop-blur-xs">
                   {getSubmissionsByType('writing').length === 0 ? (
                     <tr>
-                       <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No writing activity yet.</td>
+                       <td colSpan={6} className="px-6 py-10 sm:py-12 text-center text-sm text-slate-500">{isVi ? 'Chưa có bài kiểm tra Viết nào.' : 'No writing activity yet.'}</td>
                     </tr>
                   ) : getSubmissionsByType('writing').slice(0, 5).map((sub) => {
                     const assignment = assignments.find(a => a.id === sub.assignmentId);
@@ -1301,23 +1557,23 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     }
                     
                     return (
-                      <tr key={sub.id} className="hover:bg-orange-50/60 transition-colors cursor-pointer" onClick={() => { navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`); }}>
-                        <td className="px-6 py-4 font-bold text-slate-900">{title}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700 font-black text-sm">
-                            {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : 'Pending'}
+                      <tr key={sub.id} className="hover:bg-orange-50/60 transition-colors cursor-pointer" onClick={() => { navigate(getResultUrl(sub.id)); }}>
+                        <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 font-bold text-slate-900 text-xs sm:text-sm">{title}</td>
+                        <td className="px-3 sm:px-6 py-3.5 sm:py-4">
+                          <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-orange-100 text-orange-700 font-black text-xs sm:text-sm">
+                            {sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toFixed(1) : isVi ? 'Chờ chấm' : 'Pending'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-slate-600 font-semibold hidden sm:table-cell">{wordCount}</td>
-                        <td className="px-6 py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
-                        <td className="px-6 py-4 text-slate-500 text-right text-sm font-medium">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
-                        <td className="px-6 py-4 text-right">
-                          {isAdmin && (
+                        <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-slate-600 font-semibold hidden sm:table-cell">{wordCount}</td>
+                        <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-slate-600 font-medium hidden sm:table-cell">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '-'}</td>
+                        <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-slate-500 text-right text-xs sm:text-sm font-medium whitespace-nowrap">{sub.createdAt ? format(sub.createdAt, 'MMM d') : '-'}</td>
+                        {canAdminEdit && (
+                          <td className="px-3 sm:px-6 py-3.5 sm:py-4 text-right">
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-                        </td>
+                          </td>
+                        )}
                       </tr>
                     )
                   })}
@@ -1333,19 +1589,19 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {currentTab === 'results' && (
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
-             <h2 className="text-xl font-bold text-slate-900">All Completed Tests</h2>
-             <div className="flex gap-2">
-                 <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="bg-white border border-slate-300 text-sm rounded-lg px-3 py-2 text-slate-700 outline-none focus:border-[#1E4DB7] shadow-sm">
-                     <option value="all">All Skills</option>
-                     <option value="reading">Reading</option>
-                     <option value="listening">Listening</option>
-                     <option value="writing">Writing</option>
-                     <option value="speaking">Speaking</option>
+          <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-slate-50">
+             <h2 className="text-lg sm:text-xl font-bold text-slate-900">{isVi ? 'Tất cả bài đã hoàn thành' : 'All Completed Tests'}</h2>
+             <div className="flex gap-2 w-full sm:w-auto">
+                 <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="flex-1 sm:flex-initial bg-white border border-slate-300 text-xs sm:text-sm rounded-lg px-3 py-2 text-slate-700 outline-none focus:border-[#1E4DB7] shadow-sm">
+                     <option value="all">{isVi ? 'Tất cả kỹ năng' : 'All Skills'}</option>
+                     <option value="reading">{isVi ? 'Kỹ năng Đọc' : 'Reading'}</option>
+                     <option value="listening">{isVi ? 'Kỹ năng Nghe' : 'Listening'}</option>
+                     <option value="writing">{isVi ? 'Kỹ năng Viết' : 'Writing'}</option>
+                     <option value="speaking">{isVi ? 'Kỹ năng Nói' : 'Speaking'}</option>
                  </select>
-                 <select value={filterSort} onChange={(e) => setFilterSort(e.target.value)} className="bg-white border border-slate-300 text-sm rounded-lg px-3 py-2 text-slate-700 outline-none focus:border-[#1E4DB7] shadow-sm">
-                     <option value="desc">Newest First</option>
-                     <option value="asc">Oldest First</option>
+                 <select value={filterSort} onChange={(e) => setFilterSort(e.target.value)} className="flex-1 sm:flex-initial bg-white border border-slate-300 text-xs sm:text-sm rounded-lg px-3 py-2 text-slate-700 outline-none focus:border-[#1E4DB7] shadow-sm">
+                     <option value="desc">{isVi ? 'Mới nhất' : 'Newest First'}</option>
+                     <option value="asc">{isVi ? 'Cũ nhất' : 'Oldest First'}</option>
                  </select>
              </div>
           </div>
@@ -1353,13 +1609,13 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Subject</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Completed</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Time Spent</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden md:table-cell">Feedback</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Band Score</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
+                  <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider sm:tracking-widest whitespace-nowrap">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                  <th className="px-3 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider sm:tracking-widest whitespace-nowrap">{isVi ? 'Kỹ năng' : 'Subject'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">{isVi ? 'Ngày hoàn thành' : 'Completed'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden md:table-cell">{isVi ? 'Thời gian' : 'Time Spent'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden md:table-cell">{isVi ? 'Nhận xét' : 'Feedback'}</th>
+                  <th className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider sm:tracking-widest whitespace-nowrap text-right">{isVi ? 'Điểm Band' : 'Band Score'}</th>
+                  <th className="px-2 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1390,24 +1646,24 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   const hasFeedback = !!sub.teacherComment || !!sub.aiFeedback;
                   
                   return (
-                    <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`)}>
-                      <td className="px-6 py-4">
-                        {isAdmin && editingTitleId === sub.id ? (
+                    <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => navigate(getResultUrl(sub.id))}>
+                      <td className="px-3.5 sm:px-6 py-3.5 sm:py-4">
+                        {canAdminEdit && editingTitleId === sub.id ? (
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <input type="text" className="w-full px-2 py-1 text-sm font-bold border border-slate-300 rounded" value={editTitleValue} onChange={(e) => setEditTitleValue(e.target.value)} autoFocus />
                             <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditTitle(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
                             <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTitleId(null); }} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5 sm:gap-3">
                                   {type === 'speaking' && (
                                     <div className="relative w-10 h-7 bg-slate-800 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:ring-1 ring-purple-400 transition-all" title="View Video">
                                       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=100&q=80')] bg-cover bg-center opacity-40"></div>
                                       <PlayCircle className="w-4 h-4 text-white/90 z-10" />
                                     </div>
                                   )}
-                                  <p className="text-sm font-bold text-slate-900">{title}</p>
-                            {isAdmin && (
+                                  <p className="text-xs sm:text-sm font-bold text-slate-900">{title}</p>
+                            {canAdminEdit && (
                               <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -1415,25 +1671,25 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${type === 'reading' ? 'bg-blue-50 text-[#1E4DB7]' : type === 'listening' ? 'bg-teal-50 text-teal-600' : type === 'writing' ? 'bg-orange-50 text-[#F4A340]' : 'bg-purple-50 text-purple-600'}`}>
-                          {getIcon(type)} <span className="capitalize">{type}</span>
+                      <td className="px-3 sm:px-6 py-3.5 sm:py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs font-bold ${type === 'reading' ? 'bg-blue-50 text-[#1E4DB7]' : type === 'listening' ? 'bg-teal-50 text-teal-600' : type === 'writing' ? 'bg-orange-50 text-[#F4A340]' : 'bg-purple-50 text-purple-600'}`}>
+                          {getIcon(type)} <span className="capitalize">{isVi ? (type === 'reading' ? 'Đọc' : type === 'listening' ? 'Nghe' : type === 'writing' ? 'Viết' : type === 'speaking' ? 'Nói' : type) : type}</span>
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-slate-600 hidden sm:table-cell whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-sm font-medium text-slate-600 hidden sm:table-cell whitespace-nowrap">
                         {sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy h:mm a') : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-slate-600 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3.5 sm:py-4 text-sm font-medium text-slate-600 hidden md:table-cell whitespace-nowrap">
                         {sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 hidden md:table-cell">
+                      <td className="px-4 sm:px-6 py-3.5 sm:py-4 hidden md:table-cell">
                          <div className="flex flex-wrap items-center gap-2">
                            {sub.correctedFileUrl && (
-                               <a href={sub.correctedFileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded border border-green-200 uppercase tracking-wider hover:bg-green-100" onClick={(e) => e.stopPropagation()}>Corrected Writing</a>
+                               <a href={sub.correctedFileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded border border-green-200 uppercase tracking-wider hover:bg-green-100" onClick={(e) => e.stopPropagation()}>{isVi ? 'Bài chấm' : 'Corrected Writing'}</a>
                            )}
                          </div>
                       </td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
+                      <td className="px-3.5 sm:px-6 py-3.5 sm:py-4 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
                         {editingScoreId === sub.id ? (
                           <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <input
@@ -1465,7 +1721,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           <div className="flex items-center justify-end gap-2">
                             {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
                              {(type !== 'speaking' || isSpeakingEvaluated(sub)) && sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
-                            {isAdmin && (
+                            {canAdminEdit && (
                               <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -1475,7 +1731,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
-                          {isAdmin && (
+                          {canAdminEdit && (
                             editingLinkId === sub.id ? (
                               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 <input type="text" placeholder="Paste link..." className="w-32 px-2 py-1 text-sm border border-slate-300 rounded" value={editLinkValue} onChange={(e) => setEditLinkValue(e.target.value)} />
@@ -1488,7 +1744,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                               </button>
                             )
                           )}
-                          {isAdmin && type === 'writing' && (
+                          {canAdminEdit && type === 'writing' && (
                             editingCorrectedLinkId === sub.id ? (
                               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 <input type="text" placeholder="Corrected link..." className="w-32 px-2 py-1 text-sm border border-slate-300 rounded" value={editCorrectedLinkValue} onChange={(e) => setEditCorrectedLinkValue(e.target.value)} />
@@ -1501,7 +1757,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                               </button>
                             )
                           )}
-                          {isAdmin && (
+                          {canAdminEdit && (
                             <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1519,7 +1775,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {currentTab === 'reading' && (
         <div className="space-y-6">
-          {(userProfile?.course === 'PET' || searchParams.get('course') === 'pet' || searchParams.get('course') === 'PET') && (
+          {!isParentMode && (userProfile?.course === 'PET' || searchParams.get('course') === 'pet' || searchParams.get('course') === 'PET') && (
             <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
               <div className="p-6 border-b border-slate-200 bg-slate-50">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -1550,17 +1806,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
           )}
 
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                 <div className="p-3 bg-blue-100 rounded-xl">
-                    <Book className="w-6 h-6 text-blue-600" />
+          <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+             <div className="flex items-center gap-3">
+                 <div className="p-2.5 sm:p-3 bg-blue-100 rounded-xl shrink-0">
+                    <Book className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                  </div>
                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">Reading Portfolio</h2>
-                    <p className="text-sm text-slate-500">Your submitted reading tests</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">{isVi ? 'Hồ sơ Kỹ năng Đọc' : 'Reading Portfolio'}</h2>
+                    <p className="text-xs sm:text-sm text-slate-500">{isVi ? 'Các bài kiểm tra Đọc đã hoàn thành' : 'Your submitted reading tests'}</p>
                  </div>
              </div>
-             {isAdmin && (
+             {canAdminEdit && (
                <div>
                  <button
                    onClick={async () => {
@@ -1589,10 +1845,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Score</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">{isVi ? 'Ngày nộp' : 'Submitted'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">{isVi ? 'Điểm' : 'Score'}</th>
+                  <th className="px-2 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1616,11 +1872,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
                             {
-                              navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
+                              navigate(getResultUrl(sub.id));
                             }
                           }}>
                             <td className="px-6 py-5">
-                              {isAdmin && editingTitleId === sub.id ? (
+                              {canAdminEdit && editingTitleId === sub.id ? (
                                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                   <input type="text" className="w-full px-2 py-1 text-sm font-bold border border-slate-300 rounded" value={editTitleValue} onChange={(e) => setEditTitleValue(e.target.value)} autoFocus />
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditTitle(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
@@ -1635,7 +1891,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     </div>
                                   )}
                                   <p className="text-sm font-bold text-slate-900">{title}</p>
-                                  {isAdmin && (
+                                  {canAdminEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1658,7 +1914,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                 <div className="flex items-center justify-end gap-2">
                                   {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
          {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
-                                  {isAdmin && (
+                                  {canAdminEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1668,7 +1924,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             </td>
                             <td className="px-6 py-5 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2">
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1689,17 +1945,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {currentTab === 'listening' && (
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                 <div className="p-3 bg-teal-100 rounded-xl">
-                    <Headphones className="w-6 h-6 text-teal-600" />
+          <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+             <div className="flex items-center gap-3">
+                 <div className="p-2.5 sm:p-3 bg-teal-100 rounded-xl shrink-0">
+                    <Headphones className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
                  </div>
                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">Listening Portfolio</h2>
-                    <p className="text-sm text-slate-500">Your submitted listening tests</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">{isVi ? 'Hồ sơ Kỹ năng Nghe' : 'Listening Portfolio'}</h2>
+                    <p className="text-xs sm:text-sm text-slate-500">{isVi ? 'Các bài kiểm tra Nghe đã hoàn thành' : 'Your submitted listening tests'}</p>
                  </div>
              </div>
-             {isAdmin && (
+             {canAdminEdit && (
                <div>
                  <button
                    onClick={async () => {
@@ -1728,10 +1984,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Score</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">{isVi ? 'Ngày nộp' : 'Submitted'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">{isVi ? 'Điểm' : 'Score'}</th>
+                  <th className="px-2 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1755,11 +2011,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
                             {
-                              navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
+                              navigate(getResultUrl(sub.id));
                             }
                           }}>
                             <td className="px-6 py-5">
-                              {isAdmin && editingTitleId === sub.id ? (
+                              {canAdminEdit && editingTitleId === sub.id ? (
                                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                   <input type="text" className="w-full px-2 py-1 text-sm font-bold border border-slate-300 rounded" value={editTitleValue} onChange={(e) => setEditTitleValue(e.target.value)} autoFocus />
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditTitle(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
@@ -1774,7 +2030,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     </div>
                                   )}
                                   <p className="text-sm font-bold text-slate-900">{title}</p>
-                                  {isAdmin && (
+                                  {canAdminEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1797,7 +2053,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                 <div className="flex items-center justify-end gap-2">
                                   {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
          {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
-                                  {isAdmin && (
+                                  {canAdminEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1807,7 +2063,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             </td>
                             <td className="px-6 py-5 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2">
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1827,17 +2083,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {currentTab === 'writing' && (
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                 <div className="p-3 bg-orange-100 rounded-xl">
-                    <PenTool className="w-6 h-6 text-[#F4A340]" />
+          <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+             <div className="flex items-center gap-3">
+                 <div className="p-2.5 sm:p-3 bg-orange-100 rounded-xl shrink-0">
+                    <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-[#F4A340]" />
                  </div>
                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">Writing Portfolio</h2>
-                    <p className="text-sm text-slate-500">Your submitted essays and teacher feedback</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">{isVi ? 'Hồ sơ Kỹ năng Viết' : 'Writing Portfolio'}</h2>
+                    <p className="text-xs sm:text-sm text-slate-500">{isVi ? 'Bài viết của học viên và nhận xét từ giáo viên' : 'Submitted essays and teacher feedback'}</p>
                  </div>
              </div>
-             {isAdmin && (
+             {canAdminEdit && (
                <div>
                  <button
                    onClick={async () => {
@@ -1866,11 +2122,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Feedback</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Estimated Band</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">{isVi ? 'Ngày nộp' : 'Submitted'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{isVi ? 'Nhận xét' : 'Feedback'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">{isVi ? 'Điểm Band' : 'Band Score'}</th>
+                  <th className="px-2 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1895,10 +2151,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       return (
                         <React.Fragment key={sub.id}>
                           <tr className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
-                            navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
+                            navigate(getResultUrl(sub.id));
                           }}>
                             <td className="px-6 py-5">
-                              {isAdmin && editingTitleId === sub.id ? (
+                              {canAdminEdit && editingTitleId === sub.id ? (
                                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                   <input type="text" className="w-full px-2 py-1 text-sm font-bold border border-slate-300 rounded" value={editTitleValue} onChange={(e) => setEditTitleValue(e.target.value)} autoFocus />
                                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditTitle(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
@@ -1913,7 +2169,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     </div>
                                   )}
                                   <p className="text-sm font-bold text-slate-900">{title}</p>
-                                  {isAdmin && (
+                                  {canAdminEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1943,7 +2199,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                 <div className="flex items-center justify-end gap-2">
                                   {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
          {sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
-                                  {isAdmin && (
+                                  {canAdminEdit && (
                                     <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                       <Edit2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1953,7 +2209,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                             </td>
                             <td className="px-6 py-5 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2">
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   editingLinkId === sub.id ? (
                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                       <input type="text" placeholder="Paste link..." className="w-32 px-2 py-1 text-sm border border-slate-300 rounded" value={editLinkValue} onChange={(e) => setEditLinkValue(e.target.value)} />
@@ -1966,7 +2222,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     </button>
                                   )
                                 )}
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   editingCorrectedLinkId === sub.id ? (
                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                       <input type="text" placeholder="Corrected link..." className="w-32 px-2 py-1 text-sm border border-slate-300 rounded" value={editCorrectedLinkValue} onChange={(e) => setEditCorrectedLinkValue(e.target.value)} />
@@ -1979,7 +2235,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                     </button>
                                   )
                                 )}
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1999,17 +2255,17 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
 
       {currentTab === 'speaking' && (
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                 <div className="p-3 bg-purple-100 rounded-xl">
-                    <Mic className="w-6 h-6 text-purple-600" />
+          <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+             <div className="flex items-center gap-3">
+                 <div className="p-2.5 sm:p-3 bg-purple-100 rounded-xl shrink-0">
+                    <Mic className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                  </div>
                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">Speaking Recordings</h2>
-                    <p className="text-sm text-slate-500">Your past speaking sessions and teacher feedback</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">{isVi ? 'Hồ sơ Kỹ năng Nói' : 'Speaking Recordings'}</h2>
+                    <p className="text-xs sm:text-sm text-slate-500">{isVi ? 'Các bài thi Nói và nhận xét từ giáo viên' : 'Past speaking sessions and teacher feedback'}</p>
                  </div>
              </div>
-             {isAdmin && (
+             {canAdminEdit && (
                <div>
                  <button
                   onClick={() => {
@@ -2027,11 +2283,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr className="bg-white border-b border-slate-200">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Submitted</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Audio/Feedback</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Estimated Band</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{isVi ? 'Bài kiểm tra' : 'Test Name'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">{isVi ? 'Ngày nộp' : 'Submitted'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{isVi ? 'Video / Nhận xét' : 'Audio/Feedback'}</th>
+                  <th className="px-4 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">{isVi ? 'Điểm Band' : 'Band Score'}</th>
+                  <th className="px-2 sm:px-6 py-3.5 sm:py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -2056,10 +2312,10 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       
                       return (
                         <tr key={sub.id} className="hover:bg-slate-50 transition-colors cursor-pointer bg-white" onClick={() => {
-                          navigate(isShared ? `/shared/results/${sub.id}` : `/results/${sub.id}`);
+                          navigate(getResultUrl(sub.id));
                         }}>
                           <td className="px-6 py-5">
-                            {isAdmin && editingTitleId === sub.id ? (
+                            {canAdminEdit && editingTitleId === sub.id ? (
                               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 <input type="text" className="w-full px-2 py-1 text-sm font-bold border border-slate-300 rounded" value={editTitleValue} onChange={(e) => setEditTitleValue(e.target.value)} autoFocus />
                                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditTitle(sub.id); }} className="text-green-600 hover:text-green-800"><CheckCircle2 className="w-4 h-4" /></button>
@@ -2082,7 +2338,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                   );
                                 })()}
                                 <p className="text-sm font-bold text-slate-900">{title}</p>
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   <button onClick={(e) => { e.stopPropagation(); setEditingTitleId(sub.id); setEditTitleValue(title); }} className="text-slate-400 hover:text-blue-600 p-1">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
@@ -2132,7 +2388,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-purple-600 hover:text-white text-slate-700 font-bold text-xs rounded-lg transition-colors shadow-xs"
                                   title="View Feedback"
                                 >
-                                  <span>Feedback</span>
+                                  <span>{isVi ? 'Nhận xét' : 'Feedback'}</span>
                                 </button>
                              </div>
                           </td>
@@ -2148,7 +2404,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                               <div className="flex items-center justify-end gap-2">
                                 {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
          {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
-                                {isAdmin && (
+                                {canAdminEdit && (
                                   <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
@@ -2158,7 +2414,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                           </td>
                           <td className="px-6 py-5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
-                              {isAdmin && (
+                              {canAdminEdit && (
                                 editingLinkId === sub.id ? (
                                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                     <input type="text" placeholder="Paste link..." className="w-32 px-2 py-1 text-sm border border-slate-300 rounded" value={editLinkValue} onChange={(e) => setEditLinkValue(e.target.value)} />
@@ -2171,7 +2427,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                                   </button>
                                 )
                               )}
-                              {isAdmin && (
+                              {canAdminEdit && (
                                 <button onClick={(e) => handleDeleteTest(sub.id, e)} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Test">
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -2188,11 +2444,159 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </section>
       )}
 
+      {canAdminEdit && currentTab === 'trash' && (
+        <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-rose-50/40">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-rose-100 rounded-xl">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-slate-900">Trash Bin</h2>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+                    Admin Only
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500">
+                  Deleted test results for {targetUserName || userProfile?.nickname || firstName}. Restore any test to return it to History and score calculations.
+                </p>
+              </div>
+            </div>
+            {trashedSubmissions.length > 1 && (
+              <button
+                type="button"
+                disabled={isRestoringAll}
+                onClick={handleRestoreAllTests}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+              >
+                <RotateCcw className={`w-4 h-4 ${isRestoringAll ? 'animate-spin' : ''}`} />
+                <span>{isRestoringAll ? 'Restoring All...' : `Restore All (${trashedSubmissions.length})`}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 z-10 bg-slate-50">
+                <tr className="bg-white border-b border-slate-200">
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Test Name</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Subject</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden sm:table-cell">Completed</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap hidden md:table-cell">Deleted</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Band Score</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {trashedSubmissions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-16 text-center text-slate-500 bg-slate-50/50">
+                      <Trash2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                      <p className="text-sm font-bold text-slate-700">Trash Bin is empty</p>
+                      <p className="text-xs text-slate-400 mt-1">Deleted tests will appear here so you can restore them anytime.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  trashedSubmissions.map((sub) => {
+                    const assignment = assignments.find((a) => a.id === sub.assignmentId);
+                    const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
+                    const type = sub.assignmentType || assignment?.type || getFallbackType(sub.assignmentId);
+                    const deletedTimestamp = sub.deletedAt?.toMillis
+                      ? sub.deletedAt.toMillis()
+                      : typeof sub.deletedAt === 'number'
+                      ? sub.deletedAt
+                      : null;
+
+                    return (
+                      <tr
+                        key={sub.id}
+                        className="hover:bg-slate-50 transition-colors cursor-pointer bg-white"
+                        onClick={() => navigate(getResultUrl(sub.id))}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <p className="text-sm font-bold text-slate-900">{title}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
+                              type === 'reading'
+                                ? 'bg-blue-50 text-[#1E4DB7]'
+                                : type === 'listening'
+                                ? 'bg-teal-50 text-teal-600'
+                                : type === 'writing'
+                                ? 'bg-orange-50 text-[#F4A340]'
+                                : 'bg-purple-50 text-purple-600'
+                            }`}
+                          >
+                            {getIcon(type)} <span className="capitalize">{type}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-600 hidden sm:table-cell whitespace-nowrap">
+                          {sub.createdAt ? format(sub.createdAt, 'MMM d, yyyy h:mm a') : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-rose-600 hidden md:table-cell whitespace-nowrap">
+                          {deletedTimestamp ? format(deletedTimestamp, 'MMM d, yyyy h:mm a') : 'Recently'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-bold text-slate-900 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {sub.score !== undefined && sub.score !== null && (
+                              <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">
+                                {sub.score}/40
+                              </span>
+                            )}
+                            {(type !== 'speaking' || isSpeakingEvaluated(sub)) && sub.bandScore !== undefined && sub.bandScore !== null ? (
+                              <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">
+                                {sub.bandScore.toFixed(1)}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">TBD</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              disabled={restoringId === sub.id}
+                              onClick={(e) => handleRestoreTest(sub.id!, e)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+                              title="Restore Test Result"
+                            >
+                              <RotateCcw className={`w-3.5 h-3.5 ${restoringId === sub.id ? 'animate-spin' : ''}`} />
+                              <span>{restoringId === sub.id ? 'Restoring...' : 'Restore'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setPermanentDeleteId(sub.id!);
+                              }}
+                              className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Delete Permanently"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {testToDelete && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-xl border border-slate-200">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Test Result</h3>
-            <p className="text-slate-600 mb-6">Are you sure you want to delete this test result? This action cannot be undone and will affect your progress statistics.</p>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Move Test to Trash Bin</h3>
+            <p className="text-slate-600 mb-6">Are you sure you want to delete this test result? It will be moved to the Trash Bin where an admin can restore it at any time.</p>
             
             {deleteError && (
               <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100">
@@ -2213,7 +2617,32 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                 disabled={isDeleting}
                 className="flex-1 py-3 bg-red-600 text-white font-bold hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
               >
-                {isDeleting ? 'Deleting...' : 'Delete Test'}
+                {isDeleting ? 'Moving...' : 'Move to Trash'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {permanentDeleteId && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-xl border border-slate-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Permanently</h3>
+            <p className="text-slate-600 mb-6">Are you sure you want to permanently delete this test result from the Trash Bin? This action cannot be undone.</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setPermanentDeleteId(null)}
+                disabled={isPermanentDeleting}
+                className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors border border-slate-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPermanentDeleteTest}
+                disabled={isPermanentDeleting}
+                className="flex-1 py-3 bg-red-600 text-white font-bold hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
+              >
+                {isPermanentDeleting ? 'Deleting...' : 'Delete Forever'}
               </button>
             </div>
           </div>
@@ -2425,7 +2854,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
               </div>
               
               {/* Profile Photo URL - ONLY VISIBLE TO THE ADMIN */}
-              {isAdmin && (
+              {canAdminEdit && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-sm font-bold text-slate-700">Profile Photo URL</label>
@@ -2459,86 +2888,12 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                   {editPhotoURL && (
                     <div className="mt-3 flex items-center justify-center">
                       <div className="w-16 h-16 rounded-full border-2 border-slate-200 shadow-sm overflow-hidden bg-slate-50">
-                        <img src={editPhotoURL || undefined} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                        <img src={editPhotoURL || undefined} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
                       </div>
                     </div>
                   )}
                 </div>
               )}
-              
-              {/* 3D EraVerse Character Customizer inside Edit Profile (Synced with EraVerse) */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500 shadow-md shrink-0">
-                    <EraVerseAvatar3D
-                      shirtColor={editAvatarShirtColor}
-                      hairColor={editAvatarHairColor}
-                      skinColor={editAvatarSkinColor}
-                      hatType={editAvatarHatType}
-                      accessoryType={editAvatarAccessoryType}
-                      name={editNickname || eraverseLook.name}
-                      cohort={eraverseLook.cohort}
-                      cameraFocus="full"
-                      showPedestal={true}
-                      className="w-full h-full"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 block">
-                      3D EraVerse Character Avatar
-                    </span>
-                    <p className="text-xs text-slate-500">
-                      Synced live between your Dashboard profile picture and EraVerse!
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Jacket Color</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['#2563eb', '#10b981', '#f59e0b', '#9333ea', '#ef4444', '#06b6d4', '#db2777', '#0f172a'].map((hex) => (
-                      <button
-                        key={hex}
-                        type="button"
-                        onClick={() => setEditAvatarShirtColor(hex)}
-                        className={`w-7 h-7 rounded-lg border-2 cursor-pointer transition-transform ${
-                          editAvatarShirtColor === hex ? 'scale-110 border-slate-900 shadow-xs' : 'border-transparent'
-                        }`}
-                        style={{ backgroundColor: hex }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Headgear</label>
-                    <select
-                      value={editAvatarHatType}
-                      onChange={(e) => setEditAvatarHatType(e.target.value as any)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800"
-                    >
-                      <option value="crown">Crown</option>
-                      <option value="grad">Grad Cap</option>
-                      <option value="cap">Cap</option>
-                      <option value="headphones">Headset</option>
-                      <option value="none">None</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-600 mb-1">Eyewear</label>
-                    <select
-                      value={editAvatarAccessoryType}
-                      onChange={(e) => setEditAvatarAccessoryType(e.target.value as any)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800"
-                    >
-                      <option value="glasses">Study Glasses</option>
-                      <option value="shades">Cool Shades</option>
-                      <option value="none">None</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1.5">Motto</label>
@@ -2573,10 +2928,20 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
         </div>
       )}
 
-      {showCredentialsModal && (
+      {canAdminEdit && showCredentialsModal && (
         <StudentCredentialsModal
           isOpen={showCredentialsModal}
           onClose={() => setShowCredentialsModal(false)}
+          userId={targetUserId || user?.uid || ''}
+          userProfile={userProfile}
+          course={userProfile?.course || 'IELTS'}
+        />
+      )}
+
+      {canAdminEdit && showParentAccessModal && (
+        <ParentAccessModal
+          isOpen={showParentAccessModal}
+          onClose={() => setShowParentAccessModal(false)}
           userId={targetUserId || user?.uid || ''}
           userProfile={userProfile}
           course={userProfile?.course || 'IELTS'}
@@ -2663,7 +3028,7 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                       </span>
                     )}
                     {viewFeedbackItem.date && <span>• {viewFeedbackItem.date}</span>}
-                    <span className="hidden sm:inline text-purple-400 font-medium">• Speaking Evaluation Report</span>
+                    <span className="hidden sm:inline text-purple-400 font-medium">• {isVi ? 'Nhận xét Kỹ năng Nói' : 'Speaking Evaluation Report'}</span>
                   </div>
                 </div>
               </div>
@@ -2678,20 +3043,20 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </div>
 
             {/* Landscape Body - 2 Columns on desktop (English Assessment | Vietnamese Translation) or responsive stacked */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-slate-50/30">
-              <div className={`grid gap-6 ${viewFeedbackItem.vietnameseTranslation ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/30">
+              <div className={`grid gap-5 sm:gap-6 ${viewFeedbackItem.vietnameseTranslation ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
                 {/* Column 1: Teacher Assessment & Feedback */}
                 <div className="flex flex-col">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-xs font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
                       <Award className="w-4 h-4 text-purple-600" />
-                      Examiner / Teacher Assessment
+                      {isVi ? 'Nhận xét của Giáo viên (Tiếng Anh)' : 'Examiner / Teacher Assessment'}
                     </h4>
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-white px-2 py-0.5 rounded-md border border-slate-200/80">English</span>
                   </div>
-                  <div className="bg-white border border-purple-100 rounded-2xl p-6 sm:p-7 shadow-xs text-slate-800 text-[14.5px] sm:text-base leading-relaxed font-sans whitespace-pre-wrap flex-1">
+                  <div className="bg-white border border-purple-100 rounded-2xl p-5 sm:p-7 shadow-xs text-slate-800 text-[14.5px] sm:text-base leading-relaxed font-sans whitespace-pre-wrap flex-1">
                     {viewFeedbackItem.feedback ? viewFeedbackItem.feedback : (
-                      <span className="text-slate-400 italic">No feedback provided yet.</span>
+                      <span className="text-slate-400 italic">{isVi ? 'Chưa có nhận xét.' : 'No feedback provided yet.'}</span>
                     )}
                   </div>
                 </div>
@@ -2702,11 +3067,11 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-xs font-black text-blue-900 uppercase tracking-widest flex items-center gap-2">
                         <BookOpen className="w-4 h-4 text-blue-600" />
-                        Bản Dịch Tiếng Việt (Translation)
+                        {isVi ? 'Nhận xét bằng Tiếng Việt' : 'Vietnamese Translation'}
                       </h4>
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-white px-2 py-0.5 rounded-md border border-slate-200/80">Tiếng Việt</span>
                     </div>
-                    <div className="bg-white border border-blue-100 rounded-2xl p-6 sm:p-7 shadow-xs text-slate-800 text-[14.5px] sm:text-base leading-relaxed font-sans whitespace-pre-wrap flex-1">
+                    <div className="bg-white border border-blue-100 rounded-2xl p-5 sm:p-7 shadow-xs text-slate-800 text-[14.5px] sm:text-base leading-relaxed font-sans whitespace-pre-wrap flex-1">
                       {viewFeedbackItem.vietnameseTranslation}
                     </div>
                   </div>
@@ -2715,16 +3080,16 @@ export function Dashboard({ isShared = false }: { isShared?: boolean }) {
             </div>
 
             {/* Footer (Sticky bottom) */}
-            <div className="px-6 sm:px-8 py-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
+            <div className="px-5 sm:px-8 py-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
               <span className="text-xs font-medium text-slate-400">
-                EraEnglish Assessment Feedback
+                {isVi ? 'Kỷ Nguyên Era · Báo cáo đánh giá' : 'EraEnglish Assessment Feedback'}
               </span>
               <button 
                 type="button"
                 onClick={() => setViewFeedbackItem(null)} 
                 className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-md text-sm cursor-pointer"
               >
-                Close
+                {isVi ? 'Đóng' : 'Close'}
               </button>
             </div>
           </div>

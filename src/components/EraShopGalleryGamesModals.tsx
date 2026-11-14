@@ -52,7 +52,8 @@ import {
   CLOTHING_PALETTE,
   STUDIO_THEMES,
   IELTS_QUIZ_QUESTIONS,
-  normalizeCharacterOptions
+  normalizeCharacterOptions,
+  type RealisticCharacterOptions
 } from '../utils/realisticCharacterBuilder';
 
 export interface EraShopItem {
@@ -2945,6 +2946,7 @@ interface EraGamesModalProps {
   isOpen: boolean;
   eraGems: number;
   eraDollars?: number;
+  playerAvatar?: Partial<RealisticCharacterOptions>;
   onRewardGems: (gemsWon: number, xpWon: number, dollarsWon: number, gameTitle: string) => void;
   onOpenEraShop: () => void;
   onClose: () => void;
@@ -3013,6 +3015,7 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   isOpen,
   eraGems,
   eraDollars = 0,
+  playerAvatar,
   onRewardGems,
   onOpenEraShop,
   onClose
@@ -3023,16 +3026,19 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   const [vocabIdx, setVocabIdx] = useState(0);
   const [vocabScore, setVocabScore] = useState(0);
   const [vocabFinished, setVocabFinished] = useState(false);
+  const [vocabCheer, setVocabCheer] = useState<'idle' | 'wave'>('idle');
 
   // Game 2 state: Word Scramble
   const [scrambleIdx, setScrambleIdx] = useState(0);
   const [scrambleInput, setScrambleInput] = useState('');
   const [scrambleFeedback, setScrambleFeedback] = useState<string | null>(null);
+  const [scrambleCheer, setScrambleCheer] = useState<'idle' | 'wave'>('idle');
 
   // Game 3 state: Penalty Shootout
   const [penaltyIdx, setPenaltyIdx] = useState(0);
   const [penaltyGoals, setPenaltyGoals] = useState(0);
   const [penaltyDone, setPenaltyDone] = useState(false);
+  const [penaltyCheer, setPenaltyCheer] = useState<'idle' | 'wave' | 'walk'>('idle');
 
   if (!isOpen) return null;
 
@@ -3043,6 +3049,10 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   const handleVocabAnswer = (optIdx: number) => {
     const isCorrect = optIdx === currentVocab.correct;
     const nextScore = isCorrect ? vocabScore + 1 : vocabScore;
+    if (isCorrect) {
+      setVocabCheer('wave');
+      setTimeout(() => setVocabCheer('idle'), 950);
+    }
     if (vocabIdx + 1 >= VOCAB_BLITZ_QUESTIONS.length) {
       setVocabScore(nextScore);
       setVocabFinished(true);
@@ -3058,6 +3068,8 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   const handleScrambleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (scrambleInput.trim().toUpperCase() === currentScramble.answer) {
+      setScrambleCheer('wave');
+      setTimeout(() => setScrambleCheer('idle'), 1200);
       onRewardGems(50, 80, 50, `Word Scramble (${currentScramble.answer})`);
       setScrambleFeedback(`🎉 Correct! "${currentScramble.answer}" unlocked +50 💎 Era Gems & +$50 💵 Era Dollars!`);
       setScrambleInput('');
@@ -3073,6 +3085,8 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   const handlePenaltyShot = (optIdx: number) => {
     const isGoal = optIdx === currentPenalty.correct;
     const nextGoals = isGoal ? penaltyGoals + 1 : penaltyGoals;
+    setPenaltyCheer(isGoal ? 'wave' : 'walk');
+    setTimeout(() => setPenaltyCheer('idle'), 1000);
     if (penaltyIdx + 1 >= PENALTY_IDIOM_QUESTIONS.length) {
       setPenaltyGoals(nextGoals);
       setPenaltyDone(true);
@@ -3087,16 +3101,16 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-white rounded-[2rem] max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden">
+      <div className="bg-white rounded-[2rem] max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-fuchsia-600 px-6 py-5 text-white flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-fuchsia-600 px-6 py-4 text-white flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center border border-white/25">
               <Gamepad2 className="w-6 h-6 text-white" />
             </div>
             <div>
               <span className="text-[11px] font-black uppercase tracking-widest text-purple-200">
-                ERAVERSE ARCADE & GEM ARENA
+                ERAVERSE ARCADE & GEM ARENA • HOSTED BY PIXEL, SOPHIA & KEEPER MAX
               </span>
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
                 EraGames — Play & Win 💎 Era Gems!
@@ -3165,119 +3179,246 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
           ))}
         </div>
 
-        {/* Active Game Stage */}
+        {/* Active Game Stage with Live 3D Characters */}
         <div className="p-6 sm:p-8 overflow-y-auto flex-1">
           {selectedGame === 'vocab' && (
-            <div className="max-w-2xl mx-auto">
-              {!vocabFinished ? (
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-6 sm:p-8 border-2 border-purple-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-purple-600 text-white">
-                      Question {vocabIdx + 1} of {VOCAB_BLITZ_QUESTIONS.length}
-                    </span>
-                    <span className="text-xs font-extrabold text-purple-800">
-                      Reward: Up to +60 💎 Era Gems
-                    </span>
-                  </div>
-                  <div className="text-3xl font-black text-indigo-950 mb-2">{currentVocab.word}</div>
-                  <p className="text-sm font-bold text-slate-600 mb-6">{currentVocab.prompt}</p>
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* 3D Character Coach Panel */}
+              <div className="md:col-span-4 bg-gradient-to-b from-purple-900 via-indigo-900 to-slate-900 rounded-3xl p-4 text-center border-2 border-purple-300 shadow-lg flex flex-col items-center">
+                <div className="w-full h-[250px] rounded-2xl overflow-hidden bg-gradient-to-b from-indigo-950/80 to-purple-950/60">
+                  <EraVerseAvatar3D
+                    gender="female"
+                    skinTone="#FFE7D6"
+                    hairStyle="twin_buns"
+                    hairColor="#1C1917"
+                    eyeColor="sapphire"
+                    eyeShape="round_bright"
+                    topStyle="sailor_blouse"
+                    topColor="#FFFFFF"
+                    topSecondary="#1E3A8A"
+                    bottomStyle="pleated_skirt"
+                    bottomColor="#1E3A8A"
+                    hatStyle="daisy_clips"
+                    accessories={['round_glasses']}
+                    animationMode={vocabFinished || vocabCheer === 'wave' ? 'wave' : 'idle'}
+                    showPedestal={true}
+                    interactive={true}
+                    className="w-full h-full"
+                  />
+                </div>
+                <span className="mt-2.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40">
+                  Coach Sophia • Blitz Host
+                </span>
+                <p className="text-xs text-purple-100 font-semibold mt-1.5 leading-snug">
+                  {vocabFinished
+                    ? 'Amazing Band 8+ vocabulary run! Enjoy your Era Gems!'
+                    : vocabCheer === 'wave'
+                    ? 'Spot on! Keep that speed streak going!'
+                    : `"Pick the exact synonym for ${currentVocab.word}!"`}
+                </p>
+              </div>
 
-                  <div className="grid grid-cols-1 gap-3">
-                    {currentVocab.options.map((opt, idx) => (
+              <div className="md:col-span-8">
+                {!vocabFinished ? (
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-6 sm:p-8 border-2 border-purple-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-purple-600 text-white">
+                        Question {vocabIdx + 1} of {VOCAB_BLITZ_QUESTIONS.length}
+                      </span>
+                      <span className="text-xs font-extrabold text-purple-800">
+                        Reward: Up to +60 💎 Era Gems
+                      </span>
+                    </div>
+                    <div className="text-3xl font-black text-indigo-950 mb-2">{currentVocab.word}</div>
+                    <p className="text-sm font-bold text-slate-600 mb-6">{currentVocab.prompt}</p>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {currentVocab.options.map((opt, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleVocabAnswer(idx)}
+                          className="w-full text-left px-5 py-4 rounded-2xl bg-white hover:bg-purple-600 text-slate-800 hover:text-white font-extrabold text-sm border border-purple-200 shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+                        >
+                          <span>{opt}</span>
+                          <ArrowRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border-2 border-emerald-300">
+                    <div className="text-5xl mb-3">🏆</div>
+                    <h3 className="text-2xl font-black text-slate-900">
+                      Blitz Complete! Score: {vocabScore} / {VOCAB_BLITZ_QUESTIONS.length}
+                    </h3>
+                    <p className="text-emerald-700 font-extrabold text-base mt-2">
+                      You earned +{Math.max(20, vocabScore * 12)} 💎 Era Gems!
+                    </p>
+                    <div className="mt-6 flex justify-center gap-3 flex-wrap">
                       <button
-                        key={idx}
                         type="button"
-                        onClick={() => handleVocabAnswer(idx)}
-                        className="w-full text-left px-5 py-4 rounded-2xl bg-white hover:bg-purple-600 text-slate-800 hover:text-white font-extrabold text-sm border border-purple-200 shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+                        onClick={() => {
+                          setVocabIdx(0);
+                          setVocabScore(0);
+                          setVocabFinished(false);
+                        }}
+                        className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
                       >
-                        <span>{opt}</span>
-                        <ArrowRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                        <RotateCcw className="w-4 h-4" /> Play Again
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={onOpenEraShop}
+                        className="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-4 h-4" /> Visit Candy in EraSHOP
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border-2 border-emerald-300">
-                  <div className="text-5xl mb-3">🏆</div>
-                  <h3 className="text-2xl font-black text-slate-900">
-                    Blitz Complete! Score: {vocabScore} / {VOCAB_BLITZ_QUESTIONS.length}
-                  </h3>
-                  <p className="text-emerald-700 font-extrabold text-base mt-2">
-                    You earned +{Math.max(20, vocabScore * 12)} 💎 Era Gems!
-                  </p>
-                  <div className="mt-6 flex justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setVocabIdx(0);
-                        setVocabScore(0);
-                        setVocabFinished(false);
-                      }}
-                      className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Play Again
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onOpenEraShop}
-                      className="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-4 h-4" /> Visit Candy in EraSHOP
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
           {selectedGame === 'scramble' && (
-            <div className="max-w-2xl mx-auto bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-6 sm:p-8 border-2 border-amber-200">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500 text-slate-950">
-                  Puzzle {scrambleIdx + 1} of {SCRAMBLE_PUZZLES.length}
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* 3D Character Arcade Host Panel */}
+              <div className="md:col-span-4 bg-gradient-to-b from-amber-900 via-orange-900 to-slate-900 rounded-3xl p-4 text-center border-2 border-amber-300 shadow-lg flex flex-col items-center">
+                <div className="w-full h-[250px] rounded-2xl overflow-hidden bg-gradient-to-b from-slate-900/70 to-amber-950/60">
+                  <EraVerseAvatar3D
+                    gender="male"
+                    skinTone="#FFD8BE"
+                    hairStyle="fluffy_swept"
+                    hairColor="#0F172A"
+                    eyeColor="emerald"
+                    topStyle="casual_tee"
+                    topColor="#F59E0B"
+                    topSecondary="#FFFFFF"
+                    jacketStyle="varsity_jacket"
+                    jacketPrimary="#1E293B"
+                    jacketSecondary="#F59E0B"
+                    bottomStyle="cuffed_jeans"
+                    bottomColor="#1E3A8A"
+                    shoeColor="#F97316"
+                    hatStyle="cat_headphones"
+                    accessories={['cyber_visor']}
+                    animationMode={scrambleCheer === 'wave' ? 'wave' : 'idle'}
+                    showPedestal={true}
+                    interactive={true}
+                    className="w-full h-full"
+                  />
+                </div>
+                <span className="mt-2.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-300/40">
+                  Pixel • Arcade Master
                 </span>
-                <span className="text-xs font-extrabold text-amber-900">Reward: +50 💎 Era Gems</span>
+                <p className="text-xs text-amber-100 font-semibold mt-1.5 leading-snug">
+                  {scrambleCheer === 'wave'
+                    ? 'BOOM! Word cracked! +50 Era Gems added!'
+                    : '"Unscramble the academic word to claim +50 Gems!"'}
+                </p>
               </div>
 
-              <div className="text-center my-6">
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-                  Unscramble this Academic IELTS Word:
+              <div className="md:col-span-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-6 sm:p-8 border-2 border-amber-200">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500 text-slate-950">
+                    Puzzle {scrambleIdx + 1} of {SCRAMBLE_PUZZLES.length}
+                  </span>
+                  <span className="text-xs font-extrabold text-amber-900">Reward: +50 💎 Era Gems</span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-black tracking-widest text-slate-900 bg-white py-4 px-6 rounded-2xl border border-amber-300 shadow-inner">
-                  {currentScramble.scrambled
-                    .split(' ')
-                    .reverse()
-                    .join('  ')}
+
+                <div className="text-center my-6">
+                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+                    Unscramble this Academic IELTS Word:
+                  </div>
+                  <div className="text-3xl sm:text-4xl font-black tracking-widest text-slate-900 bg-white py-4 px-6 rounded-2xl border border-amber-300 shadow-inner">
+                    {currentScramble.scrambled
+                      .split(' ')
+                      .reverse()
+                      .join('  ')}
+                  </div>
+                  <p className="text-xs font-bold text-amber-800 mt-3">💡 Hint: {currentScramble.hint}</p>
                 </div>
-                <p className="text-xs font-bold text-amber-800 mt-3">💡 Hint: {currentScramble.hint}</p>
+
+                <form onSubmit={handleScrambleSubmit} className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={scrambleInput}
+                    onChange={(e) => setScrambleInput(e.target.value)}
+                    placeholder="Type the unscrambled word..."
+                    className="flex-1 px-4 py-3.5 rounded-2xl bg-white border-2 border-amber-300 font-black text-slate-900 uppercase tracking-wider focus:outline-none focus:border-amber-600"
+                  />
+                  <button
+                    type="submit"
+                    className="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm cursor-pointer shadow-md"
+                  >
+                    Submit (+50 💎)
+                  </button>
+                </form>
+
+                {scrambleFeedback && (
+                  <div className="mt-4 p-3.5 rounded-xl bg-white border border-amber-300 text-center font-extrabold text-sm text-slate-800">
+                    {scrambleFeedback}
+                  </div>
+                )}
               </div>
-
-              <form onSubmit={handleScrambleSubmit} className="flex gap-3">
-                <input
-                  type="text"
-                  value={scrambleInput}
-                  onChange={(e) => setScrambleInput(e.target.value)}
-                  placeholder="Type the unscrambled word..."
-                  className="flex-1 px-4 py-3.5 rounded-2xl bg-white border-2 border-amber-300 font-black text-slate-900 uppercase tracking-wider focus:outline-none focus:border-amber-600"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm cursor-pointer shadow-md"
-                >
-                  Submit (+50 💎)
-                </button>
-              </form>
-
-              {scrambleFeedback && (
-                <div className="mt-4 p-3.5 rounded-xl bg-white border border-amber-300 text-center font-extrabold text-sm text-slate-800">
-                  {scrambleFeedback}
-                </div>
-              )}
             </div>
           )}
 
           {selectedGame === 'penalty' && (
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-4xl mx-auto space-y-5">
+              {/* Live 3D Face-Off Pitch: Your Character vs Keeper Max */}
+              <div className="grid grid-cols-2 gap-4 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-4 border-2 border-emerald-400/50 shadow-lg">
+                <div className="flex flex-col items-center">
+                  <div className="w-full h-[185px] rounded-2xl overflow-hidden bg-slate-950/40">
+                    <EraVerseAvatar3D
+                      {...(playerAvatar || {
+                        gender: 'male',
+                        skinTone: '#FFD8BE',
+                        topStyle: 'era_uniform',
+                        topColor: '#2563EB',
+                        bottomStyle: 'cargo_shorts',
+                        bottomColor: '#1E293B',
+                      })}
+                      rideStyle="none"
+                      animationMode={penaltyDone || penaltyCheer === 'wave' ? 'wave' : penaltyCheer === 'walk' ? 'walk' : 'idle'}
+                      showPedestal={true}
+                      interactive={true}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <span className="mt-2 text-[11px] font-black uppercase tracking-wider text-emerald-300">
+                    ⚽ You (Striker)
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div className="w-full h-[185px] rounded-2xl overflow-hidden bg-slate-950/40">
+                    <EraVerseAvatar3D
+                      gender="male"
+                      skinTone="#F1C27D"
+                      hairStyle="textured_crop"
+                      hairColor="#0F172A"
+                      eyeColor="amber"
+                      topStyle="sport_jersey"
+                      topColor="#EF4444"
+                      topSecondary="#FFFFFF"
+                      bottomStyle="cargo_shorts"
+                      bottomColor="#0F172A"
+                      shoeColor="#EF4444"
+                      hatStyle="baseball_cap"
+                      animationMode={penaltyCheer === 'walk' ? 'wave' : 'idle'}
+                      showPedestal={true}
+                      interactive={true}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <span className="mt-2 text-[11px] font-black uppercase tracking-wider text-rose-300">
+                    🧤 Keeper Max (GK)
+                  </span>
+                </div>
+              </div>
+
               {!penaltyDone ? (
                 <div className="bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-3xl p-6 sm:p-8 border-2 border-emerald-300">
                   <div className="flex items-center justify-between mb-4">
@@ -3313,7 +3454,7 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
                   <p className="text-emerald-700 font-extrabold text-base mt-2">
                     You won +{Math.max(25, penaltyGoals * 25)} 💎 Era Gems!
                   </p>
-                  <div className="mt-6 flex justify-center gap-3">
+                  <div className="mt-6 flex justify-center gap-3 flex-wrap">
                     <button
                       type="button"
                       onClick={() => {

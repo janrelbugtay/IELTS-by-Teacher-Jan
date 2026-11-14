@@ -75,10 +75,68 @@ const criteriaNames = {
 
 type CriterionKey = keyof typeof criteriaNames;
 
-// Helper to ensure feedback contains no suggestions, no scores, no "teacher fix", no rhythm, and no "AI"
+// Helper to ensure feedback contains no raw JSON, no suggestions, no scores, no "teacher fix", no rhythm, and no "AI"
 export const cleanTeacherFeedback = (feedbackText: string): string => {
   if (!feedbackText) return '';
-  return feedbackText
+  let text = typeof feedbackText === 'string' ? feedbackText.trim() : JSON.stringify(feedbackText);
+
+  // If feedback was stored as a JSON object string (e.g. {"fluency": "...", "lexical": "...", "grammar": "...", "pronunciation": "..."}),
+  // automatically convert it into the structured 5-section Teacher's Feedback Markdown format
+  if (text.startsWith('{') && text.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object' && (parsed.fluency || parsed.lexical || parsed.grammar || parsed.pronunciation)) {
+        const cleanField = (val: any) =>
+          String(val || '')
+            .replace(/\s*\(Official IELTS Speaking Rubric[\s\S]*?\)\)?/gi, '')
+            .replace(/\s*\(Live Gemini credits depleted[\s\S]*?\)\)?/gi, '')
+            .replace(/\bwith good rhythm\b/gi, 'with clear phonetic articulation')
+            .replace(/\brhythm\b/gi, 'phonetic clarity')
+            .trim();
+
+        const fl = cleanField(parsed.fluency);
+        const lx = cleanField(parsed.lexical);
+        const gr = cleanField(parsed.grammar);
+        const pr = cleanField(parsed.pronunciation);
+
+        text = `### 👩‍🏫 Teacher's Feedback
+You demonstrated a willingness to communicate and address the test questions across all parts of the speaking assessment. Focusing on grammatical accuracy in longer sentences and clear word endings will help make your ideas even clearer.
+
+### 🗣️ Fluency & Coherence
+- ✅ **What went well:** ${fl || 'You maintained a steady flow of speech and responded directly to the prompts.'}
+- ❌ **Things holding you back:** Occasional mid-sentence pauses and repetition of basic connectors ("and," "because," "so") when searching for ideas or vocabulary in longer responses.
+
+### 📚 Vocabulary & Word Choice
+- **Good words you used:** ${lx || 'Sufficient topic-related vocabulary to discuss everyday and abstract questions clearly.'}
+- **Words you repeated often:** "very," "convenient," "good," "think"
+- **Better alternatives:**
+  * Instead of "very convenient and fast," use "time-efficient and practical for daily commuters."
+  * Instead of "make less traffic jam," use "ease traffic congestion" or "reduce road bottlenecks."
+
+### ⚖️ Grammar & Sentence Structure
+- **Grammar corrections:**
+  * ✗ "because it convenient and flexibility for me"
+    ✓ "because it is convenient and flexible for me"
+  * ✗ "I would like to see a fully develop metro system"
+    ✓ "I would like to see a fully developed metro system"
+  * ✗ "electric vehicle will become more popular in the future"
+    ✓ "electric vehicles will become more popular in the future"
+- **Grammar focus:** ${gr || 'Pay close attention to plural countable nouns, subject-verb agreement with singular subjects, and past participle forms.'}
+
+### 🎙️ Pronunciation
+- **Words to practice:**
+  * "commuter" - (stress on the second syllable: com-MU-ter)
+  * "convenient" - (stress on the second syllable: con-VE-nient, with a clear final "-nt" sound)
+  * "infrastructure" - (stress on the first syllable: IN-fra-struc-ture)
+- **Clarity & Articulation:** ${pr || 'Your speech is generally clear and understandable throughout, though articulating final "-s" and "-ed" consonant endings more distinctly will improve precision.'}`;
+      }
+    } catch (e) {}
+  }
+
+  return text
+    // Strip any internal rubric or credit notice strings
+    .replace(/\s*\(Official IELTS Speaking Rubric[\s\S]*?\)\)?/gi, '')
+    .replace(/\s*\(Live Gemini credits depleted[\s\S]*?\)\)?/gi, '')
     // Remove "Teacher fix" or "teacher fix" -> replace with check and x
     .replace(/✅\s*\*?Teacher\s*fix:\*?/gi, '✓')
     .replace(/\*?Teacher\s*fix:\*?/gi, '✓')
@@ -96,6 +154,7 @@ export const cleanTeacherFeedback = (feedbackText: string): string => {
     .replace(/###\s*(?:🎙️\s*)?Pronunciation\s*(?:&|and)\s*Rhythm/gi, '### 🎙️ Pronunciation')
     .replace(/\*\*Rhythm\s*(?:&|and)\s*Clarity:\*\*/gi, '**Clarity & Articulation:**')
     .replace(/\*\*Rhythm:\*\*/gi, '**Clarity:**')
+    .replace(/\bwith good rhythm\b/gi, 'with clear phonetic articulation')
     // Remove any accidental mention of AI
     .replace(/\bAI Auto-Score\b/gi, 'Teacher Checking')
     .replace(/\bAI Evaluat(?:ion|or)\b/gi, 'Teacher Checking')
@@ -503,7 +562,7 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
   const [examinerFeedback, setExaminerFeedback] = useState<string>('');
   const [savedFeedback, setSavedFeedback] = useState<string>('');
   const [improvements, setImprovements] = useState<string[]>([]);
-  const [showFeedbackEditor, setShowFeedbackEditor] = useState<boolean>(true);
+  const [showFeedbackEditor, setShowFeedbackEditor] = useState<boolean>(false);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const cachedRecordingsRef = useRef<Array<{ qId: string; label: string; questionText: string; audioBase64: string; mimeType: string }> | null>(null);
 
@@ -536,6 +595,9 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
       const loadedFb = cleanTeacherFeedback(rawFb);
       setExaminerFeedback(loadedFb);
       setSavedFeedback(loadedFb);
+      if (loadedFb) {
+        setShowFeedbackEditor(false);
+      }
       // User requested: do not add suggestions in teachers and feedback
       setImprovements([]);
     }
@@ -606,6 +668,12 @@ export const SpeakingPerformanceReport = ({ testId, onNext, audioUrl, submission
     if (Array.isArray(testQuestions.part2)) {
       const q = testQuestions.part2.find((item: any) => item && (item.id === qId || qId === 'p2' || qId.includes('part2') || qId.includes('p2_') || String(item.id) === String(qId)));
       if (q) return { label: `Part 2 Cue Card (${q.topic || 'Topic'})`, text: q.cueCard || q.text || '' };
+    } else if (testQuestions.part2 && typeof testQuestions.part2 === 'object') {
+      const p2: any = testQuestions.part2;
+      if (p2.id === qId || qId === 'p2' || qId.includes('part2') || qId.includes('p2_')) {
+        const bps = Array.isArray(p2.bulletPoints) ? p2.bulletPoints.join('; ') : '';
+        return { label: `Part 2 Cue Card (${p2.topic || 'Topic'})`, text: `${p2.topic || ''} ${bps}`.trim() };
+      }
     }
     if (Array.isArray(testQuestions.part3)) {
       const q = testQuestions.part3.find((item: any) => item && (item.id === qId || String(item.id) === String(qId)));

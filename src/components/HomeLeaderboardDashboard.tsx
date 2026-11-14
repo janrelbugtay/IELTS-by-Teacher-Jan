@@ -123,6 +123,7 @@ export function HomeLeaderboardDashboard({
       const sList: any[] = [];
       snapshot.forEach((docSnap) => {
         const d = docSnap.data();
+        if (d.isDeleted) return;
         sList.push({
           id: docSnap.id,
           ...d,

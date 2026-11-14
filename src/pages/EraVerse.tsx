@@ -2497,9 +2497,12 @@ export function EraVerse() {
     const stadiumSpectators: any[] = [];
     const skinPalette = [0xf5cba7, 0xe0ac69, 0xc68642, 0x8d5524, 0xfadbd8];
     const shirtPalette = [0xef4444, 0xdc2626, 0x3b82f6, 0x2563eb, 0xfacc15, 0x10b981, 0xffffff, 0xf97316];
-    const headGeo = new THREE.SphereGeometry(0.32, 12, 12);
-    const bodyGeo = new THREE.CylinderGeometry(0.24, 0.3, 0.6, 10);
-    const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const headGeo = new THREE.SphereGeometry(0.30, 14, 14);
+    const bodyGeo = new THREE.CapsuleGeometry(0.22, 0.34, 8, 12);
+    const armGeo = new THREE.CapsuleGeometry(0.075, 0.28, 6, 8);
+    const hairCapGeo = new THREE.SphereGeometry(0.315, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.56);
+    const hairColors = [0x1c1917, 0x451a03, 0x92400e, 0xfacc15, 0x0f172a];
+    const eyeGeo = new THREE.SphereGeometry(0.042, 8, 8);
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
 
     for (let row = 0; row < 3; row++) {
@@ -2512,26 +2515,41 @@ export function EraVerse() {
 
       for (let z = -18.0; z <= 18.0; z += 2.2) {
         const spec = new THREE.Group();
-        const skinColor = skinPalette[(Math.abs(Math.round(z * 3)) + row) % skinPalette.length];
+        const seedIdx = Math.abs(Math.round(z * 3)) + row;
+        const skinColor = skinPalette[seedIdx % skinPalette.length];
         const shirtColor = shirtPalette[(Math.abs(Math.round(z * 7)) + row * 2) % shirtPalette.length];
+        const hairCol = hairColors[seedIdx % hairColors.length];
 
-        const torso = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.45 }));
-        torso.position.y = 0.3;
+        const shirtMatSpec = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.45 });
+        const torso = new THREE.Mesh(bodyGeo, shirtMatSpec);
+        torso.scale.set(0.85, 1.0, 1.12);
+        torso.position.y = 0.34;
         torso.castShadow = true;
         spec.add(torso);
 
+        [-1, 1].forEach((armSide) => {
+          const arm = new THREE.Mesh(armGeo, shirtMatSpec);
+          arm.position.set(0.02, 0.34, armSide * 0.28);
+          arm.rotation.x = armSide * 0.16;
+          spec.add(arm);
+        });
+
         const headPivot = new THREE.Group();
-        headPivot.position.y = 0.78;
+        headPivot.position.y = 0.84;
 
         const head = new THREE.Mesh(headGeo, new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.45 }));
         head.castShadow = true;
         headPivot.add(head);
 
+        const hairCap = new THREE.Mesh(hairCapGeo, new THREE.MeshStandardMaterial({ color: hairCol, roughness: 0.4 }));
+        hairCap.rotation.z = 0.15;
+        headPivot.add(hairCap);
+
         const e1 = new THREE.Mesh(eyeGeo, eyeMat);
-        e1.position.set(0.28, 0.04, -0.1);
+        e1.position.set(0.27, 0.02, -0.1);
         headPivot.add(e1);
         const e2 = new THREE.Mesh(eyeGeo, eyeMat);
-        e2.position.set(0.28, 0.04, 0.1);
+        e2.position.set(0.27, 0.02, 0.1);
         headPivot.add(e2);
 
         spec.add(headPivot);
@@ -3077,9 +3095,12 @@ export function EraVerse() {
 
     const tennisSkinPalette = [0xf5cba7, 0xe0ac69, 0xc68642, 0x8d5524, 0xfadbd8];
     const tennisShirtPalette = [0xef4444, 0x3b82f6, 0xfacc15, 0x10b981, 0xa855f7, 0xf97316, 0xec4899];
-    const tennisHeadGeo = new THREE.SphereGeometry(0.32, 14, 14);
-    const tennisBodyGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.58, 12);
-    const tennisEyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const tennisHeadGeo = new THREE.SphereGeometry(0.30, 14, 14);
+    const tennisBodyGeo = new THREE.CapsuleGeometry(0.21, 0.34, 8, 12);
+    const tennisArmGeo = new THREE.CapsuleGeometry(0.072, 0.26, 6, 8);
+    const tennisHairGeo = new THREE.SphereGeometry(0.315, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.56);
+    const tennisHairPalette = [0x1c1917, 0x451a03, 0x92400e, 0xfacc15, 0x0f172a];
+    const tennisEyeGeo = new THREE.SphereGeometry(0.042, 8, 8);
     const tennisEyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
 
     for (let row = 0; row < 3; row++) {
@@ -3093,29 +3114,43 @@ export function EraVerse() {
       // Spectators along the grandstand tier
       for (let z = -12.5; z <= 12.5; z += 1.8) {
         const spec = new THREE.Group();
-        const skinColor = tennisSkinPalette[(Math.abs(Math.round(z * 5)) + row) % tennisSkinPalette.length];
+        const seed = Math.abs(Math.round(z * 5)) + row;
+        const skinColor = tennisSkinPalette[seed % tennisSkinPalette.length];
         const shirtColor = tennisShirtPalette[(Math.abs(Math.round(z * 11)) + row * 2) % tennisShirtPalette.length];
+        const hairCol = tennisHairPalette[seed % tennisHairPalette.length];
 
         const torsoMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.45 });
         const charHeadMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.4 });
 
         const torso = new THREE.Mesh(tennisBodyGeo, torsoMat);
-        torso.position.y = 0.29;
+        torso.scale.set(0.85, 1.0, 1.12);
+        torso.position.y = 0.34;
         torso.castShadow = true;
         spec.add(torso);
 
+        [-1, 1].forEach((armSide) => {
+          const arm = new THREE.Mesh(tennisArmGeo, torsoMat);
+          arm.position.set(-0.02, 0.34, armSide * 0.27);
+          arm.rotation.x = armSide * 0.16;
+          spec.add(arm);
+        });
+
         const headPivot = new THREE.Group();
-        headPivot.position.y = 0.78;
+        headPivot.position.y = 0.83;
 
         const head = new THREE.Mesh(tennisHeadGeo, charHeadMat);
         head.castShadow = true;
         headPivot.add(head);
 
+        const hair = new THREE.Mesh(tennisHairGeo, new THREE.MeshStandardMaterial({ color: hairCol, roughness: 0.4 }));
+        hair.rotation.z = -0.15;
+        headPivot.add(hair);
+
         // Eyes looking towards center court
         const e1 = new THREE.Mesh(tennisEyeGeo, tennisEyeMat);
-        e1.position.set(-0.29, 0.04, -0.1);
+        e1.position.set(-0.27, 0.02, -0.1);
         const e2 = new THREE.Mesh(tennisEyeGeo, tennisEyeMat);
-        e2.position.set(-0.29, 0.04, 0.1);
+        e2.position.set(-0.27, 0.02, 0.1);
         headPivot.add(e1, e2);
         spec.add(headPivot);
 
@@ -4432,27 +4467,199 @@ export function EraVerse() {
         galleryStand.add(crystalArt);
         interiorGroup.add(galleryStand);
       } else if (building.id === 'speaking') {
-        // EraGames Arcade Arena: Add 3D Neon Arcade Cabinets inside the room
+        // EraGames Arcade Arena: Neon Floor Stage, Host NPC ("Pixel"), Gamer NPCs, Arcade Cabinets & Champion Podium
+        const arcadeCarpet = new THREE.Mesh(
+          new THREE.PlaneGeometry(16, 10),
+          new THREE.MeshStandardMaterial({ color: 0x312e81, roughness: 0.85 })
+        );
+        arcadeCarpet.rotation.x = -Math.PI / 2;
+        arcadeCarpet.position.set(0, 0.02, -1.5);
+        interiorGroup.add(arcadeCarpet);
+
+        // Central Arcade Host Desk + Pixel (EraGames Host NPC)
+        const hostDeskGroup = new THREE.Group();
+        hostDeskGroup.position.set(0, 0, -5.8);
+        const deskBody = new THREE.Mesh(
+          new THREE.BoxGeometry(6.2, 1.35, 1.7),
+          new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.35, metalness: 0.5 })
+        );
+        deskBody.position.y = 0.675;
+        deskBody.userData = { isEraGames: true };
+        clickableBoardMeshes.push(deskBody);
+        hostDeskGroup.add(deskBody);
+
+        const deskTrim = new THREE.Mesh(
+          new THREE.BoxGeometry(6.4, 0.16, 1.85),
+          new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0x7e22ce, emissiveIntensity: 0.35, roughness: 0.2 })
+        );
+        deskTrim.position.y = 1.38;
+        deskTrim.userData = { isEraGames: true };
+        clickableBoardMeshes.push(deskTrim);
+        hostDeskGroup.add(deskTrim);
+
+        const pixelHostRig = buildCharacterAvatar({
+          shirtColor: '#7c3aed',
+          hairColor: '#0f172a',
+          skinColor: '#FFE7D6',
+          hatType: 'headphones',
+          accessoryType: 'cyber_visor',
+          name: 'Pixel • EraGames Host',
+          cohort: 'ERAGAMES',
+          gender: 'boy',
+          hairStyle: 'fluffy_swept',
+          clothingType: 'cyber_jacket',
+          beltType: 'cyber_belt'
+        });
+        pixelHostRig.root.position.set(0, 0, -1.45);
+        pixelHostRig.rightArm.rotation.z = 2.2;
+        pixelHostRig.rightArm.rotation.x = -0.3;
+        const pixelBubble = createSpeechBubbleSprite(
+          'Pixel (EraGames)',
+          'Welcome to EraGames! Play Vocab Blitz, Word Scramble & Idiom Penalty to win Era Gems!',
+          false
+        );
+        pixelBubble.userData = { isEraGames: true };
+        clickableBoardMeshes.push(pixelBubble);
+        pixelHostRig.root.add(pixelBubble);
+        hostDeskGroup.add(pixelHostRig.root);
+        interiorGroup.add(hostDeskGroup);
+
+        // Two Detailed Neon Arcade Cabinets + Student Gamers Playing
         [
-          [-6.5, -2.2, 0x9333ea],
-          [6.5, -2.2, 0xec4899]
-        ].forEach(([ax, az, hex]) => {
+          {
+            ax: -6.8,
+            az: -1.8,
+            hex: 0x9333ea,
+            gamer: {
+              name: 'Kai • Speed Blitz',
+              shirtColor: '#ec4899',
+              hairColor: '#1c1917',
+              skinColor: '#FFD8BE',
+              hatType: 'cap',
+              accessoryType: 'glasses',
+              gender: 'boy',
+              hairStyle: 'kpop_curtain',
+              clothingType: 'varsity',
+              beltType: 'Belt_Black'
+            }
+          },
+          {
+            ax: 6.8,
+            az: -1.8,
+            hex: 0x06b6d4,
+            gamer: {
+              name: 'Sophia • Word Pro',
+              shirtColor: '#0ea5e9',
+              hairColor: '#7c2d12',
+              skinColor: '#FFE7D6',
+              hatType: 'daisy_clips',
+              accessoryType: 'none',
+              gender: 'girl',
+              hairStyle: 'twin_buns',
+              clothingType: 'skirt_outfit',
+              beltType: 'Belt_White'
+            }
+          }
+        ].forEach(({ ax, az, hex, gamer }) => {
           const cab = new THREE.Group();
           cab.position.set(ax, 0, az);
           const body = new THREE.Mesh(
-            new THREE.BoxGeometry(1.9, 3.4, 1.5),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.6 })
+            new THREE.BoxGeometry(2.0, 3.6, 1.55),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.65 })
           );
-          body.position.y = 1.7;
+          body.position.y = 1.8;
+          body.userData = { isEraGames: true };
+          clickableBoardMeshes.push(body);
           cab.add(body);
+
           const screen = new THREE.Mesh(
-            new THREE.PlaneGeometry(1.45, 1.15),
+            new THREE.PlaneGeometry(1.5, 1.18),
             new THREE.MeshBasicMaterial({ color: hex })
           );
-          screen.position.set(0, 2.25, 0.77);
+          screen.position.set(0, 2.35, 0.79);
+          screen.userData = { isEraGames: true };
+          clickableBoardMeshes.push(screen);
           cab.add(screen);
+
+          const marquee = new THREE.Mesh(
+            new THREE.BoxGeometry(1.85, 0.42, 0.25),
+            new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+          );
+          marquee.position.set(0, 3.45, 0.72);
+          cab.add(marquee);
+
+          const controlDeck = new THREE.Mesh(
+            new THREE.BoxGeometry(1.9, 0.22, 0.65),
+            new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 })
+          );
+          controlDeck.position.set(0, 1.55, 0.95);
+          cab.add(controlDeck);
+
+          [-0.45, 0.45].forEach((jx) => {
+            const stick = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.03, 0.03, 0.22, 10),
+              new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8 })
+            );
+            stick.position.set(jx, 1.72, 1.0);
+            const knob = new THREE.Mesh(
+              new THREE.SphereGeometry(0.07, 12, 12),
+              new THREE.MeshStandardMaterial({ color: hex })
+            );
+            knob.position.set(jx, 1.84, 1.0);
+            cab.add(stick, knob);
+          });
+
           interiorGroup.add(cab);
+
+          const gamerRig = buildCharacterAvatar({
+            ...gamer,
+            cohort: 'IELTS 1'
+          });
+          gamerRig.root.position.set(ax, 0, az + 2.05);
+          gamerRig.root.rotation.y = Math.PI;
+          gamerRig.leftArm.rotation.x = -0.85;
+          gamerRig.rightArm.rotation.x = -0.85;
+          interiorGroup.add(gamerRig.root);
         });
+
+        // Champion Gem Podium + Keeper Max Penalty Practice Stand
+        const podiumGroup = new THREE.Group();
+        podiumGroup.position.set(0, 0, 0.8);
+        const podBase = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.8, 2.0, 0.45, 24),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.7 })
+        );
+        podBase.position.y = 0.225;
+        podBase.userData = { isEraGames: true };
+        clickableBoardMeshes.push(podBase);
+        podiumGroup.add(podBase);
+
+        const podRing = new THREE.Mesh(
+          new THREE.TorusGeometry(1.85, 0.07, 12, 32),
+          new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+        );
+        podRing.rotation.x = Math.PI / 2;
+        podRing.position.y = 0.46;
+        podiumGroup.add(podRing);
+
+        const arenaStriker = buildCharacterAvatar({
+          shirtColor: '#10b981',
+          hairColor: '#1c1917',
+          skinColor: '#FFD8BE',
+          hatType: 'gold_crown',
+          accessoryType: 'none',
+          name: 'Champion Cup • Click to Play!',
+          cohort: 'ERAGAMES',
+          gender: 'boy',
+          hairStyle: 'textured_crop',
+          clothingType: 'varsity',
+          beltType: 'Belt_White'
+        });
+        arenaStriker.root.position.set(0, 0.45, 0);
+        arenaStriker.leftArm.rotation.z = -1.1;
+        arenaStriker.rightArm.rotation.z = 1.1;
+        podiumGroup.add(arenaStriker.root);
+        interiorGroup.add(podiumGroup);
       }
     };
 
@@ -4886,6 +5093,17 @@ export function EraVerse() {
                 bgLightHex: '#FCE7F3',
                 actionType: 'open_erashop',
                 shopCategory: 'all'
+              });
+            } else if (hitData.isEraGames) {
+              handleBoardActionRef.current({
+                slot: 'back-center',
+                category: 'ERAGAMES ARCADE HOST',
+                title: 'EraGames Arcade & Arena',
+                subtitle: 'Play Vocab Blitz, Word Scramble & Penalty Shootout',
+                badge: 'PLAY ERAGAMES',
+                accentHex: '#9333EA',
+                bgLightHex: '#F3E8FF',
+                actionType: 'open_eragames'
               });
             } else if (hitData.boardSpec) {
               handleBoardActionRef.current(hitData.boardSpec);
@@ -5685,6 +5903,28 @@ export function EraVerse() {
               bgLightHex: '#FCE7F3',
               actionType: 'open_erashop',
               shopCategory: 'all'
+            };
+          }
+        }
+        if (!nearBoard && activeInteriorBuilding.id === 'speaking') {
+          const distToPixel = Math.hypot(
+            playerState.x - INTERIOR_ORIGIN.x,
+            playerState.z - (INTERIOR_ORIGIN.z - 5.5)
+          );
+          const distToPodium = Math.hypot(
+            playerState.x - INTERIOR_ORIGIN.x,
+            playerState.z - (INTERIOR_ORIGIN.z + 0.8)
+          );
+          if (distToPixel < 5.0 || distToPodium < 4.2) {
+            nearBoard = {
+              slot: 'back-center',
+              category: 'ERAGAMES ARCADE HOST',
+              title: 'EraGames Arcade & Arena',
+              subtitle: 'Play Mini-Games with Pixel, Kai & Sophia to win Era Gems',
+              badge: 'PLAY ERAGAMES',
+              accentHex: '#9333EA',
+              bgLightHex: '#F3E8FF',
+              actionType: 'open_eragames'
             };
           }
         }
@@ -6877,6 +7117,15 @@ export function EraVerse() {
           onClose={() => setActiveBuildingModal(null)}
           eraGems={isSuperAdminTeacherJan ? eraGems : 0}
           eraDollars={isSuperAdminTeacherJan ? eraDollars : 0}
+          playerAvatar={{
+            ...playerProfile,
+            skinTone: playerProfile.skinColor,
+            topColor: playerProfile.shirtColor,
+            bottomColor: playerProfile.pantsColor,
+            hatStyle: playerProfile.hatType,
+            beltStyle: playerProfile.beltType,
+            rideStyle: 'none'
+          }}
           onOpenEraShop={() => {
             soundEngine.playUiClick();
             setEraShopInitialTab('shop');

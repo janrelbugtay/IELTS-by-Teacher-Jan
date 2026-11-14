@@ -14,6 +14,7 @@ interface CourseFolderSectionProps {
   onOpenBatchMoveStudents?: (students: any[]) => void;
   onGenerateCredentials: (u: any) => void;
   onOpenCreateFolder: (courseName: string, parentFolder?: CourseFolder | null) => void;
+  onOpenParentAccess?: (u: any) => void;
 }
 
 const COURSE_THEMES: Record<string, {
@@ -123,7 +124,8 @@ export function CourseFolderSection({
   onOpenCreateStudent,
   onOpenMoveStudent,
   onGenerateCredentials,
-  onOpenCreateFolder
+  onOpenCreateFolder,
+  onOpenParentAccess
 }: CourseFolderSectionProps) {
   // Count custom folders for this course (excluding deleted)
   const courseFolders = allFolders.filter((f) => f.course === courseName && !f.isDeleted);
@@ -216,6 +218,7 @@ export function CourseFolderSection({
           onOpenCreateStudent={onOpenCreateStudent}
           onOpenMoveStudent={onOpenMoveStudent}
           onGenerateCredentials={onGenerateCredentials}
+          onOpenParentAccess={onOpenParentAccess}
         />
       )}
     </>

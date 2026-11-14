@@ -3,13 +3,14 @@ import { Link, useLocation } from 'react-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award , Facebook, Instagram, Youtube, Sun, Moon, Image as ImageIcon } from 'lucide-react';
+import { LogOut, BookOpen, Home, GraduationCap, Menu, X, Bell, User, ChevronDown, Award, ShieldCheck, Facebook, Instagram, Youtube, Sun, Moon, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EraLogo } from './EraLogo';
 import { ChatBox } from './ChatBox';
 import { NotificationDropdown } from './NotificationDropdown';
 import { AdminStudentSearch } from './AdminStudentSearch';
 import { useTheme } from '../contexts/ThemeContext';
+import { useParentLang } from '../lib/parentLocale';
 
 const TiktokIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -64,25 +65,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
   navLinks.push({ name: 'Homework', path: `${classPath}?tab=assignments` });
   navLinks.push({ name: 'EraVerse', path: '/eraverse' });
 
-  const visibleLinks = navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
+  const isParentRoute = location.pathname.startsWith('/parent/') || location.pathname.startsWith('/shared/');
+  const [parentLang] = useParentLang(isParentRoute);
+  const visibleLinks = isParentRoute
+    ? []
+    : navLinks.filter(link => !link.adminOnly || (link.adminOnly && isAdmin));
 
   return (
     <div className="min-h-screen font-sans flex flex-col selection:bg-[#3B82F6] selection:text-white">
       {/* Navbar */}
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-white/90 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-[#E2E8F0]' : 'bg-transparent'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 print:hidden ${
+          isScrolled || isParentRoute ? 'bg-white/95 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-[#E2E8F0]' : 'bg-transparent'
         }`}
       >
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+        <div className="max-w-[1400px] mx-auto px-3.5 sm:px-6 lg:px-8">
+          <div className={`flex items-center justify-between ${isParentRoute ? 'h-14 sm:h-16' : 'h-20'}`}>
             {/* Logo */}
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="flex items-center gap-3 group">
-                <EraLogo className="w-10 h-10 rounded-[14px] shadow-[0_8px_16px_rgba(37,99,235,0.2)] group-hover:shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition-all duration-300" />
+            <div className="flex-shrink-0 flex items-center min-w-0">
+              <Link to={isParentRoute ? location.pathname + location.search : '/'} className="flex items-center gap-2.5 sm:gap-3 group">
+                <EraLogo className={`${isParentRoute ? 'w-8 h-8 sm:w-9 sm:h-9 rounded-xl' : 'w-10 h-10 rounded-[14px]'} shadow-[0_8px_16px_rgba(37,99,235,0.2)] group-hover:shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition-all duration-300 shrink-0`} />
                 <div className="flex flex-col">
-                  <span className="font-bold text-sm sm:text-[15px] leading-tight text-[#0F172A]">Kỷ Nguyên Era</span>
-                  <span className="text-[9px] sm:text-[11px] font-medium text-[#64748B] uppercase tracking-wider">Chi nhánh Phú Hoà</span>
+                  <span className="font-bold text-sm sm:text-[15px] leading-tight text-[#0F172A] whitespace-nowrap">Kỷ Nguyên Era</span>
+                  <span className="text-[9px] sm:text-[11px] font-medium text-[#64748B] uppercase tracking-wider whitespace-nowrap">Chi nhánh Phú Hoà</span>
                 </div>
               </Link>
             </div>
@@ -116,7 +121,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Right Side */}
             <div className="hidden xl:flex items-center gap-5">
-              {!user ? (
+              {isParentRoute ? (
+                <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">
+                  {parentLang === 'vi' ? 'Cổng thông tin Phụ huynh' : 'Parent Portal'}
+                </span>
+              ) : !user ? (
                 <>
                   <Link to="/login" className="text-[15px] font-medium text-[#64748B] hover:text-[#0F172A] transition-colors">Login</Link>
                   <Link to="/login" className="text-[15px] font-semibold bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white px-6 py-2.5 rounded-full hover:shadow-[0_8px_16px_rgba(37,99,235,0.2)] hover:-translate-y-0.5 transition-all duration-300">
@@ -239,14 +248,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile menu button */}
             <div className="xl:hidden flex items-center gap-2">
-              {user && isAdmin && <AdminStudentSearch isMobile />}
-              {user && <NotificationDropdown />}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-xl text-[#64748B] hover:bg-slate-100 transition-colors"
-              >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
+              {isParentRoute ? (
+                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                  {parentLang === 'vi' ? 'Cổng Phụ huynh' : 'Parent Portal'}
+                </span>
+              ) : (
+                <>
+                  {user && isAdmin && <AdminStudentSearch isMobile />}
+                  {user && <NotificationDropdown />}
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="p-2 rounded-xl text-[#64748B] hover:bg-slate-100 transition-colors"
+                  >
+                    {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -360,14 +377,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
       
       {/* Main Content */}
-      <main className={`flex-1 w-full mx-auto mt-20 ${location.pathname === '/' || location.pathname === '/eraverse' ? '' : 'max-w-[1400px] p-4 sm:p-6 lg:p-8'}`}>
+      <main
+        className={`flex-1 w-full mx-auto ${
+          isParentRoute
+            ? 'mt-14 sm:mt-16 max-w-[1400px] px-3 py-3 sm:p-6 lg:p-8 print:mt-0 print:p-0'
+            : location.pathname === '/' || location.pathname === '/eraverse'
+            ? 'mt-20'
+            : 'mt-20 max-w-[1400px] p-4 sm:p-6 lg:p-8'
+        }`}
+      >
         {children}
       </main>
 
-      {location.pathname !== '/eraverse' && <ChatBox />}
+      {location.pathname !== '/eraverse' && !isParentRoute && <ChatBox />}
 
       {/* Footer */}
-      {location.pathname !== '/eraverse' && (
+      {location.pathname !== '/eraverse' && !isParentRoute && (
       <footer className="bg-white border-t border-[#E2E8F0] pt-16 pb-8 mt-auto relative overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">

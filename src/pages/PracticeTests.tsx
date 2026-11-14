@@ -60,6 +60,23 @@ const generateMockTests = (courseName: string) => {
     ];
   }
 
+  if (courseName === 'Starters') {
+    return [
+      {
+        id: 'STARTERS-SPEAKING-001',
+        title: 'Starters Speaking Practice Test 1',
+        skill: 'Speaking',
+        month: 'Test 1',
+        attempts: 1420,
+        difficulty: 'Easy',
+        duration: '10 mins',
+        image: '/assets/aistudio/image_a95ff9e1.png',
+        createdAt: new Date(2026, 0, 1).getTime(),
+        externalLink: '/starters_speaking/test_1/index.html'
+      }
+    ];
+  }
+
   if (courseName !== 'IELTS') {
     return [];
   }
@@ -156,7 +173,7 @@ export function PracticeTests() {
   
   const isRestricted = !isAdmin && normalizedUserCourse && courseId && normalizedUserCourse !== courseId.toLowerCase();
 
-  const activeSkill = searchParams.get('skill') || 'Listening';
+  const activeSkill = searchParams.get('skill') || (courseId === 'starters' ? 'Speaking' : 'Listening');
 
 
   const courseData: Record<string, { name: string, title: string, desc: string }> = {
@@ -453,7 +470,11 @@ export function PracticeTests() {
           <Book className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-slate-900 mb-2">No tests available</h3>
           <p className="text-slate-600">
-            {courseId !== 'ielts' && courseId !== 'pet' ? 'Practice tests are currently only available for IELTS and PET courses.' : 'Try adjusting your search criteria or filters.'}
+            {courseId !== 'ielts' && courseId !== 'pet' && courseId !== 'starters'
+              ? 'Practice tests are currently only available for IELTS, PET, and Starters courses.'
+              : courseId === 'starters' && activeSkill !== 'Speaking'
+              ? 'Speaking test is currently available for Starters. Select the "Speaking" tab above to start Practice Test 1.'
+              : 'Try adjusting your search criteria or filters.'}
           </p>
         </div>
       )}

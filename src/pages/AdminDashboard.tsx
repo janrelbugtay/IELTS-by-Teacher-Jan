@@ -32,7 +32,8 @@ import {
   CheckCheck,
   ExternalLink,
   Radio,
-  FileText
+  FileText,
+  QrCode
 } from 'lucide-react';
 import { format, subDays, subMinutes } from 'date-fns';
 
@@ -41,6 +42,7 @@ import { CourseFolderSection } from '../components/CourseFolderSection';
 import { CreateFolderModal } from '../components/CreateFolderModal';
 import { MoveStudentModal } from '../components/MoveStudentModal';
 import { TrashBinModal } from '../components/TrashBinModal';
+import { ParentAccessModal } from '../components/ParentAccessModal';
 import { CourseFolder } from '../types';
 
 interface UserStats {
@@ -94,6 +96,7 @@ export function AdminDashboard() {
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [isTrashBinModalOpen, setIsTrashBinModalOpen] = useState(false);
+  const [parentAccessUser, setParentAccessUser] = useState<any | null>(null);
 
   const [generatedCredentials, setGeneratedCredentials] = useState<any>(null);
   const [copied, setCopied] = useState(false);
@@ -196,16 +199,17 @@ Please log in and change your password immediately.
   const handleSaveUser = async () => {
     if (!editingUser) return;
     try {
+      const cleanPhotoURL = editPhotoURL.trim();
       await setDoc(doc(db, 'users', editingUser.id), {
         nickname: editNickname,
-        photoURL: editPhotoURL,
+        photoURL: cleanPhotoURL,
         motto: editMotto,
       }, { merge: true });
       
       setUsersList(prev => prev.map(u => u.id === editingUser.id ? {
         ...u, 
         nickname: editNickname, 
-        photoURL: editPhotoURL, 
+        photoURL: cleanPhotoURL, 
         motto: editMotto
       } : u));
       
@@ -269,6 +273,7 @@ Please log in and change your password immediately.
       const data: Submission[] = [];
       snapshot.forEach((doc) => {
         const d = doc.data();
+        if (d.isDeleted) return;
         data.push({ 
             id: doc.id, 
             ...d,
@@ -596,6 +601,7 @@ Please log in and change your password immediately.
                 onOpenBatchMoveStudents={handleOpenBatchMoveStudents}
                 onGenerateCredentials={handleGenerateCredentials}
                 onOpenCreateFolder={handleOpenCreateFolder}
+                onOpenParentAccess={(u) => setParentAccessUser(u)}
               />
             );
           })}
@@ -748,6 +754,14 @@ Please log in and change your password immediately.
                       <td className="px-6 py-4 text-sm text-natural-600">{createdStr}</td>
                       <td className="px-6 py-4 text-sm text-natural-600">{activeStr}</td>
                       <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                        {/* Parent QR Button */}
+                        <button
+                          onClick={() => setParentAccessUser(u)}
+                          className="text-indigo-600 hover:text-indigo-800 font-bold text-xs bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg border border-indigo-200 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                          title="Generate Parent Instant Access QR Code & Link"
+                        >
+                          <QrCode className="w-3.5 h-3.5" /> Parent QR
+                        </button>
                         {/* Move Student Button */}
                         <button
                           onClick={() => handleOpenMoveStudent(u)}
@@ -836,7 +850,7 @@ Please log in and change your password immediately.
                 {editPhotoURL && (
                   <div className="mt-4 flex items-center justify-center">
                     <div className="w-20 h-20 rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-50">
-                      <img src={editPhotoURL || undefined} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                      <img src={editPhotoURL || undefined} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
                     </div>
                   </div>
                 )}
@@ -902,7 +916,7 @@ Please log in and change your password immediately.
                   }).map(u => (
                     <div key={u.id} className="flex items-center gap-4 p-4 rounded-xl border border-natural-200 bg-white shadow-sm hover:shadow-md transition-shadow">
                       <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border-2 border-white shadow-sm overflow-hidden text-xl font-bold text-blue-600 uppercase">
-                        {u.photoURL ? <img src={u.photoURL || undefined} alt={u.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email || "U")}&background=f1f5f9&color=475569`; }} /> : (u.name || u.email || 'U')[0]}
+                        {u.photoURL ? <img src={u.photoURL || undefined} alt={u.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.email || "U")}&background=f1f5f9&color=475569`; }} /> : (u.name || u.email || 'U')[0]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
@@ -1051,6 +1065,14 @@ Please log in and change your password immediately.
         onPermanentDeleteStudent={handlePermanentDeleteStudent}
         onPermanentDeleteFolder={handlePermanentDeleteFolder}
         onEmptyTrash={handleEmptyTrash}
+      />
+
+      <ParentAccessModal
+        isOpen={Boolean(parentAccessUser)}
+        onClose={() => setParentAccessUser(null)}
+        userId={parentAccessUser?.uid || parentAccessUser?.id || ''}
+        userProfile={parentAccessUser}
+        course={parentAccessUser?.course || 'IELTS'}
       />
     </div>
   );

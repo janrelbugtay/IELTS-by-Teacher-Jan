@@ -13,7 +13,8 @@ import {
   Check, 
   Users, 
   Shield,
-  Layers
+  Layers,
+  QrCode
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { doc, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
@@ -29,6 +30,7 @@ interface CourseFolderModalProps {
   onOpenCreateStudent: (courseName: string, folderId?: string | null, folderName?: string | null, lock?: boolean) => void;
   onOpenMoveStudent: (student: any) => void;
   onGenerateCredentials: (u: any) => void;
+  onOpenParentAccess?: (u: any) => void;
 }
 
 export function CourseFolderModal({
@@ -39,7 +41,8 @@ export function CourseFolderModal({
   onOpenCreateFolder,
   onOpenCreateStudent,
   onOpenMoveStudent,
-  onGenerateCredentials
+  onGenerateCredentials,
+  onOpenParentAccess
 }: CourseFolderModalProps) {
   // Navigation stack: current active folder inside this course (null = course root)
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -523,6 +526,18 @@ export function CourseFolderModal({
                                 <FolderInput className="w-3.5 h-3.5 text-blue-600" />
                                 <span>Move</span>
                               </button>
+
+                              {/* Parent QR Button */}
+                              {onOpenParentAccess && (
+                                <button
+                                  onClick={() => onOpenParentAccess(u)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-lg transition-colors border border-indigo-200 shadow-2xs cursor-pointer"
+                                  title="Parent Instant Access QR Code & Link"
+                                >
+                                  <QrCode className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span className="hidden sm:inline">Parent QR</span>
+                                </button>
+                              )}
 
                               {/* Creds Button */}
                               <button

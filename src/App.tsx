@@ -16,6 +16,7 @@ const CreateAssignment = lazy(() => import('./pages/CreateAssignment').then(m =>
 const ViewAssignment = lazy(() => import('./pages/ViewAssignment').then(m => ({ default: m.ViewAssignment })));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const TestResult = lazy(() => import('./pages/TestResult').then(m => ({ default: m.TestResult })));
+const ParentTestResult = lazy(() => import('./pages/ParentTestResult').then(m => ({ default: m.ParentTestResult })));
 const EraAIIeltsApp = lazy(() => import('./pages/EraAIIeltsApp').then(m => ({ default: m.EraAIIeltsApp })));
 const ComputerWritingTest = lazy(() => import('./pages/ComputerWritingTest').then(m => ({ default: m.ComputerWritingTest })));
 const ComputerSpeakingTest = lazy(() => import('./pages/ComputerSpeakingTest').then(m => ({ default: m.ComputerSpeakingTest })));
@@ -81,10 +82,14 @@ function AppContent() {
                 <Route path="/ielts/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/pet/dashboard" element={<ProtectedRoute><PetDashboard /></ProtectedRoute>} />
                 <Route path="/ket/dashboard" element={<ProtectedRoute><KetDashboard /></ProtectedRoute>} />
-                <Route path="/shared/dashboard/:userId" element={<Dashboard isShared={true} />} />
-                <Route path="/shared/pet/dashboard/:userId" element={<PetDashboard isShared={true} />} />
-                <Route path="/shared/ket/dashboard/:userId" element={<KetDashboard isShared={true} />} />
-                <Route path="/shared/results/:id" element={<TestResult isShared={true} />} />
+                <Route path="/shared/dashboard/:userId" element={<Dashboard isShared={true} isParentView={true} />} />
+                <Route path="/shared/pet/dashboard/:userId" element={<PetDashboard isShared={true} isParentView={true} />} />
+                <Route path="/shared/ket/dashboard/:userId" element={<KetDashboard isShared={true} isParentView={true} />} />
+                <Route path="/shared/results/:id" element={<ParentTestResult />} />
+                <Route path="/parent/dashboard/:userId" element={<Dashboard isShared={true} isParentView={true} />} />
+                <Route path="/parent/pet/dashboard/:userId" element={<PetDashboard isShared={true} isParentView={true} />} />
+                <Route path="/parent/ket/dashboard/:userId" element={<KetDashboard isShared={true} isParentView={true} />} />
+                <Route path="/parent/results/:id" element={<ParentTestResult />} />
                 <Route path="/writing-examiner" element={<ProtectedRoute><EraAIIeltsApp /></ProtectedRoute>} />
                 <Route path="/results/:id" element={<ProtectedRoute><TestResult /></ProtectedRoute>} />
                 <Route path="/assignment/:id" element={<ProtectedRoute><ViewAssignment /></ProtectedRoute>} />

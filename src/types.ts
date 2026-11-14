@@ -63,6 +63,9 @@ export interface Submission {
   aiFeedback?: string;
   timeSpent?: number; // in seconds
   createdAt: any;
+  isDeleted?: boolean;
+  deletedAt?: any;
+  deletedBy?: string;
 }
 
 export interface Class {

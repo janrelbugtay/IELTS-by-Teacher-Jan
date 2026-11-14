@@ -227,7 +227,7 @@ export function NotificationDropdown() {
       limit(100)
     );
     const unsubSubs = onSnapshot(subQ, (snapshot) => {
-      rawSubs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      rawSubs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })).filter((s: any) => !s.isDeleted);
       mergeAndSet();
     }, (error) => {
       console.warn('Submissions snapshot error:', error);
