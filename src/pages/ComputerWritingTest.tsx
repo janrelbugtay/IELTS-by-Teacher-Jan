@@ -6,7 +6,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'fireba
 import { renderMarkdown } from '../lib/markdown';
 import { Award, CheckCircle2 } from 'lucide-react';
 import { EraLogo } from '../components/EraLogo';
-import { WritingPerformanceReport } from '../components/WritingPerformanceReport';
+import { WritingPerformanceReport, formatWritingReportMarkdown } from '../components/WritingPerformanceReport';
 import { createSubmissionNotification } from '../lib/notificationService';
 
 import { JanuaryWritingTest } from './JanuaryWritingTest';
@@ -589,7 +589,6 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
         }
     }
 
-    
     if (id === '3' && !submissionId) {
         return <JanuaryWritingTest />;
     }
@@ -602,7 +601,6 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     if (id === '15' && !submissionId) {
         return <AprilWritingTest />;
     }
-
     if (id === '19' && !submissionId) {
         return <MayWritingTest />;
     }
@@ -628,6 +626,39 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
         return <OctoberWritingTest />;
     }
 
+    return (
+        <ComputerWritingTestInner
+            id={id}
+            submissionId={submissionId}
+            testId={testId}
+            typeLabel={typeLabel}
+            testTitle={testTitle}
+            navigate={navigate}
+            user={user}
+            isAdmin={isAdmin}
+        />
+    );
+};
+
+const ComputerWritingTestInner = ({
+    id,
+    submissionId,
+    testId,
+    typeLabel,
+    testTitle,
+    navigate,
+    user,
+    isAdmin
+}: {
+    id?: string;
+    submissionId?: string;
+    testId?: string;
+    typeLabel: string;
+    testTitle: string;
+    navigate: ReturnType<typeof useNavigate>;
+    user: any;
+    isAdmin: boolean;
+}) => {
     const [publishConfig, setPublishConfig] = useState({ part1: true, part2: true });
 
     useEffect(() => {
@@ -696,10 +727,34 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
     const [editedFeedback, setEditedFeedback] = useState("");
     const [editedBandScore, setEditedBandScore] = useState(0);
 
-    const handleGenerateReport = async () => {
+    const computeCombinedWritingState = (rawData: { part1?: any; part2?: any }) => {
+        const b1 = parseFloat(rawData?.part1?.scores?.overallBand);
+        const b2 = parseFloat(rawData?.part2?.scores?.overallBand);
+        let combinedBand = 0;
+        if (!isNaN(b1) && !isNaN(b2)) {
+            combinedBand = Math.round(((b1 + b2 * 2) / 3) * 2) / 2;
+        } else if (!isNaN(b1)) {
+            combinedBand = b1;
+        } else if (!isNaN(b2)) {
+            combinedBand = b2;
+        }
+
+        const partsMarkdown: string[] = [];
+        if (rawData?.part1) partsMarkdown.push(formatWritingReportMarkdown(1, rawData.part1));
+        if (rawData?.part2) partsMarkdown.push(formatWritingReportMarkdown(2, rawData.part2));
+
+        return {
+            combinedBand,
+            aiFeedbackMarkdown: partsMarkdown.join('\n---\n\n'),
+            newRawStr: JSON.stringify(rawData)
+        };
+    };
+
+    const handleGenerateReport = async (taskNumOverride?: number) => {
+        const taskNum = taskNumOverride || state.activePart;
+        updateState({ activePart: taskNum });
         setIsEvaluating(true);
         try {
-            const taskNum = state.activePart;
             const textToEvaluate = taskNum === 1 ? state.textPart1 : state.textPart2;
             const rawPrompt = taskNum === 1 ? getCustomPrompt(id).t1Raw : getCustomPrompt(id).t2Raw;
             
@@ -726,13 +781,6 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
 
             const data = await response.json();
             
-            // Generate markdown string for legacy compatibility or fallback
-            const formatReport = (t: number, d: any) => `### Task ${t} Evaluation\n**Overall Band Score:** ${d.scores?.overallBand}\n\n**Task Achievement / Response:** ${d.scores?.taskAchievement}\n*${d.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${d.scores?.coherenceCohesion}\n*${d.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${d.scores?.lexicalResource}\n*${d.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${d.scores?.grammaticalRange}\n*${d.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${d.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${d.inlineMarkedEssay || ''}\n`;
-            
-            const aiFeedbackMarkdown = formatReport(taskNum, data);
-            const bandScore = parseFloat(data.scores?.overallBand) || 0;
-            
-            // get existing raw data if any
             let rawData: any = {};
             try {
                  if (state.aiFeedbackRaw) rawData = JSON.parse(state.aiFeedbackRaw);
@@ -740,20 +788,20 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
             
             if (taskNum === 1) rawData.part1 = data;
             if (taskNum === 2) rawData.part2 = data;
-            const newRawStr = JSON.stringify(rawData);
+            const { combinedBand, aiFeedbackMarkdown, newRawStr } = computeCombinedWritingState(rawData);
 
             setState(prev => ({
                 ...prev,
                 aiFeedback: aiFeedbackMarkdown,
                 aiFeedbackRaw: newRawStr,
-                aiBandScore: bandScore
+                aiBandScore: combinedBand
             }));
 
             if (submissionId) {
                 const { updateDoc, doc } = await import('firebase/firestore');
                 const docRef = doc(db, 'submissions', submissionId);
                 await updateDoc(docRef, {
-                    bandScore: bandScore,
+                    bandScore: combinedBand,
                     aiFeedback: aiFeedbackMarkdown,
                     aiFeedbackRaw: newRawStr,
                     requiresEvaluation: false
@@ -765,7 +813,7 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                     const parsed = JSON.parse(saved);
                     parsed.aiFeedback = aiFeedbackMarkdown;
                     parsed.aiFeedbackRaw = newRawStr;
-                    parsed.aiBandScore = bandScore;
+                    parsed.aiBandScore = combinedBand;
                     localStorage.setItem(key, JSON.stringify(parsed));
                 }
             }
@@ -1105,58 +1153,78 @@ export const ComputerWritingTest = ({ submissionId }: { submissionId?: string })
                         </div>
 
                         <div id="result-sheets-container" className="flex flex-col items-center pb-20 space-y-12 w-full">
-                            {(!publishConfig || publishConfig.part1) && (
-                                <WritingPerformanceReport 
-                                    taskNum={1} 
-                                    text={state.textPart1}
-                                    report={(() => { try { return JSON.parse(state.aiFeedbackRaw).part1; } catch(e) { return null; } })()}
-                                    loadingReport={false}
-                                    errorText={""}
-                                    candidateName={state.studentName}
-                                    submissionId={submissionId}
-                                    onReevaluate={() => { updateState({activePart: 1}); setTimeout(handleGenerateReport, 0); }}
-                                    onReportEdited={async (taskNum: number, newReport: any) => {
-                                        let rawData: any = {};
-                                        try { if (state.aiFeedbackRaw) rawData = JSON.parse(state.aiFeedbackRaw); } catch(e) {}
-                                        rawData.part1 = newReport;
-                                        const newRawStr = JSON.stringify(rawData);
-                                        const overallBand = parseFloat(newReport.scores?.overallBand) || 0;
-                                        setState(prev => ({ ...prev, aiFeedbackRaw: newRawStr, aiBandScore: overallBand }));
-                                        
-                                        if (submissionId) {
-                                            const { updateDoc, doc } = await import('firebase/firestore');
-                                            const docRef = doc(db, 'submissions', submissionId);
-                                            await updateDoc(docRef, { aiFeedbackRaw: newRawStr, bandScore: overallBand, requiresEvaluation: false });
+                            {(() => {
+                                let parsedRaw: any = {};
+                                try {
+                                    if (state.aiFeedbackRaw) parsedRaw = JSON.parse(state.aiFeedbackRaw);
+                                } catch (e) {}
+
+                                const persistTaskReportUpdate = async (taskNum: number, newReport: any) => {
+                                    let rawData: any = {};
+                                    try { if (state.aiFeedbackRaw) rawData = JSON.parse(state.aiFeedbackRaw); } catch(e) {}
+                                    if (taskNum === 1) rawData.part1 = newReport;
+                                    else rawData.part2 = newReport;
+                                    const { combinedBand, aiFeedbackMarkdown, newRawStr } = computeCombinedWritingState(rawData);
+                                    setState(prev => ({ ...prev, aiFeedback: aiFeedbackMarkdown, aiFeedbackRaw: newRawStr, aiBandScore: combinedBand }));
+
+                                    if (submissionId) {
+                                        const { updateDoc, doc } = await import('firebase/firestore');
+                                        const docRef = doc(db, 'submissions', submissionId);
+                                        await updateDoc(docRef, { aiFeedback: aiFeedbackMarkdown, aiFeedbackRaw: newRawStr, bandScore: combinedBand, requiresEvaluation: false });
+                                    } else if (id) {
+                                        const key = `${STORAGE_KEY}_${id}`;
+                                        const saved = localStorage.getItem(key);
+                                        if (saved) {
+                                            const parsed = JSON.parse(saved);
+                                            parsed.aiFeedback = aiFeedbackMarkdown;
+                                            parsed.aiFeedbackRaw = newRawStr;
+                                            parsed.aiBandScore = combinedBand;
+                                            localStorage.setItem(key, JSON.stringify(parsed));
                                         }
-                                    }}
-                                />
-                            )}
-                            {(!publishConfig || publishConfig.part2) && (
-                                <WritingPerformanceReport 
-                                    taskNum={2} 
-                                    text={state.textPart2}
-                                    report={(() => { try { return JSON.parse(state.aiFeedbackRaw).part2; } catch(e) { return null; } })()}
-                                    loadingReport={false}
-                                    errorText={""}
-                                    candidateName={state.studentName}
-                                    submissionId={submissionId}
-                                    onReevaluate={() => { updateState({activePart: 2}); setTimeout(handleGenerateReport, 0); }}
-                                    onReportEdited={async (taskNum: number, newReport: any) => {
-                                        let rawData: any = {};
-                                        try { if (state.aiFeedbackRaw) rawData = JSON.parse(state.aiFeedbackRaw); } catch(e) {}
-                                        rawData.part2 = newReport;
-                                        const newRawStr = JSON.stringify(rawData);
-                                        const overallBand = parseFloat(newReport.scores?.overallBand) || 0;
-                                        setState(prev => ({ ...prev, aiFeedbackRaw: newRawStr, aiBandScore: overallBand }));
-                                        
-                                        if (submissionId) {
-                                            const { updateDoc, doc } = await import('firebase/firestore');
-                                            const docRef = doc(db, 'submissions', submissionId);
-                                            await updateDoc(docRef, { aiFeedbackRaw: newRawStr, bandScore: overallBand, requiresEvaluation: false });
-                                        }
-                                    }}
-                                />
-                            )}
+                                    }
+                                };
+
+                                const handleSaveInlineFinalAnswer = async (taskNum: number, newText: string) => {
+                                    let rawData: any = {};
+                                    try { if (state.aiFeedbackRaw) rawData = JSON.parse(state.aiFeedbackRaw); } catch(e) {}
+                                    const targetReport = taskNum === 1 ? rawData.part1 : rawData.part2;
+                                    if (!targetReport) return;
+                                    await persistTaskReportUpdate(taskNum, { ...targetReport, finalCorrectedAnswer: newText });
+                                };
+
+                                return (
+                                    <>
+                                        {(!publishConfig || publishConfig.part1) && (
+                                            <WritingPerformanceReport 
+                                                taskNum={1} 
+                                                text={state.textPart1}
+                                                report={parsedRaw?.part1 || null}
+                                                loadingReport={isEvaluating && state.activePart === 1}
+                                                errorText={""}
+                                                candidateName={state.studentName}
+                                                submissionId={submissionId}
+                                                onReevaluate={() => handleGenerateReport(1)}
+                                                onReportEdited={persistTaskReportUpdate}
+                                                onSaveInlineFinalAnswer={handleSaveInlineFinalAnswer}
+                                            />
+                                        )}
+                                        {(!publishConfig || publishConfig.part2) && (
+                                            <WritingPerformanceReport 
+                                                taskNum={2} 
+                                                text={state.textPart2}
+                                                report={parsedRaw?.part2 || null}
+                                                loadingReport={isEvaluating && state.activePart === 2}
+                                                errorText={""}
+                                                candidateName={state.studentName}
+                                                submissionId={submissionId}
+                                                onReevaluate={() => handleGenerateReport(2)}
+                                                onReportEdited={persistTaskReportUpdate}
+                                                onSaveInlineFinalAnswer={handleSaveInlineFinalAnswer}
+                                            />
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}

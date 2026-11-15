@@ -7,7 +7,7 @@ import { Assignment, Submission, OperationType } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { handleFirestoreError } from '../../lib/errorHandler';
-import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, RotateCcw, Edit2, X, Camera, Upload, Play, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff, ExternalLink, Award, QrCode, ShieldCheck, AlertCircle, Lock, Printer } from 'lucide-react';
+import { BookOpen, FileText, Headphones, PenTool, Book, Mic, CheckCircle2, ArrowRight, Trash2, RotateCcw, Edit2, X, Camera, Upload, Play, PlayCircle, Plus, Video, Link as LinkIcon, Share2, Folder, ChevronDown, ChevronRight, Key, Eye, EyeOff, ExternalLink, Award, QrCode, ShieldCheck, AlertCircle, Lock, Printer, Clock } from 'lucide-react';
 import { StudentCredentialsModal } from '../../components/StudentCredentialsModal';
 import { ParentAccessModal } from '../../components/ParentAccessModal';
 import { useParentLang } from '../../lib/parentLocale';
@@ -1156,22 +1156,24 @@ export function Dashboard({ isShared = false, isParentView = false }: { isShared
 
       {/* Independent Sections for Skills */}
       <div className="space-y-8 sm:space-y-12 mt-8 sm:mt-12">
-        {/* Speaking Recordings - Immersive Purple Theme */}
-        <section className="space-y-4 sm:space-y-6">
+        {/* Online Speaking Tests - Redesigned with Band Score & Evaluation Status */}
+        <section className="space-y-4 sm:space-y-5">
           <div className="flex items-center justify-between border-b border-purple-100 pb-3 sm:pb-4 gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-100 flex items-center justify-center shadow-xs shrink-0">
                 <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
-              <h2 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{isVi ? 'Bài thi Nói trực tuyến' : 'Online Speaking Tests'}</h2>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-2xl font-black text-slate-900 truncate">{isVi ? 'Bài thi Nói trực tuyến' : 'Online Speaking Tests'}</h2>
+              </div>
             </div>
             <button onClick={() => navigate(getTabUrl('speaking'))} className="text-xs sm:text-sm font-bold text-purple-600 hover:text-purple-800 transition-colors uppercase tracking-wider sm:tracking-widest flex items-center gap-1 shrink-0 cursor-pointer">
               {isVi ? 'Xem tất cả' : 'View All'} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="bg-gradient-to-b from-white via-purple-50/20 to-purple-50/40 rounded-3xl sm:rounded-[2rem] border border-purple-200/80 shadow-[0_10px_30px_rgba(168,85,247,0.08)] overflow-hidden">
+          <div className="bg-white rounded-3xl border border-purple-200/80 shadow-[0_8px_28px_rgba(147,51,234,0.06)] overflow-hidden">
             <div 
-              className="p-4 sm:p-6 flex items-center justify-between gap-3 bg-gradient-to-r from-purple-50 via-purple-100/40 to-fuchsia-50/30 border-b border-purple-100 cursor-pointer hover:bg-purple-100/50 transition-colors"
+              className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3 bg-gradient-to-r from-purple-50/90 via-fuchsia-50/35 to-white border-b border-purple-100 cursor-pointer hover:from-purple-50 hover:to-purple-50/30 transition-colors"
               onClick={() => setSpeakingFolderOpen(!speakingFolderOpen)}
             >
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -1183,54 +1185,142 @@ export function Dashboard({ isShared = false, isParentView = false }: { isShared
                   <p className="text-xs sm:text-sm text-slate-500 truncate">{isVi ? 'Danh sách bài thi Nói trực tuyến đã nộp' : 'Your online speaking test submissions'}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                <span className="bg-purple-600 text-white font-black px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs shadow-xs tracking-wide whitespace-nowrap">
-                  {isVi ? `${speakingSubs.length} bài` : `${speakingSubs.length} items`}
+              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                {(() => {
+                  const evaluatedCount = speakingSubs.filter(s => isSpeakingEvaluated(s) && s.bandScore !== undefined && s.bandScore !== null).length;
+                  return speakingSubs.length > 0 ? (
+                    <span className="hidden sm:inline-flex items-center text-xs font-semibold text-slate-500 tabular-nums">
+                      {isVi ? `${evaluatedCount}/${speakingSubs.length} đã chấm` : `${evaluatedCount}/${speakingSubs.length} evaluated`}
+                    </span>
+                  ) : null;
+                })()}
+                <span className="bg-purple-600 text-white font-black px-3 sm:px-3.5 py-1 rounded-full text-xs shadow-xs tracking-wide whitespace-nowrap tabular-nums">
+                  {isVi ? `${speakingSubs.length} bài` : `${speakingSubs.length} ${speakingSubs.length === 1 ? 'item' : 'items'}`}
                 </span>
                 {speakingFolderOpen ? <ChevronDown className="w-5 h-5 text-purple-600" /> : <ChevronRight className="w-5 h-5 text-purple-600" />}
               </div>
             </div>
             {speakingFolderOpen && (
-              <div className="p-4 sm:p-6 bg-purple-50/30">
-                <div className="space-y-3 sm:space-y-4">
-                  {speakingSubs.slice(0, 4).map(sub => {
-                    const assignment = assignments.find(a => a.id === sub.assignmentId);
-                    const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
-                    return (
-                      <div 
-                        key={sub.id} 
-                        onClick={() => navigate(getResultUrl(sub.id))}
-                        className="bg-white rounded-[1.25rem] border border-purple-100/90 shadow-xs hover:border-purple-300 hover:shadow-md hover:bg-purple-50/20 transition-all flex items-center justify-between gap-3 p-3.5 sm:p-4 cursor-pointer"
-                      >
-                        <div className="flex flex-col min-w-0">
-                          <h3 className="font-bold text-slate-900 mb-1 text-sm sm:text-base truncate">{title}</h3>
-                          
-                          <div className="flex items-center gap-2 text-xs sm:text-sm">
-                            <span className="text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m 0s'}</span>
-                            <span className="text-purple-300">•</span>
-                            <span className="text-slate-500">{sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A'}</span>
+              <div className="divide-y divide-purple-100/80 bg-white">
+                {speakingSubs.slice(0, 4).map(sub => {
+                  const assignment = assignments.find(a => a.id === sub.assignmentId);
+                  const title = getFallbackTitle(sub.assignmentId, sub.assignmentTitle) || assignment?.title || 'Unknown Test';
+                  const evaluated = isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null;
+                  const durationStr = sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '14m 0s';
+                  const dateStr = sub.createdAt ? format(sub.createdAt, 'MMM d') : 'N/A';
+
+                  return (
+                    <div 
+                      key={sub.id} 
+                      onClick={() => navigate(getResultUrl(sub.id))}
+                      className="px-4 sm:px-6 py-4 hover:bg-purple-50/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${evaluated ? 'bg-purple-100 text-purple-700' : 'bg-amber-50 text-amber-600 border border-amber-200/70'}`}>
+                          <Mic className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate group-hover:text-purple-700 transition-colors">{title}</h3>
+                          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-slate-500 mt-0.5 tabular-nums">
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              {durationStr}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span>{dateStr}</span>
+                            {evaluated && (
+                              <>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-emerald-700 font-semibold">{isVi ? 'Đã có điểm' : 'Evaluated'}</span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button className="bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-xl transition-colors text-center pointer-events-none">
-                            {isVi ? 'Nhận xét' : 'Feedback'}
+                      </div>
+                      
+                      <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 shrink-0 pl-13 sm:pl-0">
+                        {/* Band Score or To be evaluated status */}
+                        {editingScoreId === sub.id ? (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="9"
+                              value={editScoreValue}
+                              onChange={(e) => setEditScoreValue(e.target.value)}
+                              className="w-16 px-2 py-1 text-sm font-bold border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 tabular-nums"
+                              placeholder="Band"
+                              title="Band Score"
+                              autoFocus
+                            />
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditScore(sub.id); }} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Save Score">
+                              <CheckCircle2 className="w-4 h-4" />
+                            </button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingScoreId(null); }} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors" title="Cancel">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            {evaluated ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-100/90 border border-purple-200 text-purple-900 whitespace-nowrap" title="Band Score">
+                                <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                <span className="text-xs font-bold text-purple-700">Band</span>
+                                <span className="text-sm font-black text-purple-950 tabular-nums">{Number(sub.bandScore).toFixed(1)}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-800 text-xs font-bold whitespace-nowrap">
+                                <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                <span>{isVi ? 'Chờ đánh giá' : 'To be evaluated'}</span>
+                              </span>
+                            )}
+                            {canAdminEdit && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingScoreId(sub.id);
+                                  setEditScoreValue(sub.bandScore !== undefined && sub.bandScore !== null ? sub.bandScore.toString() : '');
+                                  setEditRawScoreValue('');
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+                                title={isVi ? 'Chấm điểm nhanh' : 'Edit Band Score'}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); navigate(getResultUrl(sub.id)); }}
+                            className="bg-purple-50 hover:bg-purple-600 text-purple-800 hover:text-white border border-purple-200/80 hover:border-purple-600 text-xs font-bold py-2 px-3.5 sm:px-4 rounded-xl transition-colors whitespace-nowrap cursor-pointer"
+                          >
+                            {evaluated ? (isVi ? 'Nhận xét' : 'Feedback') : canAdminEdit ? (isVi ? 'Chấm điểm' : 'Evaluate') : (isVi ? 'Xem bài' : 'Feedback')}
                           </button>
                           {canAdminEdit && (
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTest(sub.id, e); }} className="bg-slate-100/70 hover:bg-red-50 text-slate-400 hover:text-red-600 p-2.5 rounded-xl transition-colors flex items-center justify-center" title="Delete Test">
-                              <Trash2 className="w-[18px] h-[18px]" />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteTest(sub.id, e); }}
+                              className="bg-slate-100/80 hover:bg-red-50 text-slate-400 hover:text-red-600 p-2 rounded-xl transition-colors flex items-center justify-center cursor-pointer"
+                              title="Delete Test"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
                       </div>
-                    );
-                  })}
-                  {speakingSubs.length === 0 && (
-                    <div className="py-10 sm:py-12 text-center text-sm text-slate-500 bg-white rounded-[1.5rem] border border-purple-200 border-dashed">
-                      {isVi ? 'Chưa có bài thi Nói trực tuyến nào.' : 'No online speaking tests yet.'}
                     </div>
-                  )}
-                </div>
+                  );
+                })}
+                {speakingSubs.length === 0 && (
+                  <div className="py-10 sm:py-12 px-4 text-center text-sm text-slate-500">
+                    {isVi ? 'Chưa có bài thi Nói trực tuyến nào.' : 'No online speaking tests yet.'}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1353,9 +1443,12 @@ export function Dashboard({ isShared = false, isParentView = false }: { isShared
                         
                         <div className="flex items-center gap-2 mb-3 mt-1.5 flex-wrap">
                           {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? (
-                            <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-black text-xs shadow-xs">Band {Number(sub.bandScore).toFixed(1)}</span>
+                            <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-black text-xs shadow-xs tabular-nums">Band {Number(sub.bandScore).toFixed(1)}</span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-extrabold text-xs">{isVi ? 'Chờ chấm' : 'Pending'}</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-800 font-bold text-xs">
+                              <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                              {isVi ? 'Chờ đánh giá' : 'To be evaluated'}
+                            </span>
                           )}
                           <span className="text-purple-300">•</span>
                           <span className="text-xs font-medium text-slate-500">{sub.timeSpent ? `${Math.floor(sub.timeSpent / 60)}m ${sub.timeSpent % 60}s` : '15m'}</span>
@@ -1720,7 +1813,16 @@ export function Dashboard({ isShared = false, isParentView = false }: { isShared
                         ) : (
                           <div className="flex items-center justify-end gap-2">
                             {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
-                             {(type !== 'speaking' || isSpeakingEvaluated(sub)) && sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+                             {(type !== 'speaking' || isSpeakingEvaluated(sub)) && sub.bandScore !== undefined && sub.bandScore !== null ? (
+                               <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base tabular-nums" title="Band Score">{sub.bandScore.toFixed(1)}</span>
+                             ) : type === 'speaking' ? (
+                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold">
+                                 <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                 {isVi ? 'Chờ đánh giá' : 'To be evaluated'}
+                               </span>
+                             ) : (
+                               <span className="text-slate-400">TBD</span>
+                             )}
                             {canAdminEdit && (
                               <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -2403,7 +2505,17 @@ export function Dashboard({ isShared = false, isParentView = false }: { isShared
                             ) : (
                               <div className="flex items-center justify-end gap-2">
                                 {sub.score !== undefined && sub.score !== null && <span className="text-slate-500 font-medium mr-2 text-sm" title="Raw Score">{sub.score}/40</span>}
-         {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? <span className="bg-blue-50 text-[#1E4DB7] px-3 py-1.5 rounded-lg border border-blue-100 text-base" title="Band Score">{sub.bandScore.toFixed(1)}</span> : <span className="text-slate-400">TBD</span>}
+         {isSpeakingEvaluated(sub) && sub.bandScore !== undefined && sub.bandScore !== null ? (
+           <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-800 px-3 py-1.5 rounded-lg border border-purple-200 text-sm sm:text-base font-black tabular-nums" title="Band Score">
+             <Award className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+             Band {sub.bandScore.toFixed(1)}
+           </span>
+         ) : (
+           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold">
+             <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+             {isVi ? 'Chờ đánh giá' : 'To be evaluated'}
+           </span>
+         )}
                                 {canAdminEdit && (
                                   <button onClick={(e) => { e.stopPropagation(); setEditingScoreId(sub.id); setEditScoreValue(sub.bandScore?.toString() || ''); setEditRawScoreValue(sub.score?.toString() || ''); }} className="text-slate-400 hover:text-blue-600 p-1" title="Edit Score">
                                     <Edit2 className="w-3.5 h-3.5" />

@@ -215,6 +215,7 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
         if (isBlinking) {
           const blinkPhase = Math.sin((blinkTimer / 0.15) * Math.PI);
           built.eyelids.forEach((lid) => {
+            lid.visible = true;
             lid.scale.y = 0.05 + Math.max(0, blinkPhase) * 0.98;
           });
           if (blinkTimer >= 0.15) {
@@ -222,6 +223,7 @@ export const EraVerseAvatar3D: React.FC<EraVerseAvatar3DProps> = (props) => {
             blinkTimer = 0;
             built.eyelids.forEach((lid) => {
               lid.scale.y = 0.05;
+              lid.visible = false;
             });
           }
         }

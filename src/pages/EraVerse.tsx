@@ -123,6 +123,48 @@ const ROOM_SONGS: Record<string, RoomSongSpec> = {
     wave: 'sine',
     notes: [659.25, 783.99, 987.77, 783.99, 659.25, 587.33, 493.88, 587.33, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 587.33, 493.88],
     bassNotes: [164.81, 164.81, 196.0, 196.0, 220.0, 220.0, 146.83, 146.83]
+  },
+  class_starters: {
+    name: 'Starters Sunny Classroom Melody',
+    tempoMs: 340,
+    wave: 'triangle',
+    notes: [523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 659.25, 523.25, 392.0],
+    bassNotes: [261.63, 261.63, 196.0, 196.0, 220.0, 220.0, 174.61, 174.61]
+  },
+  class_movers: {
+    name: 'Movers Interactive Study Rhythm',
+    tempoMs: 330,
+    wave: 'sine',
+    notes: [587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 493.88, 587.33, 783.99, 880.0, 987.77, 880.0, 783.99, 659.25, 587.33],
+    bassNotes: [293.66, 293.66, 220.0, 220.0, 246.94, 246.94, 196.0, 196.0]
+  },
+  class_flyers: {
+    name: 'Flyers Skyward Classroom Chime',
+    tempoMs: 320,
+    wave: 'triangle',
+    notes: [659.25, 783.99, 880.0, 1046.5, 880.0, 783.99, 659.25, 523.25, 587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 523.25],
+    bassNotes: [261.63, 261.63, 220.0, 220.0, 174.61, 174.61, 196.0, 196.0]
+  },
+  class_ket: {
+    name: 'Cambridge KET Classroom Focus',
+    tempoMs: 350,
+    wave: 'sine',
+    notes: [440.0, 523.25, 659.25, 783.99, 659.25, 523.25, 440.0, 392.0, 440.0, 523.25, 659.25, 880.0, 783.99, 659.25, 523.25, 440.0],
+    bassNotes: [220.0, 220.0, 174.61, 174.61, 261.63, 261.63, 196.0, 196.0]
+  },
+  class_pet: {
+    name: 'Cambridge PET Study Harmony',
+    tempoMs: 350,
+    wave: 'triangle',
+    notes: [493.88, 587.33, 739.99, 880.0, 739.99, 587.33, 493.88, 440.0, 493.88, 587.33, 739.99, 987.77, 880.0, 739.99, 587.33, 493.88],
+    bassNotes: [246.94, 246.94, 196.0, 196.0, 220.0, 220.0, 185.0, 185.0]
+  },
+  class_ielts: {
+    name: 'IELTS Masterclass Academic Suite',
+    tempoMs: 360,
+    wave: 'sine',
+    notes: [523.25, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 587.33, 523.25, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 523.25],
+    bassNotes: [261.63, 261.63, 220.0, 220.0, 174.61, 174.61, 196.0, 196.0]
   }
 };
 
@@ -595,6 +637,127 @@ const BUILDINGS: BuildingZone[] = [
     frontDir: -1,
     interiorWallColor: 0xcffafe,
     interiorFloorColor: 0x67e8f9
+  },
+  // 6 Dedicated Cambridge & IELTS Classroom Buildings on the West Academic Quad
+  {
+    id: 'class_starters',
+    name: 'Starters Classroom',
+    shortSign: 'STARTERS CLASS',
+    x: -68,
+    z: -26,
+    w: 16,
+    d: 13,
+    h: 9.5,
+    wallColor: 0x0284c7,
+    trimColor: 0xe0f2fe,
+    roofColor: 0x0c4a6e,
+    accentColor: 0x38bdf8,
+    hexAccent: '#0EA5E9',
+    doorX: -68,
+    doorZ: -19.5,
+    frontDir: 1,
+    interiorWallColor: 0xf0f9ff,
+    interiorFloorColor: 0xdbeafe
+  },
+  {
+    id: 'class_movers',
+    name: 'Movers Classroom',
+    shortSign: 'MOVERS CLASS',
+    x: -92,
+    z: -26,
+    w: 16,
+    d: 13,
+    h: 9.5,
+    wallColor: 0xea580c,
+    trimColor: 0xffedd5,
+    roofColor: 0x7c2d12,
+    accentColor: 0xf97316,
+    hexAccent: '#F97316',
+    doorX: -92,
+    doorZ: -19.5,
+    frontDir: 1,
+    interiorWallColor: 0xfff7ed,
+    interiorFloorColor: 0xfed7aa
+  },
+  {
+    id: 'class_flyers',
+    name: 'Flyers Classroom',
+    shortSign: 'FLYERS CLASS',
+    x: -116,
+    z: -26,
+    w: 16,
+    d: 13,
+    h: 9.5,
+    wallColor: 0x059669,
+    trimColor: 0xd1fae5,
+    roofColor: 0x064e3b,
+    accentColor: 0x10b981,
+    hexAccent: '#10B981',
+    doorX: -116,
+    doorZ: -19.5,
+    frontDir: 1,
+    interiorWallColor: 0xecfdf5,
+    interiorFloorColor: 0xa7f3d0
+  },
+  {
+    id: 'class_ket',
+    name: 'KET Classroom',
+    shortSign: 'KET CLASSROOM',
+    x: -68,
+    z: 26,
+    w: 16,
+    d: 13,
+    h: 9.5,
+    wallColor: 0xe11d48,
+    trimColor: 0xffe4e6,
+    roofColor: 0x881337,
+    accentColor: 0xf43f5e,
+    hexAccent: '#E11D48',
+    doorX: -68,
+    doorZ: 19.5,
+    frontDir: -1,
+    interiorWallColor: 0xfff1f2,
+    interiorFloorColor: 0xfecdd3
+  },
+  {
+    id: 'class_pet',
+    name: 'PET Classroom',
+    shortSign: 'PET CLASSROOM',
+    x: -92,
+    z: 26,
+    w: 16,
+    d: 13,
+    h: 9.5,
+    wallColor: 0x0d9488,
+    trimColor: 0xccfbf1,
+    roofColor: 0x134e4a,
+    accentColor: 0x14b8a6,
+    hexAccent: '#0D9488',
+    doorX: -92,
+    doorZ: 19.5,
+    frontDir: -1,
+    interiorWallColor: 0xf0fdfa,
+    interiorFloorColor: 0x99f6e4
+  },
+  {
+    id: 'class_ielts',
+    name: 'IELTS Classroom',
+    shortSign: 'IELTS CLASSROOM',
+    x: -116,
+    z: 26,
+    w: 16,
+    d: 13,
+    h: 9.5,
+    wallColor: 0x4f46e5,
+    trimColor: 0xe0e7ff,
+    roofColor: 0x312e81,
+    accentColor: 0x6366f1,
+    hexAccent: '#4F46E5',
+    doorX: -116,
+    doorZ: 19.5,
+    frontDir: -1,
+    interiorWallColor: 0xeef2ff,
+    interiorFloorColor: 0xc7d2fe
   }
 ];
 
@@ -847,6 +1010,147 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       actionType: 'open_eragallery',
       galleryTab: 'videos'
     }
+  ],
+  class_starters: [
+    {
+      slot: 'left-wall',
+      category: 'CAMBRIDGE PRE-A1 STARTERS • LESSON',
+      title: 'Starters Vocabulary & Phonics',
+      subtitle: 'Animals, Colors, Numbers, Family & Everyday Words',
+      badge: 'OPEN STARTERS COURSE',
+      accentHex: '#0284C7',
+      bgLightHex: '#E0F2FE',
+      actionType: 'navigate',
+      route: '/courses'
+    },
+    {
+      slot: 'right-wall',
+      category: 'STARTERS INTERACTIVE GAMES',
+      title: 'Starters English Word Games',
+      subtitle: 'Play Fun English Games & Collect Era Gems',
+      badge: 'PLAY CLASSROOM GAMES',
+      accentHex: '#0EA5E9',
+      bgLightHex: '#E0F2FE',
+      actionType: 'open_eragames'
+    }
+  ],
+  class_movers: [
+    {
+      slot: 'left-wall',
+      category: 'CAMBRIDGE A1 MOVERS • LESSON',
+      title: 'Movers Reading & Speaking',
+      subtitle: 'Action Verbs, Daily Routines, Places in Town & Stories',
+      badge: 'OPEN MOVERS COURSE',
+      accentHex: '#EA580C',
+      bgLightHex: '#FFEDD5',
+      actionType: 'navigate',
+      route: '/courses'
+    },
+    {
+      slot: 'right-wall',
+      category: 'MOVERS INTERACTIVE PRACTICE',
+      title: 'Movers Vocabulary Challenge',
+      subtitle: 'Practice A1 Movers Words & Sentences in EraGames',
+      badge: 'START MOVERS CHALLENGE',
+      accentHex: '#F97316',
+      bgLightHex: '#FFEDD5',
+      actionType: 'open_eragames'
+    }
+  ],
+  class_flyers: [
+    {
+      slot: 'left-wall',
+      category: 'CAMBRIDGE A2 FLYERS • LESSON',
+      title: 'Flyers Grammar & Storytelling',
+      subtitle: 'Tenses, Conversation Skills, Listening & Creative Writing',
+      badge: 'OPEN FLYERS COURSE',
+      accentHex: '#059669',
+      bgLightHex: '#D1FAE5',
+      actionType: 'navigate',
+      route: '/courses'
+    },
+    {
+      slot: 'right-wall',
+      category: 'FLYERS SKILL PRACTICE',
+      title: 'Flyers English Arena',
+      subtitle: 'Test Your A2 Flyers Vocabulary & Idioms',
+      badge: 'PLAY FLYERS ARENA',
+      accentHex: '#10B981',
+      bgLightHex: '#D1FAE5',
+      actionType: 'open_eragames'
+    }
+  ],
+  class_ket: [
+    {
+      slot: 'left-wall',
+      category: 'CAMBRIDGE A2 KEY (KET) • CURRICULUM',
+      title: 'KET Reading, Writing & Listening',
+      subtitle: 'Official Cambridge A2 Key Exam Preparation & Practice',
+      badge: 'OPEN KET DASHBOARD',
+      accentHex: '#E11D48',
+      bgLightHex: '#FFE4E6',
+      actionType: 'navigate',
+      route: '/ket/dashboard'
+    },
+    {
+      slot: 'right-wall',
+      category: 'CAMBRIDGE KET PRACTICE TESTS',
+      title: 'KET Mock Exam Practice',
+      subtitle: 'Take Reading, Listening, Writing & Speaking KET Tests',
+      badge: 'OPEN KET PRACTICE',
+      accentHex: '#F43F5E',
+      bgLightHex: '#FFE4E6',
+      actionType: 'navigate',
+      route: '/practice-tests?course=ket'
+    }
+  ],
+  class_pet: [
+    {
+      slot: 'left-wall',
+      category: 'CAMBRIDGE B1 PRELIMINARY (PET)',
+      title: 'PET Academic & Everyday English',
+      subtitle: 'Official Cambridge B1 Preliminary Skills & Progress',
+      badge: 'OPEN PET DASHBOARD',
+      accentHex: '#0D9488',
+      bgLightHex: '#CCFBF1',
+      actionType: 'navigate',
+      route: '/pet/dashboard'
+    },
+    {
+      slot: 'right-wall',
+      category: 'CAMBRIDGE PET PRACTICE TESTS',
+      title: 'PET Full Practice Exams',
+      subtitle: 'Practice B1 Reading, Writing, Listening & Speaking',
+      badge: 'OPEN PET PRACTICE',
+      accentHex: '#14B8A6',
+      bgLightHex: '#CCFBF1',
+      actionType: 'navigate',
+      route: '/practice-tests?course=pet'
+    }
+  ],
+  class_ielts: [
+    {
+      slot: 'left-wall',
+      category: 'IELTS ACADEMIC MASTERCLASS',
+      title: 'IELTS Band 7.0+ Strategy & Analytics',
+      subtitle: 'Track Reading, Listening, Writing & Speaking Band Scores',
+      badge: 'OPEN IELTS DASHBOARD',
+      accentHex: '#4F46E5',
+      bgLightHex: '#E0E7FF',
+      actionType: 'navigate',
+      route: '/ielts/dashboard'
+    },
+    {
+      slot: 'right-wall',
+      category: 'IELTS EXAM SIMULATION',
+      title: 'IELTS Full Practice Tests',
+      subtitle: 'Complete Academic Reading, Listening, Writing & Speaking',
+      badge: 'OPEN IELTS TESTS',
+      accentHex: '#6366F1',
+      bgLightHex: '#E0E7FF',
+      actionType: 'practice_skill',
+      skillOrTab: 'Reading'
+    }
   ]
 };
 
@@ -998,31 +1302,21 @@ export function EraVerse() {
   );
 
   const [eraGems, setEraGems] = useState<number>(() => {
-    if (!isSuperAdminTeacherJan) {
-      try {
-        localStorage.setItem('eraverse_gems_v2', '0');
-      } catch (_e) {}
-      return 0;
-    }
     try {
       const saved = localStorage.getItem('eraverse_gems_v2');
-      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 1000;
+      if (saved !== null) return Math.max(0, parseInt(saved, 10) || 0);
+      return isSuperAdminTeacherJan ? 1000 : 0;
     } catch (_e) {
-      return 1000;
+      return isSuperAdminTeacherJan ? 1000 : 0;
     }
   });
   const [eraDollars, setEraDollars] = useState<number>(() => {
-    if (!isSuperAdminTeacherJan) {
-      try {
-        localStorage.setItem('eraverse_dollars_v2', '0');
-      } catch (_e) {}
-      return 0;
-    }
     try {
       const saved = localStorage.getItem('eraverse_dollars_v2');
-      return saved ? Math.max(0, parseInt(saved, 10) || 0) : 1000;
+      if (saved !== null) return Math.max(0, parseInt(saved, 10) || 0);
+      return isSuperAdminTeacherJan ? 1000 : 0;
     } catch (_e) {
-      return 1000;
+      return isSuperAdminTeacherJan ? 1000 : 0;
     }
   });
   const [ownedShopItems, setOwnedShopItems] = useState<string[]>(() => {
@@ -1126,8 +1420,8 @@ export function EraVerse() {
     nextDollars = eraDollars
   ) => {
     const targetUid = profileToSave.realUserId || user?.uid || localStorage.getItem('studentUid') || '';
-    const effectiveGems = isSuperAdminTeacherJan ? nextGems : 0;
-    const effectiveDollars = isSuperAdminTeacherJan ? nextDollars : 0;
+    const effectiveGems = Math.max(0, Number(nextGems) || 0);
+    const effectiveDollars = Math.max(0, Number(nextDollars) || 0);
     const avatarPayload = {
       ...profileToSave,
       name: profileToSave.name,
@@ -1275,6 +1569,20 @@ export function EraVerse() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleWalletSync = (ev: Event) => {
+      const detail = (ev as CustomEvent).detail;
+      if (detail && typeof detail.dollars === 'number') {
+        setEraDollars(detail.dollars);
+        if (typeof detail.gems === 'number') {
+          setEraGems(detail.gems);
+        }
+      }
+    };
+    window.addEventListener('eraverse-wallet-updated', handleWalletSync);
+    return () => window.removeEventListener('eraverse-wallet-updated', handleWalletSync);
+  }, []);
+
   // Build unique roster from real Firestore student accounts under their nicknames (no duplicate or fake characters)
   const ieltsCharacters = useMemo<IeltsCharacterProfile[]>(() => {
     return buildUniqueRosterFromFirestore(firestoreUsers, firestoreFolders);
@@ -1310,20 +1618,34 @@ export function EraVerse() {
       setOwnedShopItems(customLook.ownedShopItems);
     }
 
-    if (!isSuperAdminTeacherJan) {
-      setEraGems(0);
-      setEraDollars(0);
+    const resolvedGems =
+      typeof fsUserDoc?.eraGems === 'number'
+        ? fsUserDoc.eraGems
+        : typeof fsUserDoc?.gems === 'number'
+        ? fsUserDoc.gems
+        : typeof customLook?.eraGems === 'number'
+        ? customLook.eraGems
+        : null;
+    const resolvedDollars =
+      typeof fsUserDoc?.dollars === 'number'
+        ? fsUserDoc.dollars
+        : typeof fsUserDoc?.eraDollars === 'number'
+        ? fsUserDoc.eraDollars
+        : typeof customLook?.eraDollars === 'number'
+        ? customLook.eraDollars
+        : null;
+
+    if (resolvedGems !== null) {
+      setEraGems(resolvedGems);
       try {
-        localStorage.setItem('eraverse_gems_v2', '0');
-        localStorage.setItem('eraverse_dollars_v2', '0');
+        localStorage.setItem('eraverse_gems_v2', String(resolvedGems));
       } catch (_e) {}
-    } else {
-      if (typeof customLook?.eraGems === 'number') {
-        setEraGems(customLook.eraGems);
-      }
-      if (typeof customLook?.eraDollars === 'number') {
-        setEraDollars(customLook.eraDollars);
-      }
+    }
+    if (resolvedDollars !== null) {
+      setEraDollars(resolvedDollars);
+      try {
+        localStorage.setItem('eraverse_dollars_v2', String(resolvedDollars));
+      } catch (_e) {}
     }
 
     const femaleNames = ['suzie', 'sophia', 'may', 'emily', 'hailey', 'candy', 'anna', 'lisa', 'ruby', 'chloe'];
@@ -1902,25 +2224,74 @@ export function EraVerse() {
     const clickableBuildingMeshes: THREE.Object3D[] = [holoFrameOuter, holoScreenFront, holoScreenBack];
     const allBuildingOccluderMeshes: THREE.Mesh[] = [];
 
+    const curbMatShared = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.15 });
+
+    // West Academic Quad Main Promenade (connects Central Plaza to Starters, Movers, Flyers, KET, PET & IELTS Classrooms)
+    const westPromenadeGroup = new THREE.Group();
+    const westPromLen = 108;
+    westPromenadeGroup.position.set(-70, 0, 0);
+    const westPromBed = new THREE.Mesh(new THREE.BoxGeometry(westPromLen, 0.12, 6.4), plazaMat);
+    westPromBed.position.y = 0.06;
+    westPromBed.receiveShadow = true;
+    westPromenadeGroup.add(westPromBed);
+    [-3.36, 3.36].forEach((cz) => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(westPromLen, 0.24, 0.32), curbMatShared);
+      curb.position.set(0, 0.12, cz);
+      curb.receiveShadow = true;
+      westPromenadeGroup.add(curb);
+    });
+    scene.add(westPromenadeGroup);
+
+    // East Sports Complex Main Promenade (connects Central Plaza to Era Tennis Court & Era Football Club)
+    const eastPromenadeGroup = new THREE.Group();
+    const eastPromLen = 48;
+    eastPromenadeGroup.position.set(40, 0, 0);
+    const eastPromBed = new THREE.Mesh(new THREE.BoxGeometry(eastPromLen, 0.12, 6.4), plazaMat);
+    eastPromBed.position.y = 0.06;
+    eastPromBed.receiveShadow = true;
+    eastPromenadeGroup.add(eastPromBed);
+    [-3.36, 3.36].forEach((cz) => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(eastPromLen, 0.24, 0.32), curbMatShared);
+      curb.position.set(0, 0.12, cz);
+      curb.receiveShadow = true;
+      eastPromenadeGroup.add(curb);
+    });
+    scene.add(eastPromenadeGroup);
+
     BUILDINGS.forEach((b) => {
-      const dist = Math.hypot(b.doorX, b.doorZ);
-      const roadAngle = Math.atan2(b.doorX, b.doorZ);
       const roadGroup = new THREE.Group();
-      roadGroup.position.set(b.doorX / 2, 0, b.doorZ / 2);
-      roadGroup.rotation.y = roadAngle;
+      if (b.id.startsWith('class_')) {
+        // Orthogonal avenue branch from West Academic Promenade (Z = 0) straight to classroom door
+        const branchLen = Math.abs(b.doorZ);
+        roadGroup.position.set(b.doorX, 0, b.doorZ / 2);
+        const roadBed = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.12, branchLen), plazaMat);
+        roadBed.position.y = 0.06;
+        roadBed.receiveShadow = true;
+        roadGroup.add(roadBed);
+        [-2.65, 2.65].forEach((cx) => {
+          const curb = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, branchLen), curbMatShared);
+          curb.position.set(cx, 0.12, 0);
+          curb.receiveShadow = true;
+          roadGroup.add(curb);
+        });
+      } else {
+        const dist = Math.hypot(b.doorX, b.doorZ);
+        const roadAngle = Math.atan2(b.doorX, b.doorZ);
+        roadGroup.position.set(b.doorX / 2, 0, b.doorZ / 2);
+        roadGroup.rotation.y = roadAngle;
 
-      const roadBed = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.12, dist), plazaMat);
-      roadBed.position.y = 0.06;
-      roadBed.receiveShadow = true;
-      roadGroup.add(roadBed);
+        const roadBed = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.12, dist), plazaMat);
+        roadBed.position.y = 0.06;
+        roadBed.receiveShadow = true;
+        roadGroup.add(roadBed);
 
-      const curbMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.15 });
-      [-2.75, 2.75].forEach((cx) => {
-        const curb = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, dist), curbMat);
-        curb.position.set(cx, 0.12, 0);
-        curb.receiveShadow = true;
-        roadGroup.add(curb);
-      });
+        [-2.75, 2.75].forEach((cx) => {
+          const curb = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, dist), curbMatShared);
+          curb.position.set(cx, 0.12, 0);
+          curb.receiveShadow = true;
+          roadGroup.add(curb);
+        });
+      }
       scene.add(roadGroup);
 
       const bGroup = new THREE.Group();
@@ -2137,12 +2508,12 @@ export function EraVerse() {
     });
 
     // ============================================================================
-    // 5. OUTDOOR SPORTS & PLAYGROUND PARK (FOOTBALL PITCH, PICKLEBALL COURT, PLAYGROUND)
+    // 5. OUTDOOR SPORTS & PLAYGROUND PARK (EAST SPORTS COMPLEX: ERA TENNIS COURT & ERA FOOTBALL CLUB)
     // ============================================================================
 
-    // A. Interactive Football (Soccer) Stadium at West Park (X = -75, Z = 0)
+    // A. Interactive Football (Soccer) Stadium at East Sports Park next to Era Tennis Court (X = 78, Z = 25)
     // Open stadium field where players can walk, run, and play inside seamlessly!
-    const PITCH_CENTER = { x: -75, z: 0 };
+    const PITCH_CENTER = { x: 78, z: 25 };
     const PITCH_W = 28.0;
     const PITCH_L = 44.0;
     const PITCH_HALF_W = PITCH_W / 2; // 14.0
@@ -2463,7 +2834,7 @@ export function EraVerse() {
       footballCornerFlags.push(cloth);
     });
 
-    // 4. Covered Grandstand on West Side + 3D Animated Spectators
+    // 4. Covered Grandstand on East Outer Side + 3D Animated Spectators (facing West towards pitch)
     const greenWallMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.65 });
     const whiteCopingMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
     const concreteMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
@@ -2472,28 +2843,28 @@ export function EraVerse() {
     const brandMat = new THREE.MeshBasicMaterial({ map: brandTex, transparent: true });
 
     const standGroup = new THREE.Group();
-    const westBaseX = PITCH_CENTER.x - PITCH_HALF_W - 2.8; // around X = -91.8
+    const eastStandBaseX = PITCH_CENTER.x + PITCH_HALF_W + 2.8;
     const standLen = 42.0;
 
-    // West touchline barrier wall with white coping
-    const westBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.4, standLen), greenWallMat);
-    westBarrier.position.set(westBaseX, 0.7, PITCH_CENTER.z);
-    westBarrier.castShadow = true;
-    westBarrier.receiveShadow = true;
-    standGroup.add(westBarrier);
+    // East touchline barrier wall with white coping
+    const eastBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.4, standLen), greenWallMat);
+    eastBarrier.position.set(eastStandBaseX, 0.7, PITCH_CENTER.z);
+    eastBarrier.castShadow = true;
+    eastBarrier.receiveShadow = true;
+    standGroup.add(eastBarrier);
 
-    const westCoping = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.12, standLen + 0.2), whiteCopingMat);
-    westCoping.position.set(westBaseX, 1.45, PITCH_CENTER.z);
-    standGroup.add(westCoping);
+    const eastCoping = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.12, standLen + 0.2), whiteCopingMat);
+    eastCoping.position.set(eastStandBaseX, 1.45, PITCH_CENTER.z);
+    standGroup.add(eastCoping);
 
     [-12, 0, 12].forEach((zOffset) => {
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.0), brandMat);
-      sign.position.set(westBaseX + 0.34, 0.75, PITCH_CENTER.z + zOffset);
-      sign.rotation.y = Math.PI / 2;
+      sign.position.set(eastStandBaseX - 0.34, 0.75, PITCH_CENTER.z + zOffset);
+      sign.rotation.y = -Math.PI / 2;
       standGroup.add(sign);
     });
 
-    // 3 Tiered concrete grandstand steps + 3D cheering spectators
+    // 3 Tiered concrete grandstand steps + 3D cheering spectators facing West (-X)
     const stadiumSpectators: any[] = [];
     const skinPalette = [0xf5cba7, 0xe0ac69, 0xc68642, 0x8d5524, 0xfadbd8];
     const shirtPalette = [0xef4444, 0xdc2626, 0x3b82f6, 0x2563eb, 0xfacc15, 0x10b981, 0xffffff, 0xf97316];
@@ -2506,7 +2877,7 @@ export function EraVerse() {
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
 
     for (let row = 0; row < 3; row++) {
-      const stepX = westBaseX - (1.1 + row * 1.15);
+      const stepX = eastStandBaseX + (1.1 + row * 1.15);
       const stepY = 1.25 + row * 0.75;
       const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, stepY, standLen - 1.2), concreteMat);
       stepMesh.position.set(stepX, stepY / 2, PITCH_CENTER.z);
@@ -2529,7 +2900,7 @@ export function EraVerse() {
 
         [-1, 1].forEach((armSide) => {
           const arm = new THREE.Mesh(armGeo, shirtMatSpec);
-          arm.position.set(0.02, 0.34, armSide * 0.28);
+          arm.position.set(-0.02, 0.34, armSide * 0.28);
           arm.rotation.x = armSide * 0.16;
           spec.add(arm);
         });
@@ -2542,18 +2913,18 @@ export function EraVerse() {
         headPivot.add(head);
 
         const hairCap = new THREE.Mesh(hairCapGeo, new THREE.MeshStandardMaterial({ color: hairCol, roughness: 0.4 }));
-        hairCap.rotation.z = 0.15;
+        hairCap.rotation.z = -0.15;
         headPivot.add(hairCap);
 
         const e1 = new THREE.Mesh(eyeGeo, eyeMat);
-        e1.position.set(0.27, 0.02, -0.1);
+        e1.position.set(-0.27, 0.02, -0.1);
         headPivot.add(e1);
         const e2 = new THREE.Mesh(eyeGeo, eyeMat);
-        e2.position.set(0.27, 0.02, 0.1);
+        e2.position.set(-0.27, 0.02, 0.1);
         headPivot.add(e2);
 
         spec.add(headPivot);
-        spec.position.set(stepX + 0.15, stepY, PITCH_CENTER.z + z);
+        spec.position.set(stepX - 0.15, stepY, PITCH_CENTER.z + z);
         (spec as any).userData = {
           baseY: stepY,
           phase: Math.random() * Math.PI * 2,
@@ -2565,7 +2936,7 @@ export function EraVerse() {
     }
 
     // Grandstand back wall & VIP skybox windows
-    const backWallX = westBaseX - 4.6;
+    const backWallX = eastStandBaseX + 4.6;
     const backWall = new THREE.Mesh(new THREE.BoxGeometry(0.75, 5.5, standLen), greenWallMat);
     backWall.position.set(backWallX, 2.75, PITCH_CENTER.z);
     backWall.castShadow = true;
@@ -2573,49 +2944,49 @@ export function EraVerse() {
 
     for (let wz = -16; wz <= 16; wz += 6) {
       const win = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.2, 4.2), glassMat);
-      win.position.set(backWallX + 0.38, 4.2, PITCH_CENTER.z + wz);
+      win.position.set(backWallX - 0.38, 4.2, PITCH_CENTER.z + wz);
       standGroup.add(win);
     }
 
     // Slanted Corrugated Green Canopy Roof
     const roofMat = new THREE.MeshStandardMaterial({ map: createCorrugatedRoofTexture(), roughness: 0.55 });
     const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.22, standLen + 0.4), roofMat);
-    roofSlab.position.set(westBaseX - 2.2, 5.8, PITCH_CENTER.z);
-    roofSlab.rotation.z = -0.14;
+    roofSlab.position.set(eastStandBaseX + 2.2, 5.8, PITCH_CENTER.z);
+    roofSlab.rotation.z = 0.14;
     roofSlab.castShadow = true;
     standGroup.add(roofSlab);
 
     scene.add(standGroup);
 
-    // 5. Open Stadium Entrances & East Walkway (Facing Main Campus Pathways)
+    // 5. Open Stadium Entrances & West Walkway (Facing Main Campus Pathways & Era Tennis Court)
     // Completely OPEN field design so players and autonomous classmates can easily walk and run inside!
-    const eastBaseX = PITCH_CENTER.x + PITCH_HALF_W + 1.8; // around X = -59.2
+    const westGateBaseX = PITCH_CENTER.x - PITCH_HALF_W - 1.8;
     const entranceGateW = 12.0; // 12-meter wide open gateway!
 
-    // North-East low barrier
-    const neBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, (standLen - entranceGateW) / 2), greenWallMat);
-    neBarrier.position.set(eastBaseX, 0.45, PITCH_CENTER.z - (entranceGateW / 2 + (standLen - entranceGateW) / 4));
-    scene.add(neBarrier);
+    // North-West low barrier
+    const nwBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, (standLen - entranceGateW) / 2), greenWallMat);
+    nwBarrier.position.set(westGateBaseX, 0.45, PITCH_CENTER.z - (entranceGateW / 2 + (standLen - entranceGateW) / 4));
+    scene.add(nwBarrier);
 
-    // South-East low barrier
-    const seBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, (standLen - entranceGateW) / 2), greenWallMat);
-    seBarrier.position.set(eastBaseX, 0.45, PITCH_CENTER.z + (entranceGateW / 2 + (standLen - entranceGateW) / 4));
-    scene.add(seBarrier);
+    // South-West low barrier
+    const swBarrier = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, (standLen - entranceGateW) / 2), greenWallMat);
+    swBarrier.position.set(westGateBaseX, 0.45, PITCH_CENTER.z + (entranceGateW / 2 + (standLen - entranceGateW) / 4));
+    scene.add(swBarrier);
 
     // Grand Entrance Archway Pillars with Era Football Club Signage
     [-entranceGateW / 2, entranceGateW / 2].forEach((pz) => {
       const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.6, 1.2), greenWallMat);
-      pillar.position.set(eastBaseX, 1.8, PITCH_CENTER.z + pz);
+      pillar.position.set(westGateBaseX, 1.8, PITCH_CENTER.z + pz);
       pillar.castShadow = true;
       scene.add(pillar);
 
       const cap = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 1.4), whiteCopingMat);
-      cap.position.set(eastBaseX, 3.75, PITCH_CENTER.z + pz);
+      cap.position.set(westGateBaseX, 3.75, PITCH_CENTER.z + pz);
       scene.add(cap);
 
       const banner = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), brandMat);
-      banner.position.set(eastBaseX + 0.62, 2.2, PITCH_CENTER.z + pz);
-      banner.rotation.y = Math.PI / 2;
+      banner.position.set(westGateBaseX - 0.62, 2.2, PITCH_CENTER.z + pz);
+      banner.rotation.y = -Math.PI / 2;
       scene.add(banner);
     });
 
@@ -2625,8 +2996,8 @@ export function EraVerse() {
       new THREE.BoxGeometry(entranceGateW + 0.8, 1.4, 0.3),
       new THREE.MeshBasicMaterial({ map: gateSignTex })
     );
-    gateSign.position.set(eastBaseX, 3.8, PITCH_CENTER.z);
-    gateSign.rotation.y = Math.PI / 2;
+    gateSign.position.set(westGateBaseX, 3.8, PITCH_CENTER.z);
+    gateSign.rotation.y = -Math.PI / 2;
     scene.add(gateSign);
 
     // Team Dugout Benches on touchline
@@ -2702,8 +3073,8 @@ export function EraVerse() {
       vz: 0
     };
 
-    // B. Era Tennis Court — Lakeside Center Court PBR at East Park (X = 72, Z = 0)
-    const TENNIS_CENTER = { x: 72, z: 0 };
+    // B. Era Tennis Court — Lakeside Center Court PBR at East Park (X = 74, Z = -23, right next to Era Football Club)
+    const TENNIS_CENTER = { x: 74, z: -23 };
     const PICKLE_CENTER = TENNIS_CENTER;
     const TENNIS_PLANE_W = 19.0;
     const TENNIS_PLANE_L = 31.0;
@@ -3209,8 +3580,8 @@ export function EraVerse() {
       phase: 0
     };
 
-    // C. Interactive Campus Playground & Trampoline Jump Pad (X = -70, Z = -34)
-    const TRAMPOLINE_POS = { x: -66, z: -28 };
+    // C. Interactive Campus Playground & Trampoline Jump Pad at East Sports Park Entrance (X = 52, Z = -2)
+    const TRAMPOLINE_POS = { x: 52, z: -2 };
     const trampGroup = new THREE.Group();
     trampGroup.position.set(TRAMPOLINE_POS.x, 0, TRAMPOLINE_POS.z);
     const trampRing = new THREE.Mesh(
@@ -4660,6 +5031,485 @@ export function EraVerse() {
         arenaStriker.rightArm.rotation.z = 1.1;
         podiumGroup.add(arenaStriker.root);
         interiorGroup.add(podiumGroup);
+      } else if (building.id.startsWith('class_')) {
+        // ====================================================================
+        // AUTHENTIC 3D CLASSROOM INTERIOR (STARTERS, MOVERS, FLYERS, KET, PET, IELTS)
+        // Features: Front Teaching Chalkboard/Smartboard, Teacher Desk & Podium,
+        // 12 Student Desks & Chairs in 3x4 Rows, Open Textbooks, Bookshelves & Teacher
+        // ====================================================================
+        const classroomMetaMap: Record<
+          string,
+          {
+            header: string;
+            lessonTitle: string;
+            points: string[];
+            teacherName: string;
+            teacherShirt: string;
+            teacherGender: 'boy' | 'girl';
+            accentHex: string;
+            route: string;
+            actionType: 'navigate' | 'practice_skill';
+          }
+        > = {
+          class_starters: {
+            header: 'CAMBRIDGE PRE-A1 STARTERS • CLASSROOM',
+            lessonTitle: 'Unit 1: Hello! Animals, Colors & My Family',
+            points: [
+              '1. Phonics & Sight Words: A–Z Sounds, Numbers 1–20 & Classroom Objects',
+              '2. Speaking Practice: "What is this?" — "It is a friendly orange cat!"',
+              '3. Activity: Match Pictures, Listen & Spell 5-Letter English Words'
+            ],
+            teacherName: 'Ms. Emma • Starters Teacher',
+            teacherShirt: '#0284c7',
+            teacherGender: 'girl',
+            accentHex: '#0EA5E9',
+            route: '/courses',
+            actionType: 'navigate'
+          },
+          class_movers: {
+            header: 'CAMBRIDGE A1 MOVERS • CLASSROOM',
+            lessonTitle: 'Unit 2: Our Town, Daily Routines & Action Verbs',
+            points: [
+              '1. Grammar Focus: Present Continuous & Past Simple Regular Verbs',
+              '2. Reading & Writing: Picture Story Sequencing & Comparative Adjectives',
+              '3. Speaking Practice: Spot 4 Differences Between Two Story Pictures'
+            ],
+            teacherName: 'Mr. Leo • Movers Teacher',
+            teacherShirt: '#ea580c',
+            teacherGender: 'boy',
+            accentHex: '#F97316',
+            route: '/courses',
+            actionType: 'navigate'
+          },
+          class_flyers: {
+            header: 'CAMBRIDGE A2 FLYERS • CLASSROOM',
+            lessonTitle: 'Unit 3: Future Adventures, Science & Storytelling',
+            points: [
+              '1. Grammar Focus: Present Perfect ("Have you ever...?") & Will / Going to',
+              '2. Reading & Listening: Multi-Paragraph Stories & Note Completion',
+              '3. Writing Workshop: Write a 35-Word Story from 3 Picture Prompts'
+            ],
+            teacherName: 'Ms. Clara • Flyers Teacher',
+            teacherShirt: '#059669',
+            teacherGender: 'girl',
+            accentHex: '#10B981',
+            route: '/courses',
+            actionType: 'navigate'
+          },
+          class_ket: {
+            header: 'CAMBRIDGE A2 KEY (KET) • CLASSROOM',
+            lessonTitle: 'Module 4: A2 Key Reading, Listening & Email Writing',
+            points: [
+              '1. Reading Parts 1–5: Signs, Short Messages & 3-Option Multiple Choice',
+              '2. Writing Parts 6 & 7: Write a 25+ Word Note & 3-Picture Story',
+              '3. Speaking Parts 1 & 2: Personal Questions & Collaborative Discussion'
+            ],
+            teacherName: 'Mr. David • KET Instructor',
+            teacherShirt: '#e11d48',
+            teacherGender: 'boy',
+            accentHex: '#E11D48',
+            route: '/ket/dashboard',
+            actionType: 'navigate'
+          },
+          class_pet: {
+            header: 'CAMBRIDGE B1 PRELIMINARY (PET) • CLASSROOM',
+            lessonTitle: 'Module 5: B1 Preliminary Articles, Emails & Listening',
+            points: [
+              '1. Reading Parts 1–6: Text Matching, Gapped Text & Open Cloze',
+              '2. Writing Parts 1 & 2: 100-Word Email Response & Opinion Article',
+              '3. Speaking Parts 1–4: Extended Turn Photo Description & Discussion'
+            ],
+            teacherName: 'Ms. Hannah • PET Instructor',
+            teacherShirt: '#0d9488',
+            teacherGender: 'girl',
+            accentHex: '#0D9488',
+            route: '/pet/dashboard',
+            actionType: 'navigate'
+          },
+          class_ielts: {
+            header: 'IELTS ACADEMIC BAND 7.0+ • CLASSROOM',
+            lessonTitle: 'Masterclass: Academic Reading, Task 2 Essay & Fluency',
+            points: [
+              '1. Reading: True / False / Not Given & Paragraph Heading Strategies',
+              '2. Writing Task 1 & 2: Data Chart Analysis & 250-Word Academic Essay',
+              '3. Speaking Part 2 & 3: 2-Minute Cue Card Monologue & Abstract Debate'
+            ],
+            teacherName: 'Teacher Jan • IELTS Head Mentor',
+            teacherShirt: '#4f46e5',
+            teacherGender: 'girl',
+            accentHex: '#4F46E5',
+            route: '/ielts/dashboard',
+            actionType: 'practice_skill'
+          }
+        };
+
+        const cMeta = classroomMetaMap[building.id] || classroomMetaMap.class_starters;
+
+        // 1. Front Classroom Teaching Chalkboard / Smartboard on Front Wall (-roomD / 2)
+        const makeClassroomChalkboardTexture = () => {
+          const c = document.createElement('canvas');
+          c.width = 1280;
+          c.height = 540;
+          const ctx = c.getContext('2d')!;
+
+          // Deep classic slate-green chalkboard surface with subtle radial vignette
+          const grad = ctx.createRadialGradient(640, 270, 80, 640, 270, 720);
+          grad.addColorStop(0, '#14532d');
+          grad.addColorStop(1, '#062e16');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 1280, 540);
+
+          // Subtle chalk dust grid lines
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.lineWidth = 2;
+          for (let y = 110; y < 460; y += 70) {
+            ctx.beginPath();
+            ctx.moveTo(48, y);
+            ctx.lineTo(1232, y);
+            ctx.stroke();
+          }
+
+          // Top Course Banner Pill
+          ctx.fillStyle = cMeta.accentHex;
+          ctx.beginPath();
+          ctx.roundRect(48, 28, 1184, 64, 16);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 30px Plus Jakarta Sans, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(cMeta.header, 640, 70);
+
+          // Today's Lesson Title in bright yellow chalk
+          ctx.fillStyle = '#fde047';
+          ctx.font = '800 38px Plus Jakarta Sans, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(cMeta.lessonTitle, 64, 152);
+
+          // Lesson Points in crisp white chalk
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = '700 26px Plus Jakarta Sans, sans-serif';
+          cMeta.points.forEach((pt, idx) => {
+            ctx.fillText(pt, 72, 222 + idx * 66);
+          });
+
+          // Bottom interactive callout bar
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.72)';
+          ctx.beginPath();
+          ctx.roundRect(300, 444, 680, 64, 32);
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#fde047';
+          ctx.stroke();
+
+          ctx.fillStyle = '#fde047';
+          ctx.font = '900 24px Plus Jakarta Sans, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('CLICK CHALKBOARD OR PRESS [E] TO OPEN LESSON →', 640, 484);
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.anisotropy = maxAnisotropy;
+          return tex;
+        };
+
+        const mainChalkboardSpec: WallBoardSpec = {
+          slot: 'back-center',
+          category: cMeta.header,
+          title: cMeta.lessonTitle,
+          subtitle: cMeta.points[0],
+          badge: 'OPEN CLASSROOM LESSON',
+          accentHex: cMeta.accentHex,
+          bgLightHex: '#F8FAFC',
+          actionType: cMeta.actionType,
+          route: cMeta.route,
+          skillOrTab: 'Reading'
+        };
+
+        const boardGroup = new THREE.Group();
+        boardGroup.position.set(0, 4.4, -roomD / 2 + 0.35);
+
+        const woodFrameMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.55, metalness: 0.1 });
+        const boardFrame = new THREE.Mesh(new THREE.BoxGeometry(13.2, 5.4, 0.22), woodFrameMat);
+        boardFrame.userData = { boardSpec: mainChalkboardSpec };
+        boardGroup.add(boardFrame);
+        clickableBoardMeshes.push(boardFrame);
+
+        const boardFace = new THREE.Mesh(
+          new THREE.PlaneGeometry(12.6, 4.85),
+          new THREE.MeshBasicMaterial({ map: makeClassroomChalkboardTexture() })
+        );
+        boardFace.position.z = 0.12;
+        boardFace.userData = { boardSpec: mainChalkboardSpec };
+        boardGroup.add(boardFace);
+        clickableBoardMeshes.push(boardFace);
+
+        // Wooden Chalk Tray + Colored Chalks & Felt Eraser
+        const chalkTray = new THREE.Mesh(new THREE.BoxGeometry(13.2, 0.16, 0.45), woodFrameMat);
+        chalkTray.position.set(0, -2.65, 0.22);
+        boardGroup.add(chalkTray);
+
+        const eraserBlock = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, 0.14, 0.2),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 })
+        );
+        eraserBlock.position.set(-3.2, -2.5, 0.26);
+        boardGroup.add(eraserBlock);
+
+        [
+          { x: -1.5, col: 0xffffff },
+          { x: -1.1, col: 0xfde047 },
+          { x: -0.7, col: 0xf472b6 },
+          { x: 1.8, col: 0x38bdf8 }
+        ].forEach(({ x, col }) => {
+          const chalk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.035, 0.035, 0.28, 10),
+            new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 })
+          );
+          chalk.rotation.z = Math.PI / 2;
+          chalk.position.set(x, -2.53, 0.26);
+          boardGroup.add(chalk);
+        });
+
+        interiorGroup.add(boardGroup);
+
+        currentInteriorBoards.push({
+          spec: mainChalkboardSpec,
+          x: INTERIOR_ORIGIN.x,
+          z: INTERIOR_ORIGIN.z - roomD / 2 + 3.2,
+          mesh: boardFace
+        });
+
+        // 2. Teacher's Raised Wooden Podium Platform + Teacher Desk, Laptop, Books & Teacher NPC
+        const podiumStage = new THREE.Mesh(
+          new THREE.BoxGeometry(14.4, 0.22, 3.6),
+          new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.65 })
+        );
+        podiumStage.position.set(0, 0.11, -roomD / 2 + 2.1);
+        podiumStage.receiveShadow = true;
+        interiorGroup.add(podiumStage);
+
+        const teacherDeskGroup = new THREE.Group();
+        teacherDeskGroup.position.set(-4.2, 0.22, -roomD / 2 + 2.4);
+
+        const tDeskTop = new THREE.Mesh(
+          new THREE.BoxGeometry(3.2, 0.14, 1.45),
+          new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.45 })
+        );
+        tDeskTop.position.y = 1.38;
+        tDeskTop.castShadow = true;
+        teacherDeskGroup.add(tDeskTop);
+
+        const tDeskFront = new THREE.Mesh(
+          new THREE.BoxGeometry(3.0, 1.25, 1.25),
+          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 })
+        );
+        tDeskFront.position.y = 0.68;
+        tDeskFront.castShadow = true;
+        teacherDeskGroup.add(tDeskFront);
+
+        // Laptop & Stack of Books on Teacher's Desk
+        const laptopBase = new THREE.Mesh(
+          new THREE.BoxGeometry(0.65, 0.04, 0.45),
+          new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 })
+        );
+        laptopBase.position.set(-0.4, 1.47, 0.1);
+        const laptopScreen = new THREE.Mesh(
+          new THREE.BoxGeometry(0.65, 0.44, 0.04),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, emissive: 0x38bdf8, emissiveIntensity: 0.25 })
+        );
+        laptopScreen.position.set(-0.4, 1.68, -0.12);
+        laptopScreen.rotation.x = 0.2;
+        teacherDeskGroup.add(laptopBase, laptopScreen);
+
+        [0xef4444, 0x3b82f6, 0x10b981].forEach((bCol, bIdx) => {
+          const book = new THREE.Mesh(
+            new THREE.BoxGeometry(0.55, 0.1, 0.42),
+            new THREE.MeshStandardMaterial({ color: bCol, roughness: 0.5 })
+          );
+          book.position.set(0.85, 1.5 + bIdx * 0.11, 0);
+          book.rotation.y = bIdx * 0.12;
+          teacherDeskGroup.add(book);
+        });
+
+        interiorGroup.add(teacherDeskGroup);
+
+        // Teacher Character standing at the front chalkboard welcoming students
+        const teacherRig = buildCharacterAvatar({
+          shirtColor: cMeta.teacherShirt,
+          hairColor: '#1c1917',
+          skinColor: '#FFE7D6',
+          hatType: 'none',
+          accessoryType: 'glasses',
+          name: cMeta.teacherName,
+          cohort: 'TEACHER (SUPER ADMIN)',
+          gender: cMeta.teacherGender,
+          hairStyle: cMeta.teacherGender === 'girl' ? 'ponytail' : 'classic',
+          clothingType: 'royal_suit',
+          beltType: 'leather_belt'
+        });
+        teacherRig.root.position.set(3.4, 0.22, -roomD / 2 + 2.3);
+        const teacherBubble = createSpeechBubbleSprite(
+          cMeta.teacherName,
+          `Welcome to ${building.name}! Take a seat at any desk or click the chalkboard to start today's lesson!`,
+          false
+        );
+        teacherBubble.userData = { boardSpec: mainChalkboardSpec };
+        clickableBoardMeshes.push(teacherBubble);
+        teacherRig.root.add(teacherBubble);
+        interiorGroup.add(teacherRig.root);
+
+        // 3. Rows of 3D Student Desks & Classroom Chairs (3 Rows × 4 Columns = 12 Student Desks & Chairs)
+        const deskWoodMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.48 });
+        const chairWoodMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.52 });
+        const legMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.65 });
+        const trayMetalMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.45, metalness: 0.4 });
+        const pageWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 });
+        const pencilYellowMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+        const bookCoverPalette = [0x0ea5e9, 0xf97316, 0x10b981, 0xe11d48, 0x6366f1, 0x8b5cf6];
+
+        const deskCols = [-6.6, -2.2, 2.2, 6.6];
+        const deskRows = [-2.2, 1.3, 4.8];
+
+        deskRows.forEach((rz, rIdx) => {
+          deskCols.forEach((cx, cIdx) => {
+            const unitGroup = new THREE.Group();
+            unitGroup.position.set(cx, 0, rz);
+
+            // Student Desk Top
+            const dTop = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.11, 1.1), deskWoodMat);
+            dTop.position.y = 1.28;
+            dTop.castShadow = true;
+            dTop.receiveShadow = true;
+            unitGroup.add(dTop);
+
+            // Under-Desk Book Storage Tray
+            const dTray = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.16, 0.9), trayMetalMat);
+            dTray.position.y = 1.12;
+            unitGroup.add(dTray);
+
+            // 4 Tubular Metal Desk Legs
+            [
+              [-0.88, -0.44],
+              [0.88, -0.44],
+              [-0.88, 0.44],
+              [0.88, 0.44]
+            ].forEach(([lx, lz]) => {
+              const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 1.26, 8), legMetalMat);
+              leg.position.set(lx, 0.63, lz);
+              leg.castShadow = true;
+              unitGroup.add(leg);
+            });
+
+            // Open Notebook & Pencil on top of every student desk
+            const coverCol = bookCoverPalette[(rIdx * 4 + cIdx) % bookCoverPalette.length];
+            const notebookCover = new THREE.Mesh(
+              new THREE.BoxGeometry(0.72, 0.025, 0.5),
+              new THREE.MeshStandardMaterial({ color: coverCol, roughness: 0.5 })
+            );
+            notebookCover.position.set(-0.15, 1.35, 0);
+            unitGroup.add(notebookCover);
+
+            const notebookPages = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.03, 0.46), pageWhiteMat);
+            notebookPages.position.set(-0.15, 1.365, 0);
+            unitGroup.add(notebookPages);
+
+            const pencil = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.38, 8), pencilYellowMat);
+            pencil.rotation.z = Math.PI / 2;
+            pencil.rotation.y = 0.25;
+            pencil.position.set(0.45, 1.36, 0.08);
+            unitGroup.add(pencil);
+
+            // Student Chair placed behind the desk (at +Z facing -Z chalkboard)
+            const chairGroup = new THREE.Group();
+            chairGroup.position.set(0, 0, 0.95);
+
+            const cSeat = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.09, 0.88), chairWoodMat);
+            cSeat.position.y = 0.76;
+            cSeat.castShadow = true;
+            chairGroup.add(cSeat);
+
+            // 4 Chair Legs
+            [
+              [-0.4, -0.36],
+              [0.4, -0.36],
+              [-0.4, 0.36],
+              [0.4, 0.36]
+            ].forEach(([lx, lz]) => {
+              const cLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.76, 8), legMetalMat);
+              cLeg.position.set(lx, 0.38, lz);
+              chairGroup.add(cLeg);
+            });
+
+            // Chair Backrest Supports & Curved Wooden Backrest
+            [-0.36, 0.36].forEach((bx) => {
+              const post = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.62, 8), legMetalMat);
+              post.position.set(bx, 1.06, 0.4);
+              chairGroup.add(post);
+            });
+
+            const cBack = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.48, 0.08), chairWoodMat);
+            cBack.position.set(0, 1.26, 0.42);
+            cBack.castShadow = true;
+            chairGroup.add(cBack);
+
+            unitGroup.add(chairGroup);
+            interiorGroup.add(unitGroup);
+          });
+        });
+
+        // 4. Cute 3D Student Classmates Studying in the Classroom (Wearing Orange Kỷ Nguyên Era Uniforms)
+        [
+          { x: -6.6, z: -0.65, name: 'Minh • Student', gender: 'boy', hair: 'classic', hairCol: '#1c1917' },
+          { x: 2.2, z: -0.65, name: 'Linh • Student', gender: 'girl', hair: 'twintails', hairCol: '#3b2219' },
+          { x: -2.2, z: 2.85, name: 'Khoa • Student', gender: 'boy', hair: 'textured_crop', hairCol: '#0f172a' },
+          { x: 6.6, z: 2.85, name: 'An • Student', gender: 'girl', hair: 'long_wavy', hairCol: '#4a2511' }
+        ].forEach((st) => {
+          const stRig = buildCharacterAvatar({
+            shirtColor: '#f97316',
+            hairColor: st.hairCol,
+            skinColor: '#FFE7D6',
+            hatType: 'none',
+            accessoryType: 'none',
+            name: st.name,
+            cohort: 'IELTS 1',
+            gender: st.gender,
+            hairStyle: st.hair,
+            clothingType: 'varsity',
+            beltType: 'none'
+          });
+          stRig.root.position.set(st.x, 0, st.z);
+          stRig.root.rotation.y = Math.PI; // Facing the front chalkboard
+          interiorGroup.add(stRig.root);
+        });
+
+        // 5. Classroom Bookshelves at Back Left & Back Right Corners
+        [-8.8, 8.8].forEach((bx) => {
+          const shelfGroup = new THREE.Group();
+          shelfGroup.position.set(bx, 0, -roomD / 2 + 1.1);
+          const shelfFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(2.6, 4.2, 0.85),
+            new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 })
+          );
+          shelfFrame.position.y = 2.1;
+          shelfFrame.castShadow = true;
+          shelfGroup.add(shelfFrame);
+
+          for (let row = 0; row < 3; row++) {
+            for (let b = 0; b < 6; b++) {
+              const bk = new THREE.Mesh(
+                new THREE.BoxGeometry(0.28, 0.68, 0.65),
+                new THREE.MeshStandardMaterial({
+                  color: bookCoverPalette[(row * 6 + b) % bookCoverPalette.length],
+                  roughness: 0.45
+                })
+              );
+              bk.position.set(-0.9 + b * 0.36, 1.1 + row * 1.1, 0.12);
+              shelfGroup.add(bk);
+            }
+          }
+          interiorGroup.add(shelfGroup);
+        });
       }
     };
 
@@ -6293,6 +7143,13 @@ export function EraVerse() {
               type="button"
               onClick={() => {
                 soundEngine.playUiClick();
+                if (insideBuilding.id.startsWith('class_')) {
+                  const firstBoard = INTERIOR_BOARDS_BY_BUILDING[insideBuilding.id]?.[0];
+                  if (firstBoard) {
+                    handleBoardAction(firstBoard);
+                    return;
+                  }
+                }
                 setActiveBuildingModal(insideBuilding.id);
               }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl border border-blue-400/30 transition-all cursor-pointer"
@@ -7115,8 +7972,9 @@ export function EraVerse() {
         <EraGamesModal
           isOpen={activeBuildingModal === 'speaking'}
           onClose={() => setActiveBuildingModal(null)}
-          eraGems={isSuperAdminTeacherJan ? eraGems : 0}
-          eraDollars={isSuperAdminTeacherJan ? eraDollars : 0}
+          eraGems={eraGems}
+          eraDollars={eraDollars}
+          studentCourse={userCourse || playerProfile.cohort}
           playerAvatar={{
             ...playerProfile,
             skinTone: playerProfile.skinColor,
@@ -7134,8 +7992,8 @@ export function EraVerse() {
           }}
           onRewardGems={(gemsWon, xpWon, dollarsWon, gameTitle) => {
             soundEngine.playGoalCheer();
-            const nextGems = isSuperAdminTeacherJan ? eraGems + gemsWon : 0;
-            const nextDollars = isSuperAdminTeacherJan ? eraDollars + dollarsWon : 0;
+            const nextGems = eraGems + gemsWon;
+            const nextDollars = eraDollars + dollarsWon;
             setEraGems(nextGems);
             setEraDollars(nextDollars);
             setXp((x) => x + xpWon);

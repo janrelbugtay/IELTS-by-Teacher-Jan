@@ -2,9 +2,9 @@ import fs from "fs";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, ThinkingLevel, LiveServerMessage, Modality } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, LiveServerMessage, Modality, Type } from "@google/genai";
 import dotenv from "dotenv";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { google } from "googleapis";
 import multer from "multer";
 import {
@@ -316,17 +316,16 @@ Reference the official IELTS descriptors when explaining weaknesses. Provide spe
 - **What Prevented Band 8:** ...
 - **What Prevented Band 9:** ...
 
-## STEP 9: Band 8–9 Sample Rewrite
+## STEP 9: Band 8 Sample Rewrite (Preserving Student Ideas)
 Create a section called:
-Band 8–9 Sample Rewrite
-Rewrite the essay to Band 8–9 quality.
+Band 8 Sample Rewrite
+Rewrite the essay to solid IELTS Band 8.0 quality while preserving the student's own ideas, data selections (Task 1), and stance/arguments (Task 2).
 Requirements:
-- Advanced vocabulary
-- Sophisticated grammar
-- Strong cohesion
-- Natural academic tone
-- Native-level fluency
-Maintain the original meaning.
+- Preserve all original ideas and factual figures; do not invent contradictory data
+- Natural academic vocabulary and accurate collocations
+- Error-free complex grammatical structures
+- Smooth paragraph cohesion and progression
+- Zero remaining spelling, article, preposition, or punctuation errors
 
 ## STEP 10: Positive Feedback
 Identify strengths.
@@ -338,17 +337,18 @@ Example:
 🟢 Attempts to use advanced vocabulary.
 
 IMPORTANT RULES
+- Apply identical analytical precision to both Task 1 and Task 2.
 - Never simply say "incorrect."
 - Always provide a correction.
 - Always explain why it is incorrect.
 - Be strict like a real IELTS examiner.
-- Detect both obvious and subtle errors.
+- Detect both obvious and subtle errors across every single sentence from start to finish.
 - Preserve the student's original meaning whenever possible.
-- Use British English spelling.
+- Use British or consistent academic English spelling.
 - Prioritize IELTS academic writing standards.
 - Highlight every error using strikethrough formatting.
 - Give actionable advice for improving the band score.
-Your goal is to function as a professional IELTS examiner, grammar checker, writing coach, and Band 9 essay mentor simultaneously.`;
+Your goal is to function as a professional IELTS examiner, grammar checker, writing coach, and Band 8 essay mentor simultaneously.`;
 
     try {
       if (!process.env.GEMINI_API_KEY) {
@@ -357,7 +357,7 @@ Your goal is to function as a professional IELTS examiner, grammar checker, writ
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-4-hydrogen',
         contents: `Analyze the following IELTS ${taskType.replace(/([A-Z])/g, ' $1').trim()} submission:\n\n"${inputText}"`,
         config: {
           systemInstruction: systemPrompt,
@@ -367,10 +367,7 @@ Your goal is to function as a professional IELTS examiner, grammar checker, writ
       res.json({ feedback: response.text });
     } catch (err: any) {
       console.warn("Live Gemini API unavailable for evaluate-writing, providing standard IELTS rubric evaluation:", err?.message || err);
-      const isCreditDepleted = err?.message?.includes("prepayment credits are depleted") || err?.status === 402 || String(err?.message || "").includes("402");
-      const notice = isCreditDepleted
-        ? "Official IELTS Rubric Evaluation (Live Gemini credits depleted; manage at ai.studio/projects)"
-        : "Official IELTS Rubric Evaluation";
+      const notice = "Official IELTS Rubric Evaluation";
       const fallback = evaluateIeltsWritingMarkdownFallback(inputText, taskType, rawPrompt, notice);
       return res.json({ feedback: fallback });
     }
@@ -383,94 +380,167 @@ Your goal is to function as a professional IELTS examiner, grammar checker, writ
       return res.status(400).json({ error: "Input text is required" });
     }
 
-    const systemPrompt = `You are a certified IELTS examiner with extensive experience assessing IELTS Academic Writing Task 1 and Task 2 responses.
-Your goal is to evaluate the student's writing strictly according to the official IELTS Writing Task Band Descriptors provided below.
-Be strict and realistic. Do not inflate scores.
-CRITICAL INSTRUCTION: You MUST carefully read the provided IELTS Writing Task Question. Evaluate the student's response SPECIFICALLY against this prompt. If the student's response is off-topic, memorized, or fails to address the specific topic and requirements of the prompt, you MUST severely penalize the Task Achievement / Task Response score (Band 5.0 or lower).
+    const normalizedTaskType = String(taskType || '2').trim();
+    const isTask1 = normalizedTaskType === '1';
 
-Perform ONLY the following tasks based strictly on the JSON schema provided:
-1. Estimated Band Score (round to nearest 0.5). Output scores as short strings like '7.0' or '6.5'.
-2. Detailed Examiner Feedback for Task Achievement/Response, Coherence & Cohesion, Lexical Resource, and Grammatical Range. Use the exact phrasing from the descriptors.
-3. Error Marking: Provide the full essay with errors crossed out using <del class='text-red-500 line-through'> and corrections inserted using <ins class='text-green-600 font-bold no-underline'>.
-4. Final Corrected Answer: Provide a clean, fully corrected version of the student's essay that fixes all grammatical, lexical, and structural errors while preserving their original meaning.
+    const systemPrompt = `You are a certified Senior IELTS Examiner evaluating IELTS Academic Writing ${isTask1 ? 'Task 1' : 'Task 2'}.
+Evaluate the candidate's response strictly against the official IELTS Writing Band Descriptors below and the specific task question provided.
+Be strict, fair, and consistent across both Task 1 and Task 2. Do NOT inflate scores.
+
+CRITICAL INSTRUCTIONS FOR OUTPUT QUALITY & CONSISTENCY:
+1. Scores: Provide accurate criterion bands ('taskAchievement' for Task 1 / Task Response for Task 2, 'coherenceCohesion', 'lexicalResource', 'grammaticalRange') and 'overallBand' formatted as strings rounded to 0.5 (e.g., '6.0', '6.5', '7.0'). Follow official IELTS rounding (.25 rounds up to .5, .75 rounds up to next whole band). If off-topic or severely underlength (<${isTask1 ? '150' : '250'} words), apply appropriate Task penalty.
+2. Criterion Feedback: Write concise, specific examiner justifications referencing official descriptor criteria and evidence from the candidate's response. Include 3-4 'keyStrengths' and 3-4 'keyWeaknesses'.
+3. Inline Error Marking ('inlineMarkedEssay') — THOROUGH & CONSISTENT ACROSS EVERY SENTENCE:
+   - Return the candidate's COMPLETE text from the first sentence to the final sentence wrapped in paragraph tags (<p class="mb-3">...</p>). Do NOT skip paragraphs or leave errors unmarked.
+   - Inspect every sentence for spelling typos (e.g. "ilustrates", "moderatelly", "stablized", "shoeing"), subject-verb agreement, wrong prepositions, missing/wrong articles, word-form errors ("dramatically increase", "more steadily growth"), clause splicing ("let it became", "it was the one remained"), informal/imprecise word choice ("price tag", "top of the data", "going up"), and punctuation mistakes.
+   - Mark EVERY error inline immediately in place using:
+     <del class='text-red-500 line-through'>exact original wrong span</del> <ins class='text-green-600 font-bold no-underline'>clean corrected span</ins>
+   - Preserve all surrounding correct words verbatim.
+4. Final Corrected Answer ('finalCorrectedAnswer') — ERROR-FREE BAND 8.0 REWRITE:
+   - Rewrite the candidate's response to a genuine IELTS Band 8.0 standard while PRESERVING ALL OF THE STUDENT'S OWN IDEAS, data figures/comparisons (for Task 1), or thesis and arguments (for Task 2).
+   - Do NOT invent fake numbers, prepend generic template filler ("The graph illustrates information regarding the presented data..."), or change the student's core points.
+   - Eliminate 100% of grammatical, spelling, punctuation, article, preposition, and register errors, and upgrade phrasing, complex clause variety, and academic collocations naturally so it reads like a clean Band 8 script.
+   - Return plain clean paragraphs separated by double newlines (\\n\\n) with ZERO HTML tags (<del>/<ins> must NEVER appear in finalCorrectedAnswer).
 
 === OFFICIAL IELTS WRITING BAND DESCRIPTORS ===
+TASK 1 (Task Achievement, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy):
+Band 9: fully satisfies all requirements; clearly presents a fully developed response. cohesion attracts no attention; skilfully manages paragraphing. wide range of vocabulary, very natural and sophisticated control; rare minor 'slips'. wide range of structures, full flexibility and accuracy.
+Band 8: covers all requirements sufficiently; presents, highlights and illustrates key features clearly. sequences logically; manages cohesion well; uses paragraphing sufficiently. wide range of vocabulary fluently and flexibly; skilfully uses uncommon lexical items. wide range of structures; majority of sentences are error-free.
+Band 7: covers requirements; clear overview of main trends/differences; clearly presents/highlights key features. logically organises information; clear progression; range of cohesive devices. sufficient vocabulary flexibility/precision; less common lexis. variety of complex structures; frequent error-free sentences; good control.
+Band 6: addresses requirements; presents an overview with information appropriately selected. arranges coherently; clear progression; effective cohesive devices (some faulty/mechanical). adequate vocabulary; attempts less common vocabulary (some inaccuracy). mix of simple/complex forms; errors rarely reduce communication.
+Band 5: generally addresses task; recounts detail mechanically with no clear overview. some organisation, lack of progression; inadequate cohesive devices. limited vocabulary. limited structures; frequent grammatical errors cause some difficulty.
 
-TASK 1 (Task Achievement, Coherence & Cohesion, Lexical Resource, Grammatical Range):
-Band 9: fully satisfies all requirements; clearly presents a fully developed response. uses cohesion in such a way that it attracts no attention; skilfully manages paragraphing. uses a wide range of vocabulary with very natural and sophisticated control; rare minor 'slips'. uses a wide range of structures with full flexibility and accuracy; rare minor 'slips'.
-Band 8: covers all requirements sufficiently; presents, highlights and illustrates key features clearly. sequences logically; manages cohesion well; uses paragraphing sufficiently. uses a wide range of vocabulary fluently and flexibly; skilfully uses uncommon lexical items. wide range of structures; majority of sentences are error-free.
-Band 7: covers requirements; presents a clear overview of main trends/differences; clearly presents and highlights key features but could be more fully extended. logically organises information; clear progression; uses a range of cohesive devices appropriately. sufficient range of vocabulary for flexibility/precision; uses less common lexical items with style awareness. variety of complex structures; frequent error-free sentences; good control of grammar.
-Band 6: addresses requirements; presents an overview with information appropriately selected. arranges information coherently; clear overall progression; effective cohesive devices (some faulty/mechanical). adequate range of vocabulary; attempts less common vocabulary (some inaccuracy). mix of simple/complex forms; some grammar errors rarely reduce communication.
-Band 5: generally addresses task; recounts detail mechanically with no clear overview. some organisation but lack of overall progression; inadequate/inaccurate cohesive devices. limited vocabulary (minimally adequate). limited range of structures; frequent grammatical errors cause some difficulty.
-
-TASK 2 (Task Response, Coherence & Cohesion, Lexical Resource, Grammatical Range):
-Band 9: fully addresses all parts of the task; presents a fully developed position with relevant, fully extended and well-supported ideas. cohesion attracts no attention; skilfully manages paragraphing. wide range of vocabulary, sophisticated control; rare minor 'slips'. wide range of structures, full flexibility/accuracy; rare minor 'slips'.
-Band 8: sufficiently addresses all parts; well-developed response with relevant, extended/supported ideas. sequences logically; manages cohesion well; paragraphs appropriately. wide vocabulary fluently/flexibly used; skilfully uses uncommon items. wide structures; majority error-free.
-Band 7: addresses all parts; clear position throughout; presents/extends main ideas (may over-generalise). logically organises; clear progression; cohesive devices appropriate. sufficient vocabulary for flexibility/precision; awareness of style/collocation. variety of complex structures; frequent error-free sentences; good grammar control.
-Band 6: addresses all parts (some more fully than others); relevant position (conclusions may be unclear); main ideas some inadequately developed. arranges coherently; clear overall progression; cohesive devices effective but may be mechanical. adequate vocabulary; attempts less common words. mix of simple/complex forms; errors rarely reduce communication.
-Band 5: addresses task partially; position expressed but development unclear; main ideas limited/not sufficiently developed. some organisation, lack of overall progression; inadequate cohesion. limited vocabulary. limited structures; frequent grammatical errors cause difficulty.
+TASK 2 (Task Response, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy):
+Band 9: fully addresses all parts; fully developed position with relevant, fully extended and well-supported ideas. cohesion attracts no attention. wide vocabulary, sophisticated control. wide structures, full flexibility/accuracy.
+Band 8: sufficiently addresses all parts; well-developed response with relevant, extended/supported ideas. sequences logically; manages cohesion well; paragraphs appropriately. wide vocabulary fluently/flexibly used; uncommon items skilfully used. wide structures; majority error-free.
+Band 7: addresses all parts; clear position throughout; presents/extends main ideas. logically organises; clear progression; appropriate cohesive devices. sufficient vocabulary flexibility/precision. variety of complex structures; frequent error-free sentences.
+Band 6: addresses all parts (some more fully than others); relevant position; some main ideas inadequately developed. arranges coherently; cohesive devices sometimes mechanical. adequate vocabulary; attempts less common words. mix of simple/complex forms; errors rarely reduce communication.
+Band 5: addresses task partially; position unclear; limited main ideas. lack of progression; inadequate cohesion. limited vocabulary. limited structures; frequent errors cause difficulty.
 `;
 
     try {
       if (!process.env.GEMINI_API_KEY) {
-        const fallback = evaluateIeltsWritingJsonFallback(inputText, taskType, rawPrompt, "Official IELTS Examiner Rubric Assessment (Server Key Unconfigured)");
+        const fallback = evaluateIeltsWritingJsonFallback(inputText, normalizedTaskType, rawPrompt, "Official IELTS Examiner Rubric Assessment (Server Key Unconfigured)");
         return res.json(fallback);
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: `IELTS Writing Task ${taskType} Question:\n${rawPrompt}\n\nStudent's Response:\n${inputText}`,
+        model: 'gemini-4-hydrogen',
+        contents: `IELTS Academic Writing Task ${normalizedTaskType} Question:\n${rawPrompt || '(Standard Academic Writing prompt)'}\n\nStudent's Response:\n${inputText}`,
         config: {
           systemInstruction: systemPrompt,
-          temperature: 0.2,
           responseMimeType: "application/json",
           responseSchema: {
-              type: "OBJECT",
-              properties: {
-                  scores: {
-                      type: "OBJECT",
-                      properties: {
-                          taskAchievement: { type: "STRING", description: "Score as a string, e.g., '7.5'" },
-                          coherenceCohesion: { type: "STRING", description: "Score as a string, e.g., '7.5'" },
-                          lexicalResource: { type: "STRING", description: "Score as a string, e.g., '7.5'" },
-                          grammaticalRange: { type: "STRING", description: "Score as a string, e.g., '7.5'" },
-                          overallBand: { type: "STRING", description: "Score as a string, e.g., '7.5'" }
-                      }
-                  },
-                  feedback: {
-                      type: "OBJECT",
-                      properties: {
-                          taskAchievement: { type: "STRING" },
-                          coherenceCohesion: { type: "STRING" },
-                          lexicalResource: { type: "STRING" },
-                          grammaticalRange: { type: "STRING" }
-                      }
-                  },
-                  inlineMarkedEssay: { type: "STRING", description: "Full essay string. Use <del class='text-red-500 line-through'> for errors and <ins class='text-green-600 font-bold no-underline'> for fixes." },
-                  finalCorrectedAnswer: { type: "STRING", description: "The student's essay, fully corrected to a high standard." }
+            type: Type.OBJECT,
+            properties: {
+              scores: {
+                type: Type.OBJECT,
+                properties: {
+                  taskAchievement: { type: Type.STRING, description: "Band score rounded to 0.5, e.g. '6.0'" },
+                  coherenceCohesion: { type: Type.STRING, description: "Band score rounded to 0.5, e.g. '6.5'" },
+                  lexicalResource: { type: Type.STRING, description: "Band score rounded to 0.5, e.g. '6.0'" },
+                  grammaticalRange: { type: Type.STRING, description: "Band score rounded to 0.5, e.g. '5.5'" },
+                  overallBand: { type: Type.STRING, description: "Overall IELTS Writing band rounded to 0.5, e.g. '6.0'" }
+                },
+                required: ["taskAchievement", "coherenceCohesion", "lexicalResource", "grammaticalRange", "overallBand"]
+              },
+              feedback: {
+                type: Type.OBJECT,
+                properties: {
+                  taskAchievement: { type: Type.STRING },
+                  coherenceCohesion: { type: Type.STRING },
+                  lexicalResource: { type: Type.STRING },
+                  grammaticalRange: { type: Type.STRING }
+                },
+                required: ["taskAchievement", "coherenceCohesion", "lexicalResource", "grammaticalRange"]
+              },
+              keyStrengths: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "3-4 concise bullet strengths referencing the student's writing."
+              },
+              keyWeaknesses: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "3-4 concise bullet areas for improvement."
+              },
+              inlineMarkedEssay: {
+                type: Type.STRING,
+                description: "Complete student essay wrapped in <p class='mb-3'> tags with every error marked via <del class='text-red-500 line-through'>...</del> <ins class='text-green-600 font-bold no-underline'>...</ins>."
+              },
+              finalCorrectedAnswer: {
+                type: Type.STRING,
+                description: "Error-free IELTS Band 8.0 rewrite preserving the student's ideas and data/arguments, formatted in clean paragraphs separated by \\n\\n with zero HTML tags."
               }
+            },
+            required: ["scores", "feedback", "keyStrengths", "keyWeaknesses", "inlineMarkedEssay", "finalCorrectedAnswer"]
           }
         }
       });
-      
+
       const jsonText = response.text;
       if (!jsonText) throw new Error("No response generated.");
-      
+
       let parsedJsonText = jsonText;
       const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
       if (jsonMatch) {
-          parsedJsonText = jsonMatch[1];
+        parsedJsonText = jsonMatch[1];
       }
-      
-      const reportData = JSON.parse(parsedJsonText.trim());
+
+      const rawReport = JSON.parse(parsedJsonText.trim());
+
+      const normalizeScore = (val: any): string => {
+        const num = parseFloat(String(val));
+        if (isNaN(num)) return '6.0';
+        const clamped = Math.max(0, Math.min(9, Math.round(num * 2) / 2));
+        return clamped.toFixed(1);
+      };
+
+      const ta = normalizeScore(rawReport?.scores?.taskAchievement);
+      const cc = normalizeScore(rawReport?.scores?.coherenceCohesion);
+      const lr = normalizeScore(rawReport?.scores?.lexicalResource);
+      const gr = normalizeScore(rawReport?.scores?.grammaticalRange);
+
+      const avg = (parseFloat(ta) + parseFloat(cc) + parseFloat(lr) + parseFloat(gr)) / 4;
+      const rem = avg - Math.floor(avg);
+      let overallNum = Math.round(avg * 2) / 2;
+      if (Math.abs(rem - 0.25) < 0.01) overallNum = Math.floor(avg) + 0.5;
+      else if (Math.abs(rem - 0.75) < 0.01) overallNum = Math.floor(avg) + 1.0;
+
+      const cleanFinalAnswer = String(rawReport?.finalCorrectedAnswer || '')
+        .replace(/<del[^>]*>.*?<\/del>/gi, '')
+        .replace(/<ins[^>]*>(.*?)<\/ins>/gi, '$1')
+        .replace(/<\/?p[^>]*>/gi, '\n\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+      const reportData = {
+        scores: {
+          taskAchievement: ta,
+          coherenceCohesion: cc,
+          lexicalResource: lr,
+          grammaticalRange: gr,
+          overallBand: rawReport?.scores?.overallBand ? normalizeScore(rawReport.scores.overallBand) : overallNum.toFixed(1)
+        },
+        feedback: {
+          taskAchievement: String(rawReport?.feedback?.taskAchievement || '').trim(),
+          coherenceCohesion: String(rawReport?.feedback?.coherenceCohesion || '').trim(),
+          lexicalResource: String(rawReport?.feedback?.lexicalResource || '').trim(),
+          grammaticalRange: String(rawReport?.feedback?.grammaticalRange || '').trim()
+        },
+        keyStrengths: Array.isArray(rawReport?.keyStrengths) ? rawReport.keyStrengths.map(String) : [],
+        keyWeaknesses: Array.isArray(rawReport?.keyWeaknesses) ? rawReport.keyWeaknesses.map(String) : [],
+        inlineMarkedEssay: String(rawReport?.inlineMarkedEssay || '').trim(),
+        finalCorrectedAnswer: cleanFinalAnswer,
+        targetBand: '8.0'
+      };
+
       res.json(reportData);
     } catch (err: any) {
       console.warn("Live Gemini API unavailable for evaluate-writing-json, providing standard IELTS rubric evaluation:", err?.message || err);
-      const isCreditDepleted = err?.message?.includes("prepayment credits are depleted") || err?.status === 402 || String(err?.message || "").includes("402");
-      const notice = isCreditDepleted
-        ? "Official IELTS Rubric Evaluation (Live Gemini credits depleted; manage at ai.studio/projects)"
-        : "Official IELTS Rubric Evaluation";
-      const fallbackReport = evaluateIeltsWritingJsonFallback(inputText, taskType, rawPrompt, notice);
+      const notice = "Official IELTS Rubric Evaluation";
+      const fallbackReport = evaluateIeltsWritingJsonFallback(inputText, normalizedTaskType, rawPrompt, notice);
       res.json(fallbackReport);
     }
   });
@@ -605,10 +675,7 @@ Return JSON with:
           return res.json(reportData);
         } catch (mErr: any) {
           console.warn("Live Gemini API unavailable for single speaking evaluation, generating fallback:", mErr?.message || mErr);
-          const isCreditDepleted = mErr?.message?.includes("prepayment credits are depleted") || mErr?.status === 402 || String(mErr?.message || "").includes("402");
-          const notice = isCreditDepleted
-            ? "Official IELTS Speaking Rubric (Live Gemini credits depleted; manage at ai.studio/projects)"
-            : "Official IELTS Speaking Rubric";
+          const notice = "Official IELTS Speaking Rubric";
           return res.json(evaluateIeltsSpeakingFallback({ questionText, noticeText: notice }));
         }
       }
@@ -1001,6 +1068,178 @@ ${text}`
     }
   });
 
+  // ============================================================================
+  // ERA GAMES LIVE ARENA ENGINE (Server-Authoritative Rooms & WebSocket State)
+  // ============================================================================
+  interface ArenaQuestion {
+    id: string;
+    prompt: string;
+    options: string[];
+    correctIndex: number;
+    explanation?: string;
+    points?: number;
+  }
+
+  interface ArenaPlayerState {
+    playerId: string;
+    name: string;
+    course: string;
+    score: number;
+    correctCount: number;
+    streak: number;
+    lastAnswerIndex: number | null;
+    lastAnswerCorrect: boolean | null;
+    lastPointsEarned: number;
+    answeredCurrentRound: boolean;
+    connected: boolean;
+  }
+
+  interface ArenaRoomState {
+    roomCode: string;
+    title: string;
+    course: string;
+    deckId: string;
+    hostPlayerId: string;
+    hostName: string;
+    status: 'LOBBY' | 'QUESTION' | 'ROUND_SUMMARY' | 'FINISHED';
+    questions: ArenaQuestion[];
+    currentIndex: number;
+    questionDurationMs: number;
+    questionStartedAt: number | null;
+    createdAt: number;
+    players: Map<string, ArenaPlayerState>;
+    sockets: Map<string, WebSocket>;
+    timer: ReturnType<typeof setTimeout> | null;
+  }
+
+  const arenaRooms = new Map<string, ArenaRoomState>();
+
+  const generateRoomCode = (): string => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'ERA';
+    for (let i = 0; i < 3; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    if (arenaRooms.has(code)) {
+      return `E${Math.floor(10000 + Math.random() * 89999)}`;
+    }
+    return code;
+  };
+
+  const serializeArenaRoom = (room: ArenaRoomState) => {
+    const playersList = Array.from(room.players.values())
+      .map((p) => ({ ...p }))
+      .sort((a, b) => b.score - a.score || b.correctCount - a.correctCount);
+    const currentQ = room.questions[room.currentIndex] || null;
+    const hideAnswer = room.status === 'QUESTION';
+    return {
+      roomCode: room.roomCode,
+      title: room.title,
+      course: room.course,
+      deckId: room.deckId,
+      hostPlayerId: room.hostPlayerId,
+      hostName: room.hostName,
+      status: room.status,
+      totalQuestions: room.questions.length,
+      currentIndex: room.currentIndex,
+      questionDurationMs: room.questionDurationMs,
+      questionStartedAt: room.questionStartedAt,
+      serverNow: Date.now(),
+      currentQuestion: currentQ
+        ? {
+            id: currentQ.id,
+            prompt: currentQ.prompt,
+            options: currentQ.options,
+            points: currentQ.points || 100,
+            correctIndex: hideAnswer ? null : currentQ.correctIndex,
+            explanation: hideAnswer ? null : currentQ.explanation || ''
+          }
+        : null,
+      players: playersList
+    };
+  };
+
+  const broadcastArenaState = (room: ArenaRoomState) => {
+    const payload = JSON.stringify({
+      type: 'arena:state',
+      room: serializeArenaRoom(room)
+    });
+    for (const [, sock] of room.sockets.entries()) {
+      if (sock.readyState === WebSocket.OPEN) {
+        try {
+          sock.send(payload);
+        } catch {
+          // ignore stale socket
+        }
+      }
+    }
+  };
+
+  const finalizeArenaRound = (room: ArenaRoomState) => {
+    if (room.timer) {
+      clearTimeout(room.timer);
+      room.timer = null;
+    }
+    if (room.status !== 'QUESTION') return;
+    room.status = room.currentIndex >= room.questions.length - 1 ? 'FINISHED' : 'ROUND_SUMMARY';
+    broadcastArenaState(room);
+  };
+
+  const beginArenaQuestion = (room: ArenaRoomState, index: number) => {
+    if (room.timer) {
+      clearTimeout(room.timer);
+      room.timer = null;
+    }
+    if (index >= room.questions.length) {
+      room.status = 'FINISHED';
+      room.questionStartedAt = null;
+      broadcastArenaState(room);
+      return;
+    }
+    room.currentIndex = index;
+    room.status = 'QUESTION';
+    room.questionStartedAt = Date.now();
+    for (const p of room.players.values()) {
+      p.lastAnswerIndex = null;
+      p.lastAnswerCorrect = null;
+      p.lastPointsEarned = 0;
+      p.answeredCurrentRound = false;
+    }
+    broadcastArenaState(room);
+    room.timer = setTimeout(() => {
+      finalizeArenaRound(room);
+    }, room.questionDurationMs);
+  };
+
+  // Cleanup abandoned rooms older than 3 hours
+  setInterval(() => {
+    const cutoff = Date.now() - 3 * 60 * 60 * 1000;
+    for (const [code, room] of arenaRooms.entries()) {
+      if (room.createdAt < cutoff && room.sockets.size === 0) {
+        if (room.timer) clearTimeout(room.timer);
+        arenaRooms.delete(code);
+      }
+    }
+  }, 15 * 60 * 1000);
+
+  app.get("/api/arena/rooms", (_req, res) => {
+    const rooms = Array.from(arenaRooms.values())
+      .filter((r) => r.status !== 'FINISHED')
+      .map((r) => ({
+        roomCode: r.roomCode,
+        title: r.title,
+        course: r.course,
+        hostName: r.hostName,
+        status: r.status,
+        playerCount: r.players.size,
+        totalQuestions: r.questions.length,
+        createdAt: r.createdAt
+      }))
+      .sort((a, b) => b.createdAt - a.createdAt);
+    res.json({ rooms });
+  });
+
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -1027,10 +1266,228 @@ ${text}`
     console.error("HTTP Server error:", err);
   });
 
-  const wss = new WebSocketServer({ server, path: '/live' });
+  const wss = new WebSocketServer({ noServer: true });
+  const arenaWss = new WebSocketServer({ noServer: true });
 
   wss.on("error", (err) => {
     console.error("WebSocket server error:", err);
+  });
+
+  arenaWss.on("error", (err) => {
+    console.error("Arena WebSocket server error:", err);
+  });
+
+  server.on("upgrade", (request, socket, head) => {
+    try {
+      const pathname = new URL(request.url || "/", "http://localhost").pathname;
+      if (pathname === "/live") {
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit("connection", ws, request);
+        });
+      } else if (pathname === "/arena-ws") {
+        arenaWss.handleUpgrade(request, socket, head, (ws) => {
+          arenaWss.emit("connection", ws, request);
+        });
+      } else {
+        socket.destroy();
+      }
+    } catch {
+      socket.destroy();
+    }
+  });
+
+  arenaWss.on("connection", (ws) => {
+    let joinedRoomCode: string | null = null;
+    let joinedPlayerId: string | null = null;
+
+    const sendError = (message: string) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "arena:error", error: message }));
+      }
+    };
+
+    ws.on("message", (raw) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        const type = String(msg?.type || "");
+
+        if (type === "arena:create") {
+          const questions = Array.isArray(msg.questions) ? msg.questions.slice(0, 25) : [];
+          if (questions.length === 0) {
+            return sendError("Cannot create arena without at least 1 question.");
+          }
+          const playerId = String(msg.playerId || `host_${Date.now()}`);
+          const hostName = String(msg.playerName || msg.hostName || "Teacher").trim().slice(0, 40) || "Teacher";
+          const roomCode = generateRoomCode();
+          const room: ArenaRoomState = {
+            roomCode,
+            title: String(msg.title || "Era Live Quiz Battle").slice(0, 80),
+            course: String(msg.course || "Starter").slice(0, 24),
+            deckId: String(msg.deckId || "custom"),
+            hostPlayerId: playerId,
+            hostName,
+            status: "LOBBY",
+            questions: questions.map((q: any, idx: number) => ({
+              id: String(q.id || `q_${idx}`),
+              prompt: String(q.prompt || q.question || "Question"),
+              options: Array.isArray(q.options) ? q.options.slice(0, 4).map(String) : ["Option A", "Option B"],
+              correctIndex: Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0,
+              explanation: q.explanation ? String(q.explanation) : "",
+              points: Number.isFinite(Number(q.points)) ? Number(q.points) : 100
+            })),
+            currentIndex: 0,
+            questionDurationMs: Math.min(30000, Math.max(8000, Number(msg.questionDurationMs) || 15000)),
+            questionStartedAt: null,
+            createdAt: Date.now(),
+            players: new Map(),
+            sockets: new Map(),
+            timer: null
+          };
+
+          room.players.set(playerId, {
+            playerId,
+            name: hostName,
+            course: String(msg.course || "Starter"),
+            score: 0,
+            correctCount: 0,
+            streak: 0,
+            lastAnswerIndex: null,
+            lastAnswerCorrect: null,
+            lastPointsEarned: 0,
+            answeredCurrentRound: false,
+            connected: true
+          });
+          room.sockets.set(playerId, ws);
+          arenaRooms.set(roomCode, room);
+          joinedRoomCode = roomCode;
+          joinedPlayerId = playerId;
+          broadcastArenaState(room);
+          return;
+        }
+
+        if (type === "arena:join" || type === "arena:reconnect") {
+          const code = String(msg.roomCode || "").trim().toUpperCase();
+          const room = arenaRooms.get(code);
+          if (!room) {
+            return sendError(`Arena room "${code}" not found or has ended.`);
+          }
+          const playerId = String(msg.playerId || `player_${Date.now()}_${Math.floor(Math.random() * 999)}`);
+          const playerName = String(msg.playerName || "Student").trim().slice(0, 40) || "Student";
+          const existing = room.players.get(playerId);
+          if (existing) {
+            existing.connected = true;
+            existing.name = playerName;
+          } else {
+            room.players.set(playerId, {
+              playerId,
+              name: playerName,
+              course: String(msg.course || room.course),
+              score: 0,
+              correctCount: 0,
+              streak: 0,
+              lastAnswerIndex: null,
+              lastAnswerCorrect: null,
+              lastPointsEarned: 0,
+              answeredCurrentRound: false,
+              connected: true
+            });
+          }
+          room.sockets.set(playerId, ws);
+          joinedRoomCode = code;
+          joinedPlayerId = playerId;
+          broadcastArenaState(room);
+          return;
+        }
+
+        const roomCode = String(msg.roomCode || joinedRoomCode || "").trim().toUpperCase();
+        const room = arenaRooms.get(roomCode);
+        if (!room) return sendError("Room no longer exists.");
+        const actorId = String(msg.playerId || joinedPlayerId || "");
+
+        if (type === "arena:start") {
+          if (actorId !== room.hostPlayerId) return sendError("Only the host can start the match.");
+          beginArenaQuestion(room, 0);
+          return;
+        }
+
+        if (type === "arena:next") {
+          if (actorId !== room.hostPlayerId) return sendError("Only the host can advance questions.");
+          if (room.status === "QUESTION") {
+            finalizeArenaRound(room);
+          } else if (room.status === "ROUND_SUMMARY") {
+            beginArenaQuestion(room, room.currentIndex + 1);
+          }
+          return;
+        }
+
+        if (type === "arena:end") {
+          if (actorId !== room.hostPlayerId) return sendError("Only the host can end the match.");
+          if (room.timer) {
+            clearTimeout(room.timer);
+            room.timer = null;
+          }
+          room.status = "FINISHED";
+          broadcastArenaState(room);
+          return;
+        }
+
+        if (type === "arena:answer") {
+          if (room.status !== "QUESTION") return;
+          const player = room.players.get(actorId);
+          if (!player || player.answeredCurrentRound) return;
+          const answerIndex = Number(msg.answerIndex);
+          const currentQ = room.questions[room.currentIndex];
+          if (!currentQ) return;
+
+          const isCorrect = answerIndex === currentQ.correctIndex;
+          const elapsed = Math.max(0, Date.now() - (room.questionStartedAt || Date.now()));
+          const ratioRemaining = Math.max(0, 1 - elapsed / room.questionDurationMs);
+          const basePoints = currentQ.points || 100;
+          const pointsEarned = isCorrect ? Math.round(basePoints + ratioRemaining * 60 + player.streak * 15) : 0;
+
+          player.answeredCurrentRound = true;
+          player.lastAnswerIndex = answerIndex;
+          player.lastAnswerCorrect = isCorrect;
+          player.lastPointsEarned = pointsEarned;
+          if (isCorrect) {
+            player.score += pointsEarned;
+            player.correctCount += 1;
+            player.streak += 1;
+          } else {
+            player.streak = 0;
+          }
+
+          broadcastArenaState(room);
+
+          // Auto-finish round early if every connected player has answered
+          const connectedPlayers = Array.from(room.players.values()).filter((p) => p.connected);
+          if (connectedPlayers.length > 0 && connectedPlayers.every((p) => p.answeredCurrentRound)) {
+            setTimeout(() => {
+              if (room.status === "QUESTION") {
+                finalizeArenaRound(room);
+              }
+            }, 650);
+          }
+          return;
+        }
+      } catch (err) {
+        console.error("Arena WS message error:", err);
+      }
+    });
+
+    ws.on("close", () => {
+      if (joinedRoomCode && joinedPlayerId) {
+        const room = arenaRooms.get(joinedRoomCode);
+        if (room) {
+          room.sockets.delete(joinedPlayerId);
+          const player = room.players.get(joinedPlayerId);
+          if (player) {
+            player.connected = false;
+            broadcastArenaState(room);
+          }
+        }
+      }
+    });
   });
 
   wss.on("connection", async (clientWs) => {

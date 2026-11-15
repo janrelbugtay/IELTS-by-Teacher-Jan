@@ -26,9 +26,11 @@ import {
   RefreshCw,
   Sliders,
   Scissors,
-  Glasses
+  Glasses,
+  Dices
 } from 'lucide-react';
 import { EraVerseAvatar3D } from './EraVerseAvatar3D';
+import { EraGamesHub } from './EraGamesHub';
 import {
   SKIN_TONES,
   FACE_SHAPES,
@@ -2940,180 +2942,49 @@ export const EraGalleryModal: React.FC<EraGalleryModalProps> = ({
 };
 
 // ============================================================================
-// 3. ERAGAMES ARCADE MODAL (PLAY MINI-GAMES TO EARN 💎 ERA GEMS FOR ERASHOP!)
+// 3. ERAGAMES ARCADE MODAL (HAMSTERENGLISH.ONLINE COMMUNITY HUB + BUBBLE ISLAND)
 // ============================================================================
 interface EraGamesModalProps {
   isOpen: boolean;
   eraGems: number;
   eraDollars?: number;
+  studentCourse?: string;
   playerAvatar?: Partial<RealisticCharacterOptions>;
   onRewardGems: (gemsWon: number, xpWon: number, dollarsWon: number, gameTitle: string) => void;
   onOpenEraShop: () => void;
   onClose: () => void;
 }
 
-const VOCAB_BLITZ_QUESTIONS = [
-  {
-    word: 'UBIQUITOUS',
-    prompt: 'Select the closest academic synonym for "UBIQUITOUS":',
-    options: ['Present everywhere at once', 'Extremely rare and fragile', 'Financially unprofitable', 'Strictly confidential'],
-    correct: 0
-  },
-  {
-    word: 'MITIGATE',
-    prompt: 'In IELTS Writing Task 2, what does "MITIGATE" mean?',
-    options: ['Make a problem less severe', 'Accelerate pollution', 'Ignore statistical evidence', 'Construct a tall building'],
-    correct: 0
-  },
-  {
-    word: 'PRAGMATIC',
-    prompt: 'What is a "PRAGMATIC" approach to solving an issue?',
-    options: ['Practical and realistic', 'Purely emotional', 'Ancient and outdated', 'Uncertain and hesitant'],
-    correct: 0
-  },
-  {
-    word: 'EXACERBATE',
-    prompt: 'Traffic congestion can "EXACERBATE" urban air quality. This means:',
-    options: ['Worsen an already bad situation', 'Completely purify the air', 'Reduce travel time', 'Sponsor public parks'],
-    correct: 0
-  },
-  {
-    word: 'RESILIENT',
-    prompt: 'A "RESILIENT" community is one that can:',
-    options: ['Recover quickly from difficulties', 'Avoid all modern technology', 'Only speak one language', 'Relocate every winter'],
-    correct: 0
-  }
-];
-
-const SCRAMBLE_PUZZLES = [
-  { scrambled: 'F L U E N C Y', answer: 'FLUENCY', hint: 'Smooth and effortless flow in IELTS Speaking' },
-  { scrambled: 'C O H E R E N C E', answer: 'COHERENCE', hint: 'Logical organization of ideas in IELTS Writing' },
-  { scrambled: 'L E X I C A L', answer: 'LEXICAL', hint: 'Relating to vocabulary resource and word choice' },
-  { scrambled: 'S U S T A I N A B L E', answer: 'SUSTAINABLE', hint: 'Environmentally friendly over the long term' },
-  { scrambled: 'I N N O V A T I O N', answer: 'INNOVATION', hint: 'A new method, idea, or technological breakthrough' }
-];
-
-const PENALTY_IDIOM_QUESTIONS = [
-  {
-    situation: 'Keeper Max dives left! Complete the idiom: "Studying every day made the IELTS exam a piece of ___!"',
-    options: ['cake', 'stone', 'cloud', 'thunder'],
-    correct: 0
-  },
-  {
-    situation: 'Top corner shot! Choose the Band 8.0 linker: "___ the rain, the football match continued."',
-    options: ['Despite', 'Although', 'However', 'Because'],
-    correct: 0
-  },
-  {
-    situation: 'Championship penalty! "Technology has ___ a dramatic transformation in modern education."',
-    options: ['brought about', 'taken off', 'looked after', 'given up'],
-    correct: 0
-  }
-];
-
 export const EraGamesModal: React.FC<EraGamesModalProps> = ({
   isOpen,
   eraGems,
   eraDollars = 0,
-  playerAvatar,
+  studentCourse,
   onRewardGems,
   onOpenEraShop,
   onClose
 }) => {
-  const [selectedGame, setSelectedGame] = useState<'vocab' | 'scramble' | 'penalty'>('vocab');
-
-  // Game 1 state: Vocab Blitz
-  const [vocabIdx, setVocabIdx] = useState(0);
-  const [vocabScore, setVocabScore] = useState(0);
-  const [vocabFinished, setVocabFinished] = useState(false);
-  const [vocabCheer, setVocabCheer] = useState<'idle' | 'wave'>('idle');
-
-  // Game 2 state: Word Scramble
-  const [scrambleIdx, setScrambleIdx] = useState(0);
-  const [scrambleInput, setScrambleInput] = useState('');
-  const [scrambleFeedback, setScrambleFeedback] = useState<string | null>(null);
-  const [scrambleCheer, setScrambleCheer] = useState<'idle' | 'wave'>('idle');
-
-  // Game 3 state: Penalty Shootout
-  const [penaltyIdx, setPenaltyIdx] = useState(0);
-  const [penaltyGoals, setPenaltyGoals] = useState(0);
-  const [penaltyDone, setPenaltyDone] = useState(false);
-  const [penaltyCheer, setPenaltyCheer] = useState<'idle' | 'wave' | 'walk'>('idle');
-
   if (!isOpen) return null;
 
-  const currentVocab = VOCAB_BLITZ_QUESTIONS[vocabIdx % VOCAB_BLITZ_QUESTIONS.length];
-  const currentScramble = SCRAMBLE_PUZZLES[scrambleIdx % SCRAMBLE_PUZZLES.length];
-  const currentPenalty = PENALTY_IDIOM_QUESTIONS[penaltyIdx % PENALTY_IDIOM_QUESTIONS.length];
-
-  const handleVocabAnswer = (optIdx: number) => {
-    const isCorrect = optIdx === currentVocab.correct;
-    const nextScore = isCorrect ? vocabScore + 1 : vocabScore;
-    if (isCorrect) {
-      setVocabCheer('wave');
-      setTimeout(() => setVocabCheer('idle'), 950);
-    }
-    if (vocabIdx + 1 >= VOCAB_BLITZ_QUESTIONS.length) {
-      setVocabScore(nextScore);
-      setVocabFinished(true);
-      const gemsWon = Math.max(20, nextScore * 12);
-      const dollarsWon = Math.max(25, nextScore * 20);
-      onRewardGems(gemsWon, nextScore * 30, dollarsWon, 'IELTS Vocabulary Speed Blitz');
-    } else {
-      setVocabScore(nextScore);
-      setVocabIdx(vocabIdx + 1);
-    }
-  };
-
-  const handleScrambleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (scrambleInput.trim().toUpperCase() === currentScramble.answer) {
-      setScrambleCheer('wave');
-      setTimeout(() => setScrambleCheer('idle'), 1200);
-      onRewardGems(50, 80, 50, `Word Scramble (${currentScramble.answer})`);
-      setScrambleFeedback(`🎉 Correct! "${currentScramble.answer}" unlocked +50 💎 Era Gems & +$50 💵 Era Dollars!`);
-      setScrambleInput('');
-      setTimeout(() => {
-        setScrambleFeedback(null);
-        setScrambleIdx((i) => (i + 1) % SCRAMBLE_PUZZLES.length);
-      }, 1200);
-    } else {
-      setScrambleFeedback('Not quite! Check the letters and hint above.');
-    }
-  };
-
-  const handlePenaltyShot = (optIdx: number) => {
-    const isGoal = optIdx === currentPenalty.correct;
-    const nextGoals = isGoal ? penaltyGoals + 1 : penaltyGoals;
-    setPenaltyCheer(isGoal ? 'wave' : 'walk');
-    setTimeout(() => setPenaltyCheer('idle'), 1000);
-    if (penaltyIdx + 1 >= PENALTY_IDIOM_QUESTIONS.length) {
-      setPenaltyGoals(nextGoals);
-      setPenaltyDone(true);
-      const gems = Math.max(25, nextGoals * 25);
-      const dollars = Math.max(30, nextGoals * 35);
-      onRewardGems(gems, nextGoals * 40, dollars, 'Grammar & Idiom Penalty Shootout');
-    } else {
-      setPenaltyGoals(nextGoals);
-      setPenaltyIdx(penaltyIdx + 1);
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-white rounded-[2rem] max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-[2rem] max-w-6xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-fuchsia-600 px-6 py-4 text-white flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-fuchsia-600 px-6 py-4 text-white flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center border border-white/25">
-              <Gamepad2 className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center border border-white/25 overflow-hidden">
+              <img
+                src="/assets/aistudio/image_44bb8d05.png"
+                alt="Bubble Island"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <span className="text-[11px] font-black uppercase tracking-widest text-purple-200">
-                ERAVERSE ARCADE & GEM ARENA • HOSTED BY PIXEL, SOPHIA & KEEPER MAX
+                ERAGAMES • HAMSTERENGLISH.ONLINE COMMUNITY HUB • BUBBLE ISLAND
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-                EraGames — Play & Win 💎 Era Gems!
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                EraGames — Community Hub & Bubble Island
               </h2>
             </div>
           </div>
@@ -3154,332 +3025,20 @@ export const EraGamesModal: React.FC<EraGamesModalProps> = ({
           </div>
         </div>
 
-        {/* Game Selector Tabs */}
-        <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2">
-          {(
-            [
-              { id: 'vocab', label: '⚡ Game 1: Vocabulary Speed Blitz (+60 💎)', icon: Zap },
-              { id: 'scramble', label: '🔤 Game 2: Academic Word Scramble (+50 💎)', icon: Sparkles },
-              { id: 'penalty', label: '⚽ Game 3: Idiom Penalty Shootout (+75 💎)', icon: Trophy }
-            ] as const
-          ).map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setSelectedGame(id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs border transition-all cursor-pointer ${
-                selectedGame === id
-                  ? 'bg-purple-600 text-white border-purple-600 shadow-md'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-purple-400'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Active Game Stage with Live 3D Characters */}
-        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
-          {selectedGame === 'vocab' && (
-            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* 3D Character Coach Panel */}
-              <div className="md:col-span-4 bg-gradient-to-b from-purple-900 via-indigo-900 to-slate-900 rounded-3xl p-4 text-center border-2 border-purple-300 shadow-lg flex flex-col items-center">
-                <div className="w-full h-[250px] rounded-2xl overflow-hidden bg-gradient-to-b from-indigo-950/80 to-purple-950/60">
-                  <EraVerseAvatar3D
-                    gender="female"
-                    skinTone="#FFE7D6"
-                    hairStyle="twin_buns"
-                    hairColor="#1C1917"
-                    eyeColor="sapphire"
-                    eyeShape="round_bright"
-                    topStyle="sailor_blouse"
-                    topColor="#FFFFFF"
-                    topSecondary="#1E3A8A"
-                    bottomStyle="pleated_skirt"
-                    bottomColor="#1E3A8A"
-                    hatStyle="daisy_clips"
-                    accessories={['round_glasses']}
-                    animationMode={vocabFinished || vocabCheer === 'wave' ? 'wave' : 'idle'}
-                    showPedestal={true}
-                    interactive={true}
-                    className="w-full h-full"
-                  />
-                </div>
-                <span className="mt-2.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40">
-                  Coach Sophia • Blitz Host
-                </span>
-                <p className="text-xs text-purple-100 font-semibold mt-1.5 leading-snug">
-                  {vocabFinished
-                    ? 'Amazing Band 8+ vocabulary run! Enjoy your Era Gems!'
-                    : vocabCheer === 'wave'
-                    ? 'Spot on! Keep that speed streak going!'
-                    : `"Pick the exact synonym for ${currentVocab.word}!"`}
-                </p>
-              </div>
-
-              <div className="md:col-span-8">
-                {!vocabFinished ? (
-                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-6 sm:p-8 border-2 border-purple-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-purple-600 text-white">
-                        Question {vocabIdx + 1} of {VOCAB_BLITZ_QUESTIONS.length}
-                      </span>
-                      <span className="text-xs font-extrabold text-purple-800">
-                        Reward: Up to +60 💎 Era Gems
-                      </span>
-                    </div>
-                    <div className="text-3xl font-black text-indigo-950 mb-2">{currentVocab.word}</div>
-                    <p className="text-sm font-bold text-slate-600 mb-6">{currentVocab.prompt}</p>
-
-                    <div className="grid grid-cols-1 gap-3">
-                      {currentVocab.options.map((opt, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleVocabAnswer(idx)}
-                          className="w-full text-left px-5 py-4 rounded-2xl bg-white hover:bg-purple-600 text-slate-800 hover:text-white font-extrabold text-sm border border-purple-200 shadow-xs transition-all cursor-pointer flex items-center justify-between group"
-                        >
-                          <span>{opt}</span>
-                          <ArrowRight className="w-4 h-4 opacity-50 group-hover:opacity-100" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border-2 border-emerald-300">
-                    <div className="text-5xl mb-3">🏆</div>
-                    <h3 className="text-2xl font-black text-slate-900">
-                      Blitz Complete! Score: {vocabScore} / {VOCAB_BLITZ_QUESTIONS.length}
-                    </h3>
-                    <p className="text-emerald-700 font-extrabold text-base mt-2">
-                      You earned +{Math.max(20, vocabScore * 12)} 💎 Era Gems!
-                    </p>
-                    <div className="mt-6 flex justify-center gap-3 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setVocabIdx(0);
-                          setVocabScore(0);
-                          setVocabFinished(false);
-                        }}
-                        className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
-                      >
-                        <RotateCcw className="w-4 h-4" /> Play Again
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onOpenEraShop}
-                        className="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
-                      >
-                        <ShoppingBag className="w-4 h-4" /> Visit Candy in EraSHOP
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {selectedGame === 'scramble' && (
-            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* 3D Character Arcade Host Panel */}
-              <div className="md:col-span-4 bg-gradient-to-b from-amber-900 via-orange-900 to-slate-900 rounded-3xl p-4 text-center border-2 border-amber-300 shadow-lg flex flex-col items-center">
-                <div className="w-full h-[250px] rounded-2xl overflow-hidden bg-gradient-to-b from-slate-900/70 to-amber-950/60">
-                  <EraVerseAvatar3D
-                    gender="male"
-                    skinTone="#FFD8BE"
-                    hairStyle="fluffy_swept"
-                    hairColor="#0F172A"
-                    eyeColor="emerald"
-                    topStyle="casual_tee"
-                    topColor="#F59E0B"
-                    topSecondary="#FFFFFF"
-                    jacketStyle="varsity_jacket"
-                    jacketPrimary="#1E293B"
-                    jacketSecondary="#F59E0B"
-                    bottomStyle="cuffed_jeans"
-                    bottomColor="#1E3A8A"
-                    shoeColor="#F97316"
-                    hatStyle="cat_headphones"
-                    accessories={['cyber_visor']}
-                    animationMode={scrambleCheer === 'wave' ? 'wave' : 'idle'}
-                    showPedestal={true}
-                    interactive={true}
-                    className="w-full h-full"
-                  />
-                </div>
-                <span className="mt-2.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-300/40">
-                  Pixel • Arcade Master
-                </span>
-                <p className="text-xs text-amber-100 font-semibold mt-1.5 leading-snug">
-                  {scrambleCheer === 'wave'
-                    ? 'BOOM! Word cracked! +50 Era Gems added!'
-                    : '"Unscramble the academic word to claim +50 Gems!"'}
-                </p>
-              </div>
-
-              <div className="md:col-span-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-6 sm:p-8 border-2 border-amber-200">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500 text-slate-950">
-                    Puzzle {scrambleIdx + 1} of {SCRAMBLE_PUZZLES.length}
-                  </span>
-                  <span className="text-xs font-extrabold text-amber-900">Reward: +50 💎 Era Gems</span>
-                </div>
-
-                <div className="text-center my-6">
-                  <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-                    Unscramble this Academic IELTS Word:
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-black tracking-widest text-slate-900 bg-white py-4 px-6 rounded-2xl border border-amber-300 shadow-inner">
-                    {currentScramble.scrambled
-                      .split(' ')
-                      .reverse()
-                      .join('  ')}
-                  </div>
-                  <p className="text-xs font-bold text-amber-800 mt-3">💡 Hint: {currentScramble.hint}</p>
-                </div>
-
-                <form onSubmit={handleScrambleSubmit} className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    value={scrambleInput}
-                    onChange={(e) => setScrambleInput(e.target.value)}
-                    placeholder="Type the unscrambled word..."
-                    className="flex-1 px-4 py-3.5 rounded-2xl bg-white border-2 border-amber-300 font-black text-slate-900 uppercase tracking-wider focus:outline-none focus:border-amber-600"
-                  />
-                  <button
-                    type="submit"
-                    className="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm cursor-pointer shadow-md"
-                  >
-                    Submit (+50 💎)
-                  </button>
-                </form>
-
-                {scrambleFeedback && (
-                  <div className="mt-4 p-3.5 rounded-xl bg-white border border-amber-300 text-center font-extrabold text-sm text-slate-800">
-                    {scrambleFeedback}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {selectedGame === 'penalty' && (
-            <div className="max-w-4xl mx-auto space-y-5">
-              {/* Live 3D Face-Off Pitch: Your Character vs Keeper Max */}
-              <div className="grid grid-cols-2 gap-4 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-4 border-2 border-emerald-400/50 shadow-lg">
-                <div className="flex flex-col items-center">
-                  <div className="w-full h-[185px] rounded-2xl overflow-hidden bg-slate-950/40">
-                    <EraVerseAvatar3D
-                      {...(playerAvatar || {
-                        gender: 'male',
-                        skinTone: '#FFD8BE',
-                        topStyle: 'era_uniform',
-                        topColor: '#2563EB',
-                        bottomStyle: 'cargo_shorts',
-                        bottomColor: '#1E293B',
-                      })}
-                      rideStyle="none"
-                      animationMode={penaltyDone || penaltyCheer === 'wave' ? 'wave' : penaltyCheer === 'walk' ? 'walk' : 'idle'}
-                      showPedestal={true}
-                      interactive={true}
-                      className="w-full h-full"
-                    />
-                  </div>
-                  <span className="mt-2 text-[11px] font-black uppercase tracking-wider text-emerald-300">
-                    ⚽ You (Striker)
-                  </span>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="w-full h-[185px] rounded-2xl overflow-hidden bg-slate-950/40">
-                    <EraVerseAvatar3D
-                      gender="male"
-                      skinTone="#F1C27D"
-                      hairStyle="textured_crop"
-                      hairColor="#0F172A"
-                      eyeColor="amber"
-                      topStyle="sport_jersey"
-                      topColor="#EF4444"
-                      topSecondary="#FFFFFF"
-                      bottomStyle="cargo_shorts"
-                      bottomColor="#0F172A"
-                      shoeColor="#EF4444"
-                      hatStyle="baseball_cap"
-                      animationMode={penaltyCheer === 'walk' ? 'wave' : 'idle'}
-                      showPedestal={true}
-                      interactive={true}
-                      className="w-full h-full"
-                    />
-                  </div>
-                  <span className="mt-2 text-[11px] font-black uppercase tracking-wider text-rose-300">
-                    🧤 Keeper Max (GK)
-                  </span>
-                </div>
-              </div>
-
-              {!penaltyDone ? (
-                <div className="bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-3xl p-6 sm:p-8 border-2 border-emerald-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-600 text-white">
-                      Penalty Kick {penaltyIdx + 1} of {PENALTY_IDIOM_QUESTIONS.length}
-                    </span>
-                    <span className="text-xs font-extrabold text-emerald-800">
-                      Goals Scored: ⚽ {penaltyGoals}
-                    </span>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6">
-                    {currentPenalty.situation}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {currentPenalty.options.map((opt, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handlePenaltyShot(idx)}
-                        className="py-4 px-5 rounded-2xl bg-white hover:bg-emerald-600 text-slate-900 hover:text-white font-black text-sm border-2 border-emerald-200 transition-all cursor-pointer shadow-xs"
-                      >
-                        ⚽ Shoot: "{opt}"
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border-2 border-emerald-300">
-                  <div className="text-5xl mb-3">⚽🏆</div>
-                  <h3 className="text-2xl font-black text-slate-900">
-                    Shootout Finished! Goals: {penaltyGoals} / {PENALTY_IDIOM_QUESTIONS.length}
-                  </h3>
-                  <p className="text-emerald-700 font-extrabold text-base mt-2">
-                    You won +{Math.max(25, penaltyGoals * 25)} 💎 Era Gems!
-                  </p>
-                  <div className="mt-6 flex justify-center gap-3 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPenaltyIdx(0);
-                        setPenaltyGoals(0);
-                        setPenaltyDone(false);
-                      }}
-                      className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Shoot Again
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onOpenEraShop}
-                      className="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-black text-xs flex items-center gap-2 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-4 h-4" /> Spend Gems in EraSHOP
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        {/* Community Hub + Bubble Island Game */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-50">
+          <EraGamesHub
+            initialCourse={studentCourse}
+            externalDollars={eraDollars}
+            externalGems={eraGems}
+            onWalletReward={onRewardGems}
+            onOpenEraShop={onOpenEraShop}
+            onClose={onClose}
+            compactModal={true}
+          />
         </div>
       </div>
     </div>
   );
 };
+

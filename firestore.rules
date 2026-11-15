@@ -120,5 +120,58 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, write: if true;
     }
+
+    function isValidGameDeck(data) {
+      return data.keys().hasAll(['title', 'course', 'mode', 'source', 'dollarReward', 'questions']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 140 &&
+             data.course in ['Pre-Starter', 'Starter', 'Movers', 'Flyers', 'KET', 'PET', 'IELTS'] &&
+             data.mode in ['trivia', 'board', 'arena'] &&
+             data.source in ['native', 'hamster_sync', 'teacher_custom'] &&
+             data.dollarReward is number && data.dollarReward >= 0 && data.dollarReward <= 500 &&
+             data.questions is list && data.questions.size() > 0 && data.questions.size() <= 100;
+    }
+
+    function isValidGameAssignment(data) {
+      return data.keys().hasAll(['title', 'deckId', 'course', 'mode', 'dollarReward', 'isActive', 'createdBy']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 140 &&
+             data.deckId is string && isValidId(data.deckId) &&
+             data.course in ['Pre-Starter', 'Starter', 'Movers', 'Flyers', 'KET', 'PET', 'IELTS'] &&
+             data.mode in ['trivia', 'board', 'arena'] &&
+             data.dollarReward is number && data.dollarReward >= 0 && data.dollarReward <= 500 &&
+             data.isActive is bool &&
+             data.createdBy is string && data.createdBy.size() <= 128;
+    }
+
+    function isValidGameProgress(data) {
+      return data.keys().hasAll(['deckId', 'userId', 'mode', 'score', 'totalQuestions', 'dollarsAwarded']) &&
+             data.deckId is string && isValidId(data.deckId) &&
+             data.userId is string && isValidId(data.userId) &&
+             data.mode in ['trivia', 'board', 'arena'] &&
+             data.score is number && data.score >= 0 &&
+             data.totalQuestions is number && data.totalQuestions >= 0 &&
+             data.dollarsAwarded is number && data.dollarsAwarded >= 0 && data.dollarsAwarded <= 500;
+    }
+
+    match /game_decks/{deckId} {
+      allow read: if true;
+      allow create, update: if isValidId(deckId) && isValidGameDeck(incoming());
+      allow delete: if isValidId(deckId);
+    }
+
+    match /game_assignments/{assignmentId} {
+      allow read: if true;
+      allow create, update: if isValidId(assignmentId) && isValidGameAssignment(incoming());
+      allow delete: if isValidId(assignmentId);
+    }
+
+    match /game_progress/{progressId} {
+      allow read: if true;
+      allow create, update: if isValidId(progressId) && isValidGameProgress(incoming());
+      allow delete: if isValidId(progressId);
+    }
+
+    match /hamster_sync_settings/{settingId} {
+      allow read, write: if true;
+    }
   }
 }

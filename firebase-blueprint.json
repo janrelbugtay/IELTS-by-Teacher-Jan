@@ -151,6 +151,59 @@
         "course",
         "createdAt"
       ]
+    },
+    "GameDeck": {
+      "title": "GameDeck",
+      "description": "Course-matched ESL game question deck synced from Hamster English or created by teachers",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 140 },
+        "description": { "type": "string", "maxLength": 400 },
+        "course": { "type": "string", "enum": ["Pre-Starter", "Starter", "Movers", "Flyers", "KET", "PET", "IELTS"] },
+        "mode": { "type": "string", "enum": ["trivia", "board", "arena"] },
+        "source": { "type": "string", "enum": ["native", "hamster_sync", "teacher_custom"] },
+        "dollarReward": { "type": "number" },
+        "questions": { "type": "array" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "course", "mode", "source", "dollarReward", "questions"]
+    },
+    "GameAssignment": {
+      "title": "GameAssignment",
+      "description": "Teacher-assigned game homework tied to a course or subfolder",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 140 },
+        "deckId": { "type": "string", "maxLength": 128 },
+        "deckTitle": { "type": "string", "maxLength": 140 },
+        "course": { "type": "string", "enum": ["Pre-Starter", "Starter", "Movers", "Flyers", "KET", "PET", "IELTS"] },
+        "folderId": { "type": "string", "maxLength": 128 },
+        "mode": { "type": "string", "enum": ["trivia", "board", "arena"] },
+        "dollarReward": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "deckId", "course", "mode", "dollarReward", "isActive", "createdBy"]
+    },
+    "GameProgress": {
+      "title": "GameProgress",
+      "description": "Student completion and Era Dollar reward records for games and homework",
+      "type": "object",
+      "properties": {
+        "assignmentId": { "type": "string", "maxLength": 128 },
+        "deckId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "course": { "type": "string", "maxLength": 40 },
+        "mode": { "type": "string", "enum": ["trivia", "board", "arena"] },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "dollarsAwarded": { "type": "number" },
+        "completedAt": { "type": "number" }
+      },
+      "required": ["deckId", "userId", "mode", "score", "totalQuestions", "dollarsAwarded"]
     }
   },
   "firestore": {
@@ -200,6 +253,24 @@
         "$ref": "#/entities/TestSetting"
       },
       "description": "Settings for test visibility"
+    },
+    "/game_decks/{deckId}": {
+      "schema": {
+        "$ref": "#/entities/GameDeck"
+      },
+      "description": "Course-matched ESL game decks synced from Hamster English or authored by teachers"
+    },
+    "/game_assignments/{assignmentId}": {
+      "schema": {
+        "$ref": "#/entities/GameAssignment"
+      },
+      "description": "Teacher-assigned game homework per course folder"
+    },
+    "/game_progress/{progressId}": {
+      "schema": {
+        "$ref": "#/entities/GameProgress"
+      },
+      "description": "Completed student game sessions and homework reward payouts"
     }
   }
 }

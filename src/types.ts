@@ -115,3 +115,80 @@ export interface NotificationItem {
   createdAt: any;
 }
 
+export type EslCourseLevel =
+  | 'Pre-Starter'
+  | 'Starter'
+  | 'Movers'
+  | 'Flyers'
+  | 'KET'
+  | 'PET'
+  | 'IELTS';
+
+export type EraGameMode = 'trivia' | 'board' | 'arena';
+
+export interface GameQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+  topicTag?: string;
+  dollarValue?: number;
+}
+
+export interface GameDeck {
+  id: string;
+  title: string;
+  description: string;
+  course: EslCourseLevel;
+  mode: EraGameMode;
+  source: 'native' | 'hamster_sync' | 'teacher_custom';
+  dollarReward: number;
+  gemReward?: number;
+  questions: GameQuestion[];
+  sourceDbId?: string;
+  createdBy?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface GameHomeworkAssignment {
+  id: string;
+  title: string;
+  deckId: string;
+  deckTitle: string;
+  course: EslCourseLevel;
+  folderId?: string | null;
+  folderName?: string | null;
+  mode: EraGameMode;
+  dollarReward: number;
+  dueDate?: string;
+  strictMode?: boolean;
+  isActive: boolean;
+  createdBy: string;
+  createdAt?: any;
+}
+
+export interface GameProgressRecord {
+  id: string;
+  assignmentId?: string | null;
+  deckId: string;
+  deckTitle?: string;
+  userId: string;
+  studentName: string;
+  course: string;
+  mode: EraGameMode;
+  score: number;
+  totalQuestions: number;
+  dollarsAwarded: number;
+  gemsAwarded?: number;
+  completedAt?: any;
+}
+
+export interface HamsterSyncConfig {
+  databaseId: string;
+  projectId?: string;
+  apiKey?: string;
+  authDomain?: string;
+  appId?: string;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { WritingExaminerReportCard, formatWritingReportMarkdown } from '../components/WritingPerformanceReport';
 
 export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
     const navigate = useNavigate();
@@ -24,103 +25,36 @@ export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
     const [error2, setError2] = useState("");
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    const [isEditingReport1, setIsEditingReport1] = useState(false);
-    const [isEditingReport2, setIsEditingReport2] = useState(false);
-    const [editedReport1, setEditedReport1] = useState<any>(null);
-    const [editedReport2, setEditedReport2] = useState<any>(null);
-    const [inlineEditingFinalAnswer, setInlineEditingFinalAnswer] = useState<number | null>(null);
-    const [inlineFinalAnswerText, setInlineFinalAnswerText] = useState("");
-
-    const handleSaveInlineFinalAnswer = async (taskNum: number, newText: string) => {
-        try {
-            let newReport = taskNum === 1 ? {...report1} : {...report2};
-            newReport.finalCorrectedAnswer = newText;
-            
-            if (taskNum === 1) {
-                setReport1(newReport);
-            } else {
-                setReport2(newReport);
-            }
-
-            if (submissionId) {
-                const docRef = doc(db, 'submissions', submissionId);
-                const otherReport = taskNum === 1 ? report2 : report1;
-                const data = newReport;
-                
-                let combinedBand = parseFloat(data.scores?.overallBand) || 0;
-                let aiFeedbackMarkdown = `### Task ${taskNum} Evaluation\n**Overall Band Score:** ${data.scores?.overallBand}\n\n**Task Achievement / Response:** ${data.scores?.taskAchievement}\n*${data.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${data.scores?.coherenceCohesion}\n*${data.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${data.scores?.lexicalResource}\n*${data.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${data.scores?.grammaticalRange}\n*${data.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${data.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${data.inlineMarkedEssay || ''}\n`;
-                
-                if (otherReport && otherReport.scores) {
-                    const band1 = taskNum === 1 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
-                    const band2 = taskNum === 2 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
-                    combinedBand = Math.round(((band1 + (band2 * 2)) / 3) * 2) / 2;
-                    
-                    const formatReport = (t: number, d: any) => `### Task ${t} Evaluation\n**Overall Band Score:** ${d.scores?.overallBand}\n\n**Task Achievement / Response:** ${d.scores?.taskAchievement}\n*${d.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${d.scores?.coherenceCohesion}\n*${d.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${d.scores?.lexicalResource}\n*${d.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${d.scores?.grammaticalRange}\n*${d.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${d.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${d.inlineMarkedEssay || ''}\n`;
-                    
-                    aiFeedbackMarkdown = formatReport(1, taskNum === 1 ? data : otherReport) + "\n---\n\n" + formatReport(2, taskNum === 2 ? data : otherReport);
-                }
-                
-                await updateDoc(docRef, {
-                    bandScore: combinedBand,
-                    aiFeedback: aiFeedbackMarkdown,
-                    aiFeedbackRaw: JSON.stringify({
-                        part1: taskNum === 1 ? data : report1,
-                        part2: taskNum === 2 ? data : report2
-                    })
-                });
-            }
-            setInlineEditingFinalAnswer(null);
-        } catch (error) {
-            console.error("Error saving inline answer:", error);
-            alert("Failed to save. Please try again.");
+    const persistTaskReportUpdate = async (taskNum: number, data: any) => {
+        if (taskNum === 1) {
+            setReport1(data);
+        } else {
+            setReport2(data);
         }
-    };
 
+        if (submissionId) {
+            const docRef = doc(db, 'submissions', submissionId);
+            const otherReport = taskNum === 1 ? report2 : report1;
 
-    const handleSaveEditedReport = async (taskNum: number) => {
-        try {
-            let newReport = null;
-            if (taskNum === 1) {
-                newReport = editedReport1;
-                setReport1(newReport);
-                setIsEditingReport1(false);
-            } else {
-                newReport = editedReport2;
-                setReport2(newReport);
-                setIsEditingReport2(false);
+            let combinedBand = parseFloat(data.scores?.overallBand) || 0;
+            let aiFeedbackMarkdown = formatWritingReportMarkdown(taskNum, data);
+
+            if (otherReport && otherReport.scores) {
+                const band1 = taskNum === 1 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
+                const band2 = taskNum === 2 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
+                combinedBand = Math.round(((band1 + (band2 * 2)) / 3) * 2) / 2;
+                aiFeedbackMarkdown = formatWritingReportMarkdown(1, taskNum === 1 ? data : otherReport) + "\n---\n\n" + formatWritingReportMarkdown(2, taskNum === 2 ? data : otherReport);
             }
 
-            if (submissionId) {
-                const docRef = doc(db, 'submissions', submissionId);
-                const otherReport = taskNum === 1 ? report2 : report1;
-                const data = newReport;
-                
-                let combinedBand = parseFloat(data.scores?.overallBand) || 0;
-                let aiFeedbackMarkdown = `### Task ${taskNum} Evaluation\n**Overall Band Score:** ${data.scores?.overallBand}\n\n**Task Achievement / Response:** ${data.scores?.taskAchievement}\n*${data.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${data.scores?.coherenceCohesion}\n*${data.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${data.scores?.lexicalResource}\n*${data.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${data.scores?.grammaticalRange}\n*${data.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${data.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${data.inlineMarkedEssay || ''}\n`;
-                
-                if (otherReport && otherReport.scores) {
-                    const band1 = taskNum === 1 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
-                    const band2 = taskNum === 2 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
-                    combinedBand = Math.round(((band1 + (band2 * 2)) / 3) * 2) / 2;
-                    
-                    const formatReport = (t: number, d: any) => `### Task ${t} Evaluation\n**Overall Band Score:** ${d.scores?.overallBand}\n\n**Task Achievement / Response:** ${d.scores?.taskAchievement}\n*${d.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${d.scores?.coherenceCohesion}\n*${d.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${d.scores?.lexicalResource}\n*${d.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${d.scores?.grammaticalRange}\n*${d.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${d.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${d.inlineMarkedEssay || ''}\n`;
-                    
-                    aiFeedbackMarkdown = formatReport(1, taskNum === 1 ? data : otherReport) + "\n---\n\n" + formatReport(2, taskNum === 2 ? data : otherReport);
-                }
-
-                await updateDoc(docRef, {
-                    bandScore: combinedBand,
-                    aiFeedback: aiFeedbackMarkdown,
-                    aiFeedbackRaw: JSON.stringify({
-                        part1: taskNum === 1 ? data : report1,
-                        part2: taskNum === 2 ? data : report2
-                    }),
-                    requiresEvaluation: false
-                });
-            }
-        } catch (e) {
-            console.error("Failed to save edited report", e);
-            alert("Invalid JSON format or save failed.");
+            await updateDoc(docRef, {
+                bandScore: combinedBand,
+                aiFeedback: aiFeedbackMarkdown,
+                aiFeedbackRaw: JSON.stringify({
+                    part1: taskNum === 1 ? data : report1,
+                    part2: taskNum === 2 ? data : report2
+                }),
+                requiresEvaluation: false
+            });
         }
     };
 
@@ -297,16 +231,14 @@ export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
                     const otherReport = taskNum === 1 ? report2 : report1;
                     
                     let combinedBand = parseFloat(data.scores?.overallBand) || 0;
-                    let aiFeedbackMarkdown = `### Task ${taskNum} Evaluation\n**Overall Band Score:** ${data.scores?.overallBand}\n\n**Task Achievement / Response:** ${data.scores?.taskAchievement}\n*${data.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${data.scores?.coherenceCohesion}\n*${data.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${data.scores?.lexicalResource}\n*${data.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${data.scores?.grammaticalRange}\n*${data.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${data.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${data.inlineMarkedEssay || ''}\n`;
+                    let aiFeedbackMarkdown = formatWritingReportMarkdown(taskNum, data);
                     
                     if (otherReport && otherReport.scores) {
                         const band1 = taskNum === 1 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
                         const band2 = taskNum === 2 ? parseFloat(data.scores?.overallBand) || 0 : parseFloat(otherReport.scores?.overallBand) || 0;
                         combinedBand = Math.round(((band1 + (band2 * 2)) / 3) * 2) / 2; // round to nearest 0.5
                         
-                        const formatReport = (t: number, d: any) => `### Task ${t} Evaluation\n**Overall Band Score:** ${d.scores?.overallBand}\n\n**Task Achievement / Response:** ${d.scores?.taskAchievement}\n*${d.feedback?.taskAchievement}*\n\n**Coherence and Cohesion:** ${d.scores?.coherenceCohesion}\n*${d.feedback?.coherenceCohesion}*\n\n**Lexical Resource:** ${d.scores?.lexicalResource}\n*${d.feedback?.lexicalResource}*\n\n**Grammatical Range and Accuracy:** ${d.scores?.grammaticalRange}\n*${d.feedback?.grammaticalRange}*\n\n#### Corrected Answer\n${d.finalCorrectedAnswer || ''}\n\n#### Error Marking\n${d.inlineMarkedEssay || ''}\n`;
-                        
-                        aiFeedbackMarkdown = formatReport(1, taskNum === 1 ? data : otherReport) + "\n---\n\n" + formatReport(2, taskNum === 2 ? data : otherReport);
+                        aiFeedbackMarkdown = formatWritingReportMarkdown(1, taskNum === 1 ? data : otherReport) + "\n---\n\n" + formatWritingReportMarkdown(2, taskNum === 2 ? data : otherReport);
                     }
 
                     await updateDoc(docRef, {
@@ -352,226 +284,6 @@ export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
             document.body.classList.remove('pdf-generating');
             setIsGeneratingPdf(false);
         }
-    };
-
-    const renderReport = (taskNum: number, data: any) => {
-        if (!data || !data.scores || !data.feedback) return null;
-        
-        const taLabel = taskNum === 1 ? "Task Achievement" : "Task Response";
-        const overallScore = parseFloat(data.scores.overallBand) || 0;
-        const taScore = parseFloat(data.scores.taskAchievement) || 0;
-        const ccScore = parseFloat(data.scores.coherenceCohesion) || 0;
-        const lrScore = parseFloat(data.scores.lexicalResource) || 0;
-        const grScore = parseFloat(data.scores.grammaticalRange) || 0;
-
-        return (
-            <div className="ai-report bg-white rounded-xl shadow-2xl mt-8 overflow-hidden border border-gray-200" style={{ width: '190mm', maxWidth: '190mm', margin: '0 auto', pageBreakAfter: 'always' }}>
-                <div className="bg-indigo-900 text-white p-6 flex justify-between items-center">
-                    <div>
-                        <h2 className="text-2xl font-bold">Official Examiner Report</h2>
-                        <p className="text-indigo-200 text-sm mt-1 flex items-center gap-4">
-                            Writing Task {taskNum} Evaluation
-                            {isAdmin && (
-                                <>
-                                    <button 
-                                        onClick={() => {
-                                            if (taskNum === 1) {
-                                                setEditedReport1(JSON.parse(JSON.stringify(data)));
-                                                setIsEditingReport1(true);
-                                            } else {
-                                                setEditedReport2(JSON.parse(JSON.stringify(data)));
-                                                setIsEditingReport2(true);
-                                            }
-                                        }}
-                                        className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded"
-                                    >
-                                        Edit Report
-                                    </button>
-                                    <button 
-                                        onClick={() => getAIFeedback(taskNum)}
-                                        className="px-3 py-1 bg-yellow-400 hover:bg-yellow-500 text-indigo-900 text-xs font-bold rounded ml-2 flex items-center justify-center cursor-pointer"
-                                    >
-                                        Re-evaluate
-                                    </button>
-                                </>
-                            )}
-                        </p>
-                    </div>
-                    <div className="bg-yellow-400 text-indigo-900 rounded-full h-20 w-20 flex flex-col items-center justify-center font-bold shadow-lg border-4 border-indigo-800">
-                        <span className="text-xs uppercase tracking-wider mb-[-4px]">Band</span>
-                        <span className="text-3xl">{overallScore.toFixed(1)}</span>
-                    </div>
-                </div>
-
-                {(taskNum === 1 && isEditingReport1) || (taskNum === 2 && isEditingReport2) ? (() => {
-                    const editedReport = taskNum === 1 ? editedReport1 : editedReport2;
-                    const setEditedReport = taskNum === 1 ? setEditedReport1 : setEditedReport2;
-                    
-                    const updateScore = (key: string, val: string) => {
-                        setEditedReport({...editedReport, scores: {...editedReport.scores, [key]: val}});
-                    };
-                    const updateFeedback = (key: string, val: string) => {
-                        setEditedReport({...editedReport, feedback: {...editedReport.feedback, [key]: val}});
-                    };
-
-                    return (
-                    <div className="p-8 bg-gray-50 border-b border-gray-200 text-left">
-                        <h3 className="text-xl font-bold mb-4 text-slate-800">Edit Report</h3>
-                        
-                        <div className="mb-6">
-                            <h4 className="font-bold mb-2 text-slate-700">Scores</h4>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Overall Band</label>
-                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.overallBand || ''} onChange={e => updateScore('overallBand', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">{taLabel}</label>
-                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.taskAchievement || ''} onChange={e => updateScore('taskAchievement', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Coherence</label>
-                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.coherenceCohesion || ''} onChange={e => updateScore('coherenceCohesion', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Lexical</label>
-                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.lexicalResource || ''} onChange={e => updateScore('lexicalResource', e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Grammar</label>
-                                    <input type="number" step="0.5" className="w-full p-2 border rounded outline-none focus:border-indigo-400" value={editedReport?.scores?.grammaticalRange || ''} onChange={e => updateScore('grammaticalRange', e.target.value)} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mb-6 space-y-4">
-                            <h4 className="font-bold mb-2 text-slate-700">Detailed Feedback</h4>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">{taLabel}</label>
-                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.taskAchievement || ''} onChange={e => updateFeedback('taskAchievement', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Coherence & Cohesion</label>
-                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.coherenceCohesion || ''} onChange={e => updateFeedback('coherenceCohesion', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Lexical Resource</label>
-                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.lexicalResource || ''} onChange={e => updateFeedback('lexicalResource', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">Grammatical Range & Accuracy</label>
-                                <textarea className="w-full p-2 border rounded h-24 outline-none focus:border-indigo-400" value={editedReport?.feedback?.grammaticalRange || ''} onChange={e => updateFeedback('grammaticalRange', e.target.value)} />
-                            </div>
-                        </div>
-
-                        <div className="mb-6 space-y-4">
-                            <div>
-                                <h4 className="font-bold mb-2 text-slate-700">Error Marking (Markdown)</h4>
-                                <textarea className="w-full p-2 border rounded h-32 font-mono text-sm outline-none focus:border-indigo-400" value={editedReport?.inlineMarkedEssay || ''} onChange={e => setEditedReport({...editedReport, inlineMarkedEssay: e.target.value})} />
-                            </div>
-                            <div>
-                                <h4 className="font-bold mb-2 text-slate-700">Corrected Answer (Markdown)</h4>
-                                <textarea className="w-full p-2 border rounded h-32 font-mono text-sm outline-none focus:border-indigo-400" value={editedReport?.finalCorrectedAnswer || ''} onChange={e => setEditedReport({...editedReport, finalCorrectedAnswer: e.target.value})} />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 mt-4">
-                            <button
-                                onClick={() => taskNum === 1 ? setIsEditingReport1(false) : setIsEditingReport2(false)}
-                                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleSaveEditedReport(taskNum)}
-                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition shadow-md"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
-                    );
-                })() : (
-                    <div className="p-8">
-                        <div className="mb-10">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">1. Estimated Band Scores</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-gray-50 p-4 rounded-lg border text-center">
-                                <div className="text-sm text-gray-500 font-semibold mb-1">{taLabel}</div>
-                                <div className="text-2xl font-bold text-indigo-600">{taScore.toFixed(1)}</div>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded-lg border text-center">
-                                <div className="text-sm text-gray-500 font-semibold mb-1">Coherence & Cohesion</div>
-                                <div className="text-2xl font-bold text-indigo-600">{ccScore.toFixed(1)}</div>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded-lg border text-center">
-                                <div className="text-sm text-gray-500 font-semibold mb-1">Lexical Resource</div>
-                                <div className="text-2xl font-bold text-indigo-600">{lrScore.toFixed(1)}</div>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded-lg border text-center">
-                                <div className="text-sm text-gray-500 font-semibold mb-1">Grammar & Accuracy</div>
-                                <div className="text-2xl font-bold text-indigo-600">{grScore.toFixed(1)}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mb-10">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">2. Detailed Examiner Feedback</h3>
-                        <div className="space-y-4">
-                            <div className="bg-blue-50/50 p-4 rounded border border-blue-100">
-                                <h4 className="font-bold text-blue-900 mb-1">{taLabel}</h4>
-                                <p className="text-sm text-gray-700 leading-relaxed">{data.feedback.taskAchievement}</p>
-                            </div>
-                            <div className="bg-purple-50/50 p-4 rounded border border-purple-100">
-                                <h4 className="font-bold text-purple-900 mb-1">Coherence & Cohesion</h4>
-                                <p className="text-sm text-gray-700 leading-relaxed">{data.feedback.coherenceCohesion}</p>
-                            </div>
-                            <div className="bg-green-50/50 p-4 rounded border border-green-100">
-                                <h4 className="font-bold text-green-900 mb-1">Lexical Resource</h4>
-                                <p className="text-sm text-gray-700 leading-relaxed">{data.feedback.lexicalResource}</p>
-                            </div>
-                            <div className="bg-orange-50/50 p-4 rounded border border-orange-100">
-                                <h4 className="font-bold text-orange-900 mb-1">Grammatical Range & Accuracy</h4>
-                                <p className="text-sm text-gray-700 leading-relaxed">{data.feedback.grammaticalRange}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mb-10">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">3. Error Marking</h3>
-                        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 text-base leading-loose font-serif shadow-inner whitespace-pre-wrap mb-6" dangerouslySetInnerHTML={{ __html: data.inlineMarkedEssay }} />
-                        <p className="text-xs text-gray-500 mt-2 mb-4"><span className="line-through text-red-500">Red text</span> indicates errors. <span className="text-green-600 font-bold">Green text</span> indicates corrections.</p>
-                    </div>
-
-                    <div>
-                        <div className="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 className="text-lg font-bold text-gray-800">4. Final Corrected Answer</h3>
-                            {isAdmin && inlineEditingFinalAnswer !== taskNum && (
-                                <button onClick={() => { setInlineEditingFinalAnswer(taskNum); setInlineFinalAnswerText(data.finalCorrectedAnswer || ""); }} className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold rounded">Edit</button>
-                            )}
-                        </div>
-                        {inlineEditingFinalAnswer === taskNum ? (
-                            <div className="flex flex-col gap-2">
-                                <textarea 
-                                    className="w-full p-4 border rounded-lg h-64 font-serif text-base leading-loose outline-none focus:border-indigo-400" 
-                                    value={inlineFinalAnswerText} 
-                                    onChange={(e) => setInlineFinalAnswerText(e.target.value)} 
-                                />
-                                <div className="flex justify-end gap-2">
-                                    <button onClick={() => setInlineEditingFinalAnswer(null)} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-bold">Cancel</button>
-                                    <button onClick={() => handleSaveInlineFinalAnswer(taskNum, inlineFinalAnswerText)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-bold flex items-center justify-center cursor-pointer">Save</button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-indigo-50 text-gray-900 p-6 rounded-lg shadow-inner font-serif text-base leading-loose whitespace-pre-wrap border border-indigo-100">
-                                {data.finalCorrectedAnswer}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                )}
-            </div>
-        );
     };
 
     const renderSheet = (taskNum: number, text: string, report: any, loadingReport: boolean, errorText: string) => {
@@ -656,7 +368,20 @@ export const MayWritingTest = ({ submissionId }: { submissionId?: string }) => {
                     </div>
                 )}
 
-                {report && renderReport(taskNum, report)}
+                {report && !loadingReport && (
+                    <WritingExaminerReportCard
+                        taskNum={taskNum}
+                        text={text}
+                        report={report}
+                        onReevaluate={() => getAIFeedback(taskNum)}
+                        onReportEdited={persistTaskReportUpdate}
+                        onSaveInlineFinalAnswer={async (tNum, newText) => {
+                            const current = tNum === 1 ? report1 : report2;
+                            if (!current) return;
+                            await persistTaskReportUpdate(tNum, { ...current, finalCorrectedAnswer: newText });
+                        }}
+                    />
+                )}
             </div>
         );
     };
