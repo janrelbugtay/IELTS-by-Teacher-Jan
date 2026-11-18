@@ -13,7 +13,7 @@ export default defineConfig(() => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
@@ -21,10 +21,45 @@ export default defineConfig(() => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router'],
-            'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-            'vendor-ui': ['lucide-react', 'motion/react'],
+          manualChunks: (id) => {
+            if (id.includes('/src/lib/errorHandler') || id.includes('\\src\\lib\\errorHandler')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('node_modules')) {
+              if (
+                id.includes('/node_modules/react/') ||
+                id.includes('/node_modules/react-dom/') ||
+                id.includes('/node_modules/react-router/') ||
+                id.includes('/node_modules/scheduler/') ||
+                id.includes('\\node_modules\\react\\') ||
+                id.includes('\\node_modules\\react-dom\\') ||
+                id.includes('\\node_modules\\react-router\\') ||
+                id.includes('\\node_modules\\scheduler\\')
+              ) {
+                return 'vendor-react';
+              }
+              if (
+                id.includes('/node_modules/firebase/') ||
+                id.includes('/node_modules/@firebase/') ||
+                id.includes('\\node_modules\\firebase\\') ||
+                id.includes('\\node_modules\\@firebase\\')
+              ) {
+                return 'vendor-firebase';
+              }
+              if (id.includes('/node_modules/three/') || id.includes('\\node_modules\\three\\')) {
+                return 'vendor-three';
+              }
+              if (
+                id.includes('/node_modules/lucide-react/') ||
+                id.includes('/node_modules/motion/') ||
+                id.includes('/node_modules/framer-motion/') ||
+                id.includes('\\node_modules\\lucide-react\\') ||
+                id.includes('\\node_modules\\motion\\') ||
+                id.includes('\\node_modules\\framer-motion\\')
+              ) {
+                return 'vendor-ui';
+              }
+            }
           },
         },
       },

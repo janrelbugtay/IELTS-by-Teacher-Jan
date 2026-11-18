@@ -129,8 +129,11 @@ export const TEACHER_JAN_PROFILE: CanonicalStudentSpec = {
   isTeacherAdmin: true
 };
 
-// Every student account has a 100% unique character appearance, jacket color, headgear, eyewear, role title, specialty & default scores
+// Every student account in IELTS 1 & IELTS 2 has a 100% unique character appearance, jacket color, headgear, eyewear, role title, specialty & default scores
 export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
+  // ==========================================================================
+  // IELTS 1 STUDENTS
+  // ==========================================================================
   {
     id: 'ielts1-suzie',
     email: 'burgerairflavor@gmail.com',
@@ -146,6 +149,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fef08a',
     hatType: 'cap',
     accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'twin_buns',
+    clothingType: 'varsity',
     targetBuildingId: 'listening',
     motto: 'Hi, I am Suzie! Listening closely for every keyword in Part 4!',
     defaultScores: { reading: 7.5, listening: 8.0, writing: 6.5, speaking: 7.5 },
@@ -166,6 +172,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fde68a',
     hatType: 'none',
     accessoryType: 'glasses',
+    gender: 'boy',
+    hairStyle: 'kpop_curtain',
+    clothingType: 'varsity',
     targetBuildingId: 'dashboard',
     motto: 'Hey, I am Kai! Checking my IELTS 1 Dashboard & Reading scores!',
     defaultScores: { reading: 8.0, listening: 7.5, writing: 7.0, speaking: 7.0 },
@@ -186,6 +195,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fef3c7',
     hatType: 'grad',
     accessoryType: 'none',
+    gender: 'girl',
+    hairStyle: 'long',
+    clothingType: 'skirt_outfit',
     targetBuildingId: 'speaking',
     motto: 'Hello, I am Sophia! Practicing English speaking with my IELTS 1 classmates!',
     defaultScores: { reading: 7.0, listening: 7.5, writing: 6.5, speaking: 8.0 },
@@ -206,6 +218,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fdba74',
     hatType: 'headphones',
     accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'spiky',
+    clothingType: 'hoodie',
     targetBuildingId: 'practice_tests',
     motto: 'I am Jack2! Ready for Practice Tests and Campus Football!',
     defaultScores: { reading: 6.5, listening: 7.5, writing: 6.5, speaking: 7.5 },
@@ -226,6 +241,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fef08a',
     hatType: 'crown',
     accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'ponytail',
+    clothingType: 'skirt_outfit',
     targetBuildingId: 'homework',
     motto: 'Hi, I am May! Structuring cohesive Band 8.0 Writing essays!',
     defaultScores: { reading: 7.5, listening: 7.0, writing: 8.0, speaking: 6.5 },
@@ -246,6 +264,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fcd34d',
     hatType: 'cap',
     accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'textured_crop',
+    clothingType: 'varsity',
     targetBuildingId: 'practice_tests',
     motto: 'I am Dragon! Powering through IELTS tests and scoring goals!',
     defaultScores: { reading: 7.0, listening: 7.0, writing: 6.0, speaking: 7.5 },
@@ -266,6 +287,9 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fef3c7',
     hatType: 'headphones',
     accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'long',
+    clothingType: 'varsity',
     targetBuildingId: 'reading',
     motto: 'Hello, I am Emily! Aiming for top accuracy in Reading & Listening!',
     defaultScores: { reading: 8.5, listening: 7.5, writing: 7.5, speaking: 7.0 },
@@ -286,9 +310,465 @@ export const REAL_IELTS_STUDENT_PROFILES: CanonicalStudentSpec[] = [
     skinColor: '#fde68a',
     hatType: 'grad',
     accessoryType: 'shades',
+    gender: 'girl',
+    hairStyle: 'twintails',
+    clothingType: 'skirt_outfit',
     targetBuildingId: 'dashboard',
     motto: 'Hi, I am Hailey! Tracking my 4 skills inside the Dashboard Hall!',
     defaultScores: { reading: 7.5, listening: 8.0, writing: 7.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-trang',
+    email: 'trangera@student.era.edu',
+    name: 'Trang',
+    fullName: 'Trang',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Academic Reading Star',
+    specialty: 'Heading Matching & Summary Completion',
+    avatarDetails: 'Fuchsia Berry Jacket • Daisy Clips • Study Glasses',
+    shirtColor: '#db2777',
+    hairColor: '#1c1917',
+    skinColor: '#fef08a',
+    hatType: 'none',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'long',
+    clothingType: 'skirt_outfit',
+    targetBuildingId: 'class_ielts',
+    motto: 'Hi, I am Trang! Studying Reading & Writing in the IELTS Classroom!',
+    defaultScores: { reading: 7.5, listening: 7.5, writing: 7.0, speaking: 7.0 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-uyen',
+    email: 'uyenera@student.era.edu',
+    name: 'Uyen',
+    fullName: 'Uyen',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Listening & Speaking Pro',
+    specialty: 'Section 3 Academic Discussion & Fluency',
+    avatarDetails: 'Sky Cyan Jacket • Headphones • Clear View',
+    shirtColor: '#0891b2',
+    hairColor: '#451a03',
+    skinColor: '#fde68a',
+    hatType: 'headphones',
+    accessoryType: 'none',
+    gender: 'girl',
+    hairStyle: 'ponytail',
+    clothingType: 'varsity',
+    targetBuildingId: 'speaking',
+    motto: 'Hello, I am Uyen! Winning Era Gems in Bubble Island and practicing Speaking!',
+    defaultScores: { reading: 7.0, listening: 8.0, writing: 6.5, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-ngan',
+    email: 'nganera@student.era.edu',
+    name: 'Ngan',
+    fullName: 'Ngan',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Essay & Lexical Specialist',
+    specialty: 'Task 2 Argumentation & Band 8 Collocations',
+    avatarDetails: 'Violet Orchid Jacket • Grad Cap • Glasses',
+    shirtColor: '#9333ea',
+    hairColor: '#1c1917',
+    skinColor: '#fef3c7',
+    hatType: 'grad',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'twin_buns',
+    clothingType: 'skirt_outfit',
+    targetBuildingId: 'homework',
+    motto: 'Hi, I am Ngan! Polishing my Task 2 essay vocabulary in the Homework Hub!',
+    defaultScores: { reading: 7.5, listening: 7.0, writing: 7.5, speaking: 7.0 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-billy',
+    email: 'billyera@student.era.edu',
+    name: 'Billy',
+    fullName: 'Billy',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Midfielder & Listening Ace',
+    specialty: 'Multiple Choice Audio & Campus Football',
+    avatarDetails: 'Emerald Turf Jacket • Sport Cap • Shades',
+    shirtColor: '#059669',
+    hairColor: '#1c1917',
+    skinColor: '#fcd34d',
+    hatType: 'cap',
+    accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'spiky',
+    clothingType: 'varsity',
+    targetBuildingId: 'practice_tests',
+    motto: 'Hey, I am Billy! Ready for a Listening test and a match at Era Football Club!',
+    defaultScores: { reading: 7.0, listening: 7.5, writing: 6.5, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-annie',
+    email: 'anniephucanera@student.era.edu',
+    name: 'Annie',
+    fullName: 'Annie (Phuc An)',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Speaking & Reading Scholar',
+    specialty: 'Part 2 Cue Cards & Passage Analysis',
+    avatarDetails: 'Coral Rose Outfit • Golden Crown • Glasses',
+    shirtColor: '#e11d48',
+    hairColor: '#451a03',
+    skinColor: '#fef08a',
+    hatType: 'crown',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'long',
+    clothingType: 'skirt_outfit',
+    targetBuildingId: 'class_ielts',
+    motto: 'Hi, I am Annie! Practicing cue cards in the IELTS Classroom and playing tennis!',
+    defaultScores: { reading: 7.5, listening: 7.5, writing: 7.0, speaking: 8.0 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-aisha',
+    email: 'aishaera@student.era.edu',
+    name: 'Aisha',
+    fullName: 'Aisha',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Debate & Writing Star',
+    specialty: 'Cohesion, Coherence & Speaking Part 3',
+    avatarDetails: 'Indigo Blazer • Halo • Study Glasses',
+    shirtColor: '#6366f1',
+    hairColor: '#1c1917',
+    skinColor: '#fde68a',
+    hatType: 'halo',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'ponytail',
+    clothingType: 'royal_suit',
+    targetBuildingId: 'dashboard',
+    motto: 'Hello, I am Aisha! Reviewing my Band 8 Writing feedback in the Dashboard Hall!',
+    defaultScores: { reading: 8.0, listening: 7.5, writing: 7.5, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts1-rustina',
+    email: 'rustinaera@student.era.edu',
+    name: 'Rustina',
+    fullName: 'Rustina',
+    cohort: 'IELTS 1',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 1 Vocabulary & Tennis Player',
+    specialty: 'Academic Collocations & Era Tennis Rallies',
+    avatarDetails: 'Mint Teal Jacket • Sport Cap • Clear View',
+    shirtColor: '#14b8a6',
+    hairColor: '#7c2d12',
+    skinColor: '#fef3c7',
+    hatType: 'cap',
+    accessoryType: 'none',
+    gender: 'girl',
+    hairStyle: 'twintails',
+    clothingType: 'varsity',
+    targetBuildingId: 'speaking',
+    motto: 'Hi, I am Rustina! Playing Bubble Island in EraGames and tennis on the grass court!',
+    defaultScores: { reading: 7.5, listening: 7.5, writing: 7.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+
+  // ==========================================================================
+  // IELTS 2 STUDENTS (ALL 12 REAL IELTS 2 STUDENTS + CANDY)
+  // ==========================================================================
+  {
+    id: 'ielts2-kim',
+    email: 'kimera@student.era.edu',
+    name: 'Kim',
+    fullName: 'Kim Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Reading & Tennis Ace',
+    specialty: 'Passage 3 Inference & Grass Court Rallying',
+    avatarDetails: 'Emerald Varsity Jacket • Ponytail • Study Glasses • Star Belt',
+    shirtColor: '#10b981',
+    hairColor: '#1c1917',
+    skinColor: '#fef08a',
+    hatType: 'none',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'ponytail',
+    clothingType: 'varsity',
+    beltType: 'star_belt',
+    targetBuildingId: 'class_ielts',
+    motto: 'Hi, I am Kim from IELTS 2! Love acing Reading tests and rallying on the Era Tennis Court!',
+    defaultScores: { reading: 8.0, listening: 7.5, writing: 7.5, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-charlie',
+    email: 'charlieera@student.era.edu',
+    name: 'Charlie',
+    fullName: 'Charlie Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Football Striker & Listening Pro',
+    specialty: 'Fast Audio Tracking & Top-Corner Goals',
+    avatarDetails: 'Crimson Hoodie • Sport Cap • Cool Shades • Leather Belt',
+    shirtColor: '#e11d48',
+    hairColor: '#451a03',
+    skinColor: '#fcd34d',
+    hatType: 'cap',
+    accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'textured_crop',
+    clothingType: 'hoodie',
+    beltType: 'leather_belt',
+    targetBuildingId: 'practice_tests',
+    motto: 'Hey, I am Charlie in IELTS 2! Scoring goals on the football pitch and crushing Listening Part 4!',
+    defaultScores: { reading: 7.5, listening: 8.0, writing: 7.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-hannah',
+    email: 'hannahera@student.era.edu',
+    name: 'Hannah',
+    fullName: 'Hannah Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Speaking Fluency & Tennis Star',
+    specialty: 'Idiomatic Speaking & Forehand Winners',
+    avatarDetails: 'Violet Skirt Outfit • Golden Crown • Study Glasses',
+    shirtColor: '#8b5cf6',
+    hairColor: '#7c2d12',
+    skinColor: '#fef3c7',
+    hatType: 'crown',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'long',
+    clothingType: 'skirt_outfit',
+    beltType: 'gold_belt',
+    targetBuildingId: 'speaking',
+    motto: 'Hello! I am Hannah in IELTS 2 — playing Bubble Island in EraGames and tennis with classmates!',
+    defaultScores: { reading: 7.5, listening: 8.0, writing: 7.5, speaking: 8.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-loyd',
+    email: 'loydera@student.era.edu',
+    name: 'Loyd',
+    fullName: 'Loyd Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Writing Strategist & Midfielder',
+    specialty: 'Task 2 Critical Essays & Football Playmaking',
+    avatarDetails: 'Cobalt Cyber Jacket • Studio Headphones • Cyber Belt',
+    shirtColor: '#2563eb',
+    hairColor: '#0f172a',
+    skinColor: '#fde68a',
+    hatType: 'headphones',
+    accessoryType: 'none',
+    gender: 'boy',
+    hairStyle: 'kpop_curtain',
+    clothingType: 'cyber_jacket',
+    beltType: 'cyber_belt',
+    targetBuildingId: 'homework',
+    motto: 'I am Loyd from IELTS 2! Writing Band 8 essays in class then heading out for football!',
+    defaultScores: { reading: 8.0, listening: 7.5, writing: 8.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-tim',
+    email: 'timera@student.era.edu',
+    name: 'Tim',
+    fullName: 'Tim Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Tennis Champion & Reading Scholar',
+    specialty: 'Serve-and-Volley & Academic Passage Skimming',
+    avatarDetails: 'Forest Green Varsity • Sport Cap • Cool Shades',
+    shirtColor: '#059669',
+    hairColor: '#1c1917',
+    skinColor: '#fcd34d',
+    hatType: 'cap',
+    accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'fluffy_swept',
+    clothingType: 'varsity',
+    beltType: 'leather_belt',
+    targetBuildingId: 'class_ielts',
+    motto: 'Hi, I am Tim in IELTS 2! Meet me on the Era Tennis Court or inside the IELTS Classroom!',
+    defaultScores: { reading: 8.5, listening: 7.5, writing: 7.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-mike',
+    email: 'mikeera@student.era.edu',
+    name: 'Mike',
+    fullName: 'Mike Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Football Captain & Speaking Pro',
+    specialty: 'Part 3 Debate & Era Football Club Striker',
+    avatarDetails: 'Blaze Orange Varsity • Headphones • Gold Belt',
+    shirtColor: '#ea580c',
+    hairColor: '#1c1917',
+    skinColor: '#fdba74',
+    hatType: 'headphones',
+    accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'spiky',
+    clothingType: 'varsity',
+    beltType: 'gold_belt',
+    targetBuildingId: 'speaking',
+    motto: 'Hey, I am Mike from IELTS 2! Leading the football match and winning Gems in EraGames!',
+    defaultScores: { reading: 7.5, listening: 8.0, writing: 7.0, speaking: 8.0 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-nhi',
+    email: 'nhiera@student.era.edu',
+    name: 'Nhi',
+    fullName: 'Nhi Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Academic Writing & Grammar Star',
+    specialty: 'Complex Sentence Structures & Task 1 Data Analysis',
+    avatarDetails: 'Rose Pink Blazer • Grad Cap • Study Glasses',
+    shirtColor: '#ec4899',
+    hairColor: '#3f2e21',
+    skinColor: '#fef08a',
+    hatType: 'grad',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'twin_buns',
+    clothingType: 'skirt_outfit',
+    beltType: 'star_belt',
+    targetBuildingId: 'dashboard',
+    motto: 'Hi, I am Nhi in IELTS 2! Checking our IELTS 2 leaderboard and studying in class!',
+    defaultScores: { reading: 8.0, listening: 7.5, writing: 8.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-dan',
+    email: 'danera@student.era.edu',
+    name: 'Dan',
+    fullName: 'Dan Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Debate Scholar & Football Playmaker',
+    specialty: 'Abstract Speaking Topics & Midfield Passing',
+    avatarDetails: 'Royal Navy Suit • Study Glasses • Gold Belt',
+    shirtColor: '#1d4ed8',
+    hairColor: '#1c1917',
+    skinColor: '#fde68a',
+    hatType: 'none',
+    accessoryType: 'glasses',
+    gender: 'boy',
+    hairStyle: 'classic',
+    clothingType: 'royal_suit',
+    beltType: 'gold_belt',
+    targetBuildingId: 'class_ielts',
+    motto: 'Hello, I am Dan in IELTS 2! Going from our IELTS Classroom lesson straight to the football pitch!',
+    defaultScores: { reading: 7.5, listening: 7.5, writing: 7.5, speaking: 8.0 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-dat',
+    email: 'datera@student.era.edu',
+    name: 'Dat',
+    fullName: 'Dat Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 EraGames Champion & Listening Ace',
+    specialty: 'Bubble Island High Scorer & Section 4 Audio',
+    avatarDetails: 'Cyan Cyber Jacket • Studio Headphones • Cyber Visor',
+    shirtColor: '#0284c7',
+    hairColor: '#0f172a',
+    skinColor: '#fcd34d',
+    hatType: 'headphones',
+    accessoryType: 'cyber_visor',
+    gender: 'boy',
+    hairStyle: 'fluffy_swept',
+    clothingType: 'cyber_jacket',
+    beltType: 'cyber_belt',
+    targetBuildingId: 'speaking',
+    motto: 'Hey, I am Dat from IELTS 2! Playing Bubble Island in EraGames and bouncing on the trampoline!',
+    defaultScores: { reading: 7.5, listening: 8.5, writing: 7.0, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-tom',
+    email: 'tomera@student.era.edu',
+    name: 'Tom',
+    fullName: 'Tom Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 All-Round Scholar & Football Winger',
+    specialty: 'Full Mock Consistency & Fast Counter-Attacks',
+    avatarDetails: 'Amber Gold Varsity • Champion Crown • Leather Belt',
+    shirtColor: '#d97706',
+    hairColor: '#451a03',
+    skinColor: '#fef08a',
+    hatType: 'crown',
+    accessoryType: 'none',
+    gender: 'boy',
+    hairStyle: 'textured_crop',
+    clothingType: 'varsity',
+    beltType: 'leather_belt',
+    targetBuildingId: 'practice_tests',
+    motto: 'Hi, I am Tom in IELTS 2! Taking practice tests and sprinting down the wing in football!',
+    defaultScores: { reading: 8.0, listening: 8.0, writing: 7.5, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-vinh',
+    email: 'vinhera@student.era.edu',
+    name: 'Vinh',
+    fullName: 'Vinh Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Vocabulary Blitz & Tennis Server',
+    specialty: 'Academic Lexical Resource & Power Serves',
+    avatarDetails: 'Indigo Hoodie • Sport Cap • Cool Shades',
+    shirtColor: '#4f46e5',
+    hairColor: '#1c1917',
+    skinColor: '#fcd34d',
+    hatType: 'cap',
+    accessoryType: 'shades',
+    gender: 'boy',
+    hairStyle: 'spiky',
+    clothingType: 'hoodie',
+    beltType: 'cyber_belt',
+    targetBuildingId: 'homework',
+    motto: 'Hey, I am Vinh from IELTS 2! Finishing homework then heading to the tennis court!',
+    defaultScores: { reading: 7.5, listening: 7.5, writing: 7.5, speaking: 7.5 },
+    isRealStudent: true
+  },
+  {
+    id: 'ielts2-tracy',
+    email: 'tracyera@student.era.edu',
+    name: 'Tracy',
+    fullName: 'Tracy Era',
+    cohort: 'IELTS 2',
+    course: 'IELTS Course',
+    roleTitle: 'IELTS 2 Reading & Speaking Masterclass Star',
+    specialty: 'True/False/Not Given & Part 2 Storytelling',
+    avatarDetails: 'Teal Emerald Skirt Outfit • Twintails • Study Glasses',
+    shirtColor: '#0d9488',
+    hairColor: '#451a03',
+    skinColor: '#fef3c7',
+    hatType: 'none',
+    accessoryType: 'glasses',
+    gender: 'girl',
+    hairStyle: 'twintails',
+    clothingType: 'skirt_outfit',
+    beltType: 'star_belt',
+    targetBuildingId: 'listening',
+    motto: 'Hello, I am Tracy in IELTS 2! Exploring Era Gallery, attending class, and playing tennis!',
+    defaultScores: { reading: 8.0, listening: 8.0, writing: 7.5, speaking: 8.0 },
     isRealStudent: true
   },
   {
@@ -333,8 +813,14 @@ export function extractStudentNickname(u: any): string {
   if (matchedPreset) {
     return matchedPreset.name;
   }
-  if (rawName) return rawName;
-  if (u?.firstName && String(u.firstName).trim()) return String(u.firstName).trim();
+  if (u?.firstName && String(u.firstName).trim()) {
+    return String(u.firstName).replace(/\s+era$/i, '').trim();
+  }
+  if (rawName) {
+    const cleaned = rawName.replace(/\s+era$/i, '').trim();
+    if (cleaned) return cleaned;
+    return rawName;
+  }
   if (u?.username && String(u.username).trim()) return String(u.username).trim();
   if (emailLower) return emailLower.split('@')[0];
   return 'Student';
@@ -380,7 +866,7 @@ export function buildUniqueRosterFromFirestore(
   const extraSkinColors = ['#fde68a', '#fcd34d', '#fef08a', '#fdba74'];
   const extraHats: Array<'cap' | 'grad' | 'crown' | 'headphones' | 'none'> = ['cap', 'grad', 'headphones', 'crown', 'none'];
   const extraAccessories: Array<'glasses' | 'shades' | 'none'> = ['glasses', 'shades', 'none'];
-  const extraBuildings = ['dashboard', 'practice_tests', 'homework', 'speaking', 'reading', 'listening'];
+  const extraBuildings = ['dashboard', 'practice_tests', 'homework', 'speaking', 'reading', 'listening', 'class_ielts'];
   const extraSpecialties = [
     'Academic Reading & Vocabulary',
     'Listening Section 4 & Fluency',
@@ -407,33 +893,35 @@ export function buildUniqueRosterFromFirestore(
     return fNameUpper === 'IELTS 1' || fNameUpper === 'IELTS 2';
   });
 
-  // If Firestore users haven't loaded yet, return preset fallback
+  // If Firestore users haven't loaded yet, return preset fallback (which includes all IELTS 1 & IELTS 2 characters)
   if (ieltsUsers.length === 0) {
     return [TEACHER_JAN_PROFILE, ...REAL_IELTS_STUDENT_PROFILES];
   }
 
   const rosterList: CanonicalStudentSpec[] = [];
+  const seenNames = new Set<string>();
   let extraIdx = 0;
 
   ieltsUsers.forEach((u) => {
     const emailLower = String(u.email || '').trim().toLowerCase();
     const nickname = extractStudentNickname(u);
     const studentFirstName = u.firstName || u.name?.split(' ')[0] || u.displayName || nickname;
-    const displayFullName = u.nickname ? `${studentFirstName} "${u.nickname}"` : studentFirstName;
+    const displayFullName = u.nickname ? `${studentFirstName} "${u.nickname}"` : (u.name || studentFirstName);
 
     const fName = u.folderName || (u.folderId ? folderMap.get(u.folderId) : '') || '';
     const upperFolder = String(fName).trim().toUpperCase();
-    const isIelts2 =
-      (u.folderId && ielts2FolderIds.has(u.folderId)) ||
-      upperFolder === 'IELTS 2' ||
-      upperFolder.includes('IELTS 2');
-    const cohort: 'IELTS 1' | 'IELTS 2' = isIelts2 ? 'IELTS 2' : 'IELTS 1';
-
     const existing = REAL_IELTS_STUDENT_PROFILES.find(
       (p) =>
         (emailLower && p.email?.toLowerCase() === emailLower) ||
         p.name.toLowerCase() === nickname.toLowerCase()
     );
+
+    const isIelts2 =
+      (u.folderId && ielts2FolderIds.has(u.folderId)) ||
+      upperFolder === 'IELTS 2' ||
+      upperFolder.includes('IELTS 2') ||
+      existing?.cohort === 'IELTS 2';
+    const cohort: 'IELTS 1' | 'IELTS 2' = isIelts2 ? 'IELTS 2' : 'IELTS 1';
 
     // Check saved customizations in Firestore user doc (`eraverseAvatar`) or localStorage
     let customLook: any = u.eraverseAvatar || null;
@@ -453,6 +941,8 @@ export function buildUniqueRosterFromFirestore(
         // ignore
       }
     }
+
+    seenNames.add(nickname.toLowerCase());
 
     if (existing) {
       const shirtColor = customLook?.shirtColor || existing.shirtColor;
@@ -524,14 +1014,22 @@ export function buildUniqueRosterFromFirestore(
           ? 'Welcome to EraSHOP! I am Candy — spend your 💎 Era Gems on Bikes, Skateboards, Belts & Outfits!'
           : u.motto || `Hi, I am ${nickname} in ${cohort}! Checking my personalized IELTS dashboard!`,
         defaultScores: {
-          reading: 0,
-          listening: 0,
-          writing: 0,
-          speaking: 0
+          reading: 7.5,
+          listening: 7.5,
+          writing: 7.0,
+          speaking: 7.5
         },
         isRealStudent: true
       });
       extraIdx++;
+    }
+  });
+
+  // Ensure any preset IELTS 2 / IELTS 1 characters (such as Candy) that weren't in ieltsUsers are also available in EraVerse
+  REAL_IELTS_STUDENT_PROFILES.forEach((preset) => {
+    if (!seenNames.has(preset.name.toLowerCase())) {
+      rosterList.push(preset);
+      seenNames.add(preset.name.toLowerCase());
     }
   });
 

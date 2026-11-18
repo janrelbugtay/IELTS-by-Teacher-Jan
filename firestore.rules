@@ -17,7 +17,6 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     
     function isAdmin() {
-      // Allow the user who requested this, or anyone temporarily just to ensure the save functionality works.
       return isSignedIn() && (
         request.auth.token.email == "janrelbugtay03@gmail.com" || 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
@@ -171,6 +170,26 @@ service cloud.firestore {
     }
 
     match /hamster_sync_settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    match /faculty_employees/{employeeId} {
+      allow read, write: if true;
+    }
+
+    match /faculty_tasks/{taskId} {
+      allow read, write: if true;
+    }
+
+    match /faculty_approvals/{approvalId} {
+      allow read, write: if true;
+    }
+
+    match /faculty_notifications/{notifId} {
+      allow read, write: if true;
+    }
+
+    match /faculty_gamification/{docId} {
       allow read, write: if true;
     }
   }

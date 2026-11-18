@@ -2,275 +2,108 @@
   "entities": {
     "Assignment": {
       "title": "Assignment",
-      "description": "An IELTS homework assignment",
+      "description": "Course assignment or homework task created by a teacher.",
       "type": "object",
       "properties": {
-        "title": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "enum": [
-            "reading",
-            "listening",
-            "writing"
-          ]
-        },
-        "content": {
-          "type": "string"
-        },
-        "createdBy": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "number"
-        },
-        "updatedAt": {
-          "type": "number"
-        }
+        "title": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string" },
+        "course": { "type": "string" },
+        "description": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "title",
-        "description",
-        "type",
-        "content",
-        "createdBy",
-        "createdAt",
-        "updatedAt"
-      ]
+      "required": ["title", "type", "createdBy", "createdAt"]
     },
     "Submission": {
       "title": "Submission",
-      "description": "A student's answer to an assignment",
+      "description": "Student test or homework submission and AI/teacher evaluation.",
       "type": "object",
       "properties": {
-        "assignmentId": {
-          "type": "string"
-        },
-        "userId": {
-          "type": "string"
-        },
-        "answers": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "number"
-        }
+        "assignmentId": { "type": "string" },
+        "userId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "bandScore": { "type": "number" },
+        "score": { "type": "number" },
+        "aiFeedback": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "assignmentId",
-        "userId",
-        "answers",
-        "createdAt"
-      ]
+      "required": ["assignmentId", "userId", "createdAt"]
     },
-    "Class": {
-      "title": "Class",
-      "description": "A class created by a teacher",
+    "User": {
+      "title": "User",
+      "description": "Student or teacher profile including EraVerse wallet and avatar state.",
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string"
-        },
-        "createdBy": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "name",
-        "createdBy",
-        "createdAt"
-      ]
-    },
-    "Student": {
-      "title": "Student",
-      "description": "A student profile within a class",
-      "type": "object",
-      "properties": {
-        "classId": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "avatarSeed": {
-          "type": "string"
-        },
-        "points": {
-          "type": "number"
-        },
-        "createdAt": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "classId",
-        "name",
-        "avatarSeed",
-        "points",
-        "createdAt"
-      ]
-    },
-    "TestSetting": {
-      "title": "TestSetting",
-      "description": "Visibility settings for tests",
-      "type": "object",
-      "properties": {
-        "isPublished": {
-          "type": "boolean"
-        }
-      },
-      "required": []
-    },
-    "Folder": {
-      "title": "Folder",
-      "description": "A subfolder inside a course or parent folder",
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "course": {
-          "type": "string"
-        },
-        "parentId": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "number"
-        }
-      },
-      "required": [
-        "name",
-        "course",
-        "createdAt"
-      ]
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "course": { "type": "string" },
+        "eraGems": { "type": "number" },
+        "eraDollars": { "type": "number" }
+      }
     },
     "GameDeck": {
       "title": "GameDeck",
-      "description": "Course-matched ESL game question deck synced from Hamster English or created by teachers",
+      "description": "Bubble Island and EraGames question deck.",
       "type": "object",
       "properties": {
         "title": { "type": "string", "maxLength": 140 },
-        "description": { "type": "string", "maxLength": 400 },
         "course": { "type": "string", "enum": ["Pre-Starter", "Starter", "Movers", "Flyers", "KET", "PET", "IELTS"] },
         "mode": { "type": "string", "enum": ["trivia", "board", "arena"] },
         "source": { "type": "string", "enum": ["native", "hamster_sync", "teacher_custom"] },
-        "dollarReward": { "type": "number" },
-        "questions": { "type": "array" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "number" }
+        "dollarReward": { "type": "number" }
       },
-      "required": ["title", "course", "mode", "source", "dollarReward", "questions"]
+      "required": ["title", "course", "mode", "source", "dollarReward"]
     },
-    "GameAssignment": {
-      "title": "GameAssignment",
-      "description": "Teacher-assigned game homework tied to a course or subfolder",
+    "FacultyTask": {
+      "title": "FacultyTask",
+      "description": "AI Employee task, exam evaluation, or creative content output in ERA FACULTY HQ.",
       "type": "object",
       "properties": {
-        "title": { "type": "string", "maxLength": 140 },
-        "deckId": { "type": "string", "maxLength": 128 },
-        "deckTitle": { "type": "string", "maxLength": 140 },
-        "course": { "type": "string", "enum": ["Pre-Starter", "Starter", "Movers", "Flyers", "KET", "PET", "IELTS"] },
-        "folderId": { "type": "string", "maxLength": 128 },
-        "mode": { "type": "string", "enum": ["trivia", "board", "arena"] },
-        "dollarReward": { "type": "number" },
-        "isActive": { "type": "boolean" },
-        "createdBy": { "type": "string" },
+        "title": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
         "createdAt": { "type": "number" }
       },
-      "required": ["title", "deckId", "course", "mode", "dollarReward", "isActive", "createdBy"]
+      "required": ["title", "employeeId", "status", "createdAt"]
     },
-    "GameProgress": {
-      "title": "GameProgress",
-      "description": "Student completion and Era Dollar reward records for games and homework",
+    "FacultyApproval": {
+      "title": "FacultyApproval",
+      "description": "Audit log entry for Teacher Jan assessment approvals and revision requests.",
       "type": "object",
       "properties": {
-        "assignmentId": { "type": "string", "maxLength": 128 },
-        "deckId": { "type": "string", "maxLength": 128 },
-        "userId": { "type": "string", "maxLength": 128 },
-        "studentName": { "type": "string", "maxLength": 120 },
-        "course": { "type": "string", "maxLength": 40 },
-        "mode": { "type": "string", "enum": ["trivia", "board", "arena"] },
-        "score": { "type": "number" },
-        "totalQuestions": { "type": "number" },
-        "dollarsAwarded": { "type": "number" },
-        "completedAt": { "type": "number" }
+        "taskId": { "type": "string" },
+        "action": { "type": "string" },
+        "actorName": { "type": "string" },
+        "timestamp": { "type": "number" }
       },
-      "required": ["deckId", "userId", "mode", "score", "totalQuestions", "dollarsAwarded"]
+      "required": ["taskId", "action", "actorName", "timestamp"]
     }
   },
   "firestore": {
-    "/folders/{folderId}": {
-      "schema": {
-        "$ref": "#/entities/Folder"
-      },
-      "description": "Folders for organizing students within courses"
-    },
     "/assignments/{assignmentId}": {
-      "schema": {
-        "$ref": "#/entities/Assignment"
-      },
-      "description": "Assignments created by the teacher"
+      "schema": { "$ref": "#/entities/Assignment" },
+      "description": "Homework and assessment assignments."
     },
     "/submissions/{submissionId}": {
-      "schema": {
-        "$ref": "#/entities/Submission"
-      },
-      "description": "Submissions belonging to students"
+      "schema": { "$ref": "#/entities/Submission" },
+      "description": "Student submissions and evaluated scores."
     },
-    "/classes/{classId}": {
-      "schema": {
-        "$ref": "#/entities/Class"
-      },
-      "description": "Classes created by the teacher"
-    },
-    "/students/{studentId}": {
-      "schema": {
-        "$ref": "#/entities/Student"
-      },
-      "description": "Student profiles belonging to a class"
-    },
-    "/admins/{userId}": {
-      "schema": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
-          }
-        }
-      },
-      "description": "Trusted admin users (teachers)"
-    },
-    "/test_settings/{testId}": {
-      "schema": {
-        "$ref": "#/entities/TestSetting"
-      },
-      "description": "Settings for test visibility"
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles, courses, and EraVerse wallets."
     },
     "/game_decks/{deckId}": {
-      "schema": {
-        "$ref": "#/entities/GameDeck"
-      },
-      "description": "Course-matched ESL game decks synced from Hamster English or authored by teachers"
+      "schema": { "$ref": "#/entities/GameDeck" },
+      "description": "Course-matched Bubble Island and EraGames decks."
     },
-    "/game_assignments/{assignmentId}": {
-      "schema": {
-        "$ref": "#/entities/GameAssignment"
-      },
-      "description": "Teacher-assigned game homework per course folder"
+    "/faculty_tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/FacultyTask" },
+      "description": "ERA FACULTY HQ AI employee task queue and reports."
     },
-    "/game_progress/{progressId}": {
-      "schema": {
-        "$ref": "#/entities/GameProgress"
-      },
-      "description": "Completed student game sessions and homework reward payouts"
+    "/faculty_approvals/{approvalId}": {
+      "schema": { "$ref": "#/entities/FacultyApproval" },
+      "description": "ERA FACULTY HQ approval audit log."
     }
   }
 }

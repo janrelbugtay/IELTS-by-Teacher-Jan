@@ -1,6 +1,6 @@
 {
-  "name": "IELTS Hub",
-  "description": "A platform for English learners to complete the teacher's IELTS reading, writing, listening, and speaking assignments with AI auto-scoring and examiner review.",
-  "requestFramePermissions": ["microphone", "camera"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "ERA AI Academy — EraVerse & Faculty HQ",
+  "description": "Interactive IELTS & Cambridge English learning platform with 3D EraVerse campus, Bubble Island games, and ERA FACULTY HQ.",
+  "requestFramePermissions": ["microphone"],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

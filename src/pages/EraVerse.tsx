@@ -62,6 +62,14 @@ import {
   EraShopItem,
   ERA_GALLERY_PHOTOS
 } from '../components/EraShopGalleryGamesModals';
+import {
+  EraFacultyWorkstationModal,
+  AdminModuleId
+} from '../components/EraFacultyWorkstationModal';
+import {
+  INITIAL_FACULTY_EMPLOYEES,
+  FacultyEmployeeProfile
+} from '../utils/eraFacultyData';
 
 // ============================================================================
 // PROCEDURAL WEB AUDIO ENGINE + ROOM SONG SYNTHESIZER
@@ -102,6 +110,13 @@ const ROOM_SONGS: Record<string, RoomSongSpec> = {
     wave: 'triangle',
     notes: [587.33, 739.99, 880.0, 1174.66, 880.0, 739.99, 659.25, 587.33, 659.25, 739.99, 880.0, 987.77, 880.0, 739.99, 659.25, 587.33],
     bassNotes: [293.66, 293.66, 246.94, 246.94, 220.0, 220.0, 196.0, 196.0]
+  },
+  faculty_hq: {
+    name: 'ERA Faculty Office Suite',
+    tempoMs: 340,
+    wave: 'triangle',
+    notes: [523.25, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 523.25, 587.33, 698.46, 880.0, 1046.5, 880.0, 698.46, 587.33, 523.25],
+    bassNotes: [261.63, 261.63, 220.0, 220.0, 174.61, 174.61, 196.0, 196.0]
   },
   speaking: {
     name: 'EraGames Arcade Synthwave',
@@ -508,12 +523,15 @@ interface WallBoardSpec {
     | 'skill_dashboard'
     | 'open_erashop'
     | 'open_eragallery'
-    | 'open_eragames';
+    | 'open_eragames'
+    | 'open_faculty_hq';
   skillOrTab?: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
   shopCategory?: 'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories' | 'customizer';
   galleryTab?: 'all' | 'photos' | 'videos';
   route?: string;
   dashboardType?: 'personal' | 'class' | 'listening' | 'reading' | 'writing' | 'speaking';
+  facultyModule?: AdminModuleId;
+  facultyEmployeeId?: string;
 }
 
 // Rich Architectural Campus Buildings + Warm Grounded Classroom Interiors
@@ -758,6 +776,26 @@ const BUILDINGS: BuildingZone[] = [
     frontDir: -1,
     interiorWallColor: 0xeef2ff,
     interiorFloorColor: 0xc7d2fe
+  },
+  {
+    id: 'faculty_hq',
+    name: 'ERA Faculty',
+    shortSign: 'ERA FACULTY',
+    x: -144,
+    z: -26,
+    w: 22,
+    d: 15,
+    h: 14.5,
+    wallColor: 0x1e1b4b,
+    trimColor: 0xfde68a,
+    roofColor: 0xd97706,
+    accentColor: 0xf59e0b,
+    hexAccent: '#D97706',
+    doorX: -144,
+    doorZ: -18.5,
+    frontDir: 1,
+    interiorWallColor: 0xe5be73,
+    interiorFloorColor: 0xc47926
   }
 ];
 
@@ -1151,6 +1189,52 @@ const INTERIOR_BOARDS_BY_BUILDING: Record<string, WallBoardSpec[]> = {
       actionType: 'practice_skill',
       skillOrTab: 'Reading'
     }
+  ],
+  faculty_hq: [
+    {
+      slot: 'back-left',
+      category: 'TEACHER JAN • 12-MODULE ADMIN HUB',
+      title: 'ERA Faculty Command Center',
+      subtitle: 'Manage AI Staff, Assign Batch Tasks & View Analytics',
+      badge: 'OPEN ERA FACULTY HUB',
+      accentHex: '#D97706',
+      bgLightHex: '#FEF3C7',
+      actionType: 'open_faculty_hq',
+      facultyModule: 'overview'
+    },
+    {
+      slot: 'back-right',
+      category: 'FINAL AUTHORITY • QUALITY GATE',
+      title: 'Assessment Approval Center',
+      subtitle: 'Review & Approve Provisional Cambridge & IELTS Grading',
+      badge: 'OPEN APPROVAL CENTER',
+      accentHex: '#7C3AED',
+      bgLightHex: '#F3E8FF',
+      actionType: 'open_faculty_hq',
+      facultyModule: 'approval_center'
+    },
+    {
+      slot: 'left-wall',
+      category: '7 CAMBRIDGE & IELTS RUBRICS',
+      title: 'Examination Department & OCR',
+      subtitle: 'Starters, Movers, Flyers, KET, PET & IELTS 4-Skill Marking',
+      badge: 'OPEN EXAM DEPARTMENT',
+      accentHex: '#2563EB',
+      bgLightHex: '#DBEAFE',
+      actionType: 'open_faculty_hq',
+      facultyModule: 'exam_management'
+    },
+    {
+      slot: 'right-wall',
+      category: 'FLOOR 2 • 12 AI TEACHING TOOLS',
+      title: 'Creative Teaching Laboratory',
+      subtitle: 'Generate Quizzes, Slides & Publish to EraGames / Homework',
+      badge: 'OPEN CREATIVE LAB',
+      accentHex: '#059669',
+      bgLightHex: '#D1FAE5',
+      actionType: 'open_faculty_hq',
+      facultyModule: 'content_production'
+    }
   ]
 };
 
@@ -1251,6 +1335,9 @@ export function EraVerse() {
     syncNpcProfiles: (profiles: IeltsCharacterProfile[]) => void;
     showSpeechBubbleOnActor: (actorId: string, speakerName: string, text: string, isWarning?: boolean) => void;
     refreshDashboardWalls: () => void;
+    switchFacultyFloor: (floor: 1 | 2) => void;
+    sitAtClassroomDesk: (desk: { seatX: number; seatZ: number; deskName: string; classCohort: string }) => void;
+    standUpFromDesk: () => void;
   } | null>(null);
 
   const [activeBuildingModal, setActiveBuildingModal] = useState<string | null>(null);
@@ -1290,6 +1377,18 @@ export function EraVerse() {
   const [eraShopInitialTab, setEraShopInitialTab] = useState<'shop' | 'customizer'>('shop');
   const [eraShopInitialCat, setEraShopInitialCat] = useState<'all' | 'vehicles' | 'clothes' | 'belts' | 'accessories'>('all');
   const [eraGalleryInitialTab, setEraGalleryInitialTab] = useState<'all' | 'photos' | 'videos'>('all');
+  const [showFacultyModal, setShowFacultyModal] = useState<boolean>(false);
+  const [selectedFacultyEmployee, setSelectedFacultyEmployee] = useState<FacultyEmployeeProfile | null>(null);
+  const [facultyInitialAdminModule, setFacultyInitialAdminModule] = useState<AdminModuleId>('overview');
+  const [nearFacultyEmployee, setNearFacultyEmployee] = useState<FacultyEmployeeProfile | null>(null);
+  const [facultyInteriorFloor, setFacultyInteriorFloor] = useState<1 | 2>(1);
+  const [isSittingAtDesk, setIsSittingAtDesk] = useState<boolean>(false);
+  const [nearClassroomDesk, setNearClassroomDesk] = useState<{
+    seatX: number;
+    seatZ: number;
+    deskName: string;
+    classCohort: string;
+  } | null>(null);
   const isSuperAdminTeacherJan = Boolean(
     user?.email?.toLowerCase().trim() === 'janrelbugtay03@gmail.com' ||
     user?.email?.toLowerCase().trim() === 'khaisangschool.edu.vn@gmail.com' ||
@@ -1648,7 +1747,28 @@ export function EraVerse() {
       } catch (_e) {}
     }
 
-    const femaleNames = ['suzie', 'sophia', 'may', 'emily', 'hailey', 'candy', 'anna', 'lisa', 'ruby', 'chloe'];
+    const femaleNames = [
+      'suzie',
+      'sophia',
+      'may',
+      'emily',
+      'hailey',
+      'trang',
+      'uyen',
+      'ngan',
+      'annie',
+      'aisha',
+      'rustina',
+      'kim',
+      'hannah',
+      'nhi',
+      'tracy',
+      'candy',
+      'anna',
+      'lisa',
+      'ruby',
+      'chloe'
+    ];
     const defaultGender = femaleNames.includes((customLook?.name || matched.name).toLowerCase()) ? 'girl' : 'boy';
 
     setPlayerProfile((prev) => {
@@ -1761,6 +1881,15 @@ export function EraVerse() {
   const playerVehicleRef = useRef<string>(playerProfile.vehicleType || 'none');
   playerVehicleRef.current = playerProfile.vehicleType || 'none';
 
+  const isAuthorizedFaculty = Boolean(
+    isAdmin ||
+    isSuperAdminTeacherJan ||
+    playerProfile.cohort.includes('TEACHER') ||
+    !user
+  );
+  const isAuthorizedFacultyRef = useRef<boolean>(isAuthorizedFaculty);
+  isAuthorizedFacultyRef.current = isAuthorizedFaculty;
+
   useEffect(() => {
     if (gameActionsRef.current) {
       gameActionsRef.current.applyAvatarAppearance(playerProfile);
@@ -1868,6 +1997,19 @@ export function EraVerse() {
     } else if (board.actionType === 'homework_folder') {
       setSelectedHomeworkTab((board.skillOrTab as any) || 'All');
       setActiveBuildingModal('homework');
+    } else if (board.actionType === 'open_faculty_hq') {
+      if (board.facultyEmployeeId) {
+        const emp = INITIAL_FACULTY_EMPLOYEES.find((e) => e.id === board.facultyEmployeeId) || null;
+        setSelectedFacultyEmployee(emp);
+      } else {
+        setSelectedFacultyEmployee(null);
+      }
+      if (board.facultyModule) {
+        setFacultyInitialAdminModule(board.facultyModule);
+      } else {
+        setFacultyInitialAdminModule('overview');
+      }
+      setShowFacultyModal(true);
     } else if (board.actionType === 'navigate' && board.route) {
       navigate(board.route);
     }
@@ -1920,6 +2062,7 @@ export function EraVerse() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     container.innerHTML = '';
+    renderer.domElement.style.touchAction = 'none';
     container.appendChild(renderer.domElement);
 
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -2226,10 +2369,10 @@ export function EraVerse() {
 
     const curbMatShared = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.15 });
 
-    // West Academic Quad Main Promenade (connects Central Plaza to Starters, Movers, Flyers, KET, PET & IELTS Classrooms)
+    // West Academic Quad Main Promenade (connects Central Plaza to Starters, Movers, Flyers, KET, PET, IELTS Classrooms & ERA FACULTY HQ)
     const westPromenadeGroup = new THREE.Group();
-    const westPromLen = 108;
-    westPromenadeGroup.position.set(-70, 0, 0);
+    const westPromLen = 140;
+    westPromenadeGroup.position.set(-85, 0, 0);
     const westPromBed = new THREE.Mesh(new THREE.BoxGeometry(westPromLen, 0.12, 6.4), plazaMat);
     westPromBed.position.y = 0.06;
     westPromBed.receiveShadow = true;
@@ -2260,7 +2403,7 @@ export function EraVerse() {
 
     BUILDINGS.forEach((b) => {
       const roadGroup = new THREE.Group();
-      if (b.id.startsWith('class_')) {
+      if (b.id.startsWith('class_') || b.id === 'faculty_hq') {
         // Orthogonal avenue branch from West Academic Promenade (Z = 0) straight to classroom door
         const branchLen = Math.abs(b.doorZ);
         roadGroup.position.set(b.doorX, 0, b.doorZ / 2);
@@ -2424,6 +2567,30 @@ export function EraVerse() {
         wGroup.add(frame, glass, sill, awning);
         bGroup.add(wGroup);
       });
+
+      // TWO-STOREY ARCHITECTURAL DETAILS FOR ERA FACULTY HQ
+      if (b.id === 'faculty_hq') {
+        // Wrap-around Gold Second-Floor Balcony Cornice Band
+        const midBand = new THREE.Mesh(
+          new THREE.BoxGeometry(b.w + 1.2, 0.65, b.d + 1.2),
+          new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.5 })
+        );
+        midBand.position.y = 7.2;
+        midBand.castShadow = true;
+        bGroup.add(midBand);
+
+        // Second-Storey Upper Windows (3 across the front facade)
+        [-b.w * 0.32, 0, b.w * 0.32].forEach((wx) => {
+          const w2Group = new THREE.Group();
+          w2Group.position.set(wx, 9.8, frontZ);
+          const frame2 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.8, 0.28), winFrameMat);
+          const glass2 = new THREE.Mesh(new THREE.BoxGeometry(2.35, 2.35, 0.32), winGlassMat);
+          const sill2 = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.26, 0.55), pilasterMat);
+          sill2.position.y = -1.45;
+          w2Group.add(frame2, glass2, sill2);
+          bGroup.add(w2Group);
+        });
+      }
 
       // Warm Lit Lobby Recess behind Sliding Doors
       const lobbyRecess = new THREE.Mesh(
@@ -3623,29 +3790,127 @@ export function EraVerse() {
     trampGroup.add(slideTower, slideRoof, slideChute);
     scene.add(trampGroup);
 
-    // 6. Mountains, Clouds & Trees
-    const createMountainRange = () => {
-      const mtnMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.85 });
-      const snowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-      for (let i = 0; i < 18; i++) {
-        const ang = (i / 18) * Math.PI * 2;
-        const dist = 165 + (i % 3) * 18;
-        const h = 32 + (i % 4) * 10;
-        const r = 24 + (i % 3) * 6;
-        const mGroup = new THREE.Group();
-        mGroup.position.set(Math.cos(ang) * dist, 0, Math.sin(ang) * dist);
+    // 6. Modern 3D City Skyline Backdrop, Clouds & Trees
+    const createCitySkyline = () => {
+      const makeSkyscraperFacadeTexture = (
+        bodyHex: string,
+        frameHex: string,
+        glassHex: string,
+        litHex: string
+      ) => {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 512;
+        const ctx = c.getContext('2d')!;
+        ctx.fillStyle = bodyHex;
+        ctx.fillRect(0, 0, 256, 512);
 
-        const peak = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), mtnMat);
-        peak.position.y = h / 2 - 1;
-        mGroup.add(peak);
+        const cols = 6;
+        const rows = 16;
+        const padX = 8;
+        const padY = 8;
+        const cellW = (256 - padX * 2) / cols;
+        const cellH = (512 - padY * 2) / rows;
 
-        const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.36, h * 0.36, 8), snowMat);
-        cap.position.y = h * 0.82 - 1;
-        mGroup.add(cap);
-        scene.add(mGroup);
+        for (let r = 0; r < rows; r++) {
+          // Horizontal spandrel beam
+          ctx.fillStyle = frameHex;
+          ctx.fillRect(0, padY + r * cellH - 2, 256, 3);
+          for (let col = 0; col < cols; col++) {
+            const wx = padX + col * cellW + 3;
+            const wy = padY + r * cellH + 3;
+            const ww = cellW - 6;
+            const wh = cellH - 6;
+            const isWarmLit = (r * 7 + col * 11) % 5 === 0;
+            ctx.fillStyle = isWarmLit ? litHex : glassHex;
+            ctx.fillRect(wx, wy, ww, wh);
+            // Sky reflection highlight strip
+            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+            ctx.fillRect(wx, wy, ww * 0.35, wh);
+          }
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.needsUpdate = true;
+        return tex;
+      };
+
+      const cityPalettes = [
+        { body: '#1e293b', frame: '#0f172a', glass: '#38bdf8', lit: '#fde68a', roof: 0x334155, accent: 0x38bdf8 },
+        { body: '#334155', frame: '#1e293b', glass: '#7dd3fc', lit: '#fef08a', roof: 0x475569, accent: 0xf59e0b },
+        { body: '#e2e8f0', frame: '#94a3b8', glass: '#0284c7', lit: '#bae6fd', roof: 0xcbd5e1, accent: 0x2563eb },
+        { body: '#1e1b4b', frame: '#0f172a', glass: '#60a5fa', lit: '#fcd34d', roof: 0x312e81, accent: 0x818cf8 },
+        { body: '#d6d3d1', frame: '#78716c', glass: '#0369a1', lit: '#fef3c7', roof: 0xa8a29e, accent: 0xd97706 }
+      ];
+
+      const facadeMaterials = cityPalettes.map((p) => {
+        const tex = makeSkyscraperFacadeTexture(p.body, p.frame, p.glass, p.lit);
+        return {
+          mat: new THREE.MeshStandardMaterial({ map: tex, roughness: 0.3, metalness: 0.35 }),
+          roofMat: new THREE.MeshStandardMaterial({ color: p.roof, roughness: 0.45, metalness: 0.25 }),
+          accentMat: new THREE.MeshStandardMaterial({
+            color: p.accent,
+            emissive: p.accent,
+            emissiveIntensity: 0.35,
+            roughness: 0.2
+          })
+        };
+      });
+
+      const totalTowers = 44;
+      for (let i = 0; i < totalTowers; i++) {
+        const ang = (i / totalTowers) * Math.PI * 2;
+        const ringOffset = (i % 2) * 24 + (i % 3) * 8;
+        const dist = 208 + ringOffset;
+        const bw = 16 + (i % 4) * 5;
+        const bd = 14 + ((i + 1) % 3) * 5;
+        const bh = 30 + (i % 6) * 9;
+        const style = facadeMaterials[i % facadeMaterials.length];
+
+        const towerGroup = new THREE.Group();
+        towerGroup.position.set(Math.cos(ang) * dist, 0, Math.sin(ang) * dist);
+        towerGroup.rotation.y = -ang + Math.PI / 2;
+
+        // Main Skyscraper Tower Shaft
+        const mainTower = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), style.mat);
+        mainTower.position.y = bh / 2 - 0.5;
+        towerGroup.add(mainTower);
+
+        // Rooftop Crown Parapet & Illuminated Sky-Band
+        const crownBand = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.6, 1.1, bd + 0.6), style.accentMat);
+        crownBand.position.y = bh - 0.4;
+        towerGroup.add(crownBand);
+
+        // Upper Tier Setback / Penthouse
+        const tierW = bw * 0.68;
+        const tierD = bd * 0.68;
+        const tierH = 5 + (i % 3) * 3.5;
+        const upperTier = new THREE.Mesh(new THREE.BoxGeometry(tierW, tierH, tierD), style.roofMat);
+        upperTier.position.y = bh + tierH / 2 - 0.4;
+        towerGroup.add(upperTier);
+
+        // Architectural Spire / Antenna on tall signature skyscrapers
+        if (i % 3 === 0) {
+          const spireH = 8 + (i % 2) * 5;
+          const spire = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.18, 0.42, spireH, 8),
+            style.roofMat
+          );
+          spire.position.y = bh + tierH + spireH / 2 - 0.5;
+          towerGroup.add(spire);
+
+          const beacon = new THREE.Mesh(
+            new THREE.SphereGeometry(0.45, 8, 8),
+            style.accentMat
+          );
+          beacon.position.y = bh + tierH + spireH - 0.3;
+          towerGroup.add(beacon);
+        }
+
+        scene.add(towerGroup);
       }
     };
-    createMountainRange();
+    createCitySkyline();
 
     const clouds: Array<{ group: THREE.Group; speed: number }> = [];
     const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
@@ -3971,19 +4236,61 @@ export function EraVerse() {
     footballKeeperRig.root.position.set(PITCH_CENTER.x, 0, PITCH_CENTER.z - PITCH_L / 2 + 1.4);
     scene.add(footballKeeperRig.root);
 
-    // Autonomous IELTS 1, IELTS 2 & Teacher Jan Classmates
+    // Autonomous IELTS 1, IELTS 2 & Teacher Jan Classmates (Full Campus Multi-Activity AI)
+    type NpcActivityType =
+      | 'football'
+      | 'tennis'
+      | 'play_games'
+      | 'going_to_room'
+      | 'entering_door'
+      | 'inside_room'
+      | 'exiting_door'
+      | 'socialize';
+
     interface NpcActor {
       profile: IeltsCharacterProfile;
       rig: ReturnType<typeof buildCharacterAvatar>;
+      racketMesh: THREE.Group;
       targetX: number;
       targetZ: number;
       speed: number;
       walkPhase: number;
       pauseTimer: number;
+      activity: NpcActivityType;
+      activityTimer: number;
+      targetBuilding: BuildingZone;
+      teamSide: 1 | -1;
+      courtRole: 'south_player' | 'doubles_partner' | 'court_practice';
+      kickTimer: number;
+      swingTimer: number;
+      chatCooldown: number;
     }
     const npcActors: NpcActor[] = [];
     const npcGroup = new THREE.Group();
     scene.add(npcGroup);
+
+    const pickNextBuildingForNpc = (prof: IeltsCharacterProfile, idx: number): BuildingZone => {
+      if (Math.random() < 0.38) {
+        const preferred = BUILDINGS.find((b) => b.id === prof.targetBuildingId);
+        if (preferred) return preferred;
+      }
+      const classroomAndHubIds = [
+        'class_ielts',
+        'speaking',
+        'dashboard',
+        'practice_tests',
+        'homework',
+        'reading',
+        'listening',
+        'class_pet',
+        'class_ket',
+        'class_flyers',
+        'class_movers',
+        'class_starters'
+      ];
+      const pickId = classroomAndHubIds[(idx + Math.floor(Math.random() * classroomAndHubIds.length)) % classroomAndHubIds.length];
+      return BUILDINGS.find((b) => b.id === pickId) || BUILDINGS[idx % BUILDINGS.length];
+    };
 
     const spawnNpcActors = (profiles: IeltsCharacterProfile[]) => {
       while (npcGroup.children.length > 0) {
@@ -3991,7 +4298,16 @@ export function EraVerse() {
       }
       npcActors.length = 0;
 
-      profiles.slice(0, 14).forEach((prof, idx) => {
+      const footballNames = new Set(['charlie', 'mike', 'tom', 'dragon', 'jack2', 'billy', 'dan', 'kai']);
+      const tennisNames = new Set(['tim', 'kim', 'hannah', 'vinh', 'rustina', 'annie']);
+      const gamesNames = new Set(['dat', 'uyen', 'sophia', 'hailey', 'loyd']);
+
+      let assignedFootballCount = 0;
+      let assignedTennisCount = 0;
+      let assignedGamesCount = 0;
+
+      // Spawn ALL IELTS 1, IELTS 2 & Teacher Jan characters (no slice truncation)
+      profiles.forEach((prof, idx) => {
         const rig = buildCharacterAvatar({
           shirtColor: prof.shirtColor,
           hairColor: prof.hairColor,
@@ -4008,22 +4324,126 @@ export function EraVerse() {
           beltType: prof.beltType,
           vehicleType: prof.vehicleType
         });
+
+        // Attach a 3D tennis racket to right hand (shown whenever playing tennis)
+        const racketMesh = createTennisRacketMesh(
+          prof.cohort === 'IELTS 2' ? '#10b981' : '#38bdf8'
+        );
+        racketMesh.position.set(0, -0.58, 0.14);
+        racketMesh.rotation.set(Math.PI / 2.3, 0, 0);
+        racketMesh.visible = false;
+        rig.rightArm.add(racketMesh);
+
         const isTeacherJan = prof.id === TEACHER_JAN_PROFILE.id || prof.cohort.includes('TEACHER');
-        const angle = (idx / Math.max(1, Math.min(14, profiles.length))) * Math.PI * 2;
-        const radius = isTeacherJan ? 8 : 14 + (idx % 3) * 8;
-        rig.root.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+        const lowerName = prof.name.toLowerCase();
+        const targetB = BUILDINGS.find((b) => b.id === prof.targetBuildingId) || BUILDINGS[idx % BUILDINGS.length];
+
+        let initialActivity: NpcActivityType = 'going_to_room';
+        let startX = 0;
+        let startZ = 0;
+        let targetX = targetB.doorX + (Math.random() - 0.5) * 3.0;
+        let targetZ = targetB.doorZ + targetB.frontDir * 3.6;
+        let teamSide: 1 | -1 = idx % 2 === 0 ? 1 : -1;
+        let courtRole: 'south_player' | 'doubles_partner' | 'court_practice' = 'court_practice';
+
+        if (isTeacherJan) {
+          initialActivity = 'socialize';
+          startX = 0;
+          startZ = 9.5;
+          targetX = -10;
+          targetZ = 12;
+        } else if (footballNames.has(lowerName) && assignedFootballCount < 6) {
+          initialActivity = 'football';
+          teamSide = assignedFootballCount % 2 === 0 ? 1 : -1;
+          const slot = Math.floor(assignedFootballCount / 2);
+          startX = PITCH_CENTER.x + (slot - 1) * 5.5;
+          startZ = PITCH_CENTER.z + teamSide * (5.5 + slot * 3.2);
+          targetX = PITCH_CENTER.x + (Math.random() - 0.5) * 14;
+          targetZ = PITCH_CENTER.z + (Math.random() - 0.5) * 24;
+          assignedFootballCount++;
+        } else if (tennisNames.has(lowerName) && assignedTennisCount < 4) {
+          initialActivity = 'tennis';
+          racketMesh.visible = true;
+          if (assignedTennisCount === 0) {
+            courtRole = 'south_player';
+            startX = TENNIS_CENTER.x;
+            startZ = TENNIS_CENTER.z + 8.8;
+          } else if (assignedTennisCount === 1) {
+            courtRole = 'doubles_partner';
+            startX = TENNIS_CENTER.x - 3.6;
+            startZ = TENNIS_CENTER.z + 5.2;
+          } else {
+            courtRole = 'court_practice';
+            startX = TENNIS_CENTER.x + (assignedTennisCount === 2 ? 4.2 : -4.2);
+            startZ = TENNIS_CENTER.z + (assignedTennisCount === 2 ? -5.0 : 9.4);
+          }
+          targetX = startX;
+          targetZ = startZ;
+          assignedTennisCount++;
+        } else if (gamesNames.has(lowerName) && assignedGamesCount < 4) {
+          initialActivity = 'play_games';
+          if (assignedGamesCount < 2) {
+            // Bouncing on the Playground Trampoline
+            startX = TRAMPOLINE_POS.x + (assignedGamesCount === 0 ? -0.9 : 0.9);
+            startZ = TRAMPOLINE_POS.z + (assignedGamesCount === 0 ? -0.6 : 0.6);
+            targetX = startX;
+            targetZ = startZ;
+          } else {
+            // Playing outside EraGames Arcade Plaza
+            const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || targetB;
+            startX = eraGamesB.doorX + (assignedGamesCount === 2 ? -3.5 : 3.5);
+            startZ = eraGamesB.doorZ + eraGamesB.frontDir * 4.5;
+            targetX = eraGamesB.doorX;
+            targetZ = eraGamesB.doorZ + eraGamesB.frontDir * 3.4;
+          }
+          assignedGamesCount++;
+        } else {
+          // Distribute across classrooms and hub doors (some walking in, some walking out, some heading to class)
+          const bChoice = pickNextBuildingForNpc(prof, idx);
+          if (idx % 4 === 0) {
+            initialActivity = 'entering_door';
+            startX = bChoice.doorX + (Math.random() - 0.5) * 1.5;
+            startZ = bChoice.doorZ + bChoice.frontDir * 3.2;
+            targetX = bChoice.doorX;
+            targetZ = bChoice.doorZ - bChoice.frontDir * 1.6;
+          } else if (idx % 4 === 1) {
+            initialActivity = 'exiting_door';
+            startX = bChoice.doorX;
+            startZ = bChoice.doorZ - bChoice.frontDir * 1.2;
+            targetX = bChoice.doorX + (Math.random() - 0.5) * 4.0;
+            targetZ = bChoice.doorZ + bChoice.frontDir * 5.2;
+          } else {
+            initialActivity = 'going_to_room';
+            const angle = (idx / Math.max(1, profiles.length)) * Math.PI * 2;
+            const radius = 16 + (idx % 4) * 9;
+            startX = Math.cos(angle) * radius;
+            startZ = Math.sin(angle) * radius;
+            targetX = bChoice.doorX + (Math.random() - 0.5) * 2.4;
+            targetZ = bChoice.doorZ + bChoice.frontDir * 3.6;
+          }
+        }
+
+        rig.root.position.set(startX, 0, startZ);
         rig.root.userData = { npcProfileId: prof.id };
         npcGroup.add(rig.root);
 
-        const targetB = BUILDINGS.find((b) => b.id === prof.targetBuildingId) || BUILDINGS[idx % BUILDINGS.length];
         npcActors.push({
           profile: prof,
           rig,
-          targetX: targetB.doorX + (Math.random() - 0.5) * 8,
-          targetZ: targetB.doorZ + targetB.frontDir * 4.5,
-          speed: isTeacherJan ? 3.2 : 3.5 + (idx % 3) * 0.45,
+          racketMesh,
+          targetX,
+          targetZ,
+          speed: isTeacherJan ? 3.4 : 4.2 + (idx % 4) * 0.45,
           walkPhase: idx * 1.1,
-          pauseTimer: 0
+          pauseTimer: 0,
+          activity: initialActivity,
+          activityTimer: 18 + (idx % 7) * 5,
+          targetBuilding: targetB,
+          teamSide,
+          courtRole,
+          kickTimer: 0,
+          swingTimer: 0,
+          chatCooldown: 4 + (idx % 6) * 2.5
         });
       });
     };
@@ -4037,6 +4457,35 @@ export function EraVerse() {
     interiorGroup.position.set(INTERIOR_ORIGIN.x, INTERIOR_ORIGIN.y, INTERIOR_ORIGIN.z);
     interiorGroup.visible = false;
     scene.add(interiorGroup);
+
+    interface InteriorNpcActor {
+      profile: IeltsCharacterProfile;
+      rig: ReturnType<typeof buildCharacterAvatar>;
+      role: 'seated_student' | 'roaming_visitor';
+      state: 'walking_in' | 'at_spot' | 'walking_out' | 'outside_wait';
+      targetX: number;
+      targetZ: number;
+      spotX: number;
+      spotZ: number;
+      timer: number;
+      walkPhase: number;
+      handRaiseTimer: number;
+    }
+    let interiorNpcActors: InteriorNpcActor[] = [];
+
+    interface FacultyNpcActor {
+      employee: FacultyEmployeeProfile;
+      rig: ReturnType<typeof buildCharacterAvatar>;
+      floor: 1 | 2;
+      baseX: number;
+      baseY: number;
+      baseZ: number;
+      baseRotY: number;
+      speechTimer: number;
+      bubbleIndex: number;
+    }
+    let facultyNpcActors: FacultyNpcActor[] = [];
+    let currentFacultyFloor: 1 | 2 = 1;
 
     let clickableBoardMeshes: THREE.Object3D[] = [];
     let currentInteriorBoards: Array<{ spec: WallBoardSpec; x: number; z: number; mesh: THREE.Mesh }> = [];
@@ -4129,9 +4578,34 @@ export function EraVerse() {
       c.height = 512;
       const ctx = c.getContext('2d')!;
       const base = new THREE.Color(tintHex);
+      // Warm honey-oak blend so floors never wash out to white under global scene illumination
+      base.lerp(new THREE.Color(0xb46924), 0.38);
       ctx.fillStyle = `#${base.getHexString()}`;
       ctx.fillRect(0, 0, 512, 512);
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
+
+      // Rich wood plank variations & grain lines
+      const plankH = 64;
+      for (let row = 0; row < 8; row++) {
+        const py = row * plankH;
+        const offset = (row % 2) * 128;
+        for (let col = -1; col < 3; col++) {
+          const px = col * 256 + offset;
+          ctx.fillStyle = (row + col) % 2 === 0 ? 'rgba(255, 245, 225, 0.08)' : 'rgba(69, 26, 3, 0.09)';
+          ctx.fillRect(px, py, 256, plankH);
+        }
+        // Subtle wood grain streaks
+        ctx.strokeStyle = 'rgba(69, 26, 3, 0.07)';
+        ctx.lineWidth = 1.5;
+        for (let g = 10; g < plankH; g += 14) {
+          ctx.beginPath();
+          ctx.moveTo(0, py + g);
+          ctx.lineTo(512, py + g + ((row % 2 === 0 ? 1 : -1) * 4));
+          ctx.stroke();
+        }
+      }
+
+      // Plank seams
+      ctx.strokeStyle = 'rgba(30, 15, 5, 0.22)';
       ctx.lineWidth = 3;
       for (let y = 0; y <= 512; y += 64) {
         ctx.beginPath();
@@ -4139,11 +4613,14 @@ export function EraVerse() {
         ctx.lineTo(512, y);
         ctx.stroke();
       }
-      for (let x = 0; x <= 512; x += 128) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, 512);
-        ctx.stroke();
+      for (let row = 0; row < 8; row++) {
+        const offset = (row % 2) * 128;
+        for (let x = offset; x <= 512; x += 256) {
+          ctx.beginPath();
+          ctx.moveTo(x, row * 64);
+          ctx.lineTo(x, (row + 1) * 64);
+          ctx.stroke();
+        }
       }
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -4160,37 +4637,145 @@ export function EraVerse() {
       }
       clickableBoardMeshes = [];
       currentInteriorBoards = [];
+      interiorNpcActors = [];
+      facultyNpcActors = [];
+      currentFacultyFloor = 1;
+      setFacultyInteriorFloor(1);
+      setNearClassroomDesk(null);
 
-      const roomW = 28;
-      const roomD = 24;
-      const roomH = 10.5;
+      const isFacultyOffice = building.id === 'faculty_hq';
+      const roomW = isFacultyOffice ? 30 : 28;
+      const roomD = isFacultyOffice ? 26 : 24;
+      const roomH = isFacultyOffice ? 7.2 : 10.5;
 
-      // Bright Polished Classroom Floor
+      // Helper for ERA FACULTY geometric amber/ochre office carpet texture
+      const createFacultyOfficeCarpetTexture = () => {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext('2d')!;
+        // Rich warm amber-ochre base carpet (calibrated so global scene lights never wash it out)
+        ctx.fillStyle = '#a85a16';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Subtle woven carpet texture noise
+        for (let i = 0; i < 3200; i++) {
+          ctx.fillStyle = i % 2 === 0 ? 'rgba(255,215,140,0.06)' : 'rgba(85,40,8,0.08)';
+          ctx.fillRect((i * 73) % 512, (i * 139) % 512, 3, 3);
+        }
+
+        // Geometric rounded L-shapes, step motifs, and hollow rounded rectangles (#dfa344)
+        ctx.strokeStyle = '#dfa344';
+        ctx.fillStyle = '#dfa344';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        const cell = 128;
+        for (let gy = 0; gy < 4; gy++) {
+          for (let gx = 0; gx < 4; gx++) {
+            const ox = gx * cell;
+            const oy = gy * cell;
+            const variant = (gx + gy * 2) % 4;
+
+            ctx.lineWidth = 16;
+            if (variant === 0) {
+              // Stepped Z / L motif
+              ctx.beginPath();
+              ctx.moveTo(ox + 22, oy + 28);
+              ctx.lineTo(ox + 68, oy + 28);
+              ctx.lineTo(ox + 68, oy + 76);
+              ctx.lineTo(ox + 106, oy + 76);
+              ctx.stroke();
+
+              // Small hollow rounded square
+              ctx.lineWidth = 7;
+              ctx.strokeRect(ox + 20, oy + 82, 30, 28);
+            } else if (variant === 1) {
+              // Bold L-turn + hollow rectangle
+              ctx.beginPath();
+              ctx.moveTo(ox + 26, oy + 104);
+              ctx.lineTo(ox + 26, oy + 46);
+              ctx.lineTo(ox + 88, oy + 46);
+              ctx.stroke();
+
+              ctx.lineWidth = 8;
+              ctx.strokeRect(ox + 64, oy + 74, 42, 32);
+            } else if (variant === 2) {
+              // Inverted step motif
+              ctx.beginPath();
+              ctx.moveTo(ox + 102, oy + 24);
+              ctx.lineTo(ox + 54, oy + 24);
+              ctx.lineTo(ox + 54, oy + 72);
+              ctx.lineTo(ox + 22, oy + 72);
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.moveTo(ox + 72, oy + 104);
+              ctx.lineTo(ox + 106, oy + 104);
+              ctx.stroke();
+            } else {
+              // Hollow square + corner hook
+              ctx.lineWidth = 8;
+              ctx.strokeRect(ox + 22, oy + 22, 40, 36);
+
+              ctx.lineWidth = 16;
+              ctx.beginPath();
+              ctx.moveTo(ox + 88, oy + 32);
+              ctx.lineTo(ox + 88, oy + 96);
+              ctx.lineTo(ox + 34, oy + 96);
+              ctx.stroke();
+            }
+          }
+        }
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(5, 5);
+        tex.needsUpdate = true;
+        return tex;
+      };
+
+      // Floor (Geometric Patterned Amber Carpet for ERA FACULTY, Rich Hardwood Parquet for Classrooms & Hubs)
       const floor = new THREE.Mesh(
         new THREE.BoxGeometry(roomW, 0.4, roomD),
         new THREE.MeshStandardMaterial({
-          map: createWoodFloorTexture(building.interiorFloorColor),
-          roughness: 0.35,
-          metalness: 0.08
+          map: isFacultyOffice
+            ? createFacultyOfficeCarpetTexture()
+            : createWoodFloorTexture(building.interiorFloorColor),
+          roughness: isFacultyOffice ? 0.78 : 0.42,
+          metalness: isFacultyOffice ? 0.02 : 0.06
         })
       );
       floor.position.set(0, -0.2, 0);
       floor.receiveShadow = true;
       interiorGroup.add(floor);
 
-      // Welcome Runner Carpet leading to Exit Door
-      const carpet = new THREE.Mesh(
-        new THREE.BoxGeometry(5.8, 0.05, roomD - 4),
-        new THREE.MeshStandardMaterial({ color: building.accentColor, roughness: 0.65 })
-      );
-      carpet.position.set(0, 0.03, 0);
-      interiorGroup.add(carpet);
+      // Welcome Runner Carpet leading to Exit Door (omitted in ERA FACULTY so patterned carpet is visible down the center aisle)
+      if (!isFacultyOffice && !building.id.startsWith('class_')) {
+        const carpet = new THREE.Mesh(
+          new THREE.BoxGeometry(4.8, 0.04, roomD - 4.5),
+          new THREE.MeshStandardMaterial({ color: building.accentColor, roughness: 0.75 })
+        );
+        carpet.position.set(0, 0.02, 0.5);
+        interiorGroup.add(carpet);
+      }
 
-      // Bright Daylight Walls (Back, Left, Right, and Front Wall framing the Exit Door)
+      // Warm Architectural Wall Colors (Slightly deepened so global daylight never washes them out)
+      const adjustedWallColor = new THREE.Color(building.interiorWallColor).lerp(
+        new THREE.Color(building.accentColor),
+        0.16
+      );
       const wallMat = new THREE.MeshStandardMaterial({
-        color: building.interiorWallColor,
-        roughness: 0.45,
-        metalness: 0.05
+        color: isFacultyOffice ? 0xcfa050 : adjustedWallColor,
+        roughness: 0.75,
+        metalness: 0.02
+      });
+      const rightOfficeWallMat = new THREE.MeshStandardMaterial({
+        color: isFacultyOffice ? 0xbec8d4 : adjustedWallColor,
+        roughness: 0.75,
+        metalness: 0.02
       });
 
       const backWall = new THREE.Mesh(new THREE.BoxGeometry(roomW, roomH, 0.5), wallMat);
@@ -4201,30 +4786,60 @@ export function EraVerse() {
       leftWall.position.set(-roomW / 2, roomH / 2, 0);
       interiorGroup.add(leftWall);
 
-      const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, roomH, roomD), wallMat);
+      const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, roomH, roomD), rightOfficeWallMat);
       rightWall.position.set(roomW / 2, roomH / 2, 0);
       interiorGroup.add(rightWall);
 
-      // Enclose Room Completely: Ceiling & Front Wall Wings around the Exit Door Frame
-      const ceiling = new THREE.Mesh(
-        new THREE.BoxGeometry(roomW, 0.4, roomD),
-        new THREE.MeshStandardMaterial({
-          color: 0xf8fafc,
-          roughness: 0.85
-        })
-      );
+      // Enclose Room Completely: Suspended Acoustic Tile Grid Ceiling for ALL Buildings
+      const cc = document.createElement('canvas');
+      cc.width = 256;
+      cc.height = 256;
+      const cctx = cc.getContext('2d')!;
+      cctx.fillStyle = '#e2e8f0';
+      cctx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 600; i++) {
+        cctx.fillStyle = 'rgba(100,116,139,0.16)';
+        cctx.fillRect((i * 53) % 256, (i * 97) % 256, 2, 2);
+      }
+      cctx.strokeStyle = '#94a3b8';
+      cctx.lineWidth = 6;
+      cctx.strokeRect(0, 0, 256, 256);
+      cctx.beginPath();
+      cctx.moveTo(128, 0);
+      cctx.lineTo(128, 256);
+      cctx.moveTo(0, 128);
+      cctx.lineTo(256, 128);
+      cctx.stroke();
+
+      const ceilTex = new THREE.CanvasTexture(cc);
+      ceilTex.colorSpace = THREE.SRGBColorSpace;
+      ceilTex.wrapS = THREE.RepeatWrapping;
+      ceilTex.wrapT = THREE.RepeatWrapping;
+      ceilTex.repeat.set(9, 8);
+      const ceilingMat = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.85 });
+
+      const ceiling = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.4, roomD), ceilingMat);
       ceiling.position.set(0, roomH, 0);
       interiorGroup.add(ceiling);
 
-      // Recessed Soft Ceiling Panels
-      for (let cx = -8; cx <= 8; cx += 8) {
-        for (let cz = -6; cz <= 6; cz += 6) {
-          const ceilPanel = new THREE.Mesh(
-            new THREE.BoxGeometry(4.2, 0.08, 3.2),
-            new THREE.MeshBasicMaterial({ color: 0xfffbeb })
+      // Recessed Glowing Rectangular LED Ceiling Panels
+      const ledCoordsX = isFacultyOffice ? [-6.8, 0, 6.8] : [-7.5, 0, 7.5];
+      const ledCoordsZ = isFacultyOffice ? [-7.2, -1.2, 4.8] : [-6.2, 0, 6.2];
+      const ledW = isFacultyOffice ? 2.2 : 2.8;
+      const ledD = isFacultyOffice ? 1.45 : 1.8;
+      for (const cx of ledCoordsX) {
+        for (const cz of ledCoordsZ) {
+          const ceilFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(ledW + 0.18, 0.06, ledD + 0.18),
+            new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4 })
           );
-          ceilPanel.position.set(cx, roomH - 0.05, cz);
-          interiorGroup.add(ceilPanel);
+          ceilFrame.position.set(cx, roomH - 0.16, cz);
+          const ceilPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(ledW, 0.08, ledD),
+            new THREE.MeshBasicMaterial({ color: 0xfffef0 })
+          );
+          ceilPanel.position.set(cx, roomH - 0.18, cz);
+          interiorGroup.add(ceilFrame, ceilPanel);
         }
       }
 
@@ -4246,7 +4861,7 @@ export function EraVerse() {
       interiorGroup.add(frontRightWall);
 
       // Lintel Wall above the Exit Door Frame
-      const lintelH = roomH - 5.35;
+      const lintelH = Math.max(0.4, roomH - 5.35);
       const frontLintel = new THREE.Mesh(
         new THREE.BoxGeometry(frontDoorW, lintelH, 0.5),
         wallMat
@@ -4254,42 +4869,145 @@ export function EraVerse() {
       frontLintel.position.set(0, 5.35 + lintelH / 2, roomD / 2);
       interiorGroup.add(frontLintel);
 
-      // Baseboard trim along walls
-      const trimMat = new THREE.MeshStandardMaterial({ color: building.accentColor, roughness: 0.4 });
-      const backTrim = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.45, 0.6), trimMat);
-      backTrim.position.set(0, 0.22, -roomD / 2);
-      interiorGroup.add(backTrim);
+      // Baseboard, Wainscoting Chair Rail & Crown Molding trim along all walls
+      const trimMat = new THREE.MeshStandardMaterial({
+        color: isFacultyOffice ? 0xb47b38 : building.accentColor,
+        roughness: 0.48
+      });
+      const woodTrimMat = new THREE.MeshStandardMaterial({
+        color: 0x78350f,
+        roughness: 0.55
+      });
+      const backTrim = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.32, 0.58), trimMat);
+      backTrim.position.set(0, 0.16, -roomD / 2);
+      const leftCrown = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.26, roomD), trimMat);
+      leftCrown.position.set(-roomW / 2, roomH - 0.22, 0);
+      const rightCrown = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.26, roomD), trimMat);
+      rightCrown.position.set(roomW / 2, roomH - 0.22, 0);
+      const backCrown = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.26, 0.62), trimMat);
+      backCrown.position.set(0, roomH - 0.22, -roomD / 2);
+      const leftBase = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.28, roomD), woodTrimMat);
+      leftBase.position.set(-roomW / 2, 0.14, 0);
+      const rightBase = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.28, roomD), woodTrimMat);
+      rightBase.position.set(roomW / 2, 0.14, 0);
+      interiorGroup.add(backTrim, leftCrown, rightCrown, backCrown, leftBase, rightBase);
 
-      // Balanced Studio Illumination inside the room (no harsh white overexposure)
-      const roomLight1 = new THREE.PointLight(0xfffbeb, 1.45, 42);
-      roomLight1.position.set(-6, 8.8, -3);
+      // Universal Framed Architectural Windows & Analog Wall Clock on Front/Side Walls (for non-faculty buildings)
+      if (!isFacultyOffice) {
+        const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 });
+        const winGlassMat = new THREE.MeshBasicMaterial({ color: 0xbae6fd });
+        const winBlindMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 });
+        [-8.4, 8.4].forEach((wx) => {
+          const winGroup = new THREE.Group();
+          winGroup.position.set(wx, 4.2, roomD / 2 - 0.28);
+          const outerF = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.8, 0.14), winFrameMat);
+          const glassP = new THREE.Mesh(new THREE.BoxGeometry(3.0, 3.4, 0.16), winGlassMat);
+          const sill = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.18, 0.35), woodTrimMat);
+          sill.position.set(0, -1.95, -0.1);
+          winGroup.add(outerF, glassP, sill);
+          for (let bx = -1.2; bx <= 1.2; bx += 0.4) {
+            const slat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.3, 0.2), winBlindMat);
+            slat.position.set(bx, 0, -0.04);
+            slat.rotation.y = 0.35;
+            winGroup.add(slat);
+          }
+          interiorGroup.add(winGroup);
+        });
+
+        // Analog Classroom / Hall Wall Clock mounted above the front exit lintel
+        const clkCanvas = document.createElement('canvas');
+        clkCanvas.width = 256;
+        clkCanvas.height = 256;
+        const clkCtx = clkCanvas.getContext('2d')!;
+        clkCtx.fillStyle = '#1e293b';
+        clkCtx.beginPath();
+        clkCtx.arc(128, 128, 120, 0, Math.PI * 2);
+        clkCtx.fill();
+        clkCtx.fillStyle = '#ffffff';
+        clkCtx.beginPath();
+        clkCtx.arc(128, 128, 104, 0, Math.PI * 2);
+        clkCtx.fill();
+        clkCtx.strokeStyle = '#0f172a';
+        clkCtx.lineCap = 'round';
+        for (let h = 0; h < 12; h++) {
+          const a = (h * Math.PI) / 6;
+          clkCtx.lineWidth = h % 3 === 0 ? 7 : 4;
+          clkCtx.beginPath();
+          clkCtx.moveTo(128 + Math.cos(a) * 78, 128 + Math.sin(a) * 78);
+          clkCtx.lineTo(128 + Math.cos(a) * 95, 128 + Math.sin(a) * 95);
+          clkCtx.stroke();
+        }
+        clkCtx.lineWidth = 8;
+        clkCtx.beginPath();
+        clkCtx.moveTo(128, 128);
+        clkCtx.lineTo(84, 96);
+        clkCtx.stroke();
+        clkCtx.lineWidth = 6;
+        clkCtx.beginPath();
+        clkCtx.moveTo(128, 128);
+        clkCtx.lineTo(175, 92);
+        clkCtx.stroke();
+        const clkTex = new THREE.CanvasTexture(clkCanvas);
+        clkTex.colorSpace = THREE.SRGBColorSpace;
+        const wallClock = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.75, 0.75, 0.14, 24),
+          [
+            new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 }),
+            new THREE.MeshBasicMaterial({ map: clkTex }),
+            new THREE.MeshStandardMaterial({ color: 0x1e293b })
+          ]
+        );
+        wallClock.rotation.x = Math.PI / 2;
+        wallClock.position.set(0, 7.8, -roomD / 2 + 0.32);
+        interiorGroup.add(wallClock);
+      }
+
+      // Balanced Studio Illumination inside ALL rooms (prevents global sunLight + hemiLight from washing out floors/walls)
+      const lightY = isFacultyOffice ? 6.4 : 8.6;
+      const lightIntensity = isFacultyOffice ? 0.35 : 0.42;
+      const roomLight1 = new THREE.PointLight(0xfffbeb, lightIntensity, 42);
+      roomLight1.position.set(-6, lightY, -3);
       interiorGroup.add(roomLight1);
 
-      const roomLight2 = new THREE.PointLight(0xfffbeb, 1.45, 42);
-      roomLight2.position.set(6, 8.8, -3);
+      const roomLight2 = new THREE.PointLight(0xfffbeb, lightIntensity, 42);
+      roomLight2.position.set(6, lightY, -3);
       interiorGroup.add(roomLight2);
 
-      const roomLight3 = new THREE.PointLight(0xe0f2fe, 1.25, 42);
-      roomLight3.position.set(0, 8.8, 5);
+      const roomLight3 = new THREE.PointLight(0xfff3d1, 0.32, 42);
+      roomLight3.position.set(0, lightY, 5);
       interiorGroup.add(roomLight3);
 
-      // Decorative Potted Plants in Room Corners
-      [
-        [-roomW / 2 + 1.8, -roomD / 2 + 1.8],
-        [roomW / 2 - 1.8, -roomD / 2 + 1.8]
-      ].forEach(([px, pz]) => {
-        const pot = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.65, 0.48, 1.1, 14),
-          new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 })
-        );
-        pot.position.set(px, 0.55, pz);
-        const bush = new THREE.Mesh(
-          new THREE.SphereGeometry(1.05, 14, 14),
-          new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5 })
-        );
-        bush.position.set(px, 1.65, pz);
-        interiorGroup.add(pot, bush);
-      });
+      // Decorative Broad-Leaf Potted Plants in All 4 Room Corners (non-faculty rooms)
+      if (!isFacultyOffice) {
+        [
+          [-roomW / 2 + 1.8, -roomD / 2 + 1.8],
+          [roomW / 2 - 1.8, -roomD / 2 + 1.8],
+          [-roomW / 2 + 1.8, roomD / 2 - 1.8],
+          [roomW / 2 - 1.8, roomD / 2 - 1.8]
+        ].forEach(([px, pz]) => {
+          const pot = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.65, 0.48, 1.1, 14),
+            new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 })
+          );
+          pot.position.set(px, 0.55, pz);
+          const soil = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.6, 0.6, 0.08, 14),
+            new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 })
+          );
+          soil.position.set(px, 1.08, pz);
+          const bush = new THREE.Mesh(
+            new THREE.SphereGeometry(1.05, 14, 14),
+            new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 })
+          );
+          bush.position.set(px, 1.7, pz);
+          const topLeaf = new THREE.Mesh(
+            new THREE.SphereGeometry(0.72, 12, 12),
+            new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.5 })
+          );
+          topLeaf.position.set(px, 2.35, pz);
+          interiorGroup.add(pot, soil, bush, topLeaf);
+        });
+      }
 
       // REAL 3D ARCHITECTURAL EXIT DOOR AT FRONT (+Z)
       const exitZ = roomD / 2 - 0.35;
@@ -4451,65 +5169,67 @@ export function EraVerse() {
         }
       };
 
-      boards.forEach((bSpec) => {
-        const tf = slotTransforms[bSpec.slot];
-        const bGroup = new THREE.Group();
-        bGroup.position.set(tf.x, tf.y, tf.z);
-        bGroup.rotation.y = tf.rotY;
+      if (!isFacultyOffice) {
+        boards.forEach((bSpec) => {
+          const tf = slotTransforms[bSpec.slot];
+          const bGroup = new THREE.Group();
+          bGroup.position.set(tf.x, tf.y, tf.z);
+          bGroup.rotation.y = tf.rotY;
 
-        const isBackDashboardBoard = bSpec.dashboardType === 'personal' || bSpec.dashboardType === 'class';
-        const isSideSkillDashboardBoard =
-          bSpec.dashboardType === 'listening' ||
-          bSpec.dashboardType === 'reading' ||
-          bSpec.dashboardType === 'writing' ||
-          bSpec.dashboardType === 'speaking';
+          const isBackDashboardBoard = bSpec.dashboardType === 'personal' || bSpec.dashboardType === 'class';
+          const isSideSkillDashboardBoard =
+            bSpec.dashboardType === 'listening' ||
+            bSpec.dashboardType === 'reading' ||
+            bSpec.dashboardType === 'writing' ||
+            bSpec.dashboardType === 'speaking';
 
-        const boardW = isBackDashboardBoard ? 12.2 : isSideSkillDashboardBoard ? 9.4 : 8.2;
-        const boardH = isBackDashboardBoard ? 6.8 : isSideSkillDashboardBoard ? 5.8 : 4.8;
+          const boardW = isBackDashboardBoard ? 12.2 : isSideSkillDashboardBoard ? 9.4 : 8.2;
+          const boardH = isBackDashboardBoard ? 6.8 : isSideSkillDashboardBoard ? 5.8 : 4.8;
 
-        const backing = new THREE.Mesh(
-          new THREE.BoxGeometry(boardW, boardH, 0.18),
-          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35 })
-        );
-        backing.userData = { boardSpec: bSpec };
-        bGroup.add(backing);
+          const backing = new THREE.Mesh(
+            new THREE.BoxGeometry(boardW, boardH, 0.18),
+            new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35 })
+          );
+          backing.userData = { boardSpec: bSpec };
+          bGroup.add(backing);
 
-        const bTex = makeBrightInteriorBoardTexture(bSpec);
-        const faceMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(boardW - 0.2, boardH - 0.2),
-          new THREE.MeshBasicMaterial({ map: bTex })
-        );
-        faceMesh.position.z = 0.11;
-        faceMesh.userData = { boardSpec: bSpec };
-        bGroup.add(faceMesh);
+          const bTex = makeBrightInteriorBoardTexture(bSpec);
+          const faceMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(boardW - 0.2, boardH - 0.2),
+            new THREE.MeshBasicMaterial({ map: bTex })
+          );
+          faceMesh.position.z = 0.11;
+          faceMesh.userData = { boardSpec: bSpec };
+          bGroup.add(faceMesh);
 
-        interiorGroup.add(bGroup);
-        clickableBoardMeshes.push(backing, faceMesh);
+          interiorGroup.add(bGroup);
+          clickableBoardMeshes.push(backing, faceMesh);
 
-        const padMesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(1.75, 1.75, 0.08, 28),
-          new THREE.MeshBasicMaterial({
-            color: new THREE.Color(bSpec.accentHex),
-            transparent: true,
-            opacity: 0.38
-          })
-        );
-        padMesh.position.set(
-          tf.standX - INTERIOR_ORIGIN.x,
-          0.05,
-          tf.standZ - INTERIOR_ORIGIN.z
-        );
-        padMesh.userData = { boardSpec: bSpec };
-        interiorGroup.add(padMesh);
-        clickableBoardMeshes.push(padMesh);
+          const padMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.75, 1.75, 0.08, 28),
+            new THREE.MeshBasicMaterial({
+              color: new THREE.Color(bSpec.accentHex),
+              transparent: true,
+              opacity: 0.38
+            })
+          );
+          padMesh.position.set(
+            tf.standX - INTERIOR_ORIGIN.x,
+            0.05,
+            tf.standZ - INTERIOR_ORIGIN.z
+          );
+          padMesh.userData = { boardSpec: bSpec };
+          interiorGroup.add(padMesh);
+          clickableBoardMeshes.push(padMesh);
 
-        currentInteriorBoards.push({
-          spec: bSpec,
-          x: tf.standX,
-          z: tf.standZ,
-          mesh: faceMesh
+          currentInteriorBoards.push({
+            spec: bSpec,
+            x: tf.standX,
+            z: tf.standZ,
+            mesh: faceMesh
+          });
         });
-      });
+      }
 
       // ========================================================================
       // SPECIALIZED 3D INTERIOR FURNISHINGS FOR ERASHOP, ERA GALLERY & ERAGAMES
@@ -4814,15 +5534,20 @@ export function EraVerse() {
 
         interiorGroup.add(rightWallGroup);
       } else if (building.id === 'listening') {
-        // Era Gallery: Add a central 3D Exhibition Sculpture & Photo Display Stand
+        // Era Gallery: Museum Exhibition Hall with Central Sculpture, Brass Stanchions & Cushioned Viewing Benches
         const galleryStand = new THREE.Group();
-        galleryStand.position.set(0, 0, -1.2);
+        galleryStand.position.set(0, 0, -1.8);
         const plinth = new THREE.Mesh(
           new THREE.BoxGeometry(5.6, 1.1, 2.4),
           new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.5 })
         );
         plinth.position.y = 0.55;
-        galleryStand.add(plinth);
+        const goldPlinthRim = new THREE.Mesh(
+          new THREE.BoxGeometry(5.76, 0.12, 2.56),
+          new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.8 })
+        );
+        goldPlinthRim.position.y = 1.12;
+        galleryStand.add(plinth, goldPlinthRim);
 
         const crystalArt = new THREE.Mesh(
           new THREE.OctahedronGeometry(1.25, 0),
@@ -4836,7 +5561,38 @@ export function EraVerse() {
         );
         crystalArt.position.y = 2.45;
         galleryStand.add(crystalArt);
+
+        // 4 Brass Museum Stanchion Posts around the central exhibit
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.85 });
+        [
+          [-3.4, -1.7],
+          [3.4, -1.7],
+          [-3.4, 1.7],
+          [3.4, 1.7]
+        ].forEach(([sx, sz]) => {
+          const sBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.08, 12), brassMat);
+          sBase.position.set(sx, 0.04, sz);
+          const sPost = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.0, 10), brassMat);
+          sPost.position.set(sx, 0.54, sz);
+          const sTop = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), brassMat);
+          sTop.position.set(sx, 1.06, sz);
+          galleryStand.add(sBase, sPost, sTop);
+        });
         interiorGroup.add(galleryStand);
+
+        // Two Cushioned Museum Viewing Benches
+        const benchVelvetMat = new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.55 });
+        const benchFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.5 });
+        [-4.8, 4.8].forEach((bx) => {
+          const bGroup = new THREE.Group();
+          bGroup.position.set(bx, 0, 1.8);
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.26, 3.6), benchVelvetMat);
+          seat.position.y = 0.68;
+          const base = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.52, 3.3), benchFrameMat);
+          base.position.y = 0.26;
+          bGroup.add(seat, base);
+          interiorGroup.add(bGroup);
+        });
       } else if (building.id === 'speaking') {
         // EraGames Arcade Arena: Neon Floor Stage, Host NPC ("Pixel"), Gamer NPCs, Arcade Cabinets & Champion Podium
         const arcadeCarpet = new THREE.Mesh(
@@ -5280,20 +6036,20 @@ export function EraVerse() {
           mesh: boardFace
         });
 
-        // 2. Teacher's Raised Wooden Podium Platform + Teacher Desk, Laptop, Books & Teacher NPC
+        // 2. Teacher's Raised Wooden Podium Platform + Teacher Desk, Globe, Laptop, Books & Teacher NPC
         const podiumStage = new THREE.Mesh(
-          new THREE.BoxGeometry(14.4, 0.22, 3.6),
+          new THREE.BoxGeometry(15.2, 0.22, 3.8),
           new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.65 })
         );
-        podiumStage.position.set(0, 0.11, -roomD / 2 + 2.1);
+        podiumStage.position.set(0, 0.11, -roomD / 2 + 2.15);
         podiumStage.receiveShadow = true;
         interiorGroup.add(podiumStage);
 
         const teacherDeskGroup = new THREE.Group();
-        teacherDeskGroup.position.set(-4.2, 0.22, -roomD / 2 + 2.4);
+        teacherDeskGroup.position.set(-4.3, 0.22, -roomD / 2 + 2.45);
 
         const tDeskTop = new THREE.Mesh(
-          new THREE.BoxGeometry(3.2, 0.14, 1.45),
+          new THREE.BoxGeometry(3.4, 0.14, 1.5),
           new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.45 })
         );
         tDeskTop.position.y = 1.38;
@@ -5301,26 +6057,39 @@ export function EraVerse() {
         teacherDeskGroup.add(tDeskTop);
 
         const tDeskFront = new THREE.Mesh(
-          new THREE.BoxGeometry(3.0, 1.25, 1.25),
+          new THREE.BoxGeometry(3.15, 1.25, 1.28),
           new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 })
         );
         tDeskFront.position.y = 0.68;
         tDeskFront.castShadow = true;
         teacherDeskGroup.add(tDeskFront);
 
-        // Laptop & Stack of Books on Teacher's Desk
+        // Laptop, World Globe & Stack of Books on Teacher's Desk
         const laptopBase = new THREE.Mesh(
           new THREE.BoxGeometry(0.65, 0.04, 0.45),
           new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 })
         );
-        laptopBase.position.set(-0.4, 1.47, 0.1);
+        laptopBase.position.set(-0.45, 1.47, 0.1);
         const laptopScreen = new THREE.Mesh(
           new THREE.BoxGeometry(0.65, 0.44, 0.04),
           new THREE.MeshStandardMaterial({ color: 0x1e293b, emissive: 0x38bdf8, emissiveIntensity: 0.25 })
         );
-        laptopScreen.position.set(-0.4, 1.68, -0.12);
+        laptopScreen.position.set(-0.45, 1.68, -0.12);
         laptopScreen.rotation.x = 0.2;
         teacherDeskGroup.add(laptopBase, laptopScreen);
+
+        // Classroom World Globe on Teacher's Desk
+        const globeStand = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.18, 0.24, 0.12, 14),
+          new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6, roughness: 0.3 })
+        );
+        globeStand.position.set(-1.2, 1.5, 0);
+        const globeSphere = new THREE.Mesh(
+          new THREE.SphereGeometry(0.28, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35 })
+        );
+        globeSphere.position.set(-1.2, 1.85, 0);
+        teacherDeskGroup.add(globeStand, globeSphere);
 
         [0xef4444, 0x3b82f6, 0x10b981].forEach((bCol, bIdx) => {
           const book = new THREE.Mesh(
@@ -5348,10 +6117,10 @@ export function EraVerse() {
           clothingType: 'royal_suit',
           beltType: 'leather_belt'
         });
-        teacherRig.root.position.set(3.4, 0.22, -roomD / 2 + 2.3);
+        teacherRig.root.position.set(3.6, 0.22, -roomD / 2 + 2.3);
         const teacherBubble = createSpeechBubbleSprite(
           cMeta.teacherName,
-          `Welcome to ${building.name}! Take a seat at any desk or click the chalkboard to start today's lesson!`,
+          `Welcome to ${building.name}! Students in this class can click any desk chair or press [E] to sit down!`,
           false
         );
         teacherBubble.userData = { boardSpec: mainChalkboardSpec };
@@ -5359,7 +6128,27 @@ export function EraVerse() {
         teacherRig.root.add(teacherBubble);
         interiorGroup.add(teacherRig.root);
 
-        // 3. Rows of 3D Student Desks & Classroom Chairs (3 Rows × 4 Columns = 12 Student Desks & Chairs)
+        // Side-Wall Educational Posters & Framed Windows along Left and Right Classroom Walls
+        const posterMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.5 });
+        const posterFrameMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.55 });
+        [-4.5, 2.5].forEach((pz, pIdx) => {
+          [-roomW / 2 + 0.3, roomW / 2 - 0.3].forEach((px, sIdx) => {
+            const pGroup = new THREE.Group();
+            pGroup.position.set(px, 4.3, pz);
+            pGroup.rotation.y = sIdx === 0 ? Math.PI / 2 : -Math.PI / 2;
+            const pFrame = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 0.1), posterFrameMat);
+            const pFace = new THREE.Mesh(new THREE.BoxGeometry(2.9, 1.9, 0.12), posterMat);
+            const pHeader = new THREE.Mesh(
+              new THREE.BoxGeometry(2.7, 0.38, 0.14),
+              new THREE.MeshBasicMaterial({ color: pIdx === 0 ? building.accentColor : 0x0284c7 })
+            );
+            pHeader.position.y = 0.62;
+            pGroup.add(pFrame, pFace, pHeader);
+            interiorGroup.add(pGroup);
+          });
+        });
+
+        // 3. Rows of 3D Student Desks & Interactive Classroom Chairs (3 Rows × 4 Columns = 12 Student Desks & Chairs)
         const deskWoodMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.48 });
         const chairWoodMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.52 });
         const legMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.65 });
@@ -5371,8 +6160,98 @@ export function EraVerse() {
         const deskCols = [-6.6, -2.2, 2.2, 6.6];
         const deskRows = [-2.2, 1.3, 4.8];
 
+        // Map each classroom building to its specific student cohort label & dedicated cohort student roster
+        const classroomCohortConfig: Record<
+          string,
+          {
+            cohortLabel: string;
+            roster: Array<{ name: string; cohort: string; gender: 'boy' | 'girl'; hair: string; shirt: string }>;
+          }
+        > = {
+          class_starters: {
+            cohortLabel: 'STARTERS',
+            roster: [
+              { name: 'Milo', cohort: 'STARTERS', gender: 'boy', hair: 'classic', shirt: '#0ea5e9' },
+              { name: 'Lily', cohort: 'STARTERS', gender: 'girl', hair: 'twin_buns', shirt: '#f43f5e' },
+              { name: 'Toby', cohort: 'STARTERS', gender: 'boy', hair: 'spiky', shirt: '#10b981' },
+              { name: 'Mia', cohort: 'STARTERS', gender: 'girl', hair: 'twintails', shirt: '#a855f7' },
+              { name: 'Benny', cohort: 'STARTERS', gender: 'boy', hair: 'textured_crop', shirt: '#f59e0b' },
+              { name: 'Zoe', cohort: 'STARTERS', gender: 'girl', hair: 'ponytail', shirt: '#ec4899' }
+            ]
+          },
+          class_movers: {
+            cohortLabel: 'MOVERS',
+            roster: [
+              { name: 'Lucas', cohort: 'MOVERS', gender: 'boy', hair: 'spiky', shirt: '#f97316' },
+              { name: 'Chloe', cohort: 'MOVERS', gender: 'girl', hair: 'long_wavy', shirt: '#06b6d4' },
+              { name: 'Noah', cohort: 'MOVERS', gender: 'boy', hair: 'textured_crop', shirt: '#3b82f6' },
+              { name: 'Emma', cohort: 'MOVERS', gender: 'girl', hair: 'ponytail', shirt: '#ec4899' },
+              { name: 'Oliver', cohort: 'MOVERS', gender: 'boy', hair: 'classic', shirt: '#10b981' },
+              { name: 'Ruby', cohort: 'MOVERS', gender: 'girl', hair: 'twin_buns', shirt: '#8b5cf6' }
+            ]
+          },
+          class_flyers: {
+            cohortLabel: 'FLYERS',
+            roster: [
+              { name: 'Ethan', cohort: 'FLYERS', gender: 'boy', hair: 'kpop_curtain', shirt: '#10b981' },
+              { name: 'Sophia', cohort: 'FLYERS', gender: 'girl', hair: 'long_wavy', shirt: '#0ea5e9' },
+              { name: 'Liam', cohort: 'FLYERS', gender: 'boy', hair: 'textured_crop', shirt: '#6366f1' },
+              { name: 'Ava', cohort: 'FLYERS', gender: 'girl', hair: 'twintails', shirt: '#f43f5e' },
+              { name: 'Mason', cohort: 'FLYERS', gender: 'boy', hair: 'spiky', shirt: '#f59e0b' },
+              { name: 'Bella', cohort: 'FLYERS', gender: 'girl', hair: 'ponytail', shirt: '#14b8a6' }
+            ]
+          },
+          class_ket: {
+            cohortLabel: 'KET',
+            roster: [
+              { name: 'Daniel', cohort: 'KET', gender: 'boy', hair: 'textured_crop', shirt: '#e11d48' },
+              { name: 'Grace', cohort: 'KET', gender: 'girl', hair: 'long_wavy', shirt: '#8b5cf6' },
+              { name: 'Ryan', cohort: 'KET', gender: 'boy', hair: 'kpop_curtain', shirt: '#2563eb' },
+              { name: 'Nina', cohort: 'KET', gender: 'girl', hair: 'twin_buns', shirt: '#ec4899' },
+              { name: 'Kevin', cohort: 'KET', gender: 'boy', hair: 'classic', shirt: '#059669' },
+              { name: 'Sarah', cohort: 'KET', gender: 'girl', hair: 'ponytail', shirt: '#f97316' }
+            ]
+          },
+          class_pet: {
+            cohortLabel: 'PET',
+            roster: [
+              { name: 'Alex', cohort: 'PET', gender: 'boy', hair: 'kpop_curtain', shirt: '#0d9488' },
+              { name: 'Elena', cohort: 'PET', gender: 'girl', hair: 'long_wavy', shirt: '#6366f1' },
+              { name: 'Marcus', cohort: 'PET', gender: 'boy', hair: 'textured_crop', shirt: '#0284c7' },
+              { name: 'Claire', cohort: 'PET', gender: 'girl', hair: 'ponytail', shirt: '#e11d48' },
+              { name: 'Victor', cohort: 'PET', gender: 'boy', hair: 'spiky', shirt: '#d97706' },
+              { name: 'Jade', cohort: 'PET', gender: 'girl', hair: 'twin_buns', shirt: '#10b981' }
+            ]
+          },
+          class_ielts: {
+            cohortLabel: 'IELTS 1 & 2',
+            roster: [
+              { name: 'Kim', cohort: 'IELTS 2', gender: 'girl', hair: 'long_wavy', shirt: '#ec4899' },
+              { name: 'Charlie', cohort: 'IELTS 2', gender: 'boy', hair: 'textured_crop', shirt: '#2563eb' },
+              { name: 'Hannah', cohort: 'IELTS 2', gender: 'girl', hair: 'twintails', shirt: '#a855f7' },
+              { name: 'Suzie', cohort: 'IELTS 1', gender: 'girl', hair: 'twin_buns', shirt: '#f97316' },
+              { name: 'Nhi', cohort: 'IELTS 1', gender: 'girl', hair: 'long_wavy', shirt: '#0ea5e9' },
+              { name: 'Dan', cohort: 'IELTS 1', gender: 'boy', hair: 'kpop_curtain', shirt: '#10b981' }
+            ]
+          }
+        };
+
+        const activeCohortCfg = classroomCohortConfig[building.id] || classroomCohortConfig.class_ielts;
+
         deskRows.forEach((rz, rIdx) => {
           deskCols.forEach((cx, cIdx) => {
+            const deskNumber = rIdx * 4 + cIdx + 1;
+            const seatWorldX = INTERIOR_ORIGIN.x + cx;
+            const seatWorldZ = INTERIOR_ORIGIN.z + rz + 0.95;
+            const deskLabel = `${building.name} • Desk #${deskNumber} (Row ${rIdx + 1})`;
+            const deskHitData = {
+              isClassroomDesk: true,
+              seatX: seatWorldX,
+              seatZ: seatWorldZ,
+              deskName: deskLabel,
+              classCohort: activeCohortCfg.cohortLabel
+            };
+
             const unitGroup = new THREE.Group();
             unitGroup.position.set(cx, 0, rz);
 
@@ -5381,6 +6260,8 @@ export function EraVerse() {
             dTop.position.y = 1.28;
             dTop.castShadow = true;
             dTop.receiveShadow = true;
+            dTop.userData = deskHitData;
+            clickableBoardMeshes.push(dTop);
             unitGroup.add(dTop);
 
             // Under-Desk Book Storage Tray
@@ -5427,6 +6308,8 @@ export function EraVerse() {
             const cSeat = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.09, 0.88), chairWoodMat);
             cSeat.position.y = 0.76;
             cSeat.castShadow = true;
+            cSeat.userData = deskHitData;
+            clickableBoardMeshes.push(cSeat);
             chairGroup.add(cSeat);
 
             // 4 Chair Legs
@@ -5451,6 +6334,8 @@ export function EraVerse() {
             const cBack = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.48, 0.08), chairWoodMat);
             cBack.position.set(0, 1.26, 0.42);
             cBack.castShadow = true;
+            cBack.userData = deskHitData;
+            clickableBoardMeshes.push(cBack);
             chairGroup.add(cBack);
 
             unitGroup.add(chairGroup);
@@ -5458,57 +6343,1298 @@ export function EraVerse() {
           });
         });
 
-        // 4. Cute 3D Student Classmates Studying in the Classroom (Wearing Orange Kỷ Nguyên Era Uniforms)
-        [
-          { x: -6.6, z: -0.65, name: 'Minh • Student', gender: 'boy', hair: 'classic', hairCol: '#1c1917' },
-          { x: 2.2, z: -0.65, name: 'Linh • Student', gender: 'girl', hair: 'twintails', hairCol: '#3b2219' },
-          { x: -2.2, z: 2.85, name: 'Khoa • Student', gender: 'boy', hair: 'textured_crop', hairCol: '#0f172a' },
-          { x: 6.6, z: 2.85, name: 'An • Student', gender: 'girl', hair: 'long_wavy', hairCol: '#4a2511' }
-        ].forEach((st) => {
+        // 4. Students Belonging to This Specific Class Building Seated in the Classroom Chairs
+        const matchingCampusStudents = npcActors
+          .map((n) => n.profile)
+          .filter((p) =>
+            building.id === 'class_ielts'
+              ? p.cohort === 'IELTS 1' || p.cohort === 'IELTS 2'
+              : p.targetBuildingId === building.id ||
+                String(p.cohort).toUpperCase().includes(activeCohortCfg.cohortLabel)
+          );
+
+        // Seat 6 class students on the classroom chairs (leaving 6 open chairs so the player & classmates can sit down at any desk!)
+        const seatedDeskSlots = [
+          { colIdx: 0, rowIdx: 0 },
+          { colIdx: 2, rowIdx: 0 },
+          { colIdx: 1, rowIdx: 1 },
+          { colIdx: 3, rowIdx: 1 },
+          { colIdx: 0, rowIdx: 2 },
+          { colIdx: 2, rowIdx: 2 }
+        ];
+
+        seatedDeskSlots.forEach((slot, idx) => {
+          const seatX = deskCols[slot.colIdx];
+          const seatZ = deskRows[slot.rowIdx] + 0.92; // Positioned directly on the chair seat
+          const cohortPreset = activeCohortCfg.roster[idx % activeCohortCfg.roster.length];
+          const matchedProf =
+            matchingCampusStudents.find((p) => p.name.toLowerCase() === cohortPreset.name.toLowerCase()) ||
+            (building.id === 'class_ielts' ? matchingCampusStudents[idx % Math.max(1, matchingCampusStudents.length)] : null);
+
+          const displayName = matchedProf ? matchedProf.name : cohortPreset.name;
+          const displayCohort = matchedProf ? matchedProf.cohort : cohortPreset.cohort;
+
           const stRig = buildCharacterAvatar({
-            shirtColor: '#f97316',
-            hairColor: st.hairCol,
+            shirtColor: matchedProf?.shirtColor || cohortPreset.shirt,
+            hairColor: matchedProf?.hairColor || '#1c1917',
+            skinColor: matchedProf?.skinColor || '#FFE7D6',
+            hatType: matchedProf?.hatType || 'none',
+            accessoryType: matchedProf?.accessoryType || 'none',
+            name: `${displayName} • ${displayCohort}`,
+            cohort: displayCohort,
+            gender: matchedProf?.gender || cohortPreset.gender,
+            hairStyle: matchedProf?.hairStyle || cohortPreset.hair,
+            clothingType: matchedProf?.clothingType || 'varsity',
+            pantsColor: matchedProf?.pantsColor || '#1e293b',
+            beltType: matchedProf?.beltType || 'none'
+          });
+          // True seated pose on the classroom chair (y = 0.42, bent knees, arms resting on the desk)
+          stRig.root.position.set(seatX, 0.42, seatZ);
+          stRig.root.rotation.y = Math.PI; // Facing the front chalkboard
+          stRig.leftLeg.rotation.x = -1.35;
+          stRig.rightLeg.rotation.x = -1.35;
+          stRig.leftArm.rotation.x = -0.65;
+          stRig.rightArm.rotation.x = -0.65;
+          stRig.root.children.forEach((child) => {
+            if ((child as THREE.Sprite).isSprite) {
+              child.scale.multiplyScalar(0.68);
+              child.position.y = 3.45;
+            }
+          });
+          interiorGroup.add(stRig.root);
+
+          const synthProf: IeltsCharacterProfile = matchedProf || {
+            id: `${building.id}-student-${idx}`,
+            name: displayName,
+            cohort: displayCohort as any,
+            course: 'IELTS Course',
+            roleTitle: `${displayCohort} Student`,
+            shirtColor: cohortPreset.shirt,
+            hairColor: '#1c1917',
             skinColor: '#FFE7D6',
             hatType: 'none',
             accessoryType: 'none',
-            name: st.name,
-            cohort: 'IELTS 1',
-            gender: st.gender,
-            hairStyle: st.hair,
+            gender: cohortPreset.gender,
+            hairStyle: cohortPreset.hair,
             clothingType: 'varsity',
-            beltType: 'none'
+            pantsColor: '#1e293b',
+            beltType: 'none',
+            targetBuildingId: building.id,
+            motto: `Studying in ${building.name}!`
+          };
+
+          interiorNpcActors.push({
+            profile: synthProf,
+            rig: stRig,
+            role: 'seated_student',
+            state: 'at_spot',
+            targetX: seatX,
+            targetZ: seatZ,
+            spotX: seatX,
+            spotZ: seatZ,
+            timer: 4 + idx * 2.5,
+            walkPhase: idx * 1.3,
+            handRaiseTimer: idx === 0 ? 2.2 : 0
           });
-          stRig.root.position.set(st.x, 0, st.z);
-          stRig.root.rotation.y = Math.PI; // Facing the front chalkboard
-          interiorGroup.add(stRig.root);
         });
 
-        // 5. Classroom Bookshelves at Back Left & Back Right Corners
-        [-8.8, 8.8].forEach((bx) => {
+        // 5. Classroom Bookshelves & Storage Lockers at Back Left & Back Right Corners
+        [-10.2, 10.2].forEach((bx) => {
           const shelfGroup = new THREE.Group();
           shelfGroup.position.set(bx, 0, -roomD / 2 + 1.1);
           const shelfFrame = new THREE.Mesh(
-            new THREE.BoxGeometry(2.6, 4.2, 0.85),
+            new THREE.BoxGeometry(3.0, 4.4, 0.9),
             new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 })
           );
-          shelfFrame.position.y = 2.1;
+          shelfFrame.position.y = 2.2;
           shelfFrame.castShadow = true;
           shelfGroup.add(shelfFrame);
 
           for (let row = 0; row < 3; row++) {
             for (let b = 0; b < 6; b++) {
               const bk = new THREE.Mesh(
-                new THREE.BoxGeometry(0.28, 0.68, 0.65),
+                new THREE.BoxGeometry(0.3, 0.72, 0.68),
                 new THREE.MeshStandardMaterial({
                   color: bookCoverPalette[(row * 6 + b) % bookCoverPalette.length],
                   roughness: 0.45
                 })
               );
-              bk.position.set(-0.9 + b * 0.36, 1.1 + row * 1.1, 0.12);
+              bk.position.set(-0.95 + b * 0.38, 1.1 + row * 1.15, 0.14);
               shelfGroup.add(bk);
             }
           }
           interiorGroup.add(shelfGroup);
+        });
+      } else if (building.id === 'practice_tests') {
+        // ====================================================================
+        // PRACTICE TEST ARENA INTERIOR: 3D COMPUTER EXAMINATION LAB
+        // Features: 6 Partitioned Exam Computer Booths, Widescreen Exam Monitors,
+        // Headphones, Ergonomic Chairs, Seated Test-Takers & Front Proctor Desk
+        // ====================================================================
+        const boothWoodMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
+        const deskSurfMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+        const frameDarkMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.5 });
+        const screenGlowMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+        // Front Exam Proctor Desk
+        const proctorGroup = new THREE.Group();
+        proctorGroup.position.set(0, 0, -4.8);
+        const pDesk = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.35, 1.4), boothWoodMat);
+        pDesk.position.y = 0.675;
+        const pTop = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.12, 1.55), deskSurfMat);
+        pTop.position.y = 1.4;
+        proctorGroup.add(pDesk, pTop);
+
+        const proctorRig = buildCharacterAvatar({
+          shirtColor: '#1d4ed8',
+          hairColor: '#1c1917',
+          skinColor: '#FFE7D6',
+          hatType: 'none',
+          accessoryType: 'glasses',
+          name: 'Mr. Arthur • Exam Proctor',
+          cohort: 'PRACTICE ARENA',
+          gender: 'boy',
+          hairStyle: 'classic',
+          clothingType: 'royal_suit',
+          beltType: 'leather_belt'
+        });
+        proctorRig.root.position.set(0, 0, -1.2);
+        proctorGroup.add(proctorRig.root);
+        interiorGroup.add(proctorGroup);
+
+        // 6 Computer Testing Booths (2 Columns × 3 Rows) with Seated Student Test-Takers
+        const boothPositions = [
+          { x: -4.2, z: -1.2 },
+          { x: 4.2, z: -1.2 },
+          { x: -4.2, z: 2.6 },
+          { x: 4.2, z: 2.6 }
+        ];
+        const studentPool = npcActors
+          .map((n) => n.profile)
+          .filter((p) => p.cohort === 'IELTS 1' || p.cohort === 'IELTS 2');
+
+        boothPositions.forEach((bp, bIdx) => {
+          const bGroup = new THREE.Group();
+          bGroup.position.set(bp.x, 0, bp.z);
+
+          // Booth Privacy Dividers (Left, Right, Front)
+          const backDiv = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.95, 0.12), boothWoodMat);
+          backDiv.position.set(0, 0.975, -0.65);
+          const leftDiv = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.95, 1.4), boothWoodMat);
+          leftDiv.position.set(-1.25, 0.975, 0);
+          const rightDiv = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.95, 1.4), boothWoodMat);
+          rightDiv.position.set(1.25, 0.975, 0);
+          const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 1.2), deskSurfMat);
+          deskTop.position.set(0, 1.25, -0.05);
+
+          // Widescreen Exam Monitor & Keyboard
+          const monStand = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.16, 0.35, 12), frameDarkMat);
+          monStand.position.set(0, 1.45, -0.35);
+          const monFrame = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.68, 0.06), frameDarkMat);
+          monFrame.position.set(0, 1.72, -0.35);
+          const monScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.58), screenGlowMat);
+          monScreen.position.set(0, 1.72, -0.31);
+          const kb = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.03, 0.24), frameDarkMat);
+          kb.position.set(0, 1.32, 0.15);
+
+          // Exam Chair
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.85), frameDarkMat);
+          seat.position.set(0, 0.76, 0.85);
+          const back = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.8, 0.1), boothWoodMat);
+          back.position.set(0, 1.2, 1.24);
+          const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.25, 0.75, 10), frameDarkMat);
+          pedestal.position.set(0, 0.38, 0.85);
+
+          bGroup.add(backDiv, leftDiv, rightDiv, deskTop, monStand, monFrame, monScreen, kb, seat, back, pedestal);
+          interiorGroup.add(bGroup);
+
+          // Seated Student taking Computer IELTS Practice Test with Headphones
+          const prof =
+            studentPool[bIdx % Math.max(1, studentPool.length)] ||
+            DEFAULT_IELTS_CHARACTERS[(bIdx + 1) % DEFAULT_IELTS_CHARACTERS.length];
+          const testerRig = buildCharacterAvatar({
+            shirtColor: prof.shirtColor,
+            hairColor: prof.hairColor,
+            skinColor: prof.skinColor,
+            hatType: 'headphones',
+            accessoryType: prof.accessoryType,
+            name: `${prof.name} • Testing`,
+            cohort: prof.cohort,
+            gender: prof.gender,
+            hairStyle: prof.hairStyle,
+            clothingType: prof.clothingType,
+            pantsColor: prof.pantsColor,
+            beltType: prof.beltType
+          });
+          testerRig.root.position.set(bp.x, 0.42, bp.z + 0.82);
+          testerRig.root.rotation.y = Math.PI;
+          testerRig.leftLeg.rotation.x = -1.35;
+          testerRig.rightLeg.rotation.x = -1.35;
+          testerRig.leftArm.rotation.x = -0.7;
+          testerRig.rightArm.rotation.x = -0.7;
+          testerRig.root.children.forEach((child) => {
+            if ((child as THREE.Sprite).isSprite) {
+              child.scale.multiplyScalar(0.62);
+              child.position.y = 3.4;
+            }
+          });
+          interiorGroup.add(testerRig.root);
+        });
+      } else if (building.id === 'homework') {
+        // ====================================================================
+        // HOMEWORK HUB INTERIOR: ACADEMIC LIBRARY & COLLABORATIVE STUDY LOUNGE
+        // Features: 4 Mahogany Library Study Tables, Green Banker's Desk Lamps,
+        // Open Laptops & Textbooks, Tall Bookcases & Seated Studying Classmates
+        // ====================================================================
+        const mahoganyMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.48 });
+        const oakTopMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.42 });
+        const brassMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.75, roughness: 0.25 });
+        const lampShadeMat = new THREE.MeshStandardMaterial({
+          color: 0x10b981,
+          emissive: 0x059669,
+          emissiveIntensity: 0.45,
+          roughness: 0.3
+        });
+
+        const tableCoords = [
+          { x: -4.2, z: -1.8 },
+          { x: 4.2, z: -1.8 },
+          { x: -4.2, z: 3.0 },
+          { x: 4.2, z: 3.0 }
+        ];
+        const studentPool = npcActors
+          .map((n) => n.profile)
+          .filter((p) => p.cohort === 'IELTS 1' || p.cohort === 'IELTS 2');
+
+        tableCoords.forEach((tc, tIdx) => {
+          const tGroup = new THREE.Group();
+          tGroup.position.set(tc.x, 0, tc.z);
+
+          const tableTop = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.14, 1.65), oakTopMat);
+          tableTop.position.y = 1.28;
+          tableTop.castShadow = true;
+          tGroup.add(tableTop);
+
+          [
+            [-1.5, -0.65],
+            [1.5, -0.65],
+            [-1.5, 0.65],
+            [1.5, 0.65]
+          ].forEach(([lx, lz]) => {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.26, 0.16), mahoganyMat);
+            leg.position.set(lx, 0.63, lz);
+            tGroup.add(leg);
+          });
+
+          // Classic Emerald Library Banker's Lamp in the center of each table
+          const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.08, 12), brassMat);
+          lampBase.position.set(0, 1.38, 0);
+          const lampStem = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 10), brassMat);
+          lampStem.position.set(0, 1.6, 0);
+          const lampShade = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.18, 0.26), lampShadeMat);
+          lampShade.position.set(0, 1.82, 0);
+          tGroup.add(lampBase, lampStem, lampShade);
+
+          // Books & Notebooks on table
+          const bookStack = new THREE.Mesh(
+            new THREE.BoxGeometry(0.55, 0.18, 0.42),
+            new THREE.MeshStandardMaterial({ color: tIdx % 2 === 0 ? 0x2563eb : 0xe11d48, roughness: 0.5 })
+          );
+          bookStack.position.set(-0.85, 1.44, 0.15);
+          tGroup.add(bookStack);
+
+          // Library Chairs + Seated Studying Student
+          const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.1, 0.88), mahoganyMat);
+          chairSeat.position.set(0, 0.76, 1.05);
+          const chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.75, 0.1), mahoganyMat);
+          chairBack.position.set(0, 1.18, 1.44);
+          tGroup.add(chairSeat, chairBack);
+
+          interiorGroup.add(tGroup);
+
+          const prof =
+            studentPool[(tIdx + 3) % Math.max(1, studentPool.length)] ||
+            DEFAULT_IELTS_CHARACTERS[(tIdx + 3) % DEFAULT_IELTS_CHARACTERS.length];
+          const hwRig = buildCharacterAvatar({
+            shirtColor: prof.shirtColor,
+            hairColor: prof.hairColor,
+            skinColor: prof.skinColor,
+            hatType: prof.hatType,
+            accessoryType: prof.accessoryType,
+            name: `${prof.name} • Homework`,
+            cohort: prof.cohort,
+            gender: prof.gender,
+            hairStyle: prof.hairStyle,
+            clothingType: prof.clothingType,
+            pantsColor: prof.pantsColor,
+            beltType: prof.beltType
+          });
+          hwRig.root.position.set(tc.x, 0.42, tc.z + 1.02);
+          hwRig.root.rotation.y = Math.PI;
+          hwRig.leftLeg.rotation.x = -1.35;
+          hwRig.rightLeg.rotation.x = -1.35;
+          hwRig.leftArm.rotation.x = -0.65;
+          hwRig.rightArm.rotation.x = -0.65;
+          hwRig.root.children.forEach((child) => {
+            if ((child as THREE.Sprite).isSprite) {
+              child.scale.multiplyScalar(0.62);
+              child.position.y = 3.4;
+            }
+          });
+          interiorGroup.add(hwRig.root);
+        });
+      } else if (building.id === 'dashboard') {
+        // ====================================================================
+        // IELTS ACADEMY / DASHBOARD HALL INTERIOR: GRAND ACADEMIC HONOR HALL
+        // Features: Central Honor Roll Trophy Pedestal, 4 Classical Columns,
+        // Velvet Lounge Benches & Clear Sightlines to the 6 Analytics Walls
+        // ====================================================================
+        const marbleColMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.3, metalness: 0.1 });
+        const goldAccentMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.8 });
+        const velvetBenchMat = new THREE.MeshStandardMaterial({ color: 0x4338ca, roughness: 0.6 });
+
+        // 4 Classical Columns framing the Grand Hall
+        [
+          [-8.5, -5.5],
+          [8.5, -5.5],
+          [-8.5, 5.5],
+          [8.5, 5.5]
+        ].forEach(([cx, cz]) => {
+          const colGroup = new THREE.Group();
+          colGroup.position.set(cx, 0, cz);
+          const base = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.5, 1.3), goldAccentMat);
+          base.position.y = 0.25;
+          const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.52, roomH - 1.0, 16), marbleColMat);
+          shaft.position.y = roomH / 2;
+          const capital = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.5, 1.3), goldAccentMat);
+          capital.position.y = roomH - 0.35;
+          colGroup.add(base, shaft, capital);
+          interiorGroup.add(colGroup);
+        });
+
+        // Central Academy Honor Trophy Pedestal
+        const trophyGroup = new THREE.Group();
+        trophyGroup.position.set(0, 0, -0.5);
+        const pedBase = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.65, 1.95, 1.1, 24),
+          new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.3, metalness: 0.5 })
+        );
+        pedBase.position.y = 0.55;
+        const goldCup = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.28, 1.15, 20), goldAccentMat);
+        goldCup.position.y = 1.65;
+        const goldRing = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.06, 12, 32), goldAccentMat);
+        goldRing.position.y = 2.05;
+        trophyGroup.add(pedBase, goldCup, goldRing);
+        interiorGroup.add(trophyGroup);
+
+        // Two Velvet Academic Viewing Benches flanking the center aisle
+        [-4.6, 4.6].forEach((bx) => {
+          const bench = new THREE.Group();
+          bench.position.set(bx, 0, 0.5);
+          const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.32, 3.8), velvetBenchMat);
+          cushion.position.y = 0.68;
+          const goldTrim = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.12, 3.86), goldAccentMat);
+          goldTrim.position.y = 0.48;
+          bench.add(cushion, goldTrim);
+          interiorGroup.add(bench);
+        });
+      }
+
+      // ========================================================================
+      // ERA FACULTY 3D OFFICE SPACE WITH CUBICLES (Matching Reference Cubicle Office)
+      // ========================================================================
+      if (building.id === 'faculty_hq') {
+        // 1. Procedural Wood-Grain Texture for Lower Cubicle Partition Panels
+        const createCubicleWoodTexture = () => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 256;
+          const ctx = c.getContext('2d')!;
+          ctx.fillStyle = '#7c4c2a';
+          ctx.fillRect(0, 0, 256, 256);
+
+          // Vertical wood plank divisions & wavy walnut wood grain lines
+          for (let px = 0; px < 256; px += 32) {
+            ctx.fillStyle = px % 64 === 0 ? 'rgba(60,30,12,0.38)' : 'rgba(155,100,55,0.22)';
+            ctx.fillRect(px, 0, 3, 256);
+
+            ctx.strokeStyle = 'rgba(52,26,10,0.45)';
+            ctx.lineWidth = 2.5;
+            for (let g = 0; g < 3; g++) {
+              ctx.beginPath();
+              const baseLineX = px + 8 + g * 8;
+              ctx.moveTo(baseLineX, 0);
+              ctx.bezierCurveTo(
+                baseLineX + (g % 2 === 0 ? 5 : -5),
+                85,
+                baseLineX + (g % 2 === 0 ? -5 : 5),
+                170,
+                baseLineX,
+                256
+              );
+              ctx.stroke();
+            }
+          }
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.needsUpdate = true;
+          return tex;
+        };
+
+        const cubicleWoodMat = new THREE.MeshStandardMaterial({
+          map: createCubicleWoodTexture(),
+          roughness: 0.65,
+          metalness: 0.05
+        });
+        const cubicleFrameMat = new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          roughness: 0.4,
+          metalness: 0.35
+        });
+        const cubicleGlassMat = new THREE.MeshStandardMaterial({
+          color: 0xcbd5e1,
+          transparent: true,
+          opacity: 0.34,
+          roughness: 0.15,
+          metalness: 0.25
+        });
+        const stickyNoteMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        const whiteDeskMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+        const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.4 });
+        const drawerBodyMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+        const drawerFrontMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.45 });
+
+        // 2. THREE BACK-WALL FRAMED WINDOWS WITH VERTICAL BLINDS & OUTDOOR TREES
+        const createOutdoorWindowTexture = (variant: number) => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 384;
+          const ctx = c.getContext('2d')!;
+          const skyGrad = ctx.createLinearGradient(0, 0, 0, 384);
+          skyGrad.addColorStop(0, '#7dd3fc');
+          skyGrad.addColorStop(0.65, '#bae6fd');
+          skyGrad.addColorStop(0.66, '#4d7c0f');
+          skyGrad.addColorStop(1, '#3f6212');
+          ctx.fillStyle = skyGrad;
+          ctx.fillRect(0, 0, 256, 384);
+
+          // Trunk
+          ctx.fillStyle = '#5c3a21';
+          ctx.fillRect(114, 210, 24, 140);
+
+          // Stylized rounded tree foliage outside the office window
+          if (variant === 0) {
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath();
+            ctx.arc(115, 165, 62, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(145, 205, 46, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (variant === 1) {
+            ctx.fillStyle = '#15803d';
+            ctx.beginPath();
+            ctx.ellipse(128, 150, 68, 36, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#16a34a';
+            ctx.beginPath();
+            ctx.ellipse(128, 198, 56, 32, 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = '#65a30d';
+            ctx.beginPath();
+            ctx.arc(130, 175, 60, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          return tex;
+        };
+
+        const windowFrameWoodMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.55 });
+        const blindSlatMat = new THREE.MeshStandardMaterial({
+          color: 0xd1d5db,
+          transparent: true,
+          opacity: 0.72,
+          roughness: 0.5
+        });
+
+        [-5.6, 0.2, 6.0].forEach((wx, wIdx) => {
+          const winGroup = new THREE.Group();
+          winGroup.position.set(wx, 2.85, -roomD / 2 + 0.28);
+
+          // Outdoor tree view backdrop
+          const viewPane = new THREE.Mesh(
+            new THREE.PlaneGeometry(2.6, 3.9),
+            new THREE.MeshBasicMaterial({ map: createOutdoorWindowTexture(wIdx) })
+          );
+          winGroup.add(viewPane);
+
+          // Outer dark wood frame & center window mullions
+          const topBar = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.18, 0.14), windowFrameWoodMat);
+          topBar.position.y = 1.98;
+          const botBar = new THREE.Mesh(new THREE.BoxGeometry(2.95, 0.2, 0.22), windowFrameWoodMat);
+          botBar.position.y = -1.98;
+          const leftBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.1, 0.14), windowFrameWoodMat);
+          leftBar.position.x = -1.34;
+          const rightBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.1, 0.14), windowFrameWoodMat);
+          rightBar.position.x = 1.34;
+          const midVert = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.9, 0.12), windowFrameWoodMat);
+          const midHoriz = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.12), windowFrameWoodMat);
+          midHoriz.position.y = 0.25;
+          winGroup.add(topBar, botBar, leftBar, rightBar, midVert, midHoriz);
+
+          // Top black curtain rod & vertical blind slats
+          const curtainRod = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.035, 0.035, 3.2, 10),
+            darkMetalMat
+          );
+          curtainRod.rotation.z = Math.PI / 2;
+          curtainRod.position.set(0, 2.22, 0.12);
+          winGroup.add(curtainRod);
+
+          for (let s = -5; s <= 5; s++) {
+            if (wIdx === 1 && Math.abs(s) <= 2) continue; // Center window slightly parted
+            const slat = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3.95, 0.02), blindSlatMat);
+            slat.position.set(s * 0.22, 0.1, 0.12);
+            slat.rotation.y = 0.28;
+            winGroup.add(slat);
+          }
+
+          interiorGroup.add(winGroup);
+        });
+
+        // Left-wall vertical window blind curtain near back-left corner
+        const sideCurtainGroup = new THREE.Group();
+        sideCurtainGroup.position.set(-roomW / 2 + 0.34, 2.8, -8.8);
+        sideCurtainGroup.rotation.y = Math.PI / 2;
+        for (let s = -6; s <= 6; s++) {
+          const slat = new THREE.Mesh(new THREE.BoxGeometry(0.24, 4.3, 0.04), blindSlatMat);
+          slat.position.set(s * 0.26, 0, 0);
+          slat.rotation.y = 0.22;
+          sideCurtainGroup.add(slat);
+        }
+        interiorGroup.add(sideCurtainGroup);
+
+        // 3. LEFT-WALL ROUND ANALOG OFFICE CLOCK & FRAMED MODERN GEOMETRIC WALL ART
+        const createClockFaceTexture = () => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 256;
+          const ctx = c.getContext('2d')!;
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath();
+          ctx.arc(128, 128, 120, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.lineWidth = 14;
+          ctx.strokeStyle = '#1e293b';
+          ctx.stroke();
+
+          // 12 hour tick marks
+          for (let h = 0; h < 12; h++) {
+            const a = (h / 12) * Math.PI * 2;
+            ctx.save();
+            ctx.translate(128, 128);
+            ctx.rotate(a);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-4, -102, 8, 22);
+            ctx.restore();
+          }
+
+          // Hour hand (~10 o'clock) & Minute hand (~2 o'clock)
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.moveTo(128, 128);
+          ctx.lineTo(78, 96);
+          ctx.stroke();
+
+          ctx.lineWidth = 7;
+          ctx.beginPath();
+          ctx.moveTo(128, 128);
+          ctx.lineTo(182, 92);
+          ctx.stroke();
+
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.arc(128, 128, 8, 0, Math.PI * 2);
+          ctx.fill();
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          return tex;
+        };
+
+        const clockGroup = new THREE.Group();
+        clockGroup.position.set(-roomW / 2 + 0.3, 4.35, -1.8);
+        clockGroup.rotation.y = Math.PI / 2;
+        const clockBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.72, 0.72, 0.14, 28),
+          darkMetalMat
+        );
+        clockBody.rotation.x = Math.PI / 2;
+        const clockFace = new THREE.Mesh(
+          new THREE.CircleGeometry(0.66, 28),
+          new THREE.MeshBasicMaterial({ map: createClockFaceTexture() })
+        );
+        clockFace.position.z = 0.08;
+        clockGroup.add(clockBody, clockFace);
+        interiorGroup.add(clockGroup);
+
+        // Framed Modern Wall Posters (Left & Right Office Walls)
+        const addFramedWallPoster = (
+          x: number,
+          y: number,
+          z: number,
+          rotY: number,
+          w: number,
+          h: number,
+          drawFn: (ctx: CanvasRenderingContext2D) => void
+        ) => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 256;
+          const ctx = c.getContext('2d')!;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 256, 256);
+          drawFn(ctx);
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+
+          const pGroup = new THREE.Group();
+          pGroup.position.set(x, y, z);
+          pGroup.rotation.y = rotY;
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.08), whiteDeskMat);
+          const canvasPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(w, h),
+            new THREE.MeshBasicMaterial({ map: tex })
+          );
+          canvasPlane.position.z = 0.05;
+          pGroup.add(frame, canvasPlane);
+          interiorGroup.add(pGroup);
+        };
+
+        // Left-wall minimalist line-art poster
+        addFramedWallPoster(-roomW / 2 + 0.28, 3.6, -4.4, Math.PI / 2, 1.35, 1.55, (ctx) => {
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(128, 128, 65, 0, Math.PI * 1.65);
+          ctx.stroke();
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath();
+          ctx.arc(155, 145, 24, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Right-wall geometric red/black triangle poster (matching right wall of reference image)
+        addFramedWallPoster(roomW / 2 - 0.28, 3.55, 0.8, -Math.PI / 2, 1.5, 1.65, (ctx) => {
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.moveTo(45, 50);
+          ctx.lineTo(215, 75);
+          ctx.lineTo(135, 215);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(140, 115, 28, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Right-wall botanical leaf poster
+        addFramedWallPoster(roomW / 2 - 0.28, 3.55, -4.2, -Math.PI / 2, 1.35, 1.55, (ctx) => {
+          ctx.strokeStyle = '#15803d';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.moveTo(128, 220);
+          ctx.quadraticCurveTo(120, 120, 140, 45);
+          ctx.stroke();
+          ctx.fillStyle = '#16a34a';
+          [-38, 38].forEach((dx, i) => {
+            ctx.beginPath();
+            ctx.ellipse(128 + dx, 95 + i * 35, 28, 14, dx < 0 ? -0.4 : 0.4, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        });
+
+        // 4. FREESTANDING WHITE PRESENTATION FLIP-CHART / ANALYTICS STAND (Back of Central Aisle)
+        const createFlipChartTexture = () => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 340;
+          const ctx = c.getContext('2d')!;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 256, 340);
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 20px Plus Jakarta Sans, sans-serif';
+          ctx.fillText('ERA FACULTY', 58, 38);
+
+          // Colorful Pie Chart
+          const colors = ['#f97316', '#3b82f6', '#22c55e', '#eab308'];
+          let startAng = 0;
+          [0.35, 0.25, 0.22, 0.18].forEach((slice, idx) => {
+            ctx.fillStyle = colors[idx];
+            ctx.beginPath();
+            ctx.moveTo(128, 130);
+            ctx.arc(128, 130, 56, startAng, startAng + slice * Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+            startAng += slice * Math.PI * 2;
+          });
+
+          // Mini Bar Chart rows
+          [
+            { y: 225, w: 140, col: '#3b82f6' },
+            { y: 255, w: 170, col: '#f97316' },
+            { y: 285, w: 120, col: '#22c55e' }
+          ].forEach((bar) => {
+            ctx.fillStyle = bar.col;
+            ctx.fillRect(42, bar.y, bar.w, 16);
+          });
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          return tex;
+        };
+
+        const adminBoardSpec = INTERIOR_BOARDS_BY_BUILDING['faculty_hq'][0];
+        const chartStandGroup = new THREE.Group();
+        chartStandGroup.position.set(-1.35, 0, -10.2);
+        const chartBoard = new THREE.Mesh(
+          new THREE.BoxGeometry(1.55, 2.2, 0.1),
+          whiteDeskMat
+        );
+        chartBoard.position.y = 1.65;
+        chartBoard.userData = { boardSpec: adminBoardSpec };
+        const chartFace = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.42, 2.0),
+          new THREE.MeshBasicMaterial({ map: createFlipChartTexture() })
+        );
+        chartFace.position.set(0, 1.65, 0.06);
+        chartFace.userData = { boardSpec: adminBoardSpec };
+        const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 8), darkMetalMat);
+        leftLeg.position.set(-0.55, 0.75, -0.1);
+        const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 8), darkMetalMat);
+        rightLeg.position.set(0.55, 0.75, -0.1);
+        chartStandGroup.add(chartBoard, chartFace, leftLeg, rightLeg);
+        interiorGroup.add(chartStandGroup);
+        clickableBoardMeshes.push(chartBoard, chartFace);
+        currentInteriorBoards.push({
+          spec: adminBoardSpec,
+          x: INTERIOR_ORIGIN.x - 1.35,
+          z: INTERIOR_ORIGIN.z - 9.2,
+          mesh: chartFace
+        });
+
+        // 5. POTTED BROAD-LEAF TROPICAL OFFICE PLANTS (Matching Foreground & Background Plants in Reference)
+        const addTropicalOfficePlant = (px: number, pz: number, scale = 1) => {
+          const pGroup = new THREE.Group();
+          pGroup.position.set(px, 0, pz);
+          pGroup.scale.setScalar(scale);
+
+          const pot = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.42, 0.28, 0.74, 16),
+            new THREE.MeshStandardMaterial({ color: 0x8d4925, roughness: 0.65 })
+          );
+          pot.position.y = 0.37;
+          const potRim = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.45, 0.43, 0.1, 16),
+            new THREE.MeshStandardMaterial({ color: 0x9c522b, roughness: 0.6 })
+          );
+          potRim.position.y = 0.72;
+          const soil = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.4, 0.4, 0.05, 14),
+            new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.9 })
+          );
+          soil.position.y = 0.75;
+          pGroup.add(pot, potRim, soil);
+
+          const stemMat = new THREE.MeshStandardMaterial({ color: 0x65a30d, roughness: 0.5 });
+          const leafMat = new THREE.MeshStandardMaterial({ color: 0xa3c940, roughness: 0.45 });
+
+          for (let l = 0; l < 6; l++) {
+            const ang = (l / 6) * Math.PI * 2 + 0.3;
+            const stemH = 0.65 + (l % 2) * 0.28;
+            const leafGroup = new THREE.Group();
+            leafGroup.position.set(0, 0.75, 0);
+            leafGroup.rotation.y = ang;
+
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, stemH, 8), stemMat);
+            stem.position.set(0.12, stemH / 2, 0);
+            stem.rotation.z = -0.32;
+
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.03, 0.32), leafMat);
+            blade.position.set(0.44, stemH - 0.02, 0);
+            blade.rotation.z = -0.25;
+            leafGroup.add(stem, blade);
+            pGroup.add(leafGroup);
+          }
+
+          interiorGroup.add(pGroup);
+        };
+
+        // Tropical office plants at the ends of cubicle rows & by the back windows
+        addTropicalOfficePlant(2.85, 4.95, 1.12);
+        addTropicalOfficePlant(-2.85, 4.95, 1.05);
+        addTropicalOfficePlant(-3.4, -10.4, 0.95);
+        addTropicalOfficePlant(3.4, -10.4, 0.95);
+
+        // 6. HELPER TO BUILD MODULAR WOOD-AND-GLASS CUBICLE PARTITION WALLS
+        const buildCubiclePartitionWall = (len: number, hasStickyNote = false) => {
+          const wGroup = new THREE.Group();
+          const thickness = 0.11;
+
+          // Lower Walnut Wood-Grain Panel (y = 0.06 to 1.34)
+          const woodPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(len - 0.08, 1.28, thickness * 0.82),
+            cubicleWoodMat
+          );
+          woodPanel.position.y = 0.7;
+          woodPanel.castShadow = true;
+          woodPanel.receiveShadow = true;
+          wGroup.add(woodPanel);
+
+          // Upper Translucent Frosted Glass Panel (y = 1.38 to 1.98)
+          const glassPanel = new THREE.Mesh(
+            new THREE.BoxGeometry(len - 0.1, 0.58, thickness * 0.45),
+            cubicleGlassMat
+          );
+          glassPanel.position.y = 1.68;
+          wGroup.add(glassPanel);
+
+          // Black Metal Frame Rails (Bottom, Middle Divider, Top Header) & End Posts
+          const botRail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, thickness), cubicleFrameMat);
+          botRail.position.y = 0.035;
+          const midRail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, thickness), cubicleFrameMat);
+          midRail.position.y = 1.36;
+          const topRail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.08, thickness), cubicleFrameMat);
+          topRail.position.y = 2.02;
+
+          const leftPost = new THREE.Mesh(new THREE.BoxGeometry(0.11, 2.06, thickness + 0.01), cubicleFrameMat);
+          leftPost.position.set(-len / 2 + 0.055, 1.03, 0);
+          const rightPost = new THREE.Mesh(new THREE.BoxGeometry(0.11, 2.06, thickness + 0.01), cubicleFrameMat);
+          rightPost.position.set(len / 2 - 0.055, 1.03, 0);
+          wGroup.add(botRail, midRail, topRail, leftPost, rightPost);
+
+          // Center vertical mullion on longer walls
+          if (len >= 2.2) {
+            const centerMullion = new THREE.Mesh(
+              new THREE.BoxGeometry(0.065, 2.02, thickness + 0.005),
+              cubicleFrameMat
+            );
+            centerMullion.position.set(0, 1.01, 0);
+            wGroup.add(centerMullion);
+          }
+
+          // Yellow Sticky Notes stuck to the partition frame
+          if (hasStickyNote) {
+            const note1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.02), stickyNoteMat);
+            note1.position.set(len * 0.18, 1.35, thickness * 0.55);
+            const note2 = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.02), stickyNoteMat);
+            note2.position.set(-len * 0.22, 1.12, -thickness * 0.55);
+            wGroup.add(note1, note2);
+          }
+
+          return wGroup;
+        };
+
+        // 7. BUILD LEFT & RIGHT CUBICLE BAYS ALONG THE OPEN CENTRAL AISLE (x = -2.4 to +2.4 is open carpet aisle)
+        const chairBackColors = [0xeab308, 0x06b6d4, 0xef4444, 0x22c55e, 0x8b5cf6];
+        const wireBinMat = new THREE.MeshStandardMaterial({
+          color: 0x334155,
+          roughness: 0.4,
+          metalness: 0.6,
+          wireframe: true
+        });
+        const crumpledPaperMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
+
+        // Separate the 22 employees into 20 seated cubicle specialists + 2 central-aisle walking coordinators
+        const walkingIds = new Set(['emp_coordinator', 'emp_pet']);
+        const seatedEmployees = INITIAL_FACULTY_EMPLOYEES.filter((e) => !walkingIds.has(e.id));
+        const walkingEmployees = INITIAL_FACULTY_EMPLOYEES.filter((e) => walkingIds.has(e.id));
+
+        // 5 Cubicle Rows from Back to Front, 4 Cubicles per Row (Left Outer, Left Inner, Right Inner, Right Outer) = 20 Cubicles
+        const rowZPositions = [-7.8, -4.0, -0.2, 3.6, 7.4];
+        const colXPositions = [-9.6, -4.6, 4.6, 9.6];
+
+        seatedEmployees.forEach((emp, idx) => {
+          const rowIdx = Math.floor(idx / 4);
+          const colIdx = idx % 4;
+          const cx = colXPositions[colIdx];
+          const cz = rowZPositions[rowIdx] ?? 7.4;
+          const isLeftWing = cx < 0;
+          const isInnerAisleCubicle = Math.abs(cx) < 6.0;
+
+          const cubicleGroup = new THREE.Group();
+          cubicleGroup.position.set(cx, 0, cz);
+
+          // Back Cubicle Partition Wall (separating rows along Z)
+          const backPart = buildCubiclePartitionWall(3.6, idx % 2 === 0);
+          backPart.position.set(0, 0, -1.55);
+          cubicleGroup.add(backPart);
+
+          // Front Cubicle Half-Partition Wall on frontmost row to frame the foreground cubicles
+          if (rowIdx === 3 || rowIdx === 4) {
+            const frontPart = buildCubiclePartitionWall(3.6, true);
+            frontPart.position.set(0, 0, 1.55);
+            cubicleGroup.add(frontPart);
+          }
+
+          // Side Cubicle Partition Wall (separating cubicle from central aisle or outer wall)
+          const aisleSideX = isLeftWing ? 1.75 : -1.75;
+          const sidePart = buildCubiclePartitionWall(1.85, idx % 3 === 0);
+          sidePart.rotation.y = Math.PI / 2;
+          sidePart.position.set(aisleSideX, 0, -0.62);
+          cubicleGroup.add(sidePart);
+
+          if (!isInnerAisleCubicle) {
+            const outerPart = buildCubiclePartitionWall(3.1, false);
+            outerPart.rotation.y = Math.PI / 2;
+            outerPart.position.set(isLeftWing ? -1.75 : 1.75, 0, 0);
+            cubicleGroup.add(outerPart);
+          }
+
+          // WHITE OFFICE DESK inside the cubicle (oriented parallel to the aisle or back wall)
+          const deskZOffset = -0.78;
+          const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.08, 1.05), whiteDeskMat);
+          deskTop.position.set(0, 0.78, deskZOffset);
+          deskTop.castShadow = true;
+          deskTop.receiveShadow = true;
+          deskTop.userData = { isFacultyEmployee: true, employeeProfile: emp };
+          cubicleGroup.add(deskTop);
+          clickableBoardMeshes.push(deskTop);
+
+          // 4 Dark Metal Cylindrical Desk Legs
+          [
+            [-1.12, deskZOffset - 0.42],
+            [1.12, deskZOffset - 0.42],
+            [-1.12, deskZOffset + 0.42],
+            [1.12, deskZOffset + 0.42]
+          ].forEach(([lx, lz]) => {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.76, 10), darkMetalMat);
+            leg.position.set(lx, 0.38, lz);
+            cubicleGroup.add(leg);
+          });
+
+          // 3-DRAWER DARK GREY PEDESTAL FILING CABINET under one end of the desk
+          const cabX = isLeftWing ? -0.76 : 0.76;
+          const cabBody = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.72, 0.88), drawerBodyMat);
+          cabBody.position.set(cabX, 0.36, deskZOffset);
+          cubicleGroup.add(cabBody);
+
+          [0.16, 0.38, 0.6].forEach((dy) => {
+            const drawerFace = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.18, 0.04), drawerFrontMat);
+            drawerFace.position.set(cabX, dy, deskZOffset + 0.45);
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.04), darkMetalMat);
+            handle.position.set(cabX, dy, deskZOffset + 0.48);
+            cubicleGroup.add(drawerFace, handle);
+          });
+
+          // OPEN SILVER/DARK-GREY LAPTOP OR MONITOR + KEYBOARD + MOUSEPAD ON DESK
+          const laptopGroup = new THREE.Group();
+          laptopGroup.position.set(isLeftWing ? 0.18 : -0.18, 0.82, deskZOffset + 0.05);
+          const lapBase = new THREE.Mesh(
+            new THREE.BoxGeometry(0.56, 0.025, 0.38),
+            new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.5 })
+          );
+          const lapKeys = new THREE.Mesh(
+            new THREE.BoxGeometry(0.46, 0.03, 0.22),
+            darkMetalMat
+          );
+          lapKeys.position.set(0, 0.005, 0.02);
+          const lapScreenFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.56, 0.38, 0.025),
+            darkMetalMat
+          );
+          lapScreenFrame.position.set(0, 0.19, -0.18);
+          lapScreenFrame.rotation.x = -0.22;
+          lapScreenFrame.userData = { isFacultyEmployee: true, employeeProfile: emp };
+          const lapDisplay = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.5, 0.32),
+            new THREE.MeshBasicMaterial({ color: idx % 2 === 0 ? 0xbae6fd : 0xd1fae5 })
+          );
+          lapDisplay.position.set(0, 0.19, -0.165);
+          lapDisplay.rotation.x = -0.22;
+          lapDisplay.userData = { isFacultyEmployee: true, employeeProfile: emp };
+          laptopGroup.add(lapBase, lapKeys, lapScreenFrame, lapDisplay);
+          cubicleGroup.add(laptopGroup);
+          clickableBoardMeshes.push(lapScreenFrame, lapDisplay);
+
+          // Colored Mousepad & Grey Mouse
+          const mousePad = new THREE.Mesh(
+            new THREE.BoxGeometry(0.28, 0.012, 0.24),
+            new THREE.MeshStandardMaterial({ color: idx % 2 === 0 ? 0xfacc15 : 0x38bdf8, roughness: 0.6 })
+          );
+          mousePad.position.set(isLeftWing ? 0.62 : -0.62, 0.825, deskZOffset + 0.12);
+          const mouse = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.035, 0.12),
+            drawerFrontMat
+          );
+          mouse.position.set(isLeftWing ? 0.62 : -0.62, 0.84, deskZOffset + 0.12);
+          cubicleGroup.add(mousePad, mouse);
+
+          // TWO-TIER WIRE PAPER INBOX TRAY WITH WHITE PAPER STACK + PEN CUP + DESK PHONE
+          const trayX = isLeftWing ? -0.68 : 0.68;
+          const trayFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(0.46, 0.14, 0.34),
+            wireBinMat
+          );
+          trayFrame.position.set(trayX, 0.89, deskZOffset + 0.08);
+          const paperStack = new THREE.Mesh(
+            new THREE.BoxGeometry(0.38, 0.07, 0.28),
+            crumpledPaperMat
+          );
+          paperStack.position.set(trayX, 0.87, deskZOffset + 0.08);
+          paperStack.rotation.y = 0.08;
+          cubicleGroup.add(trayFrame, paperStack);
+
+          // Pen Cup with 3 Colored Pens
+          const penCup = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.055, 0.048, 0.14, 12),
+            drawerFrontMat
+          );
+          penCup.position.set(isLeftWing ? 0.88 : -0.88, 0.89, deskZOffset - 0.18);
+          cubicleGroup.add(penCup);
+          [0xef4444, 0xfacc15, 0x3b82f6].forEach((pCol, pIdx) => {
+            const pen = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.012, 0.012, 0.12, 6),
+              new THREE.MeshBasicMaterial({ color: pCol })
+            );
+            pen.position.set(
+              (isLeftWing ? 0.88 : -0.88) + (pIdx - 1) * 0.02,
+              0.96,
+              deskZOffset - 0.18
+            );
+            pen.rotation.z = (pIdx - 1) * 0.18;
+            cubicleGroup.add(pen);
+          });
+
+          // WIRE-MESH WASTEBASKET WITH CRUMPLED WHITE PAPER BALLS BESIDE THE DESK
+          const binX = isLeftWing ? 1.28 : -1.28;
+          const binZ = deskZOffset + 0.28;
+          const wasteBin = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.22, 0.16, 0.44, 12, 2, true),
+            wireBinMat
+          );
+          wasteBin.position.set(binX, 0.22, binZ);
+          cubicleGroup.add(wasteBin);
+
+          // 3 Crumpled paper balls inside the wastebasket + 1 on the carpet
+          [
+            [binX - 0.05, 0.1, binZ + 0.03],
+            [binX + 0.06, 0.14, binZ - 0.04],
+            [binX, 0.22, binZ + 0.02],
+            [binX + (isLeftWing ? 0.28 : -0.28), 0.07, binZ + 0.22]
+          ].forEach(([px, py, pz], pIdx) => {
+            if (pIdx === 3 && idx % 3 !== 0) return;
+            const paperBall = new THREE.Mesh(new THREE.IcosahedronGeometry(0.075, 0), crumpledPaperMat);
+            paperBall.position.set(px, py, pz);
+            paperBall.rotation.set(pIdx, pIdx * 1.3, 0);
+            cubicleGroup.add(paperBall);
+          });
+
+          // COLORFUL ERGONOMIC SWIVEL OFFICE CHAIR (5-Star Base, White Cushion, Colored Backrest)
+          const chairGroup = new THREE.Group();
+          const chairZ = 0.22;
+          chairGroup.position.set(0, 0, chairZ);
+
+          const chairStem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.42, 10), darkMetalMat);
+          chairStem.position.y = 0.24;
+          chairGroup.add(chairStem);
+
+          // 5-Star Caster Legs & Wheels
+          for (let legI = 0; legI < 5; legI++) {
+            const la = (legI / 5) * Math.PI * 2;
+            const starArm = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.34), darkMetalMat);
+            starArm.position.set(Math.sin(la) * 0.16, 0.07, Math.cos(la) * 0.16);
+            starArm.rotation.y = la;
+            const caster = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.04, 8), darkMetalMat);
+            caster.rotation.z = Math.PI / 2;
+            caster.position.set(Math.sin(la) * 0.31, 0.035, Math.cos(la) * 0.31);
+            chairGroup.add(starArm, caster);
+          }
+
+          // White Padded Seat Cushion
+          const seatPad = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.09, 0.54), whiteDeskMat);
+          seatPad.position.y = 0.47;
+          chairGroup.add(seatPad);
+
+          // Loop Armrests
+          [-0.29, 0.29].forEach((ax) => {
+            const armRest = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.36), drawerBodyMat);
+            armRest.position.set(ax, 0.6, -0.02);
+            chairGroup.add(armRest);
+          });
+
+          // Colorful Curved Backrest facing the desk (-Z)
+          const backCol = chairBackColors[idx % chairBackColors.length];
+          const chairBack = new THREE.Mesh(
+            new THREE.BoxGeometry(0.52, 0.58, 0.09),
+            new THREE.MeshStandardMaterial({ color: backCol, roughness: 0.35 })
+          );
+          chairBack.position.set(0, 0.82, 0.24);
+          chairBack.rotation.x = 0.1;
+          chairGroup.add(chairBack);
+
+          cubicleGroup.add(chairGroup);
+          interiorGroup.add(cubicleGroup);
+
+          // SPAWN SEATED AI EMPLOYEE AT THEIR CUBICLE DESK (Facing -Z toward their laptop)
+          const empRig = buildCharacterAvatar({
+            shirtColor: emp.shirtColor,
+            hairColor: emp.hairColor,
+            skinColor: emp.skinColor,
+            hatType: emp.hatType,
+            accessoryType: emp.accessoryType,
+            name: `${emp.name} (${emp.jobTitle})`,
+            cohort: emp.department === 'head_admin' ? 'TEACHER (SUPER ADMIN)' : 'IELTS 1',
+            gender: emp.gender,
+            hairStyle: emp.hairStyle,
+            clothingType: emp.clothingType,
+            pantsColor: emp.pantsColor
+          });
+          const empWorldX = cx;
+          const empWorldZ = cz + 0.08;
+          const empRotY = Math.PI; // Facing desk & laptop (-Z)
+          empRig.root.scale.setScalar(0.82);
+          empRig.root.position.set(empWorldX, -0.32, empWorldZ);
+          empRig.root.rotation.y = empRotY;
+          empRig.leftArm.rotation.x = -0.65;
+          empRig.rightArm.rotation.x = -0.65;
+          // Keep cubicle overhead nameplates compact so they don't block the upper office ceiling view
+          empRig.root.children.forEach((child) => {
+            if ((child as THREE.Sprite).isSprite) {
+              child.scale.multiplyScalar(0.52);
+              child.position.y = 3.55;
+            }
+          });
+          interiorGroup.add(empRig.root);
+
+          // Invisible Click Hitbox cylinder around the AI Employee & Workstation
+          const empHitbox = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.05, 1.05, 3.0, 12),
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false })
+          );
+          empHitbox.position.set(empWorldX, 1.4, empWorldZ - 0.25);
+          empHitbox.userData = { isFacultyEmployee: true, employeeProfile: emp };
+          interiorGroup.add(empHitbox);
+          clickableBoardMeshes.push(empHitbox);
+
+          facultyNpcActors.push({
+            employee: emp,
+            rig: empRig,
+            floor: 1,
+            baseX: empWorldX,
+            baseY: 0,
+            baseZ: empWorldZ,
+            baseRotY: empRotY,
+            speechTimer: 2.5 + (idx % 7) * 2.2,
+            bubbleIndex: 0
+          });
+        });
+
+        // 8. SPAWN CENTRAL-AISLE WALKING COORDINATORS (Walking naturally along the patterned carpet aisle)
+        walkingEmployees.forEach((emp, wIdx) => {
+          const empRig = buildCharacterAvatar({
+            shirtColor: emp.shirtColor,
+            hairColor: emp.hairColor,
+            skinColor: emp.skinColor,
+            hatType: emp.hatType,
+            accessoryType: emp.accessoryType,
+            name: `${emp.name} (${emp.jobTitle})`,
+            cohort: emp.department === 'head_admin' ? 'TEACHER (SUPER ADMIN)' : 'IELTS 1',
+            gender: emp.gender,
+            hairStyle: emp.hairStyle,
+            clothingType: emp.clothingType,
+            pantsColor: emp.pantsColor
+          });
+          const walkX = wIdx === 0 ? -0.55 : 0.65;
+          const walkZ = wIdx === 0 ? -3.2 : 1.8;
+          empRig.root.scale.setScalar(0.86);
+          empRig.root.position.set(walkX, 0, walkZ);
+          empRig.root.rotation.y = wIdx === 0 ? 0 : Math.PI;
+          empRig.root.children.forEach((child) => {
+            if ((child as THREE.Sprite).isSprite) {
+              child.scale.multiplyScalar(0.55);
+              child.position.y = 3.6;
+            }
+          });
+          interiorGroup.add(empRig.root);
+
+          const empHitbox = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.0, 1.0, 3.0, 12),
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false })
+          );
+          empHitbox.position.set(0, 1.5, 0);
+          empHitbox.userData = { isFacultyEmployee: true, employeeProfile: emp };
+          empRig.root.add(empHitbox);
+          clickableBoardMeshes.push(empHitbox);
+
+          facultyNpcActors.push({
+            employee: emp,
+            rig: empRig,
+            floor: 1,
+            baseX: walkX,
+            baseY: 0,
+            baseZ: walkZ,
+            baseRotY: 0,
+            speechTimer: 4.0 + wIdx * 3.5,
+            bubbleIndex: 0
+          });
+        });
+      } else if (!building.id.startsWith('class_')) {
+        // For non-classroom hub rooms (EraGames, EraSHOP, Era Gallery, Dashboard Hall, Practice Tests, Homework),
+        // also spawn dynamic IELTS 1 & IELTS 2 classmates walking in & out of the room and interacting!
+        const studentPool = npcActors
+          .map((n) => n.profile)
+          .filter((p) => p.cohort === 'IELTS 1' || p.cohort === 'IELTS 2');
+        const hubVisitorTargets = [
+          { x: -5.4, z: -3.2, prefName: 'Nhi' },
+          { x: 5.4, z: -3.2, prefName: 'Dan' },
+          { x: -3.8, z: 3.5, prefName: 'Tracy' },
+          { x: 3.8, z: 3.5, prefName: 'Vinh' }
+        ];
+        hubVisitorTargets.forEach((hv, hIdx) => {
+          const prof =
+            studentPool.find((p) => p.name.toLowerCase() === hv.prefName.toLowerCase()) ||
+            studentPool[(hIdx + 8) % Math.max(1, studentPool.length)] ||
+            DEFAULT_IELTS_CHARACTERS[(hIdx + 8) % DEFAULT_IELTS_CHARACTERS.length];
+          const hvRig = buildCharacterAvatar({
+            shirtColor: prof.shirtColor,
+            hairColor: prof.hairColor,
+            skinColor: prof.skinColor,
+            hatType: prof.hatType,
+            accessoryType: prof.accessoryType,
+            name: `${prof.name} • ${prof.cohort}`,
+            cohort: prof.cohort,
+            gender: prof.gender,
+            hairStyle: prof.hairStyle,
+            clothingType: prof.clothingType,
+            pantsColor: prof.pantsColor,
+            beltType: prof.beltType
+          });
+          const enteringNow = hIdx % 2 === 0;
+          hvRig.root.position.set(enteringNow ? (hIdx === 0 ? -0.8 : 0.8) : hv.x, 0, enteringNow ? 10.5 : hv.z);
+          hvRig.root.rotation.y = Math.PI;
+          interiorGroup.add(hvRig.root);
+
+          interiorNpcActors.push({
+            profile: prof,
+            rig: hvRig,
+            role: 'roaming_visitor',
+            state: enteringNow ? 'walking_in' : 'at_spot',
+            targetX: hv.x,
+            targetZ: hv.z,
+            spotX: hv.x,
+            spotZ: hv.z,
+            timer: 4.5 + hIdx * 3.0,
+            walkPhase: hIdx * 1.4,
+            handRaiseTimer: 0
+          });
         });
       }
     };
@@ -5527,6 +7653,7 @@ export function EraVerse() {
       isGrounded: true,
       sprinting: false,
       isCrouching: false,
+      isSitting: false,
       crouchLerp: 0,
       walkCycle: 0,
       waveTimer: 0,
@@ -5552,7 +7679,47 @@ export function EraVerse() {
 
     const keys: Record<string, boolean> = {};
 
+    const sitAtClassroomDesk = (desk: { seatX: number; seatZ: number; deskName: string; classCohort: string }) => {
+      soundEngine.playUiClick();
+      playerState.isSitting = true;
+      playerState.isCrouching = false;
+      setIsCrouching(false);
+      setIsSittingAtDesk(true);
+      playerState.x = desk.seatX;
+      playerState.y = 0.42;
+      playerState.z = desk.seatZ;
+      playerState.vx = 0;
+      playerState.vz = 0;
+      playerState.vy = 0;
+      playerState.rotY = Math.PI; // Face the front classroom chalkboard
+      showToast(
+        `Seated at ${desk.deskName}`,
+        `Studying with ${desk.classCohort} class! Press [Space] or Move (W/A/S/D) to stand up.`,
+        '#10B981'
+      );
+    };
+
+    const standUpFromDesk = () => {
+      if (!playerState.isSitting) return;
+      soundEngine.playUiClick();
+      playerState.isSitting = false;
+      setIsSittingAtDesk(false);
+      playerState.y = 0;
+      playerState.z += 0.35;
+    };
+
     const enterBuildingInterior = (b: BuildingZone) => {
+      if (b.id === 'faculty_hq' && !isAuthorizedFacultyRef.current) {
+        soundEngine.playDoorSlide(false);
+        doorCooldownTimer = 1.6;
+        playerState.z = b.doorZ + b.frontDir * 3.8;
+        showToast(
+          '🔒 ERA FACULTY — Teachers & Admin Only',
+          'Only Teacher Jan and authorized Faculty can enter ERA FACULTY and operate AI Workstations.',
+          '#D97706'
+        );
+        return;
+      }
       soundEngine.playDoorSlide(true);
       soundEngine.startRoomMusic(b.id);
       doorCooldownTimer = 1.2;
@@ -5564,23 +7731,25 @@ export function EraVerse() {
         };
       }
       activeInteriorBuilding = b;
+      playerState.isSitting = false;
+      setIsSittingAtDesk(false);
       buildInteriorRoom(b);
       interiorGroup.visible = true;
       playerState.x = INTERIOR_ORIGIN.x;
       playerState.y = 0;
-      playerState.z = INTERIOR_ORIGIN.z + 5.5;
+      playerState.z = INTERIOR_ORIGIN.z + (b.id === 'faculty_hq' ? 8.2 : 5.5);
       playerState.vx = 0;
       playerState.vz = 0;
       playerState.vy = 0;
       playerState.rotY = Math.PI;
       camState.yaw = 0;
-      camState.pitch = b.id === 'dashboard' ? 0.25 : 0.28;
-      camState.distance = b.id === 'dashboard' ? 13.8 : 11.8;
-      setZoomSliderValue(b.id === 'dashboard' ? 14 : 12);
+      camState.pitch = b.id === 'faculty_hq' ? 0.04 : b.id === 'dashboard' ? 0.25 : 0.28;
+      camState.distance = b.id === 'faculty_hq' ? 9.2 : b.id === 'dashboard' ? 13.8 : 11.8;
+      setZoomSliderValue(b.id === 'faculty_hq' ? 9 : b.id === 'dashboard' ? 14 : 12);
       setInsideBuilding(b);
       setNearBuildingPrompt(null);
 
-      // Snap camera instantly to interior room to prevent any camera lerp through exterior mountains
+      // Snap camera instantly to interior room
       const initHoriz = camState.distance * Math.cos(camState.pitch);
       const initVert = camState.distance * Math.sin(camState.pitch);
       camera.position.set(
@@ -5599,6 +7768,18 @@ export function EraVerse() {
           `Inspect your Personal Overview, Class Scoreboard, plus Listening, Reading, Writing & Speaking walls!`,
           b.hexAccent
         );
+      } else if (b.id === 'faculty_hq') {
+        showToast(
+          '🏢 Welcome to ERA FACULTY',
+          'Walk down the central office aisle and click any cubicle workstation to assign tasks or review assessments!',
+          '#D97706'
+        );
+      } else if (b.id.startsWith('class_')) {
+        showToast(
+          `Inside ${b.name}`,
+          `Click any classroom desk chair or press [E] near a desk to sit down in class!`,
+          b.hexAccent
+        );
       } else {
         showToast(
           `Inside ${b.name}`,
@@ -5614,6 +7795,9 @@ export function EraVerse() {
       soundEngine.startRoomMusic('campus');
       doorCooldownTimer = 1.2;
       activeInteriorBuilding = null;
+      playerState.isSitting = false;
+      setIsSittingAtDesk(false);
+      setNearClassroomDesk(null);
       interiorGroup.visible = false;
       playerState.x = savedExteriorPos.x;
       playerState.y = 0;
@@ -5660,6 +7844,8 @@ export function EraVerse() {
       teleportToBuilding,
       enterBuildingInterior,
       exitBuildingInterior,
+      sitAtClassroomDesk,
+      standUpFromDesk,
       applyAvatarAppearance: (prof) => {
         const oldPos = playerRig.root.position.clone();
         const oldRot = playerRig.root.rotation.y;
@@ -5721,6 +7907,10 @@ export function EraVerse() {
         }
       },
       triggerJump: () => {
+        if (playerState.isSitting) {
+          standUpFromDesk();
+          return;
+        }
         if (playerState.isGrounded) {
           playerState.isCrouching = false;
           setIsCrouching(false);
@@ -5730,6 +7920,10 @@ export function EraVerse() {
         }
       },
       toggleCrouch: () => {
+        if (playerState.isSitting) {
+          standUpFromDesk();
+          return;
+        }
         playerState.isCrouching = !playerState.isCrouching;
         setIsCrouching(playerState.isCrouching);
         soundEngine.playUiClick();
@@ -5790,11 +7984,18 @@ export function EraVerse() {
         spawnNpcActors(profiles);
       },
       showSpeechBubbleOnActor: (actorId, speakerName, text, isWarning) => {
-        if (actorId === 'player') {
+        if (actorId === 'player' || actorId === 'player-self') {
           attachSpeechBubble(playerRig.root, speakerName, text, isWarning);
           return;
         }
-        const foundNpc = npcActors.find((n) => n.profile.id === actorId);
+        if (activeInteriorBuilding) {
+          const foundInt = interiorNpcActors.find((n) => n.profile.id === actorId || n.profile.name === speakerName);
+          if (foundInt) {
+            attachSpeechBubble(foundInt.rig.root, speakerName, text, isWarning);
+            return;
+          }
+        }
+        const foundNpc = npcActors.find((n) => n.profile.id === actorId || n.profile.name === speakerName);
         if (foundNpc) {
           attachSpeechBubble(foundNpc.rig.root, speakerName, text, isWarning);
         }
@@ -5812,6 +8013,24 @@ export function EraVerse() {
 
         if (activeInteriorBuilding && activeInteriorBuilding.id === 'dashboard') {
           buildInteriorRoom(activeInteriorBuilding);
+        }
+      },
+      switchFacultyFloor: (floor: 1 | 2) => {
+        soundEngine.playUiClick();
+        currentFacultyFloor = floor;
+        setFacultyInteriorFloor(floor);
+        if (floor === 2) {
+          playerState.x = INTERIOR_ORIGIN.x - 7.5;
+          playerState.z = INTERIOR_ORIGIN.z + 2.0;
+          playerState.y = 5.2;
+          playerState.vy = 0;
+          showToast('Floor 2: Creative Lab & Student Affairs', 'Click any AI Specialist on Floor 2 to generate teaching content!', '#10B981');
+        } else {
+          playerState.x = INTERIOR_ORIGIN.x;
+          playerState.z = INTERIOR_ORIGIN.z + 4.5;
+          playerState.y = 0;
+          playerState.vy = 0;
+          showToast('Floor 1: Head Admin & Exam Department', 'Click Teacher Jan or any Cambridge/IELTS Examiner on Floor 1!', '#D97706');
         }
       }
     };
@@ -5837,6 +8056,53 @@ export function EraVerse() {
         playerState.sprinting = true;
       } else if (code === 'KeyE') {
         if (activeInteriorBuilding) {
+          if (activeInteriorBuilding.id === 'faculty_hq') {
+            let closestEmp: FacultyEmployeeProfile | null = null;
+            let minEmpDist = 3.8;
+            facultyNpcActors.forEach((fa) => {
+              const wx = INTERIOR_ORIGIN.x + fa.baseX;
+              const wz = INTERIOR_ORIGIN.z + fa.baseZ;
+              const d = Math.hypot(playerState.x - wx, playerState.z - wz);
+              if (Math.abs(playerState.y - fa.baseY) < 2.5 && d < minEmpDist) {
+                minEmpDist = d;
+                closestEmp = fa.employee;
+              }
+            });
+            if (closestEmp) {
+              soundEngine.playUiClick();
+              setSelectedFacultyEmployee(closestEmp);
+              setShowFacultyModal(true);
+              return;
+            }
+          }
+          // Check if standing near a classroom desk chair to sit down or stand up
+          if (activeInteriorBuilding.id.startsWith('class_')) {
+            if (playerState.isSitting) {
+              standUpFromDesk();
+              return;
+            }
+            let closestDesk: { seatX: number; seatZ: number; deskName: string; classCohort: string } | null = null;
+            let minDeskDist = 2.4;
+            clickableBoardMeshes.forEach((m) => {
+              const ud = m.userData;
+              if (ud?.isClassroomDesk) {
+                const d = Math.hypot(playerState.x - ud.seatX, playerState.z - ud.seatZ);
+                if (d < minDeskDist) {
+                  minDeskDist = d;
+                  closestDesk = {
+                    seatX: ud.seatX,
+                    seatZ: ud.seatZ,
+                    deskName: ud.deskName,
+                    classCohort: ud.classCohort
+                  };
+                }
+              }
+            });
+            if (closestDesk) {
+              sitAtClassroomDesk(closestDesk);
+              return;
+            }
+          }
           let closestBoard: WallBoardSpec | null = null;
           let minD = 4.8;
           currentInteriorBoards.forEach((cb) => {
@@ -5848,6 +8114,11 @@ export function EraVerse() {
           });
           if (closestBoard) {
             handleBoardActionRef.current(closestBoard);
+          } else if (activeInteriorBuilding.id === 'faculty_hq') {
+            soundEngine.playUiClick();
+            setSelectedFacultyEmployee(null);
+            setFacultyInitialAdminModule('overview');
+            setShowFacultyModal(true);
           } else {
             setActiveBuildingModal(activeInteriorBuilding.id);
           }
@@ -5913,7 +8184,7 @@ export function EraVerse() {
       camState.lastX = e.clientX;
       camState.lastY = e.clientY;
       camState.yaw -= dx * 0.0065;
-      camState.pitch = Math.max(0.16, Math.min(1.15, camState.pitch + dy * 0.0055));
+      camState.pitch = Math.max(-0.65, Math.min(1.15, camState.pitch + dy * 0.0065));
     };
 
     const onPointerUp = (e: PointerEvent) => {
@@ -5932,6 +8203,17 @@ export function EraVerse() {
             const hitData = hits[0].object.userData;
             if (hitData.isExitDoor) {
               exitBuildingInterior();
+            } else if (hitData.isClassroomDesk) {
+              sitAtClassroomDesk({
+                seatX: hitData.seatX,
+                seatZ: hitData.seatZ,
+                deskName: hitData.deskName,
+                classCohort: hitData.classCohort
+              });
+            } else if (hitData.isFacultyEmployee && hitData.employeeProfile) {
+              soundEngine.playUiClick();
+              setSelectedFacultyEmployee(hitData.employeeProfile);
+              setShowFacultyModal(true);
             } else if (hitData.isCandyShop) {
               handleBoardActionRef.current({
                 slot: 'back-center',
@@ -6109,11 +8391,12 @@ export function EraVerse() {
           const distPlayer = Math.hypot(playerState.x - dc.building.doorX, playerState.z - dc.building.doorZ);
           let distNpc = 999;
           for (const npc of npcActors) {
+            if (!npc.rig.root.visible) continue;
             const d = Math.hypot(npc.rig.root.position.x - dc.building.doorX, npc.rig.root.position.z - dc.building.doorZ);
             if (d < distNpc) distNpc = d;
           }
 
-          const shouldOpen = distPlayer < 6.4 || distNpc < 4.5;
+          const shouldOpen = distPlayer < 6.4 || distNpc < 4.8;
           if (shouldOpen !== dc.isOpen) {
             dc.isOpen = shouldOpen;
             if (distPlayer < 12) {
@@ -6142,13 +8425,19 @@ export function EraVerse() {
           playerState.x - INTERIOR_ORIGIN.x,
           playerState.z - (INTERIOR_ORIGIN.z + 11.5)
         );
-        const targetExitOpen = distToExit < 5.2 ? 1.0 : 0.0;
+        let distInteriorNpcToDoor = 999;
+        for (const inpc of interiorNpcActors) {
+          if (!inpc.rig.root.visible) continue;
+          const d = Math.hypot(inpc.rig.root.position.x, inpc.rig.root.position.z - 10.8);
+          if (d < distInteriorNpcToDoor) distInteriorNpcToDoor = d;
+        }
+        const targetExitOpen = distToExit < 5.2 || distInteriorNpcToDoor < 3.8 ? 1.0 : 0.0;
         interiorExitOpenAmount = THREE.MathUtils.damp(interiorExitOpenAmount, targetExitOpen, 8, dt);
         interiorExitLeftDoor.position.x = -1.06 - interiorExitOpenAmount * 1.4;
         interiorExitRightDoor.position.x = 1.06 + interiorExitOpenAmount * 1.4;
       }
 
-      // PLAYER MOVEMENT (Keyboard + Mobile/Tablet Touch Joystick with Smooth Acceleration & Crouch Support)
+      // PLAYER MOVEMENT (Keyboard + Mobile/Tablet Touch Joystick with Smooth Acceleration, Crouch & Classroom Desk Sitting Support)
       let moveForward = 0;
       let moveRight = 0;
       if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
@@ -6163,6 +8452,11 @@ export function EraVerse() {
 
       const inputMag = Math.min(1, Math.hypot(moveForward, moveRight));
       const isMoving = inputMag > 0.06;
+
+      if (playerState.isSitting && isMoving) {
+        standUpFromDesk();
+      }
+
       const vehicleBoost =
         playerVehicleRef.current === 'bike'
           ? 1.55
@@ -6171,7 +8465,7 @@ export function EraVerse() {
           : 1.0;
       const baseSpeed = (playerState.isCrouching ? 5.6 : playerState.sprinting ? 15.2 : 10.2) * vehicleBoost;
 
-      if (isMoving) {
+      if (isMoving && !playerState.isSitting) {
         const fwdX = -Math.sin(camState.yaw);
         const fwdZ = -Math.cos(camState.yaw);
         const rightX = Math.cos(camState.yaw);
@@ -6225,7 +8519,7 @@ export function EraVerse() {
               blockedZ = true;
             }
           }
-          if (!blockedX) playerState.x = Math.max(-145, Math.min(145, nextX));
+          if (!blockedX) playerState.x = Math.max(-162, Math.min(145, nextX));
           if (!blockedZ) playerState.z = Math.max(-145, Math.min(145, nextZ));
         }
 
@@ -6238,6 +8532,15 @@ export function EraVerse() {
 
         if (playerState.isGrounded) {
           soundEngine.playFootstep(playerState.sprinting, Boolean(activeInteriorBuilding));
+        }
+      } else if (playerState.isSitting) {
+        // Seated at classroom desk facing front chalkboard
+        playerRig.leftLeg.rotation.x = THREE.MathUtils.damp(playerRig.leftLeg.rotation.x, -1.35, 12, dt);
+        playerRig.rightLeg.rotation.x = THREE.MathUtils.damp(playerRig.rightLeg.rotation.x, -1.35, 12, dt);
+        playerRig.leftArm.rotation.x = THREE.MathUtils.damp(playerRig.leftArm.rotation.x, -0.65, 12, dt);
+        if (playerState.waveTimer <= 0) {
+          playerRig.rightArm.rotation.x = THREE.MathUtils.damp(playerRig.rightArm.rotation.x, -0.65, 12, dt);
+          playerRig.rightArm.rotation.z = THREE.MathUtils.damp(playerRig.rightArm.rotation.z, 0, 12, dt);
         }
       } else {
         playerRig.leftLeg.rotation.x *= 0.85;
@@ -6281,24 +8584,32 @@ export function EraVerse() {
         playerRig.rightArm.rotation.z = Math.sin(elapsed * 14) * 0.35 - 0.3;
       }
 
-      // Vertical Jump + Playground Trampoline Bounce
-      playerState.vy -= 26 * dt;
-      playerState.y += playerState.vy * dt;
-
-      if (!activeInteriorBuilding) {
-        const distTramp = Math.hypot(playerState.x - TRAMPOLINE_POS.x, playerState.z - TRAMPOLINE_POS.z);
-        if (distTramp < 2.8 && playerState.y <= 0.75 && playerState.vy <= 0) {
-          playerState.vy = 20.5;
-          playerState.isGrounded = false;
-          soundEngine.playJump(true);
-          showToast('Trampoline Super Bounce!', 'Wheee! Playground Super Jump!', '#EC4899');
-        }
-      }
-
-      if (playerState.y <= 0) {
-        playerState.y = 0;
+      // Vertical Jump + Playground Trampoline Bounce + Classroom Chair Height
+      if (playerState.isSitting) {
+        playerState.y = 0.42;
         playerState.vy = 0;
         playerState.isGrounded = true;
+      } else {
+        playerState.vy -= 26 * dt;
+        playerState.y += playerState.vy * dt;
+
+        const groundFloorY = 0;
+
+        if (!activeInteriorBuilding) {
+          const distTramp = Math.hypot(playerState.x - TRAMPOLINE_POS.x, playerState.z - TRAMPOLINE_POS.z);
+          if (distTramp < 2.8 && playerState.y <= 0.75 && playerState.vy <= 0) {
+            playerState.vy = 20.5;
+            playerState.isGrounded = false;
+            soundEngine.playJump(true);
+            showToast('Trampoline Super Bounce!', 'Wheee! Playground Super Jump!', '#EC4899');
+          }
+        }
+
+        if (playerState.y <= groundFloorY) {
+          playerState.y = groundFloorY;
+          playerState.vy = 0;
+          playerState.isGrounded = true;
+        }
       }
 
       playerRig.root.position.set(playerState.x, playerState.y, playerState.z);
@@ -6678,11 +8989,340 @@ export function EraVerse() {
         });
       }
 
-      // Autonomous Classmates & Teacher Jan AI Patrol + Proximity Detection
+      // Autonomous IELTS 1, IELTS 2 & Teacher Jan Natural Campus & Classroom Activities
       let closestNpc: IeltsCharacterProfile | null = null;
       let closestNpcDist = 5.4;
 
-      npcActors.forEach((npc) => {
+      // Helper to transition an exterior NPC to their next natural campus activity
+      const assignNextExteriorActivity = (npc: NpcActor, idx: number) => {
+        const isTeacherJan = npc.profile.id === TEACHER_JAN_PROFILE.id || npc.profile.cohort.includes('TEACHER');
+        if (isTeacherJan) {
+          npc.activity = Math.random() < 0.5 ? 'going_to_room' : 'socialize';
+          npc.activityTimer = 20 + Math.random() * 15;
+          const b = pickNextBuildingForNpc(npc.profile, idx);
+          npc.targetBuilding = b;
+          npc.targetX = b.doorX + (Math.random() - 0.5) * 4;
+          npc.targetZ = b.doorZ + b.frontDir * 4.2;
+          return;
+        }
+
+        const activeFootballers = npcActors.filter((a) => a.activity === 'football').length;
+        const activeTennis = npcActors.filter((a) => a.activity === 'tennis').length;
+        const activeGamers = npcActors.filter((a) => a.activity === 'play_games').length;
+        const roll = Math.random();
+
+        if (activeFootballers < 6 && roll < 0.28) {
+          npc.activity = 'football';
+          npc.activityTimer = 28 + Math.random() * 18;
+          npc.teamSide = activeFootballers % 2 === 0 ? 1 : -1;
+          npc.targetX = PITCH_CENTER.x + (Math.random() - 0.5) * 16;
+          npc.targetZ = PITCH_CENTER.z + npc.teamSide * (4 + Math.random() * 12);
+        } else if (activeTennis < 4 && roll < 0.48) {
+          npc.activity = 'tennis';
+          npc.activityTimer = 25 + Math.random() * 16;
+          const hasSouth = npcActors.some((a) => a !== npc && a.activity === 'tennis' && a.courtRole === 'south_player');
+          npc.courtRole = !hasSouth ? 'south_player' : activeTennis === 1 ? 'doubles_partner' : 'court_practice';
+          npc.targetX = TENNIS_CENTER.x + (npc.courtRole === 'south_player' ? 0 : (Math.random() - 0.5) * 7.5);
+          npc.targetZ = TENNIS_CENTER.z + (npc.courtRole === 'south_player' ? 8.8 : 5.5 + Math.random() * 4.0);
+        } else if (activeGamers < 4 && roll < 0.66) {
+          npc.activity = 'play_games';
+          npc.activityTimer = 20 + Math.random() * 14;
+          if (Math.random() < 0.55) {
+            npc.targetX = TRAMPOLINE_POS.x + (Math.random() - 0.5) * 1.8;
+            npc.targetZ = TRAMPOLINE_POS.z + (Math.random() - 0.5) * 1.8;
+          } else {
+            const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || BUILDINGS[0];
+            npc.targetBuilding = eraGamesB;
+            npc.targetX = eraGamesB.doorX + (Math.random() - 0.5) * 5.0;
+            npc.targetZ = eraGamesB.doorZ + eraGamesB.frontDir * 4.2;
+          }
+        } else {
+          npc.activity = 'going_to_room';
+          npc.activityTimer = 24 + Math.random() * 14;
+          const nextB = pickNextBuildingForNpc(npc.profile, idx);
+          npc.targetBuilding = nextB;
+          npc.targetX = nextB.doorX + (Math.random() - 0.5) * 2.2;
+          npc.targetZ = nextB.doorZ + nextB.frontDir * 3.5;
+        }
+      };
+
+      // Identify the 2 closest footballers to the soccer ball so they actively chase & pass/shoot
+      let closestFootballer1: NpcActor | null = null;
+      let closestFootballer2: NpcActor | null = null;
+      let bestFbDist1 = 999;
+      let bestFbDist2 = 999;
+      for (const npc of npcActors) {
+        if (npc.activity !== 'football') continue;
+        const d = Math.hypot(npc.rig.root.position.x - soccerBallState.x, npc.rig.root.position.z - soccerBallState.z);
+        if (d < bestFbDist1) {
+          bestFbDist2 = bestFbDist1;
+          closestFootballer2 = closestFootballer1;
+          bestFbDist1 = d;
+          closestFootballer1 = npc;
+        } else if (d < bestFbDist2) {
+          bestFbDist2 = d;
+          closestFootballer2 = npc;
+        }
+      }
+
+      npcActors.forEach((npc, idx) => {
+        npc.activityTimer -= dt;
+        if (npc.kickTimer > 0) npc.kickTimer -= dt;
+        if (npc.swingTimer > 0) npc.swingTimer -= dt;
+        if (npc.chatCooldown > 0) npc.chatCooldown -= dt;
+
+        // 1. INSIDE A CLASSROOM OR BUILDING ROOM (Hidden on exterior while studying/playing inside)
+        if (npc.activity === 'inside_room') {
+          npc.rig.root.visible = false;
+          npc.racketMesh.visible = false;
+          if (npc.activityTimer <= 0) {
+            const b = npc.targetBuilding;
+            npc.rig.root.visible = true;
+            npc.rig.root.position.set(b.doorX + (Math.random() - 0.5) * 0.8, 0, b.doorZ - b.frontDir * 1.2);
+            npc.targetX = b.doorX + (Math.random() - 0.5) * 4.5;
+            npc.targetZ = b.doorZ + b.frontDir * 5.2;
+            npc.activity = 'exiting_door';
+            npc.activityTimer = 8.0;
+          }
+          return;
+        }
+
+        npc.rig.root.visible = true;
+        npc.racketMesh.visible = npc.activity === 'tennis';
+
+        // 2. PLAYING FOOTBALL ON THE PITCH
+        if (npc.activity === 'football') {
+          const isChaser = npc === closestFootballer1 || npc === closestFootballer2;
+          if (isChaser) {
+            npc.targetX = THREE.MathUtils.clamp(
+              soccerBallState.x,
+              PITCH_CENTER.x - PITCH_HALF_W + 1.2,
+              PITCH_CENTER.x + PITCH_HALF_W - 1.2
+            );
+            npc.targetZ = THREE.MathUtils.clamp(
+              soccerBallState.z,
+              PITCH_CENTER.z - PITCH_HALF_L + 1.5,
+              PITCH_CENTER.z + PITCH_HALF_L - 1.5
+            );
+          } else if (Math.hypot(npc.targetX - npc.rig.root.position.x, npc.targetZ - npc.rig.root.position.z) < 1.8) {
+            // Tactical positioning on pitch
+            const wingOffset = ((idx % 3) - 1) * 7.5;
+            npc.targetX = THREE.MathUtils.clamp(
+              PITCH_CENTER.x + wingOffset + (Math.random() - 0.5) * 4.0,
+              PITCH_CENTER.x - PITCH_HALF_W + 1.8,
+              PITCH_CENTER.x + PITCH_HALF_W - 1.8
+            );
+            const targetHalfZ = PITCH_CENTER.z + npc.teamSide * (3.5 + Math.random() * 11.5);
+            npc.targetZ = THREE.MathUtils.clamp(
+              targetHalfZ,
+              PITCH_CENTER.z - PITCH_HALF_L + 2.5,
+              PITCH_CENTER.z + PITCH_HALF_L - 2.5
+            );
+          }
+
+          // Kick / Pass / Shoot the soccer ball when close (yields priority if human player is right on the ball)
+          const distToSoccer = Math.hypot(
+            npc.rig.root.position.x - soccerBallState.x,
+            npc.rig.root.position.z - soccerBallState.z
+          );
+          const playerDistToSoccer = Math.hypot(playerState.x - soccerBallState.x, playerState.z - soccerBallState.z);
+          if (distToSoccer < 1.85 && npc.kickTimer <= 0 && playerDistToSoccer > 2.4) {
+            npc.kickTimer = 0.55;
+            const goalZ = npc.teamSide === 1 ? PITCH_CENTER.z - PITCH_HALF_L : PITCH_CENTER.z + PITCH_HALF_L;
+            const goalX = PITCH_CENTER.x + (Math.random() - 0.5) * 4.2;
+            const dirX = goalX - soccerBallState.x;
+            const dirZ = goalZ - soccerBallState.z;
+            const len = Math.hypot(dirX, dirZ) || 1;
+            const power = 15.5 + Math.random() * 5.5;
+            soccerBallState.vx = (dirX / len) * power;
+            soccerBallState.vz = (dirZ / len) * power;
+            soccerBallState.vy = 4.2 + Math.random() * 2.6;
+            if (playerDistToSoccer < 26) {
+              soundEngine.playBallKick();
+            }
+            if (npc.chatCooldown <= 0 && Math.random() < 0.45) {
+              const fbLines = [
+                'Pass to the wing! ⚽',
+                `Shooting for ${npc.profile.cohort}! ⚽`,
+                'Counter-attack! Let’s go! ⚽',
+                'Top corner shot! ⚽'
+              ];
+              attachSpeechBubble(npc.rig.root, npc.profile.name, fbLines[idx % fbLines.length], false);
+              npc.chatCooldown = 14 + Math.random() * 10;
+            }
+          }
+
+          if (npc.activityTimer <= 0) {
+            assignNextExteriorActivity(npc, idx);
+          }
+        }
+
+        // 3. PLAYING TENNIS ON ERA TENNIS COURT
+        else if (npc.activity === 'tennis') {
+          const playerOnSouthCourt =
+            Math.abs(playerState.x - TENNIS_CENTER.x) < 7.2 &&
+            playerState.z > TENNIS_CENTER.z - 0.5 &&
+            playerState.z < TENNIS_CENTER.z + 13.5;
+
+          if (npc.courtRole === 'south_player' && !playerOnSouthCourt) {
+            npc.targetX = THREE.MathUtils.clamp(
+              pickleBallState.x,
+              TENNIS_CENTER.x - 5.2,
+              TENNIS_CENTER.x + 5.2
+            );
+            npc.targetZ = TENNIS_CENTER.z + 8.85;
+
+            if (pickleBallState.z > TENNIS_CENTER.z + 6.2 && pickleBallState.vz > 0 && npc.swingTimer <= 0) {
+              npc.swingTimer = 0.42;
+              if (npc.chatCooldown <= 0 && Math.random() < 0.38) {
+                const tnLines = [
+                  'Forehand topspin return! 🎾',
+                  'Great rally Coach Leo! 🎾',
+                  `${npc.profile.cohort} tennis ace! 🎾`,
+                  'Cross-court winner! 🎾'
+                ];
+                attachSpeechBubble(npc.rig.root, npc.profile.name, tnLines[idx % tnLines.length], false);
+                npc.chatCooldown = 15 + Math.random() * 10;
+              }
+            }
+          } else {
+            // Doubles partner or court footwork warm-up
+            const sideSign = idx % 2 === 0 ? 1 : -1;
+            npc.targetX = TENNIS_CENTER.x + sideSign * 4.4 + Math.sin(elapsed * 2.1 + idx) * 1.4;
+            npc.targetZ = TENNIS_CENTER.z + 6.8 + Math.cos(elapsed * 1.8 + idx) * 1.2;
+            if (Math.sin(elapsed * 3.2 + idx) > 0.92 && npc.swingTimer <= 0) {
+              npc.swingTimer = 0.35;
+            }
+          }
+
+          if (npc.activityTimer <= 0) {
+            assignNextExteriorActivity(npc, idx);
+          }
+        }
+
+        // 4. PLAYING GAMES (Trampoline Bounce & EraGames Bubble Island Plaza)
+        else if (npc.activity === 'play_games') {
+          const distToTrampoline = Math.hypot(
+            npc.targetX - TRAMPOLINE_POS.x,
+            npc.targetZ - TRAMPOLINE_POS.z
+          );
+          if (distToTrampoline < 5.5) {
+            // Bouncing on the Playground Trampoline!
+            const dPad = Math.hypot(
+              npc.rig.root.position.x - npc.targetX,
+              npc.rig.root.position.z - npc.targetZ
+            );
+            if (dPad < 1.6) {
+              const bounceH = Math.abs(Math.sin(elapsed * 5.4 + idx * 1.3)) * 2.35;
+              npc.rig.root.position.y = 0.45 + bounceH;
+              npc.rig.leftArm.rotation.z = -2.1;
+              npc.rig.rightArm.rotation.z = 2.1;
+              npc.rig.leftLeg.rotation.x = 0.25;
+              npc.rig.rightLeg.rotation.x = -0.25;
+              if (npc.chatCooldown <= 0 && Math.random() < 0.35) {
+                attachSpeechBubble(npc.rig.root, npc.profile.name, 'Trampoline high jump! 🤸', false);
+                npc.chatCooldown = 16 + Math.random() * 8;
+              }
+              if (npc.activityTimer <= 0) {
+                npc.rig.root.position.y = 0;
+                npc.rig.leftArm.rotation.z = 0;
+                npc.rig.rightArm.rotation.z = 0;
+                assignNextExteriorActivity(npc, idx);
+              }
+              return;
+            }
+          } else {
+            // Playing near EraGames Arcade before walking inside to play Bubble Island
+            const dArcade = Math.hypot(
+              npc.rig.root.position.x - npc.targetX,
+              npc.rig.root.position.z - npc.targetZ
+            );
+            if (dArcade < 1.6) {
+              npc.rig.root.position.y = Math.abs(Math.sin(elapsed * 6.5 + idx)) * 0.35;
+              if (npc.chatCooldown <= 0) {
+                attachSpeechBubble(
+                  npc.rig.root,
+                  npc.profile.name,
+                  'Going inside EraGames to play Bubble Island! 🫧🎮',
+                  false
+                );
+                npc.chatCooldown = 16;
+              }
+              if (npc.activityTimer <= 12) {
+                const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || npc.targetBuilding;
+                npc.targetBuilding = eraGamesB;
+                npc.activity = 'entering_door';
+                npc.targetX = eraGamesB.doorX;
+                npc.targetZ = eraGamesB.doorZ - eraGamesB.frontDir * 1.5;
+              }
+            }
+          }
+          if (npc.activityTimer <= 0) {
+            npc.rig.root.position.y = 0;
+            assignNextExteriorActivity(npc, idx);
+          }
+        }
+
+        // 5. WALKING TO A CLASSROOM OR OTHER ROOM -> ENTERING DOOR -> EXITING DOOR
+        else if (npc.activity === 'going_to_room') {
+          const dDoor = Math.hypot(
+            npc.targetX - npc.rig.root.position.x,
+            npc.targetZ - npc.rig.root.position.z
+          );
+          if (dDoor < 1.35) {
+            const b = npc.targetBuilding;
+            npc.activity = 'entering_door';
+            npc.targetX = b.doorX;
+            npc.targetZ = b.doorZ - b.frontDir * 1.5;
+            npc.activityTimer = 7.0;
+          }
+        } else if (npc.activity === 'entering_door') {
+          const dInside = Math.hypot(
+            npc.targetX - npc.rig.root.position.x,
+            npc.targetZ - npc.rig.root.position.z
+          );
+          if (dInside < 0.85 || npc.activityTimer <= 0) {
+            npc.activity = 'inside_room';
+            npc.activityTimer = 9.0 + Math.random() * 9.0;
+            npc.rig.root.visible = false;
+            return;
+          }
+        } else if (npc.activity === 'exiting_door') {
+          const dOut = Math.hypot(
+            npc.targetX - npc.rig.root.position.x,
+            npc.targetZ - npc.rig.root.position.z
+          );
+          if (dOut < 1.35 || npc.activityTimer <= 0) {
+            if (npc.chatCooldown <= 0 && Math.random() < 0.55) {
+              const bId = npc.targetBuilding.id;
+              const exitMsg =
+                bId === 'speaking'
+                  ? 'Just won +$35 in Bubble Island! 🫧'
+                  : bId.startsWith('class_')
+                  ? `Finished ${npc.targetBuilding.name} class! 📚`
+                  : bId === 'dashboard'
+                  ? `Checked our ${npc.profile.cohort} leaderboard! 🏆`
+                  : bId === 'reading'
+                  ? 'Got cool new gear at EraSHOP! 🛍️'
+                  : 'Ready for football & tennis! ⚽🎾';
+              attachSpeechBubble(npc.rig.root, npc.profile.name, exitMsg, false);
+              npc.chatCooldown = 15 + Math.random() * 10;
+            }
+            assignNextExteriorActivity(npc, idx);
+          }
+        } else {
+          // 'socialize' (Teacher Jan & campus stroll)
+          const dSoc = Math.hypot(
+            npc.targetX - npc.rig.root.position.x,
+            npc.targetZ - npc.rig.root.position.z
+          );
+          if (dSoc < 1.5 || npc.activityTimer <= 0) {
+            npc.pauseTimer = 2.0 + Math.random() * 2.0;
+            assignNextExteriorActivity(npc, idx);
+          }
+        }
+
+        //Locomotion & Limb Animation for Exterior NPCs
         if (npc.pauseTimer > 0) {
           npc.pauseTimer -= dt;
           npc.rig.leftLeg.rotation.x *= 0.85;
@@ -6694,26 +9334,54 @@ export function EraVerse() {
           const dz = npc.targetZ - npc.rig.root.position.z;
           const dist = Math.hypot(dx, dz);
 
-          if (dist < 1.5) {
-            npc.pauseTimer = 1.8 + Math.random() * 2.5;
-            const randomB = BUILDINGS[Math.floor(Math.random() * BUILDINGS.length)];
-            npc.targetX = randomB.doorX + (Math.random() - 0.5) * 10;
-            npc.targetZ = randomB.doorZ + randomB.frontDir * (4.0 + Math.random() * 4.0);
-          } else {
+          const moveSpeed =
+            npc.activity === 'football'
+              ? npc.speed * 1.28
+              : npc.activity === 'tennis'
+              ? npc.speed * 1.15
+              : npc.speed;
+
+          if (dist > 0.35) {
             const ang = Math.atan2(dx, dz);
-            npc.rig.root.position.x += Math.sin(ang) * npc.speed * dt;
-            npc.rig.root.position.z += Math.cos(ang) * npc.speed * dt;
-            npc.rig.root.rotation.y = ang;
-            npc.walkPhase += dt * 7.5;
-            const sw = Math.sin(npc.walkPhase) * 0.45;
+            npc.rig.root.position.x += Math.sin(ang) * moveSpeed * dt;
+            npc.rig.root.position.z += Math.cos(ang) * moveSpeed * dt;
+            npc.rig.root.rotation.y = npc.activity === 'tennis' ? Math.PI : ang;
+            npc.walkPhase += dt * (npc.activity === 'football' ? 10.2 : 7.8);
+            const sw = Math.sin(npc.walkPhase) * (npc.activity === 'football' ? 0.58 : 0.45);
             npc.rig.leftLeg.rotation.x = sw;
             npc.rig.rightLeg.rotation.x = -sw;
-            npc.rig.leftArm.rotation.x = -sw * 0.6;
-            npc.rig.rightArm.rotation.x = sw * 0.6;
+            npc.rig.leftArm.rotation.x = -sw * 0.65;
+            npc.rig.rightArm.rotation.x = sw * 0.65;
+          } else {
+            npc.rig.leftLeg.rotation.x *= 0.82;
+            npc.rig.rightLeg.rotation.x *= 0.82;
+            npc.rig.leftArm.rotation.x *= 0.82;
+            npc.rig.rightArm.rotation.x *= 0.82;
+            if (npc.activity === 'tennis') {
+              npc.rig.root.rotation.y = Math.PI; // Face the tennis net
+            }
           }
         }
 
-        if (!activeInteriorBuilding) {
+        // Apply Football Kick / Goal Celebration or Tennis Forehand Swing overrides
+        if (npc.kickTimer > 0) {
+          npc.rig.rightLeg.rotation.x = -1.25 * Math.sin((npc.kickTimer / 0.55) * Math.PI);
+          npc.rig.leftArm.rotation.x = -0.65;
+        }
+        if (npc.swingTimer > 0) {
+          npc.rig.rightArm.rotation.x = -1.85 * Math.sin((npc.swingTimer / 0.42) * Math.PI);
+          npc.rig.rightArm.rotation.z = 0.35;
+        } else {
+          npc.rig.rightArm.rotation.z = THREE.MathUtils.damp(npc.rig.rightArm.rotation.z, 0, 8, dt);
+        }
+
+        if (npc.activity === 'football' && keeperGoalCooldown > 1.1) {
+          npc.rig.root.position.y = Math.abs(Math.sin(elapsed * 10 + idx)) * 0.75;
+        } else if (npc.activity !== 'play_games') {
+          npc.rig.root.position.y = THREE.MathUtils.damp(npc.rig.root.position.y, 0, 10, dt);
+        }
+
+        if (!activeInteriorBuilding && npc.rig.root.visible) {
           const dToPlayer = Math.hypot(
             playerState.x - npc.rig.root.position.x,
             playerState.z - npc.rig.root.position.z
@@ -6724,6 +9392,158 @@ export function EraVerse() {
           }
         }
       });
+
+      // Animate Interior Classmates & Visitors when player is inside a Classroom or Building
+      if (activeInteriorBuilding) {
+        interiorNpcActors.forEach((inpc, idx) => {
+          inpc.timer -= dt;
+          if (inpc.role === 'seated_student') {
+            // Seated students face the chalkboard, take notes, and periodically raise their hand to answer
+            inpc.rig.root.rotation.y = Math.PI + Math.sin(elapsed * 1.2 + idx) * 0.08;
+            if (inpc.handRaiseTimer > 0) {
+              inpc.handRaiseTimer -= dt;
+              inpc.rig.rightArm.rotation.z = THREE.MathUtils.damp(inpc.rig.rightArm.rotation.z, 2.65, 8, dt);
+              inpc.rig.rightArm.rotation.x = THREE.MathUtils.damp(inpc.rig.rightArm.rotation.x, -0.25, 8, dt);
+            } else {
+              inpc.rig.rightArm.rotation.z = THREE.MathUtils.damp(inpc.rig.rightArm.rotation.z, 0, 6, dt);
+              inpc.rig.rightArm.rotation.x = Math.sin(elapsed * 4.5 + idx) * 0.15 - 0.35; // Note-taking motion
+              if (inpc.timer <= 0) {
+                inpc.timer = 7 + Math.random() * 9;
+                if (Math.random() < 0.45) {
+                  inpc.handRaiseTimer = 2.8;
+                  const studyLines = [
+                    'I know the answer, Teacher! 🙋',
+                    'Working on Band 8 Writing Task 2! ✍️',
+                    'Practicing Cambridge & IELTS vocab! 📚',
+                    'Can we play Bubble Island after class? 🫧'
+                  ];
+                  attachSpeechBubble(inpc.rig.root, inpc.profile.name, studyLines[idx % studyLines.length], false);
+                }
+              }
+            }
+          } else {
+            // Roaming classmates walking IN through the room door, moving around the room, and walking OUT the door
+            if (inpc.state === 'outside_wait') {
+              inpc.rig.root.visible = false;
+              if (inpc.timer <= 0) {
+                inpc.rig.root.visible = true;
+                inpc.rig.root.position.set((Math.random() - 0.5) * 1.2, 0, 11.2);
+                inpc.targetX = inpc.spotX + (Math.random() - 0.5) * 2.4;
+                inpc.targetZ = inpc.spotZ + (Math.random() - 0.5) * 2.0;
+                inpc.state = 'walking_in';
+                inpc.timer = 8.0;
+              }
+              return;
+            }
+
+            inpc.rig.root.visible = true;
+            const dx = inpc.targetX - inpc.rig.root.position.x;
+            const dz = inpc.targetZ - inpc.rig.root.position.z;
+            const dist = Math.hypot(dx, dz);
+
+            if (dist > 0.35) {
+              const ang = Math.atan2(dx, dz);
+              inpc.rig.root.position.x += Math.sin(ang) * 3.4 * dt;
+              inpc.rig.root.position.z += Math.cos(ang) * 3.4 * dt;
+              inpc.rig.root.rotation.y = ang;
+              inpc.walkPhase += dt * 7.2;
+              const sw = Math.sin(inpc.walkPhase) * 0.42;
+              inpc.rig.leftLeg.rotation.x = sw;
+              inpc.rig.rightLeg.rotation.x = -sw;
+              inpc.rig.leftArm.rotation.x = -sw * 0.55;
+              inpc.rig.rightArm.rotation.x = sw * 0.55;
+            } else {
+              inpc.rig.leftLeg.rotation.x *= 0.8;
+              inpc.rig.rightLeg.rotation.x *= 0.8;
+              inpc.rig.leftArm.rotation.x *= 0.8;
+              inpc.rig.rightArm.rotation.x *= 0.8;
+
+              if (inpc.state === 'walking_in') {
+                inpc.state = 'at_spot';
+                inpc.timer = 6.5 + Math.random() * 6.0;
+                inpc.rig.root.rotation.y = Math.PI;
+              } else if (inpc.state === 'at_spot') {
+                if (inpc.timer <= 0) {
+                  if (Math.random() < 0.48) {
+                    // Walk to another spot inside the room first
+                    inpc.targetX = (Math.random() - 0.5) * 11.0;
+                    inpc.targetZ = -4.5 + Math.random() * 8.0;
+                    inpc.timer = 5.5 + Math.random() * 4.5;
+                  } else {
+                    // Head out the exit door
+                    inpc.state = 'walking_out';
+                    inpc.targetX = (Math.random() - 0.5) * 0.8;
+                    inpc.targetZ = 11.4;
+                    inpc.timer = 6.0;
+                  }
+                }
+              } else if (inpc.state === 'walking_out') {
+                inpc.state = 'outside_wait';
+                inpc.rig.root.visible = false;
+                inpc.timer = 3.5 + Math.random() * 4.5;
+              }
+            }
+          }
+
+          if (inpc.rig.root.visible) {
+            const worldNpcX = INTERIOR_ORIGIN.x + inpc.rig.root.position.x;
+            const worldNpcZ = INTERIOR_ORIGIN.z + inpc.rig.root.position.z;
+            const dToPlayer = Math.hypot(playerState.x - worldNpcX, playerState.z - worldNpcZ);
+            if (dToPlayer < closestNpcDist) {
+              closestNpcDist = dToPlayer;
+              closestNpc = inpc.profile;
+            }
+          }
+        });
+      }
+      // Animate AI Employees inside ERA FACULTY & detect proximity to cubicle workstations
+      let closestFacEmp: FacultyEmployeeProfile | null = null;
+      if (activeInteriorBuilding && activeInteriorBuilding.id === 'faculty_hq') {
+        let minFacDist = 3.8;
+        facultyNpcActors.forEach((fa, fIdx) => {
+          const isAisleWalker = fa.employee.id === 'emp_coordinator' || fa.employee.id === 'emp_pet';
+          if (isAisleWalker) {
+            // Natural office walking up and down the central patterned-carpet aisle
+            const speed = 0.52;
+            const phase = elapsed * speed + (fa.employee.id === 'emp_pet' ? Math.PI : 0);
+            const curZ = Math.sin(phase) * 6.5 - 1.2;
+            const dirZ = Math.cos(phase);
+            fa.rig.root.position.x = fa.baseX;
+            fa.rig.root.position.z = curZ;
+            fa.rig.root.position.y = Math.abs(Math.sin(elapsed * 7.5 + fIdx)) * 0.05;
+            fa.rig.root.rotation.y = dirZ >= 0 ? 0 : Math.PI;
+            const swing = Math.sin(elapsed * 7.5 + fIdx) * 0.45;
+            fa.rig.leftArm.rotation.x = swing;
+            fa.rig.rightArm.rotation.x = -swing;
+            fa.rig.leftLeg.rotation.x = -swing;
+            fa.rig.rightLeg.rotation.x = swing;
+          } else {
+            // Seated typing & reviewing papers at their cubicle desk
+            fa.rig.root.rotation.y = fa.baseRotY + Math.sin(elapsed * 1.4 + fIdx) * 0.08;
+            fa.rig.leftArm.rotation.x = -0.68 + Math.sin(elapsed * 6.5 + fIdx) * 0.12;
+            fa.rig.rightArm.rotation.x = -0.68 + Math.cos(elapsed * 6.5 + fIdx) * 0.12;
+          }
+
+          fa.speechTimer -= dt;
+          if (fa.speechTimer <= 0) {
+            fa.speechTimer = 11 + (fIdx % 6) * 3.5;
+            if (Math.random() < 0.35 && fa.employee.speechBubbles.length > 0) {
+              const line = fa.employee.speechBubbles[fa.bubbleIndex % fa.employee.speechBubbles.length];
+              fa.bubbleIndex++;
+              attachSpeechBubble(fa.rig.root, fa.employee.name, line, false);
+            }
+          }
+
+          const wx = INTERIOR_ORIGIN.x + fa.rig.root.position.x;
+          const wz = INTERIOR_ORIGIN.z + fa.rig.root.position.z;
+          const d = Math.hypot(playerState.x - wx, playerState.z - wz);
+          if (d < minFacDist) {
+            minFacDist = d;
+            closestFacEmp = fa.employee;
+          }
+        });
+      }
+      setNearFacultyEmployee(closestFacEmp);
       setNearCharacterPrompt(closestNpc);
 
       // Proximity Prompts
@@ -6779,7 +9599,38 @@ export function EraVerse() {
           }
         }
         setNearBoardPrompt(nearBoard);
+
+        if (activeInteriorBuilding.id.startsWith('class_') && !playerState.isSitting) {
+          let closestDesk: {
+            seatX: number;
+            seatZ: number;
+            deskName: string;
+            classCohort: string;
+          } | null = null;
+          let minDeskDist = 2.3;
+          clickableBoardMeshes.forEach((m) => {
+            if (m.userData?.isClassroomDesk) {
+              const d = Math.hypot(
+                playerState.x - m.userData.seatX,
+                playerState.z - m.userData.seatZ
+              );
+              if (d < minDeskDist) {
+                minDeskDist = d;
+                closestDesk = {
+                  seatX: m.userData.seatX,
+                  seatZ: m.userData.seatZ,
+                  deskName: m.userData.deskName,
+                  classCohort: m.userData.classCohort
+                };
+              }
+            }
+          });
+          setNearClassroomDesk(closestDesk);
+        } else {
+          setNearClassroomDesk(null);
+        }
       } else {
+        setNearClassroomDesk(null);
         let nearB: BuildingZone | null = null;
         let minDoorDist = 6.5;
         BUILDINGS.forEach((b) => {
@@ -6792,14 +9643,36 @@ export function EraVerse() {
         setNearBuildingPrompt(nearB);
       }
 
-      // Camera Anti-Occlusion & Smooth Orbit
-      _camTarget.set(playerState.x, playerState.y + 2.2, playerState.z);
-      const horizDist = camState.distance * Math.cos(camState.pitch);
-      const vertDist = camState.distance * Math.sin(camState.pitch);
+      // Camera Anti-Occlusion & Smooth Orbit (Full Up/Down Vertical Pitch & Pan Support)
+      const basePivotY = playerState.y + 2.0;
+      // When pitch < 0 (panning view UP toward ceiling/clock/sky), tilt lookTarget Y upward;
+      // when pitch > 0.35 (panning view DOWN toward cubicles/floor), tilt lookTarget Y downward.
+      const lookTiltY =
+        camState.pitch < 0
+          ? -camState.pitch * 6.2
+          : camState.pitch > 0.35
+          ? -(camState.pitch - 0.35) * 2.0
+          : 0;
+      _camTarget.set(playerState.x, basePivotY + lookTiltY, playerState.z);
+
+      const effectiveOrbitPitch = Math.max(-0.18, camState.pitch);
+      const horizDist = camState.distance * Math.cos(effectiveOrbitPitch);
+      const vertDist = camState.distance * Math.sin(effectiveOrbitPitch);
+
+      const maxInteriorCamY =
+        activeInteriorBuilding?.id === 'faculty_hq'
+          ? 6.65
+          : activeInteriorBuilding
+          ? 9.8
+          : 95.0;
+
+      const rawCamY = basePivotY + vertDist;
+      const clampedCamY = Math.max(playerState.y + 1.15, Math.min(maxInteriorCamY, rawCamY));
+
       _desiredCamPos.set(
-        _camTarget.x + Math.sin(camState.yaw) * horizDist,
-        Math.max(1.5, _camTarget.y + vertDist),
-        _camTarget.z + Math.cos(camState.yaw) * horizDist
+        playerState.x + Math.sin(camState.yaw) * horizDist,
+        clampedCamY,
+        playerState.z + Math.cos(camState.yaw) * horizDist
       );
 
       doorControllers.forEach((dc) => {
@@ -6829,8 +9702,10 @@ export function EraVerse() {
           }
         }
       } else {
-        _desiredCamPos.x = Math.max(INTERIOR_ORIGIN.x - 13.0, Math.min(INTERIOR_ORIGIN.x + 13.0, _desiredCamPos.x));
-        _desiredCamPos.z = Math.max(INTERIOR_ORIGIN.z - 11.0, Math.min(INTERIOR_ORIGIN.z + 11.0, _desiredCamPos.z));
+        const maxWallX = activeInteriorBuilding.id === 'faculty_hq' ? 14.2 : 13.0;
+        const maxWallZ = activeInteriorBuilding.id === 'faculty_hq' ? 12.2 : 11.0;
+        _desiredCamPos.x = Math.max(INTERIOR_ORIGIN.x - maxWallX, Math.min(INTERIOR_ORIGIN.x + maxWallX, _desiredCamPos.x));
+        _desiredCamPos.z = Math.max(INTERIOR_ORIGIN.z - maxWallZ, Math.min(INTERIOR_ORIGIN.z + maxWallZ, _desiredCamPos.z));
       }
 
       camera.position.lerp(_desiredCamPos, Math.min(1, dt * 16));
@@ -7143,6 +10018,12 @@ export function EraVerse() {
               type="button"
               onClick={() => {
                 soundEngine.playUiClick();
+                if (insideBuilding.id === 'faculty_hq') {
+                  setSelectedFacultyEmployee(null);
+                  setFacultyInitialAdminModule('overview');
+                  setShowFacultyModal(true);
+                  return;
+                }
                 if (insideBuilding.id.startsWith('class_')) {
                   const firstBoard = INTERIOR_BOARDS_BY_BUILDING[insideBuilding.id]?.[0];
                   if (firstBoard) {
@@ -7155,7 +10036,7 @@ export function EraVerse() {
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl border border-blue-400/30 transition-all cursor-pointer"
             >
               <BookOpen className="w-4 h-4" />
-              <span>Open {insideBuilding.name}</span>
+              <span>{insideBuilding.id === 'faculty_hq' ? 'Open ERA Faculty' : `Open ${insideBuilding.name}`}</span>
             </button>
             <button
               type="button"
@@ -7446,7 +10327,76 @@ export function EraVerse() {
         </div>
       )}
 
-      {nearBoardPrompt && insideBuilding && (
+      {nearFacultyEmployee && insideBuilding?.id === 'faculty_hq' && (
+        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
+          <div className="bg-slate-950/95 border border-amber-400/40 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
+            <div>
+              <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
+                ERA FACULTY CUBICLE WORKSTATION • {nearFacultyEmployee.departmentLabel}
+              </div>
+              <div className="text-base font-extrabold">
+                {nearFacultyEmployee.name} — {nearFacultyEmployee.jobTitle}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playUiClick();
+                setSelectedFacultyEmployee(nearFacultyEmployee);
+                setShowFacultyModal(true);
+              }}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Open Workstation (E)</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isSittingAtDesk && insideBuilding && (
+        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
+          <div className="bg-slate-950/95 border border-emerald-400/40 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
+            <div>
+              <div className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
+                CLASSROOM STUDENT SEAT
+              </div>
+              <div className="text-base font-extrabold">Seated at Classroom Desk</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => gameActionsRef.current?.standUpFromDesk()}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Stand Up (Space / E)</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isSittingAtDesk && nearClassroomDesk && !nearFacultyEmployee && insideBuilding && (
+        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
+          <div className="bg-slate-950/95 border border-amber-400/40 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
+            <div>
+              <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
+                {insideBuilding.name} • STUDENT SEAT
+              </div>
+              <div className="text-base font-extrabold">{nearClassroomDesk.deskName}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => gameActionsRef.current?.sitAtClassroomDesk(nearClassroomDesk)}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Sit Down at Desk (E)</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isSittingAtDesk && !nearClassroomDesk && nearBoardPrompt && !nearFacultyEmployee && insideBuilding && (
         <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
           <div className="bg-slate-950/95 border border-white/20 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
             <div>
@@ -8104,6 +11054,39 @@ export function EraVerse() {
           setSelectedPracticeSkill(skill);
           setActiveBuildingModal('practice_tests');
         }}
+      />
+
+      {/* ============================================================================
+          MODAL 8: ERA FACULTY HQ — AI EMPLOYEE WORKSTATIONS & TEACHER JAN 12-MODULE ADMIN HUB
+          ============================================================================ */}
+      <EraFacultyWorkstationModal
+        isOpen={showFacultyModal || activeBuildingModal === 'faculty_hq'}
+        onClose={() => {
+          setShowFacultyModal(false);
+          if (activeBuildingModal === 'faculty_hq') setActiveBuildingModal(null);
+        }}
+        initialEmployeeId={selectedFacultyEmployee?.id || null}
+        initialDashboardModule={facultyInitialAdminModule}
+        currentUserName={playerProfile.name}
+        currentUserEmail={user?.email || playerProfile.email}
+        isAuthorizedFaculty={isAuthorizedFaculty}
+        eraGems={eraGems}
+        eraDollars={eraDollars}
+        onRewardCurrency={(gemsDelta, dollarsDelta, reason) => {
+          soundEngine.playGoalCheer();
+          const nextGems = Math.max(0, eraGems + gemsDelta);
+          const nextDollars = Math.max(0, eraDollars + dollarsDelta);
+          setEraGems(nextGems);
+          setEraDollars(nextDollars);
+          persistAvatarCustomization(playerProfile, nextGems, ownedShopItems, nextDollars);
+          showToast(
+            `${gemsDelta >= 0 ? `+${gemsDelta}` : gemsDelta} 💎 Gems • ${dollarsDelta >= 0 ? `+$${dollarsDelta}` : `-$${Math.abs(dollarsDelta)}`} 💵`,
+            reason,
+            '#D97706'
+          );
+        }}
+        studentRoster={allStudentsSkillScores}
+        firestoreFolders={firestoreFolders}
       />
     </div>
   );
