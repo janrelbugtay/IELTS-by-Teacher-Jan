@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, KeyRound } from 'lucide-react';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { LogIn, KeyRound, ArrowLeft } from 'lucide-react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export function Login() {
-  const { user, userCourse, loading, signInWithEmail } = useAuth();
+  const { user, userCourse, loading, isAdmin, signInWithEmail } = useAuth();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [resetNotice, setResetNotice] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
@@ -31,6 +32,9 @@ export function Login() {
   }
 
   if (user) {
+    if (!isAdmin) {
+      return <Navigate to="/eraverse" replace />;
+    }
     if (userCourse?.toLowerCase() === 'pet') {
       return <Navigate to="/pet/dashboard" replace />;
     }
@@ -191,23 +195,23 @@ export function Login() {
   };
 
   const handleForgotPassword = () => {
-    alert("Request Password Reset\n\nA notification has been sent to your teacher or administrator to reset your password.");
+    setResetNotice('Password reset requested. Please ask your teacher or administrator for your updated password.');
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] p-6 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-[85dvh] p-4 sm:p-6 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-slate-50/50 -z-10"></div>
       
-      <div className="w-full max-w-md bg-white p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 flex flex-col items-center">
-        <div className="w-16 h-16 bg-blue-50 text-[#1E4DB7] rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+      <div className="w-full max-w-md bg-white p-7 sm:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 flex flex-col items-center">
+        <div className="w-16 h-16 bg-blue-50 text-[#1E4DB7] rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-blue-100">
           <LogIn className="w-8 h-8" />
         </div>
         
-        <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">
-          Student Login
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2 text-center">
+          EraVerse Login
         </h1>
-        <p className="text-slate-600 mb-8 text-center text-sm">
-          Access your English center dashboard
+        <p className="text-slate-600 mb-6 text-center text-sm">
+          Sign in with your Student ID or Username to enter EraVerse
         </p>
 
         <div className="w-full space-y-5">
@@ -215,6 +219,12 @@ export function Login() {
           {error && (
             <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl text-center border border-red-100">
               {error}
+            </div>
+          )}
+
+          {resetNotice && (
+            <div className="p-3 text-sm text-blue-700 bg-blue-50 rounded-xl text-center border border-blue-100">
+              {resetNotice}
             </div>
           )}
 
@@ -261,6 +271,16 @@ export function Login() {
               {authLoading ? 'Signing in...' : <><KeyRound className="w-5 h-5" /> Login</>}
             </button>
           </form>
+
+          <div className="pt-2 text-center">
+            <Link
+              to="/eraverse"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#1E4DB7] transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Return to EraVerse World</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

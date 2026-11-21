@@ -19,6 +19,8 @@ import {
   Moon,
   ArrowRight,
   LogOut,
+  LogIn,
+  User,
   X,
   Clock,
   BarChart,
@@ -1303,7 +1305,7 @@ const _desiredCamPos = new THREE.Vector3();
 const _rayDir = new THREE.Vector3();
 
 export function EraVerse() {
-  const { user, userCourse, isAdmin } = useAuth();
+  const { user, userCourse, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
 
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
@@ -1384,6 +1386,13 @@ export function EraVerse() {
   const [zoomSliderValue, setZoomSliderValue] = useState<number>(14);
   const [joystickThumbPos, setJoystickThumbPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 30);
+    return () => window.clearTimeout(timer);
+  }, [isAdmin, isFullscreen]);
 
   const [speakingModalTest, setSpeakingModalTest] = useState<{ id: number | string; title: string } | null>(null);
   const [candidateName, setCandidateName] = useState<string>(user?.displayName || 'Student');
@@ -2097,7 +2106,7 @@ export function EraVerse() {
     })();
 
     const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || window.innerHeight - 80;
+    const height = container.clientHeight || window.innerHeight;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x38bdf8);
@@ -3941,33 +3950,90 @@ export function EraVerse() {
       const tree = new THREE.Group();
       tree.position.set(tx, 0, tz);
 
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.36 * scale, 0.54 * scale, 2.8 * scale, 12),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
-      );
-      trunk.position.y = 1.4 * scale;
-      trunk.castShadow = true;
-      tree.add(trunk);
-
-      const leafColors = [0x15803d, 0x16a34a, 0x22c55e];
-      [0, 1, 2].forEach((layer) => {
-        const crown = new THREE.Mesh(
-          new THREE.ConeGeometry((2.4 - layer * 0.45) * scale, (2.6 - layer * 0.35) * scale, 14),
-          new THREE.MeshStandardMaterial({ color: leafColors[layer], roughness: 0.6 })
-        );
-        crown.position.y = (3.1 + layer * 1.3) * scale;
-        crown.castShadow = true;
-        tree.add(crown);
-      });
-
-      scene.add(tree);
       if (addCollider) {
-        colliders.push({
-          minX: tx - 0.75 * scale,
-          maxX: tx + 0.75 * scale,
-          minZ: tz - 0.75 * scale,
-          maxZ: tz + 0.75 * scale
+        // Landscaped circular stone planter curb & dark soil bed so campus trees sit naturally grounded
+        const curb = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.18 * scale, 1.26 * scale, 0.22 * scale, 18),
+          new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.78, metalness: 0.05 })
+        );
+        curb.position.y = 0.11 * scale;
+        curb.receiveShadow = true;
+
+        const soil = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.02 * scale, 1.02 * scale, 0.25 * scale, 16),
+          new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.95 })
+        );
+        soil.position.y = 0.12 * scale;
+        tree.add(curb, soil);
+
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b3410, roughness: 0.88 });
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.32 * scale, 0.52 * scale, 2.9 * scale, 12),
+          trunkMat
+        );
+        trunk.position.y = 1.45 * scale;
+        trunk.castShadow = true;
+        tree.add(trunk);
+
+        // Secondary organic branches supporting lush park canopy
+        [-1, 1].forEach((dir) => {
+          const branch = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.11 * scale, 0.18 * scale, 1.25 * scale, 8),
+            trunkMat
+          );
+          branch.position.set(dir * 0.42 * scale, 2.45 * scale, dir * 0.12 * scale);
+          branch.rotation.z = -dir * 0.58;
+          tree.add(branch);
         });
+
+        const foliageClusters = [
+          { x: 0, y: 3.55, z: 0, r: 1.85, sy: 0.86, col: 0x15803d, rough: 0.62 },
+          { x: -0.78, y: 3.25, z: 0.45, r: 1.28, sy: 0.84, col: 0x16a34a, rough: 0.58 },
+          { x: 0.82, y: 3.35, z: -0.42, r: 1.32, sy: 0.84, col: 0x16a34a, rough: 0.58 },
+          { x: 0.15, y: 4.55, z: 0.18, r: 1.38, sy: 0.88, col: 0x22c55e, rough: 0.52 },
+          { x: -0.25, y: 5.25, z: -0.15, r: 0.92, sy: 0.9, col: 0x4ade80, rough: 0.48 }
+        ];
+        foliageClusters.forEach((fc) => {
+          const puff = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(fc.r * scale, 1),
+            new THREE.MeshStandardMaterial({ color: fc.col, roughness: fc.rough })
+          );
+          puff.scale.set(1, fc.sy, 1);
+          puff.position.set(fc.x * scale, fc.y * scale, fc.z * scale);
+          puff.castShadow = true;
+          puff.receiveShadow = true;
+          tree.add(puff);
+        });
+
+        scene.add(tree);
+        colliders.push({
+          minX: tx - 1.1 * scale,
+          maxX: tx + 1.1 * scale,
+          minZ: tz - 1.1 * scale,
+          maxZ: tz + 1.1 * scale
+        });
+      } else {
+        // Lightweight alpine spruce silhouette for distant mountain slopes
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.36 * scale, 0.54 * scale, 2.8 * scale, 10),
+          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
+        );
+        trunk.position.y = 1.4 * scale;
+        trunk.castShadow = true;
+        tree.add(trunk);
+
+        const leafColors = [0x15803d, 0x16a34a, 0x22c55e];
+        [0, 1, 2].forEach((layer) => {
+          const crown = new THREE.Mesh(
+            new THREE.ConeGeometry((2.4 - layer * 0.45) * scale, (2.6 - layer * 0.35) * scale, 12),
+            new THREE.MeshStandardMaterial({ color: leafColors[layer], roughness: 0.62 })
+          );
+          crown.position.y = (3.1 + layer * 1.3) * scale;
+          crown.castShadow = true;
+          tree.add(crown);
+        });
+
+        scene.add(tree);
       }
     };
 
@@ -6695,10 +6761,12 @@ export function EraVerse() {
       clouds.push({ group: cGroup, speed: 0.8 + (i % 4) * 0.35 });
     }
 
+    // Landscaped perimeter park groves — kept 100% clear of central plaza wedges, diagonal walkways & building doors
     const treeCoords = [
-      [-22, -38, 1.2], [22, -38, 1.15], [-24, 38, 1.2], [24, 38, 1.25],
-      [-28, -8, 1.05], [28, -8, 1.1], [-28, 10, 1.05], [28, 10, 1.1],
-      [-18, -58, 1.3], [18, -58, 1.3], [-18, 60, 1.3], [26, 60, 1.3]
+      [-54, -44, 1.2], [-24, -56, 1.25], [24, -56, 1.25], [54, -44, 1.2],
+      [-56, -15, 1.15], [55, -15, 1.15],
+      [-56, 44, 1.2], [-22, 62, 1.25], [22, 62, 1.25], [56, 44, 1.2],
+      [-80, -40, 1.18], [-104, -40, 1.22], [-80, 40, 1.18], [-104, 40, 1.22]
     ];
     treeCoords.forEach(([tx, tz, sc]) => createStylizedTree(tx, tz, sc));
 
@@ -7693,9 +7761,9 @@ export function EraVerse() {
       };
 
       const isFacultyOffice = building.id === 'faculty_hq';
-      const roomW = isFacultyOffice ? 30 : 28;
-      const roomD = isFacultyOffice ? 26 : 24;
-      const roomH = isFacultyOffice ? 7.2 : 10.5;
+      const roomW = isFacultyOffice ? 30 : 32;
+      const roomD = isFacultyOffice ? 26 : 28;
+      const roomH = isFacultyOffice ? 7.2 : 10.8;
 
       // Helper for ERA FACULTY geometric amber/ochre office carpet texture
       const createFacultyOfficeCarpetTexture = () => {
@@ -7703,17 +7771,14 @@ export function EraVerse() {
         c.width = 512;
         c.height = 512;
         const ctx = c.getContext('2d')!;
-        // Rich warm amber-ochre base carpet (calibrated so global scene lights never wash it out)
         ctx.fillStyle = '#a85a16';
         ctx.fillRect(0, 0, 512, 512);
 
-        // Subtle woven carpet texture noise
         for (let i = 0; i < 3200; i++) {
           ctx.fillStyle = i % 2 === 0 ? 'rgba(255,215,140,0.06)' : 'rgba(85,40,8,0.08)';
           ctx.fillRect((i * 73) % 512, (i * 139) % 512, 3, 3);
         }
 
-        // Geometric rounded L-shapes, step motifs, and hollow rounded rectangles (#dfa344)
         ctx.strokeStyle = '#dfa344';
         ctx.fillStyle = '#dfa344';
         ctx.lineCap = 'round';
@@ -7728,7 +7793,6 @@ export function EraVerse() {
 
             ctx.lineWidth = 16;
             if (variant === 0) {
-              // Stepped Z / L motif
               ctx.beginPath();
               ctx.moveTo(ox + 22, oy + 28);
               ctx.lineTo(ox + 68, oy + 28);
@@ -7736,11 +7800,9 @@ export function EraVerse() {
               ctx.lineTo(ox + 106, oy + 76);
               ctx.stroke();
 
-              // Small hollow rounded square
               ctx.lineWidth = 7;
               ctx.strokeRect(ox + 20, oy + 82, 30, 28);
             } else if (variant === 1) {
-              // Bold L-turn + hollow rectangle
               ctx.beginPath();
               ctx.moveTo(ox + 26, oy + 104);
               ctx.lineTo(ox + 26, oy + 46);
@@ -7750,7 +7812,6 @@ export function EraVerse() {
               ctx.lineWidth = 8;
               ctx.strokeRect(ox + 64, oy + 74, 42, 32);
             } else if (variant === 2) {
-              // Inverted step motif
               ctx.beginPath();
               ctx.moveTo(ox + 102, oy + 24);
               ctx.lineTo(ox + 54, oy + 24);
@@ -7763,7 +7824,6 @@ export function EraVerse() {
               ctx.lineTo(ox + 106, oy + 104);
               ctx.stroke();
             } else {
-              // Hollow square + corner hook
               ctx.lineWidth = 8;
               ctx.strokeRect(ox + 22, oy + 22, 40, 36);
 
@@ -7786,44 +7846,149 @@ export function EraVerse() {
         return tex;
       };
 
-      // Floor (Geometric Patterned Amber Carpet for ERA FACULTY, Rich Hardwood Parquet for Classrooms & Hubs)
+      // Domain-specific architectural floor textures (Herringbone Oak Parquet, Luxury Marble Terrazzo, Esports Arena Court)
+      const createArchitecturalInteriorFloorTexture = () => {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext('2d')!;
+
+        if (building.id === 'speaking') {
+          // EraGames Esports & Arcade Lounge: Deep slate-indigo composite tiles with subtle violet/cyan accent grid
+          ctx.fillStyle = '#1e1b4b';
+          ctx.fillRect(0, 0, 512, 512);
+          for (let y = 0; y < 512; y += 128) {
+            for (let x = 0; x < 512; x += 128) {
+              ctx.fillStyle = ((x + y) / 128) % 2 === 0 ? '#242058' : '#1b1844';
+              ctx.fillRect(x + 3, y + 3, 122, 122);
+              ctx.strokeStyle = 'rgba(168, 85, 247, 0.24)';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(x + 4, y + 4, 120, 120);
+            }
+          }
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+          for (let y = 0; y <= 512; y += 128) {
+            for (let x = 0; x <= 512; x += 128) {
+              ctx.beginPath();
+              ctx.arc(x, y, 4, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        } else if (
+          building.id === 'reading' ||
+          building.id === 'listening' ||
+          building.id === 'dashboard' ||
+          building.id === 'practice_tests'
+        ) {
+          // Luxury Warm Travertine & Pearl Marble Tiles with Brushed Brass Inlays
+          ctx.fillStyle = '#f1ede4';
+          ctx.fillRect(0, 0, 512, 512);
+          for (let ty = 0; ty < 4; ty++) {
+            for (let tx = 0; tx < 4; tx++) {
+              const ox = tx * 128;
+              const oy = ty * 128;
+              ctx.fillStyle = (tx + ty) % 2 === 0 ? '#f6f3ec' : '#ebe5d8';
+              ctx.fillRect(ox + 2, oy + 2, 124, 124);
+              // Subtle marble veining
+              ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(ox + 14, oy + 26 + (tx % 2) * 30);
+              ctx.bezierCurveTo(ox + 52, oy + 48, ox + 78, oy + 82, ox + 114, oy + 98);
+              ctx.stroke();
+              // Subtle terrazzo flecks
+              for (let k = 0; k < 14; k++) {
+                ctx.fillStyle = k % 3 === 0 ? 'rgba(217, 119, 6, 0.14)' : 'rgba(100, 116, 139, 0.12)';
+                ctx.fillRect(ox + ((k * 29 + tx * 17) % 112) + 8, oy + ((k * 43 + ty * 23) % 112) + 8, 4, 3);
+              }
+            }
+          }
+          // Fine brass grout lines
+          ctx.strokeStyle = 'rgba(180, 134, 58, 0.35)';
+          ctx.lineWidth = 3;
+          for (let p = 0; p <= 512; p += 128) {
+            ctx.beginPath();
+            ctx.moveTo(p, 0);
+            ctx.lineTo(p, 512);
+            ctx.moveTo(0, p);
+            ctx.lineTo(512, p);
+            ctx.stroke();
+          }
+        } else {
+          // Warm Honey-Oak Academic Parquet Flooring for Classrooms & Homework Library
+          const tones = ['#c98a4b', '#be7e3e', '#d49658', '#b57335'];
+          const pw = 64;
+          const ph = 16;
+          for (let y = 0; y < 512; y += ph) {
+            const rowOffset = ((y / ph) % 2) * 32;
+            for (let x = -32; x < 512; x += pw) {
+              const tone = tones[Math.abs(Math.floor(x / pw) + Math.floor(y / ph) * 3) % tones.length];
+              ctx.fillStyle = tone;
+              ctx.fillRect(x + rowOffset, y, pw - 2, ph - 2);
+              ctx.fillStyle = 'rgba(75, 38, 12, 0.22)';
+              ctx.fillRect(x + rowOffset, y + ph - 2, pw, 2);
+              ctx.fillRect(x + rowOffset + pw - 2, y, 2, ph);
+              ctx.fillStyle = 'rgba(255, 235, 200, 0.1)';
+              ctx.fillRect(x + rowOffset + 4, y + 4, pw - 10, 2);
+            }
+          }
+        }
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        tex.repeat.set(building.id === 'speaking' ? 6 : 7, building.id === 'speaking' ? 6 : 7);
+        tex.needsUpdate = true;
+        return tex;
+      };
+
+      // Floor
       const floor = new THREE.Mesh(
         new THREE.BoxGeometry(roomW, 0.4, roomD),
         new THREE.MeshStandardMaterial({
           map: isFacultyOffice
             ? createFacultyOfficeCarpetTexture()
-            : createWoodFloorTexture(building.interiorFloorColor),
-          roughness: isFacultyOffice ? 0.78 : 0.42,
-          metalness: isFacultyOffice ? 0.02 : 0.06
+            : createArchitecturalInteriorFloorTexture(),
+          roughness: isFacultyOffice ? 0.78 : building.id === 'speaking' ? 0.34 : 0.32,
+          metalness: isFacultyOffice ? 0.02 : building.id === 'speaking' ? 0.14 : 0.08
         })
       );
       floor.position.set(0, -0.2, 0);
       floor.receiveShadow = true;
       interiorGroup.add(floor);
 
-      // Welcome Runner Carpet leading to Exit Door (omitted in ERA FACULTY so patterned carpet is visible down the center aisle)
+      // Tailored Welcome Aisle Carpet Runner with Gold Border Trim
       if (!isFacultyOffice && !building.id.startsWith('class_')) {
-        const carpet = new THREE.Mesh(
-          new THREE.BoxGeometry(4.8, 0.04, roomD - 4.5),
-          new THREE.MeshStandardMaterial({ color: building.accentColor, roughness: 0.75 })
+        const carpetGroup = new THREE.Group();
+        const carpetBorder = new THREE.Mesh(
+          new THREE.BoxGeometry(4.7, 0.03, roomD - 5.2),
+          new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.42, metalness: 0.35 })
         );
-        carpet.position.set(0, 0.02, 0.5);
-        interiorGroup.add(carpet);
+        carpetBorder.position.set(0, 0.018, 0.8);
+        const carpet = new THREE.Mesh(
+          new THREE.BoxGeometry(4.35, 0.04, roomD - 5.55),
+          new THREE.MeshStandardMaterial({ color: building.accentColor, roughness: 0.78 })
+        );
+        carpet.position.set(0, 0.026, 0.8);
+        carpetGroup.add(carpetBorder, carpet);
+        interiorGroup.add(carpetGroup);
       }
 
-      // Warm Architectural Wall Colors (Slightly deepened so global daylight never washes them out)
-      const adjustedWallColor = new THREE.Color(building.interiorWallColor).lerp(
-        new THREE.Color(building.accentColor),
-        0.16
-      );
+      // Warm Architectural Wall Colors (calibrated for crisp contrast against furniture & boards)
+      const isDarkLounge = building.id === 'speaking';
+      const adjustedWallColor = isDarkLounge
+        ? new THREE.Color(0xf1effa)
+        : new THREE.Color(building.interiorWallColor).lerp(new THREE.Color(building.accentColor), 0.12);
       const wallMat = new THREE.MeshStandardMaterial({
         color: isFacultyOffice ? 0xcfa050 : adjustedWallColor,
-        roughness: 0.75,
+        roughness: 0.72,
         metalness: 0.02
       });
       const rightOfficeWallMat = new THREE.MeshStandardMaterial({
         color: isFacultyOffice ? 0xbec8d4 : adjustedWallColor,
-        roughness: 0.75,
+        roughness: 0.72,
         metalness: 0.02
       });
 
@@ -7839,60 +8004,96 @@ export function EraVerse() {
       rightWall.position.set(roomW / 2, roomH / 2, 0);
       interiorGroup.add(rightWall);
 
-      // Enclose Room Completely: Suspended Acoustic Tile Grid Ceiling for ALL Buildings
+      // Bright Architectural Coffered Ceiling (replaces dark grey checkerboard grid)
       const cc = document.createElement('canvas');
       cc.width = 256;
       cc.height = 256;
       const cctx = cc.getContext('2d')!;
-      cctx.fillStyle = '#e2e8f0';
+      cctx.fillStyle = '#f8fafc';
       cctx.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < 600; i++) {
-        cctx.fillStyle = 'rgba(100,116,139,0.16)';
-        cctx.fillRect((i * 53) % 256, (i * 97) % 256, 2, 2);
-      }
-      cctx.strokeStyle = '#94a3b8';
-      cctx.lineWidth = 6;
-      cctx.strokeRect(0, 0, 256, 256);
-      cctx.beginPath();
-      cctx.moveTo(128, 0);
-      cctx.lineTo(128, 256);
-      cctx.moveTo(0, 128);
-      cctx.lineTo(256, 128);
-      cctx.stroke();
+      cctx.fillStyle = '#f1f5f9';
+      cctx.fillRect(14, 14, 100, 100);
+      cctx.fillRect(142, 14, 100, 100);
+      cctx.fillRect(14, 142, 100, 100);
+      cctx.fillRect(142, 142, 100, 100);
+      cctx.strokeStyle = '#cbd5e1';
+      cctx.lineWidth = 3;
+      cctx.strokeRect(14, 14, 100, 100);
+      cctx.strokeRect(142, 14, 100, 100);
+      cctx.strokeRect(14, 142, 100, 100);
+      cctx.strokeRect(142, 142, 100, 100);
 
       const ceilTex = new THREE.CanvasTexture(cc);
       ceilTex.colorSpace = THREE.SRGBColorSpace;
       ceilTex.wrapS = THREE.RepeatWrapping;
       ceilTex.wrapT = THREE.RepeatWrapping;
-      ceilTex.repeat.set(9, 8);
-      const ceilingMat = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.85 });
+      ceilTex.repeat.set(8, 7);
+      const ceilingMat = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.78 });
 
       const ceiling = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.4, roomD), ceilingMat);
       ceiling.position.set(0, roomH, 0);
       interiorGroup.add(ceiling);
 
-      // Recessed Glowing Rectangular LED Ceiling Panels
-      const ledCoordsX = isFacultyOffice ? [-6.8, 0, 6.8] : [-7.5, 0, 7.5];
-      const ledCoordsZ = isFacultyOffice ? [-7.2, -1.2, 4.8] : [-6.2, 0, 6.2];
-      const ledW = isFacultyOffice ? 2.2 : 2.8;
-      const ledD = isFacultyOffice ? 1.45 : 1.8;
+      // Recessed Architectural Skylight / LED Panels + Modern Suspended Ring Chandeliers
+      const ledCoordsX = isFacultyOffice ? [-6.8, 0, 6.8] : [-8.2, 0, 8.2];
+      const ledCoordsZ = isFacultyOffice ? [-7.2, -1.2, 4.8] : [-7.2, 0, 7.2];
+      const ledW = isFacultyOffice ? 2.2 : 3.0;
+      const ledD = isFacultyOffice ? 1.45 : 2.0;
+      const frameFinishMat = new THREE.MeshStandardMaterial({
+        color: isFacultyOffice ? 0x64748b : 0x94a3b8,
+        roughness: 0.35,
+        metalness: 0.45
+      });
+      const ledGlowMat = new THREE.MeshBasicMaterial({ color: 0xfffef5 });
       for (const cx of ledCoordsX) {
         for (const cz of ledCoordsZ) {
           const ceilFrame = new THREE.Mesh(
-            new THREE.BoxGeometry(ledW + 0.18, 0.06, ledD + 0.18),
-            new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4 })
+            new THREE.BoxGeometry(ledW + 0.22, 0.07, ledD + 0.22),
+            frameFinishMat
           );
           ceilFrame.position.set(cx, roomH - 0.16, cz);
           const ceilPanel = new THREE.Mesh(
-            new THREE.BoxGeometry(ledW, 0.08, ledD),
-            new THREE.MeshBasicMaterial({ color: 0xfffef0 })
+            new THREE.BoxGeometry(ledW, 0.09, ledD),
+            ledGlowMat
           );
           ceilPanel.position.set(cx, roomH - 0.18, cz);
           interiorGroup.add(ceilFrame, ceilPanel);
         }
       }
 
-      // Front Walls flanking the central Exit Door Frame (prevents exterior sky from showing)
+      if (!isFacultyOffice) {
+        const chandelierBrassMat = new THREE.MeshStandardMaterial({
+          color: isDarkLounge ? 0xa855f7 : 0xd97706,
+          roughness: 0.25,
+          metalness: 0.82
+        });
+        const chandelierGlowMat = new THREE.MeshBasicMaterial({
+          color: isDarkLounge ? 0xf0abfc : 0xfff7ed
+        });
+        [
+          [-5.2, -3.6],
+          [5.2, -3.6],
+          [-5.2, 4.2],
+          [5.2, 4.2]
+        ].forEach(([lx, lz]) => {
+          const pGroup = new THREE.Group();
+          pGroup.position.set(lx, roomH - 0.2, lz);
+          const canopy = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.12, 16), chandelierBrassMat);
+          canopy.position.y = -0.06;
+          const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.35, 10), chandelierBrassMat);
+          rod.position.y = -0.72;
+          const outerRing = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.065, 12, 32), chandelierBrassMat);
+          outerRing.rotation.x = Math.PI / 2;
+          outerRing.position.y = -1.38;
+          const innerGlow = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.055, 10, 32), chandelierGlowMat);
+          innerGlow.rotation.x = Math.PI / 2;
+          innerGlow.position.y = -1.42;
+          pGroup.add(canopy, rod, outerRing, innerGlow);
+          interiorGroup.add(pGroup);
+        });
+      }
+
+      // Front Walls flanking the central Exit Door Frame
       const frontDoorW = 5.15;
       const frontWingW = (roomW - frontDoorW) / 2;
       const frontLeftWall = new THREE.Mesh(
@@ -7918,52 +8119,131 @@ export function EraVerse() {
       frontLintel.position.set(0, 5.35 + lintelH / 2, roomD / 2);
       interiorGroup.add(frontLintel);
 
-      // Baseboard, Wainscoting Chair Rail & Crown Molding trim along all walls
+      // Architectural Wainscoting Lower Wall Paneling, Chair Rail, Baseboards & Crown Molding
       const trimMat = new THREE.MeshStandardMaterial({
         color: isFacultyOffice ? 0xb47b38 : building.accentColor,
-        roughness: 0.48
+        roughness: 0.42,
+        metalness: 0.12
       });
       const woodTrimMat = new THREE.MeshStandardMaterial({
-        color: 0x78350f,
-        roughness: 0.55
+        color: isDarkLounge ? 0x312e81 : 0x78350f,
+        roughness: 0.52
       });
+      const wainscotMat = new THREE.MeshStandardMaterial({
+        color: isDarkLounge ? 0xe0e7ff : 0xf8fafc,
+        roughness: 0.58
+      });
+
       const backTrim = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.32, 0.58), trimMat);
       backTrim.position.set(0, 0.16, -roomD / 2);
-      const leftCrown = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.26, roomD), trimMat);
+      const leftCrown = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.28, roomD), trimMat);
       leftCrown.position.set(-roomW / 2, roomH - 0.22, 0);
-      const rightCrown = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.26, roomD), trimMat);
+      const rightCrown = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.28, roomD), trimMat);
       rightCrown.position.set(roomW / 2, roomH - 0.22, 0);
-      const backCrown = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.26, 0.62), trimMat);
+      const backCrown = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.28, 0.62), trimMat);
       backCrown.position.set(0, roomH - 0.22, -roomD / 2);
+      const frontCrown = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.28, 0.62), trimMat);
+      frontCrown.position.set(0, roomH - 0.22, roomD / 2);
       const leftBase = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.28, roomD), woodTrimMat);
       leftBase.position.set(-roomW / 2, 0.14, 0);
       const rightBase = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.28, roomD), woodTrimMat);
       rightBase.position.set(roomW / 2, 0.14, 0);
-      interiorGroup.add(backTrim, leftCrown, rightCrown, backCrown, leftBase, rightBase);
+      interiorGroup.add(backTrim, leftCrown, rightCrown, backCrown, frontCrown, leftBase, rightBase);
 
-      // Universal Framed Architectural Windows & Analog Wall Clock on Front/Side Walls (for non-faculty buildings)
       if (!isFacultyOffice) {
-        const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 });
-        const winGlassMat = new THREE.MeshBasicMaterial({ color: 0xbae6fd });
-        const winBlindMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 });
-        [-8.4, 8.4].forEach((wx) => {
+        // Wainscoting lower wall panels & chair rails on Back, Left, Right, and Front Wing walls
+        const backWainscot = new THREE.Mesh(new THREE.BoxGeometry(roomW - 0.4, 1.85, 0.08), wainscotMat);
+        backWainscot.position.set(0, 1.12, -roomD / 2 + 0.28);
+        const backChairRail = new THREE.Mesh(new THREE.BoxGeometry(roomW - 0.3, 0.14, 0.14), trimMat);
+        backChairRail.position.set(0, 2.08, -roomD / 2 + 0.3);
+
+        const leftWainscot = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.85, roomD - 0.4), wainscotMat);
+        leftWainscot.position.set(-roomW / 2 + 0.28, 1.12, 0);
+        const leftChairRail = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, roomD - 0.3), trimMat);
+        leftChairRail.position.set(-roomW / 2 + 0.3, 2.08, 0);
+
+        const rightWainscot = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.85, roomD - 0.4), wainscotMat);
+        rightWainscot.position.set(roomW / 2 - 0.28, 1.12, 0);
+        const rightChairRail = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, roomD - 0.3), trimMat);
+        rightChairRail.position.set(roomW / 2 - 0.3, 2.08, 0);
+
+        // Architectural Corner & Mid-Wall Pilaster Columns for crisp room depth
+        const pilasterPositions: Array<[number, number]> = [
+          [-roomW / 2 + 0.35, -roomD / 2 + 0.35],
+          [roomW / 2 - 0.35, -roomD / 2 + 0.35],
+          [-roomW / 2 + 0.35, roomD / 2 - 0.35],
+          [roomW / 2 - 0.35, roomD / 2 - 0.35],
+          [-roomW / 2 + 0.32, 0],
+          [roomW / 2 - 0.32, 0]
+        ];
+        pilasterPositions.forEach(([px, pz]) => {
+          const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.42, roomH - 0.4, 0.42), wainscotMat);
+          pilaster.position.set(px, roomH / 2, pz);
+          interiorGroup.add(pilaster);
+        });
+
+        interiorGroup.add(
+          backWainscot,
+          backChairRail,
+          leftWainscot,
+          leftChairRail,
+          rightWainscot,
+          rightChairRail
+        );
+
+        // Sunlit Scenic Campus View Windows flanking the Front Entrance Wall
+        const winCanvas = document.createElement('canvas');
+        winCanvas.width = 256;
+        winCanvas.height = 320;
+        const wctx = winCanvas.getContext('2d')!;
+        const skyG = wctx.createLinearGradient(0, 0, 0, 220);
+        skyG.addColorStop(0, '#38bdf8');
+        skyG.addColorStop(1, '#e0f2fe');
+        wctx.fillStyle = skyG;
+        wctx.fillRect(0, 0, 256, 220);
+        // Soft sunlit clouds
+        wctx.fillStyle = 'rgba(255,255,255,0.88)';
+        wctx.beginPath();
+        wctx.arc(76, 68, 28, 0, Math.PI * 2);
+        wctx.arc(108, 62, 34, 0, Math.PI * 2);
+        wctx.arc(142, 70, 24, 0, Math.PI * 2);
+        wctx.fill();
+        // Distant green campus lawn & tree crowns
+        wctx.fillStyle = '#4ade80';
+        wctx.fillRect(0, 215, 256, 105);
+        wctx.fillStyle = '#16a34a';
+        wctx.beginPath();
+        wctx.arc(58, 212, 46, 0, Math.PI * 2);
+        wctx.arc(198, 206, 52, 0, Math.PI * 2);
+        wctx.fill();
+        wctx.fillStyle = '#22c55e';
+        wctx.beginPath();
+        wctx.arc(128, 222, 42, 0, Math.PI * 2);
+        wctx.fill();
+
+        const scenicWinTex = new THREE.CanvasTexture(winCanvas);
+        scenicWinTex.colorSpace = THREE.SRGBColorSpace;
+
+        const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.35 });
+        const winGlassMat = new THREE.MeshBasicMaterial({ map: scenicWinTex });
+        [-9.4, 9.4].forEach((wx) => {
           const winGroup = new THREE.Group();
-          winGroup.position.set(wx, 4.2, roomD / 2 - 0.28);
-          const outerF = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.8, 0.14), winFrameMat);
-          const glassP = new THREE.Mesh(new THREE.BoxGeometry(3.0, 3.4, 0.16), winGlassMat);
-          const sill = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.18, 0.35), woodTrimMat);
-          sill.position.set(0, -1.95, -0.1);
-          winGroup.add(outerF, glassP, sill);
-          for (let bx = -1.2; bx <= 1.2; bx += 0.4) {
-            const slat = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.3, 0.2), winBlindMat);
-            slat.position.set(bx, 0, -0.04);
-            slat.rotation.y = 0.35;
-            winGroup.add(slat);
-          }
+          winGroup.position.set(wx, 4.5, roomD / 2 - 0.28);
+          const outerF = new THREE.Mesh(new THREE.BoxGeometry(4.0, 4.2, 0.14), winFrameMat);
+          const glassP = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.8), winGlassMat);
+          glassP.rotation.y = Math.PI;
+          glassP.position.z = -0.09;
+          const vMullion = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.8, 0.18), winFrameMat);
+          vMullion.position.z = -0.04;
+          const hMullion = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.1, 0.18), winFrameMat);
+          hMullion.position.set(0, 0.35, -0.04);
+          const sill = new THREE.Mesh(new THREE.BoxGeometry(4.35, 0.2, 0.42), woodTrimMat);
+          sill.position.set(0, -2.15, -0.12);
+          winGroup.add(outerF, glassP, vMullion, hMullion, sill);
           interiorGroup.add(winGroup);
         });
 
-        // Analog Classroom / Hall Wall Clock mounted above the front exit lintel
+        // Analog Classroom / Hall Wall Clock mounted above the back center board
         const clkCanvas = document.createElement('canvas');
         clkCanvas.width = 256;
         clkCanvas.height = 256;
@@ -8007,54 +8287,66 @@ export function EraVerse() {
           ]
         );
         wallClock.rotation.x = Math.PI / 2;
-        wallClock.position.set(0, 7.8, -roomD / 2 + 0.32);
+        wallClock.position.set(0, 8.6, -roomD / 2 + 0.32);
         interiorGroup.add(wallClock);
       }
 
-      // Balanced Studio Illumination inside ALL rooms (prevents global sunLight + hemiLight from washing out floors/walls)
-      const lightY = isFacultyOffice ? 6.4 : 8.6;
-      const lightIntensity = isFacultyOffice ? 0.35 : 0.42;
-      const roomLight1 = new THREE.PointLight(0xfffbeb, lightIntensity, 42);
-      roomLight1.position.set(-6, lightY, -3);
+      // Balanced Studio Illumination inside ALL rooms
+      const lightY = isFacultyOffice ? 6.4 : 8.8;
+      const lightIntensity = isFacultyOffice ? 0.35 : 0.44;
+      const roomLight1 = new THREE.PointLight(0xfffbeb, lightIntensity, 46);
+      roomLight1.position.set(-6.5, lightY, -3.5);
       interiorGroup.add(roomLight1);
 
-      const roomLight2 = new THREE.PointLight(0xfffbeb, lightIntensity, 42);
-      roomLight2.position.set(6, lightY, -3);
+      const roomLight2 = new THREE.PointLight(0xfffbeb, lightIntensity, 46);
+      roomLight2.position.set(6.5, lightY, -3.5);
       interiorGroup.add(roomLight2);
 
-      const roomLight3 = new THREE.PointLight(0xfff3d1, 0.32, 42);
-      roomLight3.position.set(0, lightY, 5);
+      const roomLight3 = new THREE.PointLight(0xfff3d1, 0.34, 46);
+      roomLight3.position.set(0, lightY, 5.5);
       interiorGroup.add(roomLight3);
 
-      // Decorative Broad-Leaf Potted Plants in All 4 Room Corners (non-faculty rooms)
+      // Sculpted Ceramic Architectural Planters with Multi-Stem Ficus Foliage in All 4 Corners
       if (!isFacultyOffice) {
+        const ceramicPotMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.32, metalness: 0.08 });
+        const potRimMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.65 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.85 });
         [
-          [-roomW / 2 + 1.8, -roomD / 2 + 1.8],
-          [roomW / 2 - 1.8, -roomD / 2 + 1.8],
-          [-roomW / 2 + 1.8, roomD / 2 - 1.8],
-          [roomW / 2 - 1.8, roomD / 2 - 1.8]
+          [-roomW / 2 + 1.9, -roomD / 2 + 1.9],
+          [roomW / 2 - 1.9, -roomD / 2 + 1.9],
+          [-roomW / 2 + 1.9, roomD / 2 - 1.9],
+          [roomW / 2 - 1.9, roomD / 2 - 1.9]
         ].forEach(([px, pz]) => {
-          const pot = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.65, 0.48, 1.1, 14),
-            new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 })
-          );
-          pot.position.set(px, 0.55, pz);
+          const pGroup = new THREE.Group();
+          pGroup.position.set(px, 0, pz);
+          const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.5, 1.15, 16), ceramicPotMat);
+          pot.position.y = 0.575;
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(0.68, 0.05, 10, 24), potRimMat);
+          rim.rotation.x = Math.PI / 2;
+          rim.position.y = 1.15;
           const soil = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.6, 0.6, 0.08, 14),
-            new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 })
+            new THREE.CylinderGeometry(0.62, 0.62, 0.08, 14),
+            new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.92 })
           );
-          soil.position.set(px, 1.08, pz);
-          const bush = new THREE.Mesh(
-            new THREE.SphereGeometry(1.05, 14, 14),
-            new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 })
-          );
-          bush.position.set(px, 1.7, pz);
-          const topLeaf = new THREE.Mesh(
-            new THREE.SphereGeometry(0.72, 12, 12),
-            new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.5 })
-          );
-          topLeaf.position.set(px, 2.35, pz);
-          interiorGroup.add(pot, soil, bush, topLeaf);
+          soil.position.y = 1.12;
+          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.25, 8), stemMat);
+          stem.position.y = 1.65;
+          pGroup.add(pot, rim, soil, stem);
+
+          [
+            { ox: 0, oy: 2.25, oz: 0, r: 0.82, col: 0x15803d },
+            { ox: -0.42, oy: 1.92, oz: 0.28, r: 0.62, col: 0x16a34a },
+            { ox: 0.44, oy: 2.02, oz: -0.25, r: 0.64, col: 0x22c55e },
+            { ox: 0.1, oy: 2.82, oz: 0.1, r: 0.58, col: 0x4ade80 }
+          ].forEach((lf) => {
+            const leafCluster = new THREE.Mesh(
+              new THREE.DodecahedronGeometry(lf.r, 1),
+              new THREE.MeshStandardMaterial({ color: lf.col, roughness: 0.48 })
+            );
+            leafCluster.position.set(lf.ox, lf.oy, lf.oz);
+            pGroup.add(leafCluster);
+          });
+          interiorGroup.add(pGroup);
         });
       }
 
@@ -8652,35 +8944,121 @@ export function EraVerse() {
         addInteriorCollider(-5.6, -4.0, -0.1, 3.7);
         addInteriorCollider(4.0, 5.6, -0.1, 3.7);
       } else if (building.id === 'speaking') {
-        // EraGames Arcade Arena: Neon Floor Stage, Host NPC ("Pixel"), Gamer NPCs, Arcade Cabinets & Champion Podium
-        const arcadeCarpet = new THREE.Mesh(
-          new THREE.PlaneGeometry(16, 10),
-          new THREE.MeshStandardMaterial({ color: 0x312e81, roughness: 0.85 })
+        // EraGames Arcade Arena: Tournament Stage Rug, Overhead Sign, Host NPC ("Pixel"), 4 Custom Retro Arcade Cabinets & Champion Podium
+        const arcadeStageBorder = new THREE.Mesh(
+          new THREE.BoxGeometry(19.6, 0.04, 12.6),
+          new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.35, metalness: 0.4 })
         );
-        arcadeCarpet.rotation.x = -Math.PI / 2;
-        arcadeCarpet.position.set(0, 0.02, -1.5);
-        interiorGroup.add(arcadeCarpet);
+        arcadeStageBorder.position.set(0, 0.02, -1.8);
+        const arcadeCarpet = new THREE.Mesh(
+          new THREE.BoxGeometry(19.0, 0.05, 12.0),
+          new THREE.MeshStandardMaterial({ color: 0x2e1065, roughness: 0.82 })
+        );
+        arcadeCarpet.position.set(0, 0.03, -1.8);
+        interiorGroup.add(arcadeStageBorder, arcadeCarpet);
 
-        // Central Arcade Host Desk + Pixel (EraGames Host NPC)
+        // Helper for custom retro pixel-art arcade cabinet screen & marquee textures
+        const makeArcadeScreenTexture = (title: string, primaryHex: string, secondaryHex: string) => {
+          const c = document.createElement('canvas');
+          c.width = 256;
+          c.height = 192;
+          const ctx = c.getContext('2d')!;
+          ctx.fillStyle = '#090d1f';
+          ctx.fillRect(0, 0, 256, 192);
+          // Retro pixel grid
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.16)';
+          ctx.lineWidth = 1;
+          for (let gx = 0; gx < 256; gx += 16) {
+            ctx.beginPath();
+            ctx.moveTo(gx, 0);
+            ctx.lineTo(gx, 192);
+            ctx.stroke();
+          }
+          for (let gy = 0; gy < 192; gy += 16) {
+            ctx.beginPath();
+            ctx.moveTo(0, gy);
+            ctx.lineTo(256, gy);
+            ctx.stroke();
+          }
+          ctx.fillStyle = primaryHex;
+          ctx.fillRect(24, 22, 208, 36);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 20px Plus Jakarta Sans, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(title, 128, 47);
+
+          // Score & word tiles
+          ctx.fillStyle = secondaryHex;
+          [44, 88, 132, 176].forEach((bx, idx) => {
+            ctx.fillRect(bx, 82, 36, 36);
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '900 18px Plus Jakarta Sans, sans-serif';
+            ctx.fillText(['E', 'R', 'A', '!'][idx], bx + 18, 107);
+            ctx.fillStyle = secondaryHex;
+          });
+
+          ctx.fillStyle = '#fde047';
+          ctx.font = '800 15px Plus Jakarta Sans, sans-serif';
+          ctx.fillText('CLICK TO PLAY • WIN 💎 GEMS', 128, 156);
+
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          return tex;
+        };
+
+        // Central Arcade Host Desk + Overhead Illuminated Banner + Pixel (EraGames Host NPC)
         const hostDeskGroup = new THREE.Group();
-        hostDeskGroup.position.set(0, 0, -5.8);
+        hostDeskGroup.position.set(0, 0, -7.2);
         const deskBody = new THREE.Mesh(
-          new THREE.BoxGeometry(6.2, 1.35, 1.7),
-          new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.35, metalness: 0.5 })
+          new THREE.BoxGeometry(6.8, 1.35, 1.75),
+          new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.3, metalness: 0.55 })
         );
         deskBody.position.y = 0.675;
         deskBody.userData = { isEraGames: true };
         clickableBoardMeshes.push(deskBody);
         hostDeskGroup.add(deskBody);
 
+        const deskFrontNeon = new THREE.Mesh(
+          new THREE.BoxGeometry(6.2, 0.55, 0.08),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        deskFrontNeon.position.set(0, 0.72, 0.89);
+        deskFrontNeon.userData = { isEraGames: true };
+        clickableBoardMeshes.push(deskFrontNeon);
+        hostDeskGroup.add(deskFrontNeon);
+
         const deskTrim = new THREE.Mesh(
-          new THREE.BoxGeometry(6.4, 0.16, 1.85),
+          new THREE.BoxGeometry(7.0, 0.16, 1.92),
           new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0x7e22ce, emissiveIntensity: 0.35, roughness: 0.2 })
         );
         deskTrim.position.y = 1.38;
         deskTrim.userData = { isEraGames: true };
         clickableBoardMeshes.push(deskTrim);
         hostDeskGroup.add(deskTrim);
+
+        // Overhead Illuminated "ERAGAMES ARENA" Archway Sign
+        const arenaSignTex = makeAttachedBuildingNameTexture('ERAGAMES ARENA', '#581c87', '#c084fc');
+        const arenaSignBox = new THREE.Mesh(
+          new THREE.BoxGeometry(6.4, 1.15, 0.25),
+          new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.3, metalness: 0.5 })
+        );
+        arenaSignBox.position.set(0, 4.35, -0.4);
+        const arenaSignFace = new THREE.Mesh(
+          new THREE.PlaneGeometry(6.15, 0.95),
+          new THREE.MeshBasicMaterial({ map: arenaSignTex })
+        );
+        arenaSignFace.position.set(0, 4.35, -0.26);
+        arenaSignFace.userData = { isEraGames: true };
+        clickableBoardMeshes.push(arenaSignFace);
+        [-2.85, 2.85].forEach((px) => {
+          const post = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.08, 0.08, 3.0, 10),
+            new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.8 })
+          );
+          post.position.set(px, 2.8, -0.4);
+          hostDeskGroup.add(post);
+        });
+        hostDeskGroup.add(arenaSignBox, arenaSignFace);
 
         const pixelHostRig = buildCharacterAvatar({
           shirtColor: '#7c3aed',
@@ -8695,7 +9073,7 @@ export function EraVerse() {
           clothingType: 'cyber_jacket',
           beltType: 'cyber_belt'
         });
-        pixelHostRig.root.position.set(0, 0, -1.45);
+        pixelHostRig.root.position.set(0, 0, -1.5);
         pixelHostRig.rightArm.rotation.z = 2.2;
         pixelHostRig.rightArm.rotation.x = -0.3;
         const pixelBubble = createSpeechBubbleSprite(
@@ -8709,12 +9087,15 @@ export function EraVerse() {
         hostDeskGroup.add(pixelHostRig.root);
         interiorGroup.add(hostDeskGroup);
 
-        // Two Detailed Neon Arcade Cabinets + Student Gamers Playing
-        [
+        // Four Detailed Retro-Modern Arcade Cabinets (2 Left Wing, 2 Right Wing) + Student Gamers
+        const arcadeCabinetSpecs = [
           {
-            ax: -6.8,
-            az: -1.8,
+            ax: -8.2,
+            az: -3.2,
             hex: 0x9333ea,
+            title: 'VOCAB BLITZ',
+            primary: '#9333ea',
+            secondary: '#38bdf8',
             gamer: {
               name: 'Kai • Speed Blitz',
               shirtColor: '#ec4899',
@@ -8729,9 +9110,12 @@ export function EraVerse() {
             }
           },
           {
-            ax: 6.8,
-            az: -1.8,
+            ax: 8.2,
+            az: -3.2,
             hex: 0x06b6d4,
+            title: 'WORD SCRAMBLE',
+            primary: '#0284c7',
+            secondary: '#fbbf24',
             gamer: {
               name: 'Sophia • Word Pro',
               shirtColor: '#0ea5e9',
@@ -8744,40 +9128,70 @@ export function EraVerse() {
               clothingType: 'skirt_outfit',
               beltType: 'Belt_White'
             }
+          },
+          {
+            ax: -8.2,
+            az: 2.2,
+            hex: 0x10b981,
+            title: 'IDIOM PENALTY',
+            primary: '#059669',
+            secondary: '#fde047',
+            gamer: null
+          },
+          {
+            ax: 8.2,
+            az: 2.2,
+            hex: 0xf43f5e,
+            title: 'GRAMMAR RUSH',
+            primary: '#e11d48',
+            secondary: '#38bdf8',
+            gamer: null
           }
-        ].forEach(({ ax, az, hex, gamer }) => {
+        ];
+
+        arcadeCabinetSpecs.forEach(({ ax, az, hex, title, primary, secondary, gamer }) => {
           const cab = new THREE.Group();
           cab.position.set(ax, 0, az);
           const body = new THREE.Mesh(
-            new THREE.BoxGeometry(2.0, 3.6, 1.55),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.65 })
+            new THREE.BoxGeometry(2.05, 3.65, 1.55),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.28, metalness: 0.65 })
           );
-          body.position.y = 1.8;
+          body.position.y = 1.825;
           body.userData = { isEraGames: true };
           clickableBoardMeshes.push(body);
           cab.add(body);
 
+          // Glowing side trim panels
+          [-1.04, 1.04].forEach((sx) => {
+            const sideTrim = new THREE.Mesh(
+              new THREE.BoxGeometry(0.05, 3.45, 1.4),
+              new THREE.MeshBasicMaterial({ color: hex })
+            );
+            sideTrim.position.set(sx, 1.82, 0);
+            cab.add(sideTrim);
+          });
+
           const screen = new THREE.Mesh(
-            new THREE.PlaneGeometry(1.5, 1.18),
-            new THREE.MeshBasicMaterial({ color: hex })
+            new THREE.PlaneGeometry(1.56, 1.2),
+            new THREE.MeshBasicMaterial({ map: makeArcadeScreenTexture(title, primary, secondary) })
           );
-          screen.position.set(0, 2.35, 0.79);
+          screen.position.set(0, 2.38, 0.79);
           screen.userData = { isEraGames: true };
           clickableBoardMeshes.push(screen);
           cab.add(screen);
 
           const marquee = new THREE.Mesh(
-            new THREE.BoxGeometry(1.85, 0.42, 0.25),
-            new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+            new THREE.BoxGeometry(1.9, 0.42, 0.26),
+            new THREE.MeshBasicMaterial({ color: hex })
           );
-          marquee.position.set(0, 3.45, 0.72);
+          marquee.position.set(0, 3.46, 0.72);
           cab.add(marquee);
 
           const controlDeck = new THREE.Mesh(
-            new THREE.BoxGeometry(1.9, 0.22, 0.65),
-            new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 })
+            new THREE.BoxGeometry(1.95, 0.22, 0.68),
+            new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.38, metalness: 0.4 })
           );
-          controlDeck.position.set(0, 1.55, 0.95);
+          controlDeck.position.set(0, 1.55, 0.96);
           cab.add(controlDeck);
 
           [-0.45, 0.45].forEach((jx) => {
@@ -8788,31 +9202,50 @@ export function EraVerse() {
             stick.position.set(jx, 1.72, 1.0);
             const knob = new THREE.Mesh(
               new THREE.SphereGeometry(0.07, 12, 12),
-              new THREE.MeshStandardMaterial({ color: hex })
+              new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.25 })
             );
             knob.position.set(jx, 1.84, 1.0);
             cab.add(stick, knob);
           });
 
-          interiorGroup.add(cab);
+          // Arcade stool in front of open cabinets
+          if (!gamer) {
+            const stoolSeat = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.42, 0.42, 0.14, 18),
+              new THREE.MeshStandardMaterial({ color: hex, roughness: 0.4 })
+            );
+            stoolSeat.position.set(0, 0.78, 1.65);
+            const stoolPost = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.06, 0.22, 0.75, 12),
+              new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.25 })
+            );
+            stoolPost.position.set(0, 0.38, 1.65);
+            cab.add(stoolSeat, stoolPost);
+          }
 
-          const gamerRig = buildCharacterAvatar({
-            ...gamer,
-            cohort: 'IELTS 1'
-          });
-          gamerRig.root.position.set(ax, 0, az + 2.05);
-          gamerRig.root.rotation.y = Math.PI;
-          gamerRig.leftArm.rotation.x = -0.85;
-          gamerRig.rightArm.rotation.x = -0.85;
-          interiorGroup.add(gamerRig.root);
+          interiorGroup.add(cab);
+          addInteriorCollider(ax - 1.15, ax + 1.15, az - 0.85, az + 1.1);
+
+          if (gamer) {
+            const gamerRig = buildCharacterAvatar({
+              ...gamer,
+              cohort: 'IELTS 1'
+            });
+            gamerRig.root.position.set(ax, 0, az + 2.05);
+            gamerRig.root.rotation.y = Math.PI;
+            gamerRig.leftArm.rotation.x = -0.85;
+            gamerRig.rightArm.rotation.x = -0.85;
+            interiorGroup.add(gamerRig.root);
+            addInteriorPerson(ax, az + 2.05, 0.78);
+          }
         });
 
-        // Champion Gem Podium + Keeper Max Penalty Practice Stand
+        // Champion Gem Podium placed cleanly back from the player entry zone so the center sightline stays wide open
         const podiumGroup = new THREE.Group();
-        podiumGroup.position.set(0, 0, 0.8);
+        podiumGroup.position.set(0, 0, -1.6);
         const podBase = new THREE.Mesh(
-          new THREE.CylinderGeometry(1.8, 2.0, 0.45, 24),
-          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.7 })
+          new THREE.CylinderGeometry(1.75, 1.95, 0.45, 28),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.72 })
         );
         podBase.position.y = 0.225;
         podBase.userData = { isEraGames: true };
@@ -8820,7 +9253,7 @@ export function EraVerse() {
         podiumGroup.add(podBase);
 
         const podRing = new THREE.Mesh(
-          new THREE.TorusGeometry(1.85, 0.07, 12, 32),
+          new THREE.TorusGeometry(1.82, 0.07, 12, 32),
           new THREE.MeshBasicMaterial({ color: 0xfacc15 })
         );
         podRing.rotation.x = Math.PI / 2;
@@ -8845,13 +9278,10 @@ export function EraVerse() {
         arenaStriker.rightArm.rotation.z = 1.1;
         podiumGroup.add(arenaStriker.root);
         interiorGroup.add(podiumGroup);
-        addInteriorCollider(-3.3, 3.3, -6.8, -4.8);
-        addInteriorPerson(0, -7.25, 0.85);
-        addInteriorCollider(-7.9, -5.7, -2.7, -0.9);
-        addInteriorCollider(5.7, 7.9, -2.7, -0.9);
-        addInteriorPerson(-6.8, 0.25, 0.78);
-        addInteriorPerson(6.8, 0.25, 0.78);
-        addInteriorCollider(-1.95, 1.95, -1.15, 2.75);
+
+        addInteriorCollider(-3.5, 3.5, -8.2, -6.2);
+        addInteriorPerson(0, -8.7, 0.85);
+        addInteriorCollider(-1.9, 1.9, -3.5, 0.3);
       } else if (building.id.startsWith('class_')) {
         // ====================================================================
         // AUTHENTIC 3D CLASSROOM INTERIOR (STARTERS, MOVERS, FLYERS, KET, PET, IELTS)
@@ -8885,7 +9315,7 @@ export function EraVerse() {
             teacherGender: 'girl',
             accentHex: '#0EA5E9',
             route: '/courses',
-            actionType: 'navigate'
+            actionType: 'practice_skill'
           },
           class_movers: {
             header: 'CAMBRIDGE A1 MOVERS • CLASSROOM',
@@ -8900,7 +9330,7 @@ export function EraVerse() {
             teacherGender: 'boy',
             accentHex: '#F97316',
             route: '/courses',
-            actionType: 'navigate'
+            actionType: 'practice_skill'
           },
           class_flyers: {
             header: 'CAMBRIDGE A2 FLYERS • CLASSROOM',
@@ -8915,7 +9345,7 @@ export function EraVerse() {
             teacherGender: 'girl',
             accentHex: '#10B981',
             route: '/courses',
-            actionType: 'navigate'
+            actionType: 'practice_skill'
           },
           class_ket: {
             header: 'CAMBRIDGE A2 KEY (KET) • CLASSROOM',
@@ -8930,7 +9360,7 @@ export function EraVerse() {
             teacherGender: 'boy',
             accentHex: '#E11D48',
             route: '/ket/dashboard',
-            actionType: 'navigate'
+            actionType: 'practice_skill'
           },
           class_pet: {
             header: 'CAMBRIDGE B1 PRELIMINARY (PET) • CLASSROOM',
@@ -8945,7 +9375,7 @@ export function EraVerse() {
             teacherGender: 'girl',
             accentHex: '#0D9488',
             route: '/pet/dashboard',
-            actionType: 'navigate'
+            actionType: 'practice_skill'
           },
           class_ielts: {
             header: 'IELTS ACADEMIC BAND 7.0+ • CLASSROOM',
@@ -10755,7 +11185,7 @@ export function EraVerse() {
             beltType: prof.beltType
           });
           const enteringNow = hIdx % 2 === 0;
-          hvRig.root.position.set(enteringNow ? (hIdx === 0 ? -0.8 : 0.8) : hv.x, 0, enteringNow ? 10.5 : hv.z);
+          hvRig.root.position.set(enteringNow ? (hIdx === 0 ? -0.8 : 0.8) : hv.x, 0, enteringNow ? 12.4 : hv.z);
           hvRig.root.rotation.y = Math.PI;
           interiorGroup.add(hvRig.root);
 
@@ -10882,27 +11312,27 @@ export function EraVerse() {
       interiorGroup.visible = true;
       playerState.x = INTERIOR_ORIGIN.x;
       playerState.y = 0;
-      playerState.z = INTERIOR_ORIGIN.z + (b.id === 'faculty_hq' ? 8.2 : 5.5);
+      playerState.z = INTERIOR_ORIGIN.z + (b.id === 'faculty_hq' ? 8.2 : 6.4);
       playerState.vx = 0;
       playerState.vz = 0;
       playerState.vy = 0;
       playerState.rotY = Math.PI;
       camState.yaw = 0;
-      camState.pitch = b.id === 'faculty_hq' ? 0.04 : b.id === 'dashboard' ? 0.25 : 0.28;
-      camState.distance = b.id === 'faculty_hq' ? 9.2 : b.id === 'dashboard' ? 13.8 : 11.8;
-      setZoomSliderValue(b.id === 'faculty_hq' ? 9 : b.id === 'dashboard' ? 14 : 12);
+      camState.pitch = b.id === 'faculty_hq' ? 0.08 : b.id === 'dashboard' ? 0.3 : 0.34;
+      camState.distance = b.id === 'faculty_hq' ? 9.0 : b.id === 'dashboard' ? 10.2 : 8.6;
+      setZoomSliderValue(b.id === 'faculty_hq' ? 9 : b.id === 'dashboard' ? 10 : 9);
       setInsideBuilding(b);
       setNearBuildingPrompt(null);
 
-      // Snap camera instantly to interior room
+      // Snap camera instantly to interior room with elevated over-the-shoulder framing
       const initHoriz = camState.distance * Math.cos(camState.pitch);
       const initVert = camState.distance * Math.sin(camState.pitch);
       camera.position.set(
         playerState.x + Math.sin(camState.yaw) * initHoriz,
-        playerState.y + 1.8 + initVert,
+        playerState.y + 2.32 + initVert,
         playerState.z + Math.cos(camState.yaw) * initHoriz
       );
-      camera.lookAt(playerState.x, playerState.y + 1.8, playerState.z);
+      camera.lookAt(playerState.x, playerState.y + 2.25, playerState.z);
       if (lastDetectedSportsZone !== null) {
         lastDetectedSportsZone = null;
         setInSportsZone('none');
@@ -11863,7 +12293,7 @@ export function EraVerse() {
     const onResize = () => {
       if (!container) return;
       const w = container.clientWidth || window.innerWidth;
-      const h = container.clientHeight || window.innerHeight - 80;
+      const h = container.clientHeight || window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -12056,14 +12486,15 @@ export function EraVerse() {
           }
         });
       } else if (interiorExitLeftDoor && interiorExitRightDoor) {
+        const exitDoorLocalZ = activeInteriorBuilding.id === 'faculty_hq' ? 12.2 : 13.2;
         const distToExit = Math.hypot(
           playerState.x - INTERIOR_ORIGIN.x,
-          playerState.z - (INTERIOR_ORIGIN.z + 11.5)
+          playerState.z - (INTERIOR_ORIGIN.z + exitDoorLocalZ)
         );
         let distInteriorNpcToDoor = 999;
         for (const inpc of interiorNpcActors) {
           if (!inpc.rig.root.visible) continue;
-          const d = Math.hypot(inpc.rig.root.position.x, inpc.rig.root.position.z - 10.8);
+          const d = Math.hypot(inpc.rig.root.position.x, inpc.rig.root.position.z - (exitDoorLocalZ - 0.6));
           if (d < distInteriorNpcToDoor) distInteriorNpcToDoor = d;
         }
         const targetExitOpen = distToExit < 5.2 || distInteriorNpcToDoor < 3.8 ? 1.0 : 0.0;
@@ -12185,17 +12616,22 @@ export function EraVerse() {
           if (!blockedX && checkInteriorPersonHit(nextX, playerState.z, 999)) blockedX = true;
           if (!blockedZ && checkInteriorPersonHit(playerState.x, nextZ, 999)) blockedZ = true;
 
+          const isFacRoom = activeInteriorBuilding.id === 'faculty_hq';
+          const maxWalkX = isFacRoom ? 13.8 : 14.8;
+          const minWalkZ = isFacRoom ? -11.8 : -12.8;
+          const maxWalkZ = isFacRoom ? 12.2 : 13.2;
+
           if (!blockedX) {
-            playerState.x = Math.max(INTERIOR_ORIGIN.x - 12.8, Math.min(INTERIOR_ORIGIN.x + 12.8, nextX));
+            playerState.x = Math.max(INTERIOR_ORIGIN.x - maxWalkX, Math.min(INTERIOR_ORIGIN.x + maxWalkX, nextX));
           }
           if (!blockedZ) {
-            playerState.z = Math.max(INTERIOR_ORIGIN.z - 10.8, Math.min(INTERIOR_ORIGIN.z + 11.2, nextZ));
+            playerState.z = Math.max(INTERIOR_ORIGIN.z + minWalkZ, Math.min(INTERIOR_ORIGIN.z + maxWalkZ, nextZ));
           }
 
           if (
             doorCooldownTimer <= 0 &&
             Math.abs(playerState.x - INTERIOR_ORIGIN.x) < 2.4 &&
-            playerState.z > INTERIOR_ORIGIN.z + 9.8
+            playerState.z > INTERIOR_ORIGIN.z + (isFacRoom ? 10.4 : 11.8)
           ) {
             exitBuildingInterior();
           }
@@ -13561,7 +13997,7 @@ export function EraVerse() {
               inpc.rig.root.visible = false;
               if (inpc.timer <= 0) {
                 inpc.rig.root.visible = true;
-                inpc.rig.root.position.set((Math.random() - 0.5) * 1.2, 0, 11.2);
+                inpc.rig.root.position.set((Math.random() - 0.5) * 1.2, 0, 12.8);
                 inpc.targetX = inpc.spotX + (Math.random() - 0.5) * 2.4;
                 inpc.targetZ = inpc.spotZ + (Math.random() - 0.5) * 2.0;
                 inpc.state = 'walking_in';
@@ -13618,8 +14054,8 @@ export function EraVerse() {
                     // Head out the exit door
                     inpc.state = 'walking_out';
                     inpc.targetX = (Math.random() - 0.5) * 0.8;
-                    inpc.targetZ = 11.4;
-                    inpc.timer = 6.0;
+                    inpc.targetZ = 12.8;
+                    inpc.timer = 6.5;
                   }
                 }
               } else if (inpc.state === 'walking_out') {
@@ -13811,11 +14247,11 @@ export function EraVerse() {
         if (!nearBoard && activeInteriorBuilding.id === 'speaking') {
           const distToPixel = Math.hypot(
             playerState.x - INTERIOR_ORIGIN.x,
-            playerState.z - (INTERIOR_ORIGIN.z - 5.5)
+            playerState.z - (INTERIOR_ORIGIN.z - 7.2)
           );
           const distToPodium = Math.hypot(
             playerState.x - INTERIOR_ORIGIN.x,
-            playerState.z - (INTERIOR_ORIGIN.z + 0.8)
+            playerState.z - (INTERIOR_ORIGIN.z - 1.6)
           );
           if (distToPixel < 5.0 || distToPodium < 4.2) {
             nearBoard = {
@@ -13999,7 +14435,7 @@ export function EraVerse() {
         camera.position.lerp(_desiredCamPos, Math.min(1, dt * 8));
         camera.lookAt(_camTarget);
       } else {
-        const basePivotY = playerState.y + 2.0;
+        const basePivotY = playerState.y + (activeInteriorBuilding ? 2.32 : 2.0);
         const lookTiltY =
           camState.pitch < 0
             ? -camState.pitch * 6.2
@@ -14016,7 +14452,7 @@ export function EraVerse() {
           activeInteriorBuilding?.id === 'faculty_hq'
             ? 6.65
             : activeInteriorBuilding
-            ? 9.8
+            ? 10.1
             : 125.0;
 
         const rawCamY = basePivotY + vertDist;
@@ -14055,8 +14491,8 @@ export function EraVerse() {
             }
           }
         } else if (activeInteriorBuilding) {
-          const maxWallX = activeInteriorBuilding.id === 'faculty_hq' ? 14.2 : 13.0;
-          const maxWallZ = activeInteriorBuilding.id === 'faculty_hq' ? 12.2 : 11.0;
+          const maxWallX = activeInteriorBuilding.id === 'faculty_hq' ? 14.2 : 15.2;
+          const maxWallZ = activeInteriorBuilding.id === 'faculty_hq' ? 12.2 : 13.45;
           _desiredCamPos.x = Math.max(INTERIOR_ORIGIN.x - maxWallX, Math.min(INTERIOR_ORIGIN.x + maxWallX, _desiredCamPos.x));
           _desiredCamPos.z = Math.max(INTERIOR_ORIGIN.z - maxWallZ, Math.min(INTERIOR_ORIGIN.z + maxWallZ, _desiredCamPos.z));
         }
@@ -14239,137 +14675,236 @@ export function EraVerse() {
   return (
     <div
       className={`relative w-full ${
-        isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[calc(100vh-80px)]'
+        isFullscreen
+          ? 'fixed inset-0 z-50 h-[100dvh] w-screen'
+          : isAdmin
+          ? 'h-[calc(100dvh-80px)]'
+          : 'h-[100dvh]'
       } overflow-hidden bg-slate-950 select-none`}
     >
       {/* 1. ISOLATED THREE.JS WEBGL CANVAS */}
       <div ref={canvasMountRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none" />
 
-      {/* 2. TOP-LEFT ERA WALLET (ONLY ERA GEMS & ERA DOLLAR) + SUPERADMIN CHARACTERS & SHOP-ONLY ERASHOP ICON */}
-      <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2.5 pointer-events-auto">
-        <div className="flex items-center gap-2.5 bg-slate-950/90 backdrop-blur-md border border-white/15 rounded-2xl px-3.5 py-2 text-white shadow-2xl">
-          {/* Era Gems Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-pink-500/15 border border-pink-400/35">
-            <span className="text-base">💎</span>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-pink-300 leading-none">
-                Era Gems
-              </span>
-              <span className="text-sm font-black text-white leading-tight">{eraGems.toLocaleString()}</span>
+      {/* 2. UNIFIED RESPONSIVE TOP HUD BAR (MOBILE-FIRST, ZERO OVERLAP, ZERO BACKDROP-BLUR) */}
+      <div className="absolute top-2.5 sm:top-4 inset-x-2.5 sm:inset-x-4 z-20 flex items-center justify-between gap-2 pointer-events-none">
+        {/* Left Scrollable Action & Wallet Strip */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto max-w-[calc(100vw-6.5rem)] sm:max-w-none pointer-events-auto">
+          {/* Compact Wallet: Era Gems & Era Dollar */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 bg-slate-950/95 border border-white/15 rounded-2xl px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-white shadow-xl shrink-0">
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-xl bg-pink-500/15 border border-pink-400/35">
+              <span className="text-sm sm:text-base leading-none">💎</span>
+              <div className="flex flex-col">
+                <span className="hidden sm:block text-[9px] font-extrabold uppercase tracking-wider text-pink-300 leading-none">
+                  Era Gems
+                </span>
+                <span className="text-xs sm:text-sm font-black text-white leading-tight tabular-nums whitespace-nowrap">
+                  {eraGems.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-400/35">
+              <span className="text-sm sm:text-base leading-none">💵</span>
+              <div className="flex flex-col">
+                <span className="hidden sm:block text-[9px] font-extrabold uppercase tracking-wider text-emerald-300 leading-none">
+                  Era Dollar
+                </span>
+                <span className="text-xs sm:text-sm font-black text-white leading-tight tabular-nums whitespace-nowrap">
+                  ${eraDollars.toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Era Dollar Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-400/35">
-            <span className="text-base">💵</span>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300 leading-none">
-                Era Dollar
+          {/* Characters & Teachers button: ONLY visible to SuperAdmin */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playUiClick();
+                setShowCharactersModal(true);
+              }}
+              className="min-h-[44px] flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-2xl shadow-lg border border-blue-400/40 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="hidden md:inline">Characters & Teachers ({ieltsCharacters.length})</span>
+              <span className="md:hidden">Roster ({ieltsCharacters.length})</span>
+            </button>
+          )}
+
+          {/* EraSHOP icon: ONLY appears when the player enters the EraSHOP building */}
+          {insideBuilding?.id === 'reading' && (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playUiClick();
+                setEraShopInitialTab('shop');
+                setEraShopInitialCat('all');
+                setActiveBuildingModal('reading');
+              }}
+              className="min-h-[44px] flex items-center gap-1.5 bg-pink-600 hover:bg-pink-500 text-white font-extrabold text-xs px-3 sm:px-4 py-2 rounded-2xl shadow-lg border border-pink-400/40 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <ShoppingBag className="w-4 h-4 text-amber-200 shrink-0" />
+              <span>EraSHOP</span>
+            </button>
+          )}
+
+          {/* East Beach Fishing Club Button */}
+          {!insideBuilding && (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playUiClick();
+                setShowFishingModal(true);
+              }}
+              className={`min-h-[44px] flex items-center gap-1.5 font-extrabold text-xs px-3 sm:px-3.5 py-2 rounded-2xl shadow-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                nearFishingZone
+                  ? 'bg-cyan-500 text-slate-950 border-amber-300'
+                  : 'bg-slate-950/95 hover:bg-cyan-950/95 text-cyan-200 border-cyan-400/35'
+              }`}
+              title="East Beach Fishing Lagoon — Answer Course Questions for Bait & Catch $1–$10 Fish!"
+            >
+              <span className="text-sm sm:text-base leading-none">🎣</span>
+              <span className="hidden sm:inline">Fishing ({fishingBaitCount} 🪱)</span>
+              <span className="sm:hidden tabular-nums">{fishingBaitCount} 🪱</span>
+            </button>
+          )}
+
+          {/* West Mountain Cable Car ($5 Ticket Booth) & Summit Skywalk Button */}
+          {!insideBuilding && (
+            <button
+              type="button"
+              onClick={() => gameActionsRef.current?.teleportToCableCarStation()}
+              className={`min-h-[44px] flex items-center gap-1.5 font-extrabold text-xs px-3 sm:px-3.5 py-2 rounded-2xl shadow-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                isAtMountainSummit || cableCarRidePhase !== 'idle' || nearCableCarStation
+                  ? 'bg-amber-400 text-slate-950 border-yellow-200'
+                  : 'bg-slate-950/95 hover:bg-amber-950/95 text-amber-200 border-amber-400/35'
+              }`}
+              title="West Mountain Cable Car & $5 Ticket Booth — Ride up to the Summit Glass Skywalk & see the City from above!"
+            >
+              <span className="text-sm sm:text-base leading-none">🚡</span>
+              <span className="hidden sm:inline">
+                {isAtMountainSummit
+                  ? 'Summit Skywalk (2,400m)'
+                  : cableCarRidePhase !== 'idle'
+                  ? `Cable Car (${cableCarElevationMeters}m)`
+                  : 'Cable Car ($5 🎟️)'}
               </span>
-              <span className="text-sm font-black text-white leading-tight">${eraDollars.toLocaleString()}</span>
-            </div>
-          </div>
+              <span className="sm:hidden">
+                {isAtMountainSummit ? 'Summit' : cableCarRidePhase !== 'idle' ? `${cableCarElevationMeters}m` : '$5 🎟️'}
+              </span>
+            </button>
+          )}
+
+          {/* Campus English Chat Button */}
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playUiClick();
+              setShowChatModal((prev) => !prev);
+            }}
+            className={`min-h-[44px] flex items-center gap-1.5 font-bold text-xs px-3 sm:px-3.5 py-2 rounded-2xl shadow-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+              showChatModal
+                ? 'bg-sky-600 text-white border-sky-400'
+                : nearCharacterPrompt
+                ? 'bg-slate-950/95 hover:bg-slate-800 text-sky-300 border-sky-400/70'
+                : 'bg-slate-950/95 hover:bg-slate-800 text-slate-100 border-white/15'
+            }`}
+            title={nearCharacterPrompt ? `Chat with ${nearCharacterPrompt.name} in English (or press T)` : 'Campus English Chat (press T)'}
+          >
+            <MessageCircle className="w-4 h-4 text-sky-400 shrink-0" />
+            <span className="hidden sm:inline">Chat</span>
+            {nearCharacterPrompt && (
+              <span className="text-[10px] font-extrabold text-sky-200">
+                · {nearCharacterPrompt.name.split(' ')[0]}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Characters & Teachers button: ONLY visible to SuperAdmin */}
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playUiClick();
-              setShowCharactersModal(true);
-            }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-lg border border-blue-400/40 transition-all cursor-pointer"
-          >
-            <Users className="w-4 h-4" />
-            <span>Characters & Teachers ({ieltsCharacters.length})</span>
-          </button>
-        )}
-
-        {/* EraSHOP icon: ONLY appears when the player enters the EraSHOP building */}
-        {insideBuilding?.id === 'reading' && (
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playUiClick();
-              setEraShopInitialTab('shop');
-              setEraShopInitialCat('all');
-              setActiveBuildingModal('reading');
-            }}
-            className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl shadow-lg border border-pink-400/40 transition-all cursor-pointer animate-bounce"
-          >
-            <ShoppingBag className="w-4 h-4 text-amber-200" />
-            <span>EraSHOP (💎 {eraGems} • 💵 ${eraDollars})</span>
-          </button>
-        )}
-
-        {/* East Beach Fishing Club Button */}
-        {!insideBuilding && (
-          <button
-            type="button"
-            onClick={() => {
-              soundEngine.playUiClick();
-              setShowFishingModal(true);
-            }}
-            className={`flex items-center gap-2 font-extrabold text-xs px-3.5 py-3 rounded-2xl shadow-lg border transition-all cursor-pointer ${
-              nearFishingZone
-                ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 border-amber-300 ring-2 ring-amber-300/60 animate-bounce'
-                : 'bg-slate-900/90 hover:bg-cyan-950/90 text-cyan-200 border-cyan-400/35'
-            }`}
-            title="East Beach Fishing Lagoon behind Era Football Club — Answer Course Questions for Bait & Catch $1–$10 Fish!"
-          >
-            <span className="text-base leading-none">🎣</span>
-            <span>Fishing ({fishingBaitCount} 🪱)</span>
-          </button>
-        )}
-
-        {/* West Mountain Cable Car ($5 Ticket Booth) & Summit Skywalk Button */}
-        {!insideBuilding && (
-          <button
-            type="button"
-            onClick={() => gameActionsRef.current?.teleportToCableCarStation()}
-            className={`flex items-center gap-2 font-extrabold text-xs px-3.5 py-3 rounded-2xl shadow-lg border transition-all cursor-pointer ${
-              isAtMountainSummit || cableCarRidePhase !== 'idle' || nearCableCarStation
-                ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 border-yellow-200 ring-2 ring-amber-300/60'
-                : 'bg-slate-900/90 hover:bg-amber-950/90 text-amber-200 border-amber-400/35'
-            }`}
-            title="West Mountain Cable Car & $5 Ticket Booth — Ride up to the Summit Glass Skywalk & see the City from above!"
-          >
-            <span className="text-base leading-none">🚡</span>
-            <span>
-              {isAtMountainSummit
-                ? 'Summit Skywalk (2,400m)'
-                : cableCarRidePhase !== 'idle'
-                ? `Cable Car (${cableCarElevationMeters}m)`
-                : 'Cable Car ($5 🎟️)'}
-            </span>
-          </button>
-        )}
-
-        {/* Top-Ribbon Chat Icon Button */}
-        <button
-          type="button"
-          onClick={() => {
-            soundEngine.playUiClick();
-            setShowChatModal((prev) => !prev);
-          }}
-          className={`flex items-center gap-2 font-bold text-xs px-3.5 py-3 rounded-2xl shadow-lg border transition-all cursor-pointer ${
-            showChatModal
-              ? 'bg-sky-600 text-white border-sky-400 ring-2 ring-sky-400/40 shadow-sky-500/20'
-              : nearCharacterPrompt
-              ? 'bg-slate-900/95 hover:bg-slate-800 text-sky-300 border-sky-400/60 shadow-md ring-1 ring-sky-400/40 animate-pulse'
-              : 'bg-slate-900/90 hover:bg-slate-800 text-slate-100 border-white/15'
-          }`}
-          title={nearCharacterPrompt ? `Chat with ${nearCharacterPrompt.name} in English (or press T)` : 'Campus English Chat (press T)'}
-        >
-          <MessageCircle className="w-4 h-4 text-sky-400" />
-          <span>Chat</span>
-          {nearCharacterPrompt && (
-            <span className="text-[10px] bg-sky-500/25 text-sky-200 border border-sky-400/50 px-2 py-0.5 rounded-full font-black">
-              {nearCharacterPrompt.name.split(' ')[0]}
-            </span>
+        {/* Right Controls: Interior Open/Exit + Student Sign In + Expand + Settings */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pointer-events-auto">
+          {insideBuilding && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playUiClick();
+                  if (insideBuilding.id === 'faculty_hq') {
+                    setSelectedFacultyEmployee(null);
+                    setFacultyInitialAdminModule('overview');
+                    setShowFacultyModal(true);
+                    return;
+                  }
+                  if (insideBuilding.id.startsWith('class_')) {
+                    const firstBoard = INTERIOR_BOARDS_BY_BUILDING[insideBuilding.id]?.[0];
+                    if (firstBoard) {
+                      handleBoardAction(firstBoard);
+                      return;
+                    }
+                  }
+                  setActiveBuildingModal(insideBuilding.id);
+                }}
+                className="min-h-[44px] flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-2xl shadow-xl border border-blue-400/30 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <BookOpen className="w-4 h-4 shrink-0" />
+                <span className="hidden md:inline">
+                  {insideBuilding.id === 'faculty_hq' ? 'Open ERA Faculty' : `Open ${insideBuilding.name}`}
+                </span>
+                <span className="md:hidden">Open</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => gameActionsRef.current?.exitBuildingInterior()}
+                className="min-h-[44px] flex items-center gap-1.5 sm:gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-2xl shadow-xl border border-emerald-400/40 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Exit Door (ESC)</span>
+                <span className="sm:hidden">Exit</span>
+              </button>
+            </>
           )}
-        </button>
+
+          {!user && !insideBuilding && (
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="min-h-[44px] flex items-center gap-1.5 bg-[#1E4DB7] hover:bg-blue-700 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-2xl shadow-xl border border-blue-400/40 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <LogIn className="w-4 h-4 shrink-0" />
+              <span>Sign In</span>
+            </button>
+          )}
+
+          {/* Full Screen App Toggle Button (Desktop/Tablet) */}
+          <button
+            type="button"
+            onClick={toggleAppFullscreen}
+            className="hidden sm:flex min-h-[44px] items-center gap-2 bg-slate-950/95 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2 rounded-2xl shadow-xl border border-white/15 transition-colors cursor-pointer whitespace-nowrap"
+            title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Mode'}
+          >
+            {isFullscreen ? (
+              <Minimize className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <Maximize className="w-4 h-4 text-sky-400 shrink-0" />
+            )}
+            <span className="hidden lg:inline">{isFullscreen ? 'Full Screen' : 'Expand'}</span>
+          </button>
+
+          {/* Settings & Student Account Menu Button */}
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playUiClick();
+              setShowSettingsModal(!showSettingsModal);
+            }}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-2 bg-slate-950/95 hover:bg-slate-800 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-2xl shadow-xl border border-white/15 transition-colors cursor-pointer whitespace-nowrap"
+            title="Settings, Audio & Student Account"
+          >
+            <Settings className="w-4 h-4 text-blue-400 shrink-0" />
+            <span className="hidden md:inline">Settings</span>
+          </button>
+        </div>
       </div>
 
       {/* 2B. SPORTS PARK SIDE ACTIONS HUD (KICK, JUMP, HIT, CROUCH + LIVE MATCH SCOREBOARD) */}
@@ -14407,95 +14942,108 @@ export function EraVerse() {
         />
       )}
 
-      {/* 3. TOP-RIGHT FULLSCREEN & SETTINGS (AUDIO ICON MOVED INSIDE SETTINGS) */}
-      <div className="absolute top-4 right-4 z-10 flex flex-wrap items-center gap-2 pointer-events-auto">
-        {insideBuilding && (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                soundEngine.playUiClick();
-                if (insideBuilding.id === 'faculty_hq') {
-                  setSelectedFacultyEmployee(null);
-                  setFacultyInitialAdminModule('overview');
-                  setShowFacultyModal(true);
-                  return;
-                }
-                if (insideBuilding.id.startsWith('class_')) {
-                  const firstBoard = INTERIOR_BOARDS_BY_BUILDING[insideBuilding.id]?.[0];
-                  if (firstBoard) {
-                    handleBoardAction(firstBoard);
-                    return;
-                  }
-                }
-                setActiveBuildingModal(insideBuilding.id);
-              }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl border border-blue-400/30 transition-all cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>{insideBuilding.id === 'faculty_hq' ? 'Open ERA Faculty' : `Open ${insideBuilding.name}`}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => gameActionsRef.current?.exitBuildingInterior()}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl border border-emerald-400/40 transition-all cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Exit Door (ESC)</span>
-            </button>
-          </>
-        )}
-
-        {/* Full Screen App Toggle Button */}
-        <button
-          type="button"
-          onClick={toggleAppFullscreen}
-          className="flex items-center gap-2 bg-slate-900/95 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-3 rounded-2xl shadow-xl border border-white/15 transition-all cursor-pointer"
-          title={isFullscreen ? 'Exit Full Screen' : 'Full Screen Mode'}
-        >
-          {isFullscreen ? (
-            <Minimize className="w-4 h-4 text-emerald-400" />
-          ) : (
-            <Maximize className="w-4 h-4 text-sky-400" />
-          )}
-          <span className="hidden sm:inline">{isFullscreen ? 'Full Screen' : 'Expand'}</span>
-        </button>
-
-        {/* Top-Right Settings Button (Contains Audio & Music Controls) */}
-        <button
-          type="button"
-          onClick={() => {
-            soundEngine.playUiClick();
-            setShowSettingsModal(!showSettingsModal);
-          }}
-          className="flex items-center gap-2 bg-slate-900/95 hover:bg-slate-800 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl border border-white/15 transition-all cursor-pointer"
-        >
-          <Settings className="w-4 h-4 text-blue-400" />
-          <span>Settings</span>
-          <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/30">
-            {graphicsQuality}
-          </span>
-        </button>
-      </div>
-
-      {/* TOP-RIGHT SETTINGS DROPDOWN PANEL */}
+      {/* TOP-RIGHT SETTINGS & STUDENT ACCOUNT PANEL */}
       {showSettingsModal && (
-        <div className="absolute top-20 right-4 z-30 w-80 bg-slate-950/95 border border-white/20 rounded-3xl p-5 text-white shadow-2xl pointer-events-auto">
+        <div className="absolute top-16 sm:top-20 right-2.5 sm:right-4 z-30 w-[min(21rem,calc(100vw-1.25rem))] max-h-[calc(100dvh-5rem)] overflow-y-auto bg-slate-950/95 border border-white/20 rounded-3xl p-4 sm:p-5 text-white shadow-2xl pointer-events-auto">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-blue-400" />
-              <span className="font-extrabold text-sm tracking-tight">EraVerse Settings</span>
+              <span className="font-extrabold text-sm tracking-tight">EraVerse Menu & Settings</span>
             </div>
             <button
               type="button"
               onClick={() => setShowSettingsModal(false)}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 cursor-pointer"
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           <div className="space-y-4">
+            {/* Student Account, Avatar Customizer & Sign In / Out */}
+            <div className="bg-slate-900/95 border border-white/10 rounded-2xl p-3 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600/25 border border-blue-400/40 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4 text-blue-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-extrabold text-white truncate">{playerProfile.name}</div>
+                    <div className="text-[11px] text-slate-400 truncate">
+                      {user ? `${playerProfile.cohort} · Signed In` : 'Guest Explorer'}
+                    </div>
+                  </div>
+                </div>
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setShowSettingsModal(false);
+                      await signOut();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white font-bold text-xs transition-colors cursor-pointer shrink-0"
+                  >
+                    Sign Out
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      navigate('/login');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors cursor-pointer shrink-0"
+                  >
+                    Sign In
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEngine.playUiClick();
+                    setShowSettingsModal(false);
+                    setShowCustomizerModal(true);
+                  }}
+                  className="py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  Customize Avatar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    toggleAppFullscreen();
+                  }}
+                  className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Camera Distance Slider (Pinch-to-zoom also works directly on canvas) */}
+            <div className="sm:hidden bg-slate-900/95 border border-white/10 rounded-2xl p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-extrabold text-slate-200">Camera Distance</span>
+                <span className="text-[11px] font-bold text-amber-300 tabular-nums">{zoomSliderValue}m</span>
+              </div>
+              <input
+                type="range"
+                min={6}
+                max={24}
+                value={zoomSliderValue}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setZoomSliderValue(val);
+                  gameActionsRef.current?.setZoomDistance(val);
+                }}
+                className="w-full accent-amber-500 cursor-pointer"
+              />
+            </div>
+
             {/* Graphics Quality Selector */}
             <div>
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
@@ -14524,7 +15072,7 @@ export function EraVerse() {
                         '#3B82F6'
                       );
                     }}
-                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                    className={`p-2.5 rounded-xl border text-center transition-colors cursor-pointer ${
                       graphicsQuality === q.id
                         ? 'bg-blue-600 border-blue-400 text-white shadow-lg'
                         : 'bg-slate-900 border-white/10 text-slate-300 hover:bg-slate-800'
@@ -14538,7 +15086,7 @@ export function EraVerse() {
             </div>
 
             {/* Audio On / Off */}
-            <div className="flex items-center justify-between bg-slate-900/90 border border-white/10 rounded-2xl p-3">
+            <div className="flex items-center justify-between bg-slate-900/95 border border-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-2.5">
                 {audioEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-red-400" />}
                 <div>
@@ -14563,7 +15111,7 @@ export function EraVerse() {
             </div>
 
             {/* Room Song Music On / Off */}
-            <div className="flex items-center justify-between bg-slate-900/90 border border-white/10 rounded-2xl p-3">
+            <div className="flex items-center justify-between bg-slate-900/95 border border-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-2.5">
                 <Music className="w-4 h-4 text-amber-400" />
                 <div>
@@ -14623,11 +15171,10 @@ export function EraVerse() {
         </div>
       )}
 
-      {/* 4. MOBILE & TABLET TOUCH CONTROLS: VIRTUAL THUMBSTICK + SCROLL ZOOM SLIDER + JUMP */}
-      {/* Bottom-Left Touch Movement Thumbstick (Shown on touch/mobile/tablet screens) */}
-      <div className="xl:hidden absolute bottom-6 left-6 z-20 flex items-center gap-4 pointer-events-auto">
+      {/* 4. MOBILE & TABLET VIRTUAL THUMBSTICK (BOTTOM-LEFT; RIGHT ACTIONS HANDLED BY SPORTSSIDEACTIONSHUD) */}
+      <div className="xl:hidden absolute bottom-3 left-3 sm:bottom-6 sm:left-6 z-20 flex items-center pointer-events-auto">
         <div
-          className="relative w-28 h-28 rounded-full bg-slate-950/75 border-2 border-white/25 shadow-2xl flex items-center justify-center touch-none"
+          className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-950/80 border-2 border-white/25 shadow-2xl flex items-center justify-center touch-none"
           onPointerDown={(e) => {
             e.stopPropagation();
             (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -14666,7 +15213,7 @@ export function EraVerse() {
           }}
         >
           <div
-            className="w-11 h-11 rounded-full bg-blue-500 border-2 border-white shadow-lg pointer-events-none"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-blue-500 border-2 border-white shadow-lg pointer-events-none"
             style={{
               transform: `translate(${joystickThumbPos.x}px, ${joystickThumbPos.y}px)`
             }}
@@ -14674,50 +15221,22 @@ export function EraVerse() {
         </div>
       </div>
 
-      {/* Right-Side Touch Scroll Zoom Slider & Jump Button for Phone / Tablet */}
-      <div className="xl:hidden absolute bottom-6 right-6 z-20 flex flex-col items-center gap-3 pointer-events-auto">
-        <div className="bg-slate-950/80 border border-white/20 rounded-2xl px-2.5 py-3 flex flex-col items-center gap-2 shadow-xl">
-          <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-300">Scroll Zoom</span>
-          <input
-            type="range"
-            min={7}
-            max={24}
-            value={zoomSliderValue}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setZoomSliderValue(val);
-              gameActionsRef.current?.setZoomDistance(val);
-            }}
-            className="w-24 accent-blue-500 cursor-pointer"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => gameActionsRef.current?.triggerJump()}
-          className="w-16 h-16 rounded-full bg-blue-600 active:bg-blue-500 text-white font-extrabold text-xs border-2 border-white/40 shadow-2xl flex items-center justify-center cursor-pointer"
-        >
-          JUMP
-        </button>
-      </div>
-
-      {/* Top pop-up banners removed for a clean, unobstructed 3D viewport */}
-
-      {/* 6. PROXIMITY INTERACTION PROMPTS */}
+      {/* 6. PROXIMITY INTERACTION PROMPTS (ELEVATED ABOVE MOBILE THUMB CONTROLS) */}
       {nearBuildingPrompt && !insideBuilding && (
-        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
-          <div className="bg-slate-950/95 border border-white/20 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-                AUTOMATIC DOORS OPEN • WALK IN OR PRESS E
+        <div className="absolute bottom-32 sm:bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-3 sm:px-4">
+          <div className="bg-slate-950/95 border border-white/20 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-2xl flex items-center gap-3 sm:gap-4 pointer-events-auto max-w-md">
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
+                AUTOMATIC DOORS OPEN
               </div>
-              <div className="text-base font-extrabold">{nearBuildingPrompt.name}</div>
+              <div className="text-sm sm:text-base font-extrabold truncate">{nearBuildingPrompt.name}</div>
             </div>
             <button
               type="button"
               onClick={() => gameActionsRef.current?.enterBuildingInterior(nearBuildingPrompt)}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>Enter Building (E)</span>
+              <span>Enter (E)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -14731,7 +15250,7 @@ export function EraVerse() {
           cableCarRidePhase !== 'idle' ||
           isAtMountainSummit ||
           activeTelescopeView !== null) && (
-          <div className="absolute bottom-6 inset-x-0 z-10 flex flex-col items-center gap-2.5 pointer-events-none px-4">
+          <div className="absolute bottom-32 sm:bottom-6 inset-x-0 z-10 flex flex-col items-center gap-2.5 pointer-events-none px-3 sm:px-4">
             {/* Active Panoramic Telescope City Overlook Bar */}
             {activeTelescopeView !== null && (
               <div className="bg-slate-950/95 border-2 border-sky-400/80 rounded-2xl px-4 py-3 text-white shadow-2xl flex flex-wrap items-center gap-2.5 pointer-events-auto">
@@ -14932,7 +15451,7 @@ export function EraVerse() {
         )}
 
       {(nearFishingZone || fishingPhase !== 'idle' || activeCatchCard) && !nearBuildingPrompt && !insideBuilding && (
-        <div className="absolute bottom-6 inset-x-0 z-10 flex flex-col items-center gap-2.5 pointer-events-none px-4">
+        <div className="absolute bottom-32 sm:bottom-6 inset-x-0 z-10 flex flex-col items-center gap-2.5 pointer-events-none px-3 sm:px-4">
           {/* Catch Result Showcase Card: Shows exact Fish Caught (+$1 to +$10) OR Trash Caught ($0 Value) */}
           {activeCatchCard && (
             <div
@@ -15108,13 +15627,13 @@ export function EraVerse() {
       )}
 
       {nearFacultyEmployee && insideBuilding?.id === 'faculty_hq' && (
-        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
-          <div className="bg-slate-950/95 border border-amber-400/40 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
-                ERA FACULTY CUBICLE WORKSTATION • {nearFacultyEmployee.departmentLabel}
+        <div className="absolute bottom-32 sm:bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-3 sm:px-4">
+          <div className="bg-slate-950/95 border border-amber-400/40 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-2xl flex items-center gap-3 sm:gap-4 pointer-events-auto max-w-lg">
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400 truncate">
+                ERA FACULTY • {nearFacultyEmployee.departmentLabel}
               </div>
-              <div className="text-base font-extrabold">
+              <div className="text-sm sm:text-base font-extrabold truncate">
                 {nearFacultyEmployee.name} — {nearFacultyEmployee.jobTitle}
               </div>
             </div>
@@ -15125,9 +15644,9 @@ export function EraVerse() {
                 setSelectedFacultyEmployee(nearFacultyEmployee);
                 setShowFacultyModal(true);
               }}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>Open Workstation (E)</span>
+              <span>Open (E)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -15135,20 +15654,20 @@ export function EraVerse() {
       )}
 
       {isSittingAtDesk && insideBuilding && (
-        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
-          <div className="bg-slate-950/95 border border-emerald-400/40 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
+        <div className="absolute bottom-32 sm:bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-3 sm:px-4">
+          <div className="bg-slate-950/95 border border-emerald-400/40 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-2xl flex items-center gap-3 sm:gap-4 pointer-events-auto">
             <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
                 CLASSROOM STUDENT SEAT
               </div>
-              <div className="text-base font-extrabold">Seated at Classroom Desk</div>
+              <div className="text-sm sm:text-base font-extrabold">Seated at Classroom Desk</div>
             </div>
             <button
               type="button"
               onClick={() => gameActionsRef.current?.standUpFromDesk()}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>Stand Up (Space / E)</span>
+              <span>Stand Up (Space)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -15156,20 +15675,20 @@ export function EraVerse() {
       )}
 
       {!isSittingAtDesk && nearClassroomDesk && !nearFacultyEmployee && insideBuilding && (
-        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
-          <div className="bg-slate-950/95 border border-amber-400/40 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
-                {insideBuilding.name} • STUDENT SEAT
+        <div className="absolute bottom-32 sm:bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-3 sm:px-4">
+          <div className="bg-slate-950/95 border border-amber-400/40 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-2xl flex items-center gap-3 sm:gap-4 pointer-events-auto max-w-md">
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400 truncate">
+                {insideBuilding.name} · STUDENT SEAT
               </div>
-              <div className="text-base font-extrabold">{nearClassroomDesk.deskName}</div>
+              <div className="text-sm sm:text-base font-extrabold truncate">{nearClassroomDesk.deskName}</div>
             </div>
             <button
               type="button"
               onClick={() => gameActionsRef.current?.sitAtClassroomDesk(nearClassroomDesk)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>Sit Down at Desk (E)</span>
+              <span>Sit Down (E)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -15177,18 +15696,18 @@ export function EraVerse() {
       )}
 
       {!isSittingAtDesk && !nearClassroomDesk && nearBoardPrompt && !nearFacultyEmployee && insideBuilding && (
-        <div className="absolute bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-4">
-          <div className="bg-slate-950/95 border border-white/20 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex items-center gap-4 pointer-events-auto">
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
+        <div className="absolute bottom-32 sm:bottom-8 inset-x-0 z-10 flex justify-center pointer-events-none px-3 sm:px-4">
+          <div className="bg-slate-950/95 border border-white/20 rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-2xl flex items-center gap-3 sm:gap-4 pointer-events-auto max-w-lg">
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400 truncate">
                 {nearBoardPrompt.category}
               </div>
-              <div className="text-base font-extrabold">{nearBoardPrompt.title}</div>
+              <div className="text-sm sm:text-base font-extrabold truncate">{nearBoardPrompt.title}</div>
             </div>
             <button
               type="button"
               onClick={() => handleBoardAction(nearBoardPrompt)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
             >
               <span>{nearBoardPrompt.badge} (E)</span>
               <ArrowRight className="w-4 h-4" />
@@ -15220,13 +15739,15 @@ export function EraVerse() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/practice-tests?course=ielts&skill=${selectedPracticeSkill}`)}
-                  className="bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
-                >
-                  Open Full Practice Test Page
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/practice-tests?course=ielts&skill=${selectedPracticeSkill}`)}
+                    className="bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Open Full Practice Test Page
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveBuildingModal(null)}
@@ -15344,16 +15865,18 @@ export function EraVerse() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const courseSlug = (userCourse || 'ielts').toLowerCase().replace(/[^a-z0-9-]/g, '');
-                    navigate(`/courses/${courseSlug === 'starter' ? 'starters' : courseSlug}?tab=assignments`);
-                  }}
-                  className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
-                >
-                  Open Full Homework Page
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const courseSlug = (userCourse || 'ielts').toLowerCase().replace(/[^a-z0-9-]/g, '');
+                      navigate(`/courses/${courseSlug === 'starter' ? 'starters' : courseSlug}?tab=assignments`);
+                    }}
+                    className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Open Full Homework Page
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveBuildingModal(null)}
@@ -15827,8 +16350,10 @@ export function EraVerse() {
         allCohortsStudents={allStudentsSkillScores}
         isSuperAdminCharacter={playerProfile.cohort === 'TEACHER (SUPER ADMIN)'}
         onSelectAdminCohort={(c) => setAdminSelectedCohort(c)}
-        onNavigateFullDashboard={(uid) =>
-          navigate(isAdmin && uid ? `/ielts/dashboard?userId=${uid}` : '/ielts/dashboard')
+        onNavigateFullDashboard={
+          isAdmin
+            ? (uid) => navigate(uid ? `/ielts/dashboard?userId=${uid}` : '/ielts/dashboard')
+            : undefined
         }
         onOpenSkillPractice={(skill) => {
           setSelectedPracticeSkill(skill);

@@ -66,6 +66,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   navLinks.push({ name: 'EraVerse', path: '/eraverse' });
 
   const isParentRoute = location.pathname.startsWith('/parent/') || location.pathname.startsWith('/shared/');
+  const hideTopRibbon = !isAdmin && !isParentRoute;
   const [parentLang] = useParentLang(isParentRoute);
   const visibleLinks = isParentRoute
     ? []
@@ -73,7 +74,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen font-sans flex flex-col selection:bg-[#3B82F6] selection:text-white">
-      {/* Navbar */}
+      {/* Navbar (Rendered for Admins & Parent Portal; hidden for Students/Players) */}
+      {!hideTopRibbon && (
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 print:hidden ${
           isScrolled || isParentRoute ? 'bg-white/95 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-[#E2E8F0]' : 'bg-transparent'
@@ -375,12 +377,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
         </AnimatePresence>
       </header>
+      )}
       
       {/* Main Content */}
       <main
         className={`flex-1 w-full mx-auto ${
           isParentRoute
             ? 'mt-14 sm:mt-16 max-w-[1400px] px-3 py-3 sm:p-6 lg:p-8 print:mt-0 print:p-0'
+            : hideTopRibbon
+            ? location.pathname === '/eraverse'
+              ? 'm-0 p-0'
+              : 'max-w-[1400px] p-4 sm:p-6 lg:p-8'
             : location.pathname === '/' || location.pathname === '/eraverse'
             ? 'mt-20'
             : 'mt-20 max-w-[1400px] p-4 sm:p-6 lg:p-8'
@@ -389,10 +396,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {location.pathname !== '/eraverse' && !isParentRoute && <ChatBox />}
+      {location.pathname !== '/eraverse' && !isParentRoute && !hideTopRibbon && <ChatBox />}
 
       {/* Footer */}
-      {location.pathname !== '/eraverse' && !isParentRoute && (
+      {location.pathname !== '/eraverse' && !isParentRoute && !hideTopRibbon && (
       <footer className="bg-white border-t border-[#E2E8F0] pt-16 pb-8 mt-auto relative overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">

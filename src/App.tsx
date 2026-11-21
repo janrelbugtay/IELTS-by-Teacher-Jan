@@ -36,7 +36,7 @@ function PageLoading() {
 }
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
-  const { user, userCourse, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return <PageLoading />;
@@ -47,13 +47,21 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
   }
 
   if (adminOnly && !isAdmin) {
-    if (userCourse?.toLowerCase() === 'pet') {
-      return <Navigate to="/pet/dashboard" replace />;
-    }
-    if (userCourse?.toLowerCase() === 'ket') {
-      return <Navigate to="/ket/dashboard" replace />;
-    }
-    return <Navigate to="/ielts/dashboard" replace />;
+    return <Navigate to="/eraverse" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AdminOnlyPage({ children }: { children: React.ReactNode }) {
+  const { loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return <PageLoading />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/eraverse" replace />;
   }
 
   return <>{children}</>;
@@ -73,15 +81,15 @@ function AppContent() {
           <Route path="*" element={
             <Layout>
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/courses/:id" element={<CourseDetails />} />
-                <Route path="/practice-tests" element={<PracticeTests />} />
+                <Route path="/" element={<AdminOnlyPage><Home /></AdminOnlyPage>} />
+                <Route path="/courses/:id" element={<AdminOnlyPage><CourseDetails /></AdminOnlyPage>} />
+                <Route path="/practice-tests" element={<AdminOnlyPage><PracticeTests /></AdminOnlyPage>} />
                 <Route path="/eraverse" element={<EraVerse />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/ielts/dashboard" replace /></ProtectedRoute>} />
-                <Route path="/ielts/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/pet/dashboard" element={<ProtectedRoute><PetDashboard /></ProtectedRoute>} />
-                <Route path="/ket/dashboard" element={<ProtectedRoute><KetDashboard /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><AdminOnlyPage><Navigate to="/ielts/dashboard" replace /></AdminOnlyPage></ProtectedRoute>} />
+                <Route path="/ielts/dashboard" element={<ProtectedRoute><AdminOnlyPage><Dashboard /></AdminOnlyPage></ProtectedRoute>} />
+                <Route path="/pet/dashboard" element={<ProtectedRoute><AdminOnlyPage><PetDashboard /></AdminOnlyPage></ProtectedRoute>} />
+                <Route path="/ket/dashboard" element={<ProtectedRoute><AdminOnlyPage><KetDashboard /></AdminOnlyPage></ProtectedRoute>} />
                 <Route path="/shared/dashboard/:userId" element={<Dashboard isShared={true} isParentView={true} />} />
                 <Route path="/shared/pet/dashboard/:userId" element={<PetDashboard isShared={true} isParentView={true} />} />
                 <Route path="/shared/ket/dashboard/:userId" element={<KetDashboard isShared={true} isParentView={true} />} />
@@ -90,7 +98,7 @@ function AppContent() {
                 <Route path="/parent/pet/dashboard/:userId" element={<PetDashboard isShared={true} isParentView={true} />} />
                 <Route path="/parent/ket/dashboard/:userId" element={<KetDashboard isShared={true} isParentView={true} />} />
                 <Route path="/parent/results/:id" element={<ParentTestResult />} />
-                <Route path="/writing-examiner" element={<ProtectedRoute><EraAIIeltsApp /></ProtectedRoute>} />
+                <Route path="/writing-examiner" element={<ProtectedRoute><AdminOnlyPage><EraAIIeltsApp /></AdminOnlyPage></ProtectedRoute>} />
                 <Route path="/results/:id" element={<ProtectedRoute><TestResult /></ProtectedRoute>} />
                 <Route path="/assignment/:id" element={<ProtectedRoute><ViewAssignment /></ProtectedRoute>} />
                 
@@ -99,6 +107,7 @@ function AppContent() {
                 <Route path="/classes/assignments" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/classes/create" element={<ProtectedRoute adminOnly><CreateAssignment /></ProtectedRoute>} />
                 <Route path="/image-generator" element={<ProtectedRoute adminOnly><ImageGenerator /></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/eraverse" replace />} />
               </Routes>
             </Layout>
           } />

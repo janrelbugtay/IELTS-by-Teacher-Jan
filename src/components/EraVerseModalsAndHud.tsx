@@ -60,45 +60,45 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
     <>
       {/* Live Sports Match Scoreboard Banner when on the Football Field or Era Tennis Court */}
       {(inSportsZone === 'football' || inSportsZone === 'tennis' || inSportsZone === 'pickleball') && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+        <div className="absolute top-16 sm:top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto w-[min(92vw,28rem)]">
           {inSportsZone === 'football' ? (
-            <div className="bg-slate-950/95 border-2 border-emerald-400/70 rounded-2xl px-6 py-2.5 text-white shadow-2xl flex items-center gap-5">
-              <div className="text-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">YOU (STRIKER)</div>
-                <div className="text-2xl font-black text-white">{footballGoals}</div>
+            <div className="bg-slate-950/95 border border-emerald-400/70 rounded-2xl px-3.5 py-2 sm:px-6 sm:py-2.5 text-white shadow-2xl flex items-center justify-between gap-2.5 sm:gap-5">
+              <div className="text-center shrink-0">
+                <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">YOU</div>
+                <div className="text-lg sm:text-2xl font-black text-white tabular-nums">{footballGoals}</div>
               </div>
-              <div className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-center">
-                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300">⚽ FOOTBALL MATCH</div>
-                <div className="text-[11px] text-slate-200 font-bold">Press KICK (F) or CROUCH (C)</div>
+              <div className="px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-center min-w-0">
+                <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-300 truncate">FOOTBALL MATCH</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-200 font-bold truncate">Tap KICK or CROUCH</div>
               </div>
-              <div className="text-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">KEEPER MAX</div>
-                <div className="text-2xl font-black text-white">{aiFootballGoals}</div>
+              <div className="text-center shrink-0">
+                <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-amber-300">KEEPER</div>
+                <div className="text-lg sm:text-2xl font-black text-white tabular-nums">{aiFootballGoals}</div>
               </div>
             </div>
           ) : (
-            <div className="bg-slate-950/95 border-2 border-emerald-400/80 rounded-2xl px-6 py-2.5 text-white shadow-2xl flex items-center gap-5">
-              <div className="text-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">YOU (TENNIS)</div>
-                <div className="text-2xl font-black text-white">{pickleballScore}</div>
+            <div className="bg-slate-950/95 border border-emerald-400/80 rounded-2xl px-3.5 py-2 sm:px-6 sm:py-2.5 text-white shadow-2xl flex items-center justify-between gap-2.5 sm:gap-5">
+              <div className="text-center shrink-0">
+                <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-300">YOU</div>
+                <div className="text-lg sm:text-2xl font-black text-white tabular-nums">{pickleballScore}</div>
               </div>
-              <div className="px-3.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-center">
-                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-300">🎾 ERA TENNIS COURT</div>
-                <div className="text-[11px] text-slate-100 font-bold">Press SWING (G) when ball is near!</div>
+              <div className="px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-center min-w-0">
+                <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-300 truncate">TENNIS COURT</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-100 font-bold truncate">Tap SWING near ball</div>
               </div>
-              <div className="text-center">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">COACH LEO (PRO)</div>
-                <div className="text-2xl font-black text-white">{aiPickleballScore}</div>
+              <div className="text-center shrink-0">
+                <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-amber-300">COACH</div>
+                <div className="text-lg sm:text-2xl font-black text-white tabular-nums">{aiPickleballScore}</div>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Right-Side Action Buttons Cluster (Jump, Crouch, Kick, Hit + Scroll Zoom) */}
-      <div className="absolute bottom-6 right-5 z-20 flex flex-col items-end gap-3 pointer-events-auto">
-        {/* Scroll Zoom Slider for Phone/Tablet & Quick Camera Zoom */}
-        <div className="bg-slate-950/85 border border-amber-500/40 rounded-2xl px-3 py-2 flex items-center gap-2.5 shadow-xl">
+      {/* Right-Side Action Buttons Cluster (Jump, Crouch, Kick, Swing + Desktop Zoom) */}
+      <div className="absolute bottom-3 right-3 sm:bottom-6 sm:right-5 z-20 flex flex-col items-end gap-2 sm:gap-3 pointer-events-auto">
+        {/* Camera Zoom Slider on Tablet/Desktop (Mobile uses 2-finger pinch or Settings Zoom) */}
+        <div className="hidden sm:flex bg-slate-950/90 border border-amber-500/40 rounded-2xl px-3 py-2 items-center gap-2.5 shadow-xl">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">Zoom</span>
           <input
             type="range"
@@ -110,33 +110,23 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
           />
         </div>
 
-        {inSportsZone !== 'none' && (
-          <div className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shadow">
-            {inSportsZone === 'football'
-              ? '⚽ Football Field Actions Active'
-              : inSportsZone === 'tennis' || inSportsZone === 'pickleball'
-              ? '🎾 Era Tennis Court Actions Active'
-              : '🎪 Playground Actions Active'}
-          </div>
-        )}
-
-        {/* Action Cluster: Top row (Kick + Jump), Bottom row (Hit/Smash + Crouch) */}
-        <div className="grid grid-cols-2 gap-2.5">
+        {/* Action Cluster: 48x48px+ ergonomic touch targets on mobile, 64x64px on desktop */}
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5">
           {/* KICK BUTTON (F) */}
           <button
             type="button"
             onClick={onKick}
             title="Kick Football / Power Shot (Key: F)"
-            className={`w-16 h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
               inSportsZone === 'football'
-                ? 'bg-[#3b1d06]/95 border-amber-400 text-amber-400 ring-4 ring-amber-400/30 scale-105'
-                : 'bg-[#2a1505]/90 border-amber-500/80 text-amber-400 hover:border-amber-300'
+                ? 'bg-[#3b1d06]/95 border-amber-400 text-amber-400 ring-2 sm:ring-4 ring-amber-400/30 scale-105'
+                : 'bg-[#2a1505]/92 border-amber-500/80 text-amber-400 hover:border-amber-300'
             }`}
           >
-            <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
               <path d="M14.5 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 8.5c0-.8.7-1.5 1.5-1.5h3c.8 0 1.4.6 1.5 1.3l.8 4.2 3.7 1.8c.7.4 1 1.2.6 1.9-.4.7-1.2 1-1.9.6l-4.5-2.2-.7 5.4c-.1.8-.8 1.3-1.6 1.2-.8-.1-1.3-.8-1.2-1.6l.8-6.1-1.5-1.5V8.5ZM5.5 17a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
             </svg>
-            <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">KICK (F)</span>
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">KICK</span>
           </button>
 
           {/* JUMP BUTTON (SPACE) */}
@@ -144,12 +134,12 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
             type="button"
             onClick={onJump}
             title="Jump / Header (Key: Space)"
-            className="w-16 h-16 rounded-full bg-[#2a1505]/90 border-2 border-amber-500/85 hover:border-amber-300 text-amber-400 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer"
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#2a1505]/92 border-2 border-amber-500/85 hover:border-amber-300 text-amber-400 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer"
           >
-            <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
               <path d="M12 2a2.2 2.2 0 1 1 0 4.4A2.2 2.2 0 0 1 12 2Zm-4.5 6.2 3.2-1.2h2.8l3.5 2.2c.6.4.8 1.2.4 1.8-.4.6-1.2.8-1.8.4l-2.1-1.3-.6 3.4 3.4 3.2c.6.5.6 1.4.1 2-.5.6-1.4.6-2 .1l-3.2-3-2 4.2c-.3.7-1.1 1-1.8.7-.7-.3-1-1.1-.7-1.8l2.5-5.3.4-2.8-1.4.5c-.7.3-1.5-.1-1.7-.8-.3-.7.1-1.5.8-1.7Z" />
             </svg>
-            <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">JUMP</span>
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">JUMP</span>
           </button>
 
           {/* HIT / SWING BUTTON (G) */}
@@ -157,16 +147,16 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
             type="button"
             onClick={onHit}
             title="Swing Tennis Racket / Power Return (Key: G)"
-            className={`w-16 h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
               inSportsZone === 'tennis' || inSportsZone === 'pickleball'
-                ? 'bg-emerald-950/95 border-emerald-400 text-emerald-300 ring-4 ring-emerald-400/40 scale-105'
-                : 'bg-[#2a1505]/90 border-amber-500/80 text-amber-400 hover:border-amber-300'
+                ? 'bg-emerald-950/95 border-emerald-400 text-emerald-300 ring-2 sm:ring-4 ring-emerald-400/40 scale-105'
+                : 'bg-[#2a1505]/92 border-amber-500/80 text-amber-400 hover:border-amber-300'
             }`}
           >
-            <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
               <path d="M8.5 5A2.5 2.5 0 0 0 6 7.5v4.2l-1.3-.8a2 2 0 0 0-2.7.7c-.6.9-.3 2.1.6 2.7l5.2 3.5c1.2.8 2.6 1.2 4 1.2h3.2c2.8 0 5-2.2 5-5V9.5a2.5 2.5 0 0 0-4.3-1.7A2.5 2.5 0 0 0 12.2 6a2.5 2.5 0 0 0-3.7-1Z" />
             </svg>
-            <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">SWING (G)</span>
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">SWING</span>
           </button>
 
           {/* CROUCH BUTTON (C) */}
@@ -174,16 +164,16 @@ export const SportsSideActionsHud: React.FC<SportsSideActionsHudProps> = ({
             type="button"
             onClick={onToggleCrouch}
             title="Crouch / Slide Posture (Key: C)"
-            className={`w-16 h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
+            className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 flex flex-col items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer ${
               isCrouching
-                ? 'bg-amber-500 text-slate-950 border-white ring-4 ring-amber-400/40'
-                : 'bg-[#2a1505]/90 border-amber-500/85 hover:border-amber-300 text-amber-400'
+                ? 'bg-amber-500 text-slate-950 border-white ring-2 sm:ring-4 ring-amber-400/40'
+                : 'bg-[#2a1505]/92 border-amber-500/85 hover:border-amber-300 text-amber-400'
             }`}
           >
-            <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
               <path d="M6.5 9a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Zm4.2 3.2h5.1l3.6 2.5c.6.4.8 1.3.4 1.9-.4.6-1.3.8-1.9.4L15 15h-3.2l-2.6 2.6H4.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5h3.8l2.4-2.4Z" />
             </svg>
-            <span className="text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">
+            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider leading-none mt-0.5">
               {isCrouching ? 'STAND' : 'CROUCH'}
             </span>
           </button>
@@ -232,12 +222,12 @@ export const ProximityEnglishChat: React.FC<ProximityEnglishChatProps> = ({
   const isTeacher = nearbyPartner?.cohort.includes('TEACHER') || nearbyPartner?.name.toLowerCase().includes('jan');
 
   return (
-    <div className="absolute top-20 left-4 z-30 w-full max-w-md px-2 pointer-events-auto">
-      <div className="bg-slate-950/95 border-2 border-sky-400/60 rounded-3xl shadow-2xl overflow-hidden text-white backdrop-blur-md">
+    <div className="absolute top-16 sm:top-20 left-2 sm:left-4 z-30 w-[calc(100vw-1rem)] sm:w-full max-w-md pointer-events-auto">
+      <div className="bg-slate-950/95 border border-sky-400/60 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden text-white">
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 px-4 py-3 border-b border-white/15 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${nearbyPartner ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${nearbyPartner ? 'bg-emerald-400' : 'bg-slate-500'}`} />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <MessageCircle className="w-4 h-4 text-sky-400 shrink-0" />
@@ -396,7 +386,7 @@ interface DashboardHallModalsProps {
   classStudents: StudentSkillScores[];
   allCohortsStudents: StudentSkillScores[];
   isSuperAdminCharacter: boolean;
-  onNavigateFullDashboard: (userId?: string) => void;
+  onNavigateFullDashboard?: (userId?: string) => void;
   onOpenSkillPractice?: (skill: 'Listening' | 'Reading' | 'Writing' | 'Speaking') => void;
   onSelectAdminCohort?: (cohort: 'IELTS 1' | 'IELTS 2') => void;
 }
@@ -867,7 +857,7 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
               </div>
             )}
 
-            {/* Open Full Personal Dashboard Button */}
+            {/* Open Full Personal Dashboard Button (Admin Only; Students stay in EraVerse) */}
             <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-slate-200">
               <button
                 type="button"
@@ -876,14 +866,16 @@ export const DashboardHallModals: React.FC<DashboardHallModalsProps> = ({
               >
                 Back to 3D Dashboard Hall
               </button>
-              <button
-                type="button"
-                onClick={() => onNavigateFullDashboard(myStats.userId)}
-                className="px-6 py-3 rounded-xl font-extrabold text-xs bg-[#1E4DB7] hover:bg-blue-800 text-white flex items-center gap-2 shadow-lg cursor-pointer"
-              >
-                <span>Open Full {myStats.name}&apos;s IELTS Dashboard Page</span>
-                <ExternalLink className="w-4 h-4" />
-              </button>
+              {onNavigateFullDashboard && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateFullDashboard(myStats.userId)}
+                  className="px-6 py-3 rounded-xl font-extrabold text-xs bg-[#1E4DB7] hover:bg-blue-800 text-white flex items-center gap-2 shadow-lg cursor-pointer"
+                >
+                  <span>Open Full {myStats.name}&apos;s IELTS Dashboard Page</span>
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
