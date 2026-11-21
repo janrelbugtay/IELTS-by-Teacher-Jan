@@ -70,6 +70,11 @@ import {
   INITIAL_FACULTY_EMPLOYEES,
   FacultyEmployeeProfile
 } from '../utils/eraFacultyData';
+import {
+  EraFishingClubModal,
+  pickRandomCaughtFish,
+  type FishSpeciesSpec
+} from '../components/EraFishingClubModal';
 
 // ============================================================================
 // PROCEDURAL WEB AUDIO ENGINE + ROOM SONG SYNTHESIZER
@@ -1338,6 +1343,14 @@ export function EraVerse() {
     switchFacultyFloor: (floor: 1 | 2) => void;
     sitAtClassroomDesk: (desk: { seatX: number; seatZ: number; deskName: string; classCohort: string }) => void;
     standUpFromDesk: () => void;
+    castFishingPole: () => void;
+    reelInFish: () => void;
+    buyTicketAtBooth: () => void;
+    boardCableCar: (freeReturnFallback?: boolean) => void;
+    skipCableCarRide: () => void;
+    teleportToCableCarStation: () => void;
+    setTelescopePreset: (preset: 'city' | 'campus' | 'beach' | 'waterfall' | null) => void;
+    sitAtSummitBench: (bench: { seatX: number; seatZ: number; rotY: number }) => void;
   } | null>(null);
 
   const [activeBuildingModal, setActiveBuildingModal] = useState<string | null>(null);
@@ -1389,6 +1402,47 @@ export function EraVerse() {
     deskName: string;
     classCohort: string;
   } | null>(null);
+  const [showFishingModal, setShowFishingModal] = useState<boolean>(false);
+  const [nearFishingZone, setNearFishingZone] = useState<boolean>(false);
+  const [fishingPhase, setFishingPhase] = useState<
+    'idle' | 'casting' | 'bobbing' | 'bite_ready' | 'reeling_in'
+  >('idle');
+  const [lastCaughtFish, setLastCaughtFish] = useState<FishSpeciesSpec | null>(null);
+  const [activeCatchCard, setActiveCatchCard] = useState<FishSpeciesSpec | null>(null);
+  const [catchHistory, setCatchHistory] = useState<FishSpeciesSpec[]>([]);
+  const [fishingBaitCount, setFishingBaitCount] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('eraverse_fishing_bait_v1');
+      if (saved !== null) return Math.max(0, parseInt(saved, 10) || 0);
+      return 3;
+    } catch {
+      return 3;
+    }
+  });
+  const fishingBaitCountRef = useRef<number>(fishingBaitCount);
+  fishingBaitCountRef.current = fishingBaitCount;
+  const handleUpdateFishingBait = (nextBait: number) => {
+    const clamped = Math.max(0, nextBait);
+    fishingBaitCountRef.current = clamped;
+    setFishingBaitCount(clamped);
+    try {
+      localStorage.setItem('eraverse_fishing_bait_v1', String(clamped));
+    } catch {}
+  };
+
+  // Mountain Cable Car ($5 Ticket Booth), Animated Ride & Walkable Summit Skywalk States
+  const [nearCableCarStation, setNearCableCarStation] = useState<'base' | 'summit' | null>(null);
+  const [hasCableCarTicket, setHasCableCarTicket] = useState<boolean>(false);
+  const hasCableCarTicketRef = useRef<boolean>(false);
+  hasCableCarTicketRef.current = hasCableCarTicket;
+  const [cableCarRidePhase, setCableCarRidePhase] = useState<'idle' | 'ascending' | 'descending'>('idle');
+  const [cableCarElevationMeters, setCableCarElevationMeters] = useState<number>(120);
+  const [isAtMountainSummit, setIsAtMountainSummit] = useState<boolean>(false);
+  const [nearSummitTelescope, setNearSummitTelescope] = useState<boolean>(false);
+  const [activeTelescopeView, setActiveTelescopeView] = useState<'city' | 'campus' | 'beach' | 'waterfall' | null>(null);
+  const [nearSummitBench, setNearSummitBench] = useState<{ seatX: number; seatZ: number; rotY: number } | null>(null);
+  const [nearSummitCafe, setNearSummitCafe] = useState<boolean>(false);
+
   const isSuperAdminTeacherJan = Boolean(
     user?.email?.toLowerCase().trim() === 'janrelbugtay03@gmail.com' ||
     user?.email?.toLowerCase().trim() === 'khaisangschool.edu.vn@gmail.com' ||
@@ -1413,11 +1467,13 @@ export function EraVerse() {
     try {
       const saved = localStorage.getItem('eraverse_dollars_v2');
       if (saved !== null) return Math.max(0, parseInt(saved, 10) || 0);
-      return isSuperAdminTeacherJan ? 1000 : 0;
+      return isSuperAdminTeacherJan ? 1000 : 25;
     } catch (_e) {
-      return isSuperAdminTeacherJan ? 1000 : 0;
+      return isSuperAdminTeacherJan ? 1000 : 25;
     }
   });
+  const eraDollarsRef = useRef<number>(eraDollars);
+  eraDollarsRef.current = eraDollars;
   const [ownedShopItems, setOwnedShopItems] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('eraverse_owned_shop_items');
@@ -2045,21 +2101,54 @@ export function EraVerse() {
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x38bdf8);
-    scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0032);
+    scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0022);
 
-    const camera = new THREE.PerspectiveCamera(55, width / height, 0.2, 550);
+    // Tropical Island Gradient Sky Dome (Deep Azure Zenith -> Bright Island Cyan -> Warm Sunlit Horizon)
+    const createTropicalSkyDome = () => {
+      const skyCanvas = document.createElement('canvas');
+      skyCanvas.width = 32;
+      skyCanvas.height = 512;
+      const sCtx = skyCanvas.getContext('2d')!;
+      const grad = sCtx.createLinearGradient(0, 0, 0, 512);
+      grad.addColorStop(0.0, '#0284c7');
+      grad.addColorStop(0.28, '#0ea5e9');
+      grad.addColorStop(0.52, '#38bdf8');
+      grad.addColorStop(0.72, '#bae6fd');
+      grad.addColorStop(0.86, '#fef9c3');
+      grad.addColorStop(1.0, '#bae6fd');
+      sCtx.fillStyle = grad;
+      sCtx.fillRect(0, 0, 32, 512);
+      const skyTex = new THREE.CanvasTexture(skyCanvas);
+      skyTex.colorSpace = THREE.SRGBColorSpace;
+      const skyDome = new THREE.Mesh(
+        new THREE.SphereGeometry(490, 32, 24),
+        new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, depthWrite: false, fog: false })
+      );
+      scene.add(skyDome);
+
+      // Warm Tropical Sun Disc & Soft Halo in the Southern/Eastern Sky
+      const sunDisc = new THREE.Mesh(
+        new THREE.SphereGeometry(18, 24, 24),
+        new THREE.MeshBasicMaterial({ color: 0xfffbeb, fog: false })
+      );
+      sunDisc.position.set(130, 175, 290);
+      scene.add(sunDisc);
+    };
+    createTropicalSkyDome();
+
+    const camera = new THREE.PerspectiveCamera(55, width / height, 0.2, 600);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: !isSoftwareGl,
       powerPreference: 'high-performance'
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio * 1.25, 2.5));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.95;
+    renderer.toneMappingExposure = 0.98;
     renderer.shadowMap.enabled = !isSoftwareGl;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     container.innerHTML = '';
     renderer.domElement.style.touchAction = 'none';
@@ -2069,52 +2158,103 @@ export function EraVerse() {
     scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     pmremGenerator.dispose();
 
-    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+    const maxAnisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     let currentQuality: GraphicsQuality = 'high';
 
-    // 1. Lighting Rig (Balanced natural exposure so buildings & ground never wash out to white)
-    const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x15803d, 0.75);
-    hemiLight.position.set(0, 90, 0);
+    // 1. Tropical Daytime Lighting Rig (Soft global illumination, warm tropical sunlight & dynamic palm shadows)
+    const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x22c55e, 0.82);
+    hemiLight.position.set(0, 95, 0);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xfef3c7, 1.2);
-    sunLight.position.set(70, 105, 60);
+    const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.28);
+    sunLight.position.set(75, 115, 75);
     sunLight.castShadow = !isSoftwareGl;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
     sunLight.shadow.camera.near = 1;
-    sunLight.shadow.camera.far = 290;
-    const shadowBound = 115;
+    sunLight.shadow.camera.far = 310;
+    const shadowBound = 118;
     sunLight.shadow.camera.left = -shadowBound;
     sunLight.shadow.camera.right = shadowBound;
     sunLight.shadow.camera.top = shadowBound;
     sunLight.shadow.camera.bottom = -shadowBound;
     sunLight.shadow.bias = -0.0005;
-    sunLight.shadow.normalBias = 0.02;
+    sunLight.shadow.normalBias = 0.025;
     scene.add(sunLight);
 
-    const rimLight = new THREE.DirectionalLight(0x93c5fd, 0.45);
-    rimLight.position.set(-70, 50, -60);
+    const rimLight = new THREE.DirectionalLight(0x7dd3fc, 0.5);
+    rimLight.position.set(-75, 55, -65);
     scene.add(rimLight);
 
-    // 2. High-Sharpness Procedural Textures
+    // 2. High-Resolution Stylized Tropical Grass & Pavement Textures
     const createRichGrassTexture = () => {
+      const size = 1024;
       const c = document.createElement('canvas');
-      c.width = 512;
-      c.height = 512;
+      c.width = size;
+      c.height = size;
       const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#249e3f';
-      ctx.fillRect(0, 0, 512, 512);
 
-      for (let i = 0; i < 2400; i++) {
-        ctx.fillStyle = i % 3 === 0 ? '#1e8736' : i % 3 === 1 ? '#34b350' : '#166929';
-        ctx.fillRect(Math.random() * 512, Math.random() * 512, 3, 7);
+      // Vibrant base tropical lawn green
+      ctx.fillStyle = '#2eab48';
+      ctx.fillRect(0, 0, size, size);
+
+      // Soft rolling meadow & sunlit lawn color variations (eliminates flat repetitive tiling)
+      for (let p = 0; p < 55; p++) {
+        const px = Math.random() * size;
+        const py = Math.random() * size;
+        const pr = 70 + Math.random() * 140;
+        const g = ctx.createRadialGradient(px, py, 8, px, py, pr);
+        if (p % 3 === 0) {
+          g.addColorStop(0, 'rgba(74, 222, 128, 0.24)');
+        } else if (p % 3 === 1) {
+          g.addColorStop(0, 'rgba(22, 163, 74, 0.22)');
+        } else {
+          g.addColorStop(0, 'rgba(134, 239, 172, 0.18)');
+        }
+        g.addColorStop(1, 'rgba(46, 171, 72, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
       }
+
+      // Subtle diagonal lawn-mowing sheen bands
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+      for (let band = 0; band < size; band += 128) {
+        ctx.fillRect(0, band, size, 64);
+      }
+      ctx.restore();
+
+      // Fine stylized grass blade strokes & small clover clusters
+      const bladeColors = ['#22c55e', '#16a34a', '#4ade80', '#15803d', '#86efac'];
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 6500; i++) {
+        const bx = Math.random() * size;
+        const by = Math.random() * size;
+        const bh = 4 + Math.random() * 6;
+        const tilt = (Math.random() - 0.5) * 3.5;
+        ctx.strokeStyle = bladeColors[i % bladeColors.length];
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + tilt * 0.5, by - bh * 0.5, bx + tilt, by - bh);
+        ctx.stroke();
+      }
+
+      // Subtle micro-clover dots & tiny meadow blossoms
+      for (let cIdx = 0; cIdx < 320; cIdx++) {
+        const cx = Math.random() * size;
+        const cy = Math.random() * size;
+        ctx.fillStyle = cIdx % 7 === 0 ? 'rgba(254, 240, 138, 0.65)' : 'rgba(21, 128, 61, 0.35)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, cIdx % 7 === 0 ? 2.2 : 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(55, 55);
+      tex.repeat.set(22, 20);
       tex.anisotropy = maxAnisotropy;
       return tex;
     };
@@ -2124,14 +2264,16 @@ export function EraVerse() {
       c.width = 512;
       c.height = 512;
       const ctx = c.getContext('2d')!;
-      // Warm architectural slate & sandstone pavers (not blinding white)
+      // Warm resort sandstone & travertine stone pavers with clean bevel joints
       ctx.fillStyle = '#64748b';
       ctx.fillRect(0, 0, 512, 512);
       for (let y = 0; y < 512; y += 64) {
         const offset = (y / 64) % 2 === 0 ? 0 : 64;
         for (let x = -64; x < 512; x += 128) {
-          ctx.fillStyle = (x + y) % 128 === 0 ? '#94a3b8' : '#cbd5e1';
-          ctx.fillRect(x + offset + 3, y + 3, 122, 58);
+          ctx.fillStyle = (x + y) % 128 === 0 ? '#cbd5e1' : '#e2e8f0';
+          ctx.beginPath();
+          ctx.roundRect(x + offset + 3, y + 3, 122, 58, 6);
+          ctx.fill();
         }
       }
       const tex = new THREE.CanvasTexture(c);
@@ -2182,14 +2324,15 @@ export function EraVerse() {
     };
 
     const groundMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(460, 460),
+      new THREE.PlaneGeometry(360, 320),
       new THREE.MeshStandardMaterial({
         map: createRichGrassTexture(),
-        roughness: 0.85,
-        metalness: 0.04
+        roughness: 0.82,
+        metalness: 0.03
       })
     );
     groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.position.set(-50, 0, -70);
     groundMesh.receiveShadow = true;
     scene.add(groundMesh);
 
@@ -3747,51 +3890,89 @@ export function EraVerse() {
       phase: 0
     };
 
-    // C. Interactive Campus Playground & Trampoline Jump Pad at East Sports Park Entrance (X = 52, Z = -2)
-    const TRAMPOLINE_POS = { x: 52, z: -2 };
-    const trampGroup = new THREE.Group();
-    trampGroup.position.set(TRAMPOLINE_POS.x, 0, TRAMPOLINE_POS.z);
-    const trampRing = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.2, 3.4, 0.65, 28),
-      new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.3, metalness: 0.3 })
+    // Register Sports Park Grandstand & Perimeter Wall Colliders so characters never pass through obstacles
+    colliders.push(
+      // Tennis East Grandstand
+      {
+        minX: TENNIS_CENTER.x + TENNIS_PLANE_W / 2 + 0.6,
+        maxX: TENNIS_CENTER.x + TENNIS_PLANE_W / 2 + 5.2,
+        minZ: TENNIS_CENTER.z - 14.5,
+        maxZ: TENNIS_CENTER.z + 14.5
+      },
+      // Football West Spectator Grandstand
+      {
+        minX: PITCH_CENTER.x - PITCH_HALF_W - 6.5,
+        maxX: PITCH_CENTER.x - PITCH_HALF_W - 1.5,
+        minZ: PITCH_CENTER.z - 14.5,
+        maxZ: PITCH_CENTER.z + 14.5
+      }
     );
-    trampRing.position.y = 0.32;
-    const trampMatMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.7, 2.7, 0.72, 28),
-      new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        emissive: 0x0284c7,
-        emissiveIntensity: 0.4,
-        roughness: 0.2
-      })
-    );
-    trampMatMesh.position.y = 0.35;
-    trampGroup.add(trampRing, trampMatMesh);
 
-    // Colorful Playground Slide & Swings Set next to Trampoline
-    const slideTower = new THREE.Mesh(
-      new THREE.BoxGeometry(2.8, 3.6, 2.8),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })
-    );
-    slideTower.position.set(-6, 1.8, 0);
-    slideTower.castShadow = true;
-    const slideRoof = new THREE.Mesh(
-      new THREE.ConeGeometry(2.5, 1.8, 4),
-      new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 })
-    );
-    slideRoof.position.set(-6, 4.5, 0);
-    slideRoof.rotation.y = Math.PI / 4;
-    const slideChute = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 0.25, 5.2),
-      new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.3 })
-    );
-    slideChute.position.set(-6, 1.6, 3.2);
-    slideChute.rotation.x = 0.52;
-    trampGroup.add(slideTower, slideRoof, slideChute);
-    scene.add(trampGroup);
+    // 6. Four-Horizon World Architecture:
+    //    NORTH (-Z): Modern Downtown City Skyline
+    //    WEST  (-X): Layered Snow-Capped Mountain Range, Pine Forests, Waterfall & Cable Car Observatory
+    //    SOUTH (+Z): Golden Sandy Beach, Animated Turquoise Ocean Waves, Walkable Boardwalk Pier, Umbrellas & Palm Trees
+    //    EAST  (+X): Sports Park & Coastal Harbor Seawall Promenade
+    const oceanFoamBands: Array<{ mesh: THREE.Mesh; baseZ: number; phaseOffset: number }> = [];
+    const oceanWaveLayers: Array<{ mesh: THREE.Mesh; baseY: number; speed: number; amp: number }> = [];
+    const waterfallRibbons: Array<{ mesh: THREE.Mesh; baseY: number; speed: number; phase: number }> = [];
+    const waterfallMistRings: Array<{ mesh: THREE.Mesh; phase: number }> = [];
+    const cableCarGondolas: Array<{
+      group: THREE.Group;
+      startPos: THREE.Vector3;
+      endPos: THREE.Vector3;
+      phaseOffset: number;
+    }> = [];
+    const cableCarSim = {
+      phase: 'idle' as 'idle' | 'ascending' | 'descending',
+      progress: 0,
+      isAtSummit: false,
+      activeTelescope: null as 'city' | 'campus' | 'beach' | 'waterfall' | null,
+      playerGondola: null as THREE.Group | null,
+      turnstileArm: null as THREE.Mesh | null,
+      summitTurnstileArm: null as THREE.Mesh | null,
+      attendantRoot: null as THREE.Group | null,
+      startPos: new THREE.Vector3(-152, 6.4, 44),
+      endPos: new THREE.Vector3(-196, 78.4, -18)
+    };
+    const swayingPalmCrowns: Array<{ group: THREE.Group; phase: number }> = [];
 
-    // 6. Modern 3D City Skyline Backdrop, Clouds & Trees
-    const createCitySkyline = () => {
+    const createStylizedTree = (tx: number, tz: number, scale = 1, addCollider = true) => {
+      const tree = new THREE.Group();
+      tree.position.set(tx, 0, tz);
+
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.36 * scale, 0.54 * scale, 2.8 * scale, 12),
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
+      );
+      trunk.position.y = 1.4 * scale;
+      trunk.castShadow = true;
+      tree.add(trunk);
+
+      const leafColors = [0x15803d, 0x16a34a, 0x22c55e];
+      [0, 1, 2].forEach((layer) => {
+        const crown = new THREE.Mesh(
+          new THREE.ConeGeometry((2.4 - layer * 0.45) * scale, (2.6 - layer * 0.35) * scale, 14),
+          new THREE.MeshStandardMaterial({ color: leafColors[layer], roughness: 0.6 })
+        );
+        crown.position.y = (3.1 + layer * 1.3) * scale;
+        crown.castShadow = true;
+        tree.add(crown);
+      });
+
+      scene.add(tree);
+      if (addCollider) {
+        colliders.push({
+          minX: tx - 0.75 * scale,
+          maxX: tx + 0.75 * scale,
+          minZ: tz - 0.75 * scale,
+          maxZ: tz + 0.75 * scale
+        });
+      }
+    };
+
+    // A. NORTH HORIZON (-Z): Modern Downtown City Skyline
+    const buildNorthCitySkyline = () => {
       const makeSkyscraperFacadeTexture = (
         bodyHex: string,
         frameHex: string,
@@ -3813,7 +3994,6 @@ export function EraVerse() {
         const cellH = (512 - padY * 2) / rows;
 
         for (let r = 0; r < rows; r++) {
-          // Horizontal spandrel beam
           ctx.fillStyle = frameHex;
           ctx.fillRect(0, padY + r * cellH - 2, 256, 3);
           for (let col = 0; col < cols; col++) {
@@ -3824,7 +4004,6 @@ export function EraVerse() {
             const isWarmLit = (r * 7 + col * 11) % 5 === 0;
             ctx.fillStyle = isWarmLit ? litHex : glassHex;
             ctx.fillRect(wx, wy, ww, wh);
-            // Sky reflection highlight strip
             ctx.fillStyle = 'rgba(255,255,255,0.22)';
             ctx.fillRect(wx, wy, ww * 0.35, wh);
           }
@@ -3851,66 +4030,2651 @@ export function EraVerse() {
           accentMat: new THREE.MeshStandardMaterial({
             color: p.accent,
             emissive: p.accent,
-            emissiveIntensity: 0.35,
+            emissiveIntensity: 0.38,
             roughness: 0.2
           })
         };
       });
 
-      const totalTowers = 44;
-      for (let i = 0; i < totalTowers; i++) {
-        const ang = (i / totalTowers) * Math.PI * 2;
-        const ringOffset = (i % 2) * 24 + (i % 3) * 8;
-        const dist = 208 + ringOffset;
-        const bw = 16 + (i % 4) * 5;
-        const bd = 14 + ((i + 1) % 3) * 5;
-        const bh = 30 + (i % 6) * 9;
-        const style = facadeMaterials[i % facadeMaterials.length];
+      // North Metropolitan Boulevard & Podium Plaza along Z = -112
+      const northBlvd = new THREE.Mesh(
+        new THREE.BoxGeometry(270, 0.22, 12),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 })
+      );
+      northBlvd.position.set(-10, 0.11, -112);
+      northBlvd.receiveShadow = true;
+      scene.add(northBlvd);
 
-        const towerGroup = new THREE.Group();
-        towerGroup.position.set(Math.cos(ang) * dist, 0, Math.sin(ang) * dist);
-        towerGroup.rotation.y = -ang + Math.PI / 2;
+      // Dashed yellow boulevard center line
+      const dashMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+      for (let lx = -135; lx <= 115; lx += 10) {
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.25, 0.35), dashMat);
+        dash.position.set(lx, 0.13, -112);
+        scene.add(dash);
+      }
 
-        // Main Skyscraper Tower Shaft
-        const mainTower = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), style.mat);
-        mainTower.position.y = bh / 2 - 0.5;
-        towerGroup.add(mainTower);
+      // Two tiered rows of North Downtown Skyscrapers (Z = -132 and Z = -168, X from -136 to +118)
+      const northRows = [
+        { zBase: -134, count: 14, hMin: 28, hStep: 7 },
+        { zBase: -172, count: 16, hMin: 44, hStep: 10 }
+      ];
+      northRows.forEach((row, rIdx) => {
+        for (let i = 0; i < row.count; i++) {
+          const frac = i / Math.max(1, row.count - 1);
+          const tx = -134 + frac * 252 + ((i % 2) - 0.5) * 4;
+          const tz = row.zBase - (i % 3) * 7;
+          const bw = 15 + (i % 4) * 4.5;
+          const bd = 14 + ((i + 1) % 3) * 4.5;
+          // Make central downtown towers tallest for a dramatic skyline silhouette
+          const centerPeakBoost = Math.max(0, 1 - Math.abs(tx) / 110) * 24;
+          const bh = row.hMin + ((i * 3 + rIdx) % 5) * row.hStep + centerPeakBoost;
+          const style = facadeMaterials[(i + rIdx * 2) % facadeMaterials.length];
 
-        // Rooftop Crown Parapet & Illuminated Sky-Band
-        const crownBand = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.6, 1.1, bd + 0.6), style.accentMat);
-        crownBand.position.y = bh - 0.4;
-        towerGroup.add(crownBand);
+          const towerGroup = new THREE.Group();
+          towerGroup.position.set(tx, 0, tz);
 
-        // Upper Tier Setback / Penthouse
-        const tierW = bw * 0.68;
-        const tierD = bd * 0.68;
-        const tierH = 5 + (i % 3) * 3.5;
-        const upperTier = new THREE.Mesh(new THREE.BoxGeometry(tierW, tierH, tierD), style.roofMat);
-        upperTier.position.y = bh + tierH / 2 - 0.4;
-        towerGroup.add(upperTier);
+          const mainTower = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), style.mat);
+          mainTower.position.y = bh / 2 - 0.5;
+          mainTower.castShadow = true;
+          towerGroup.add(mainTower);
 
-        // Architectural Spire / Antenna on tall signature skyscrapers
-        if (i % 3 === 0) {
-          const spireH = 8 + (i % 2) * 5;
-          const spire = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.18, 0.42, spireH, 8),
-            style.roofMat
-          );
-          spire.position.y = bh + tierH + spireH / 2 - 0.5;
-          towerGroup.add(spire);
+          const crownBand = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.6, 1.1, bd + 0.6), style.accentMat);
+          crownBand.position.y = bh - 0.4;
+          towerGroup.add(crownBand);
 
-          const beacon = new THREE.Mesh(
-            new THREE.SphereGeometry(0.45, 8, 8),
-            style.accentMat
-          );
-          beacon.position.y = bh + tierH + spireH - 0.3;
-          towerGroup.add(beacon);
+          const tierW = bw * 0.68;
+          const tierD = bd * 0.68;
+          const tierH = 5 + (i % 3) * 3.5;
+          const upperTier = new THREE.Mesh(new THREE.BoxGeometry(tierW, tierH, tierD), style.roofMat);
+          upperTier.position.y = bh + tierH / 2 - 0.4;
+          towerGroup.add(upperTier);
+
+          if ((i + rIdx) % 2 === 0) {
+            const spireH = 9 + (i % 3) * 4.5;
+            const spire = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.18, 0.44, spireH, 8),
+              style.roofMat
+            );
+            spire.position.y = bh + tierH + spireH / 2 - 0.5;
+            towerGroup.add(spire);
+
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.48, 8, 8), style.accentMat);
+            beacon.position.y = bh + tierH + spireH - 0.3;
+            towerGroup.add(beacon);
+          }
+
+          scene.add(towerGroup);
+        }
+      });
+    };
+    buildNorthCitySkyline();
+
+    // B. WEST HORIZON (-X): Layered Snow-Capped Alpine Mountain Range, Pine Forests, Waterfall & Cable Car Observatory
+    const buildWestMountainRange = () => {
+      const mtnGroup = new THREE.Group();
+      const rockDarkMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.88, flatShading: true });
+      const rockMidMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.84, flatShading: true });
+      const snowMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.45, metalness: 0.05, flatShading: true });
+      const meadowFoothillMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85, flatShading: true });
+
+      // Helper to build a faceted low-poly alpine peak with a crisp snow cap
+      const createAlpinePeak = (px: number, pz: number, radius: number, height: number, segments = 7, isMidTone = false) => {
+        const peak = new THREE.Group();
+        peak.position.set(px, 0, pz);
+
+        const baseCone = new THREE.Mesh(
+          new THREE.ConeGeometry(radius, height, segments),
+          isMidTone ? rockMidMat : rockDarkMat
+        );
+        baseCone.position.y = height / 2 - 0.5;
+        baseCone.rotation.y = (px + pz) * 0.17;
+        baseCone.castShadow = true;
+        baseCone.receiveShadow = true;
+        peak.add(baseCone);
+
+        // Snow cap covering upper 36% of the peak
+        const snowH = height * 0.37;
+        const snowR = radius * 0.382;
+        const snowCone = new THREE.Mesh(new THREE.ConeGeometry(snowR, snowH, segments), snowMat);
+        snowCone.position.y = height - snowH / 2 - 0.35;
+        snowCone.rotation.y = baseCone.rotation.y;
+        peak.add(snowCone);
+
+        mtnGroup.add(peak);
+      };
+
+      // Front Foothill Ridge & Alpine Peaks (Kept West of the Cable Car corridor so peaks never clip or overhang the gondola)
+      const peakSpecs: Array<[number, number, number, number, number, boolean]> = [
+        [-192, -98, 28, 56, 7, false],
+        [-222, -74, 38, 84, 8, true],
+        [-198, -52, 24, 52, 7, true],
+        [-212, -24, 22, 71.4, 8, false], // Main Summit Peak tucked cleanly beneath West side of Y=72m Summit Plaza
+        [-208, 0, 21, 52, 7, false],     // Waterfall Cliff Peak shifted West so Cable Car corridor has 25m+ open sky clearance
+        [-230, 14, 38, 94, 8, true],     // Grand Matterhorn Crown Peak
+        [-206, 38, 21, 54, 7, true],     // Shifted West of Base Station & Cable Line
+        [-215, 64, 34, 76, 7, false],
+        [-192, 84, 24, 48, 6, true]
+      ];
+      peakSpecs.forEach(([px, pz, r, h, seg, mid]) => createAlpinePeak(px, pz, r, h, seg, mid));
+
+      // Green Foothill Knolls along X = -178 (Kept clear of the Base Station & Cable Car Line)
+      [-82, -48, 20, 62, 82].forEach((fz, idx) => {
+        const knoll = new THREE.Mesh(
+          new THREE.ConeGeometry(13 + (idx % 2) * 3, 15 + (idx % 3) * 3, 7),
+          meadowFoothillMat
+        );
+        knoll.position.set(-182 - (idx % 2) * 5, 7, fz);
+        mtnGroup.add(knoll);
+      });
+
+      // Spruce & Pine Forest Belt at the base of the West Mountains (Optimized spacing & kept clear of Cable Car Station at Z = 36..54)
+      for (let pz = -96; pz <= 84; pz += 11.5) {
+        if (Math.abs(pz) < 12 || (pz > 33 && pz < 55)) continue;
+        const px1 = -165 - ((Math.abs(Math.round(pz)) % 3) * 2.5);
+        const sc1 = 1.25 + (Math.abs(Math.round(pz)) % 4) * 0.22;
+        createStylizedTree(px1, pz, sc1, false);
+        createStylizedTree(px1 - 6.5, pz + 3.2, sc1 * 1.15, false);
+      }
+
+      // CASCADING MOUNTAIN WATERFALL & EMERALD ALPINE PLUNGE POOL AT (X = -175, Z = 0)
+      const cliffWall = new THREE.Mesh(
+        new THREE.BoxGeometry(8, 34, 14),
+        rockDarkMat
+      );
+      cliffWall.position.set(-182, 17, 0);
+      mtnGroup.add(cliffWall);
+
+      // Emerald Alpine Plunge Pool Basin at the end of the West Academic Promenade (X = -169, Z = 0)
+      const poolRim = new THREE.Mesh(
+        new THREE.CylinderGeometry(10.8, 11.6, 0.9, 28),
+        rockMidMat
+      );
+      poolRim.position.set(-169, 0.45, 0);
+      mtnGroup.add(poolRim);
+
+      const poolWater = new THREE.Mesh(
+        new THREE.CylinderGeometry(9.8, 9.8, 0.96, 28),
+        new THREE.MeshStandardMaterial({
+          color: 0x06b6d4,
+          emissive: 0x0284c7,
+          emissiveIntensity: 0.28,
+          roughness: 0.15,
+          metalness: 0.35
+        })
+      );
+      poolWater.position.set(-169, 0.52, 0);
+      mtnGroup.add(poolWater);
+
+      // Animated Vertical Waterfall Ribbons cascading down the East face of the cliff
+      const waterRibbonMat = new THREE.MeshBasicMaterial({
+        color: 0xe0f2fe,
+        transparent: true,
+        opacity: 0.86
+      });
+      const cyanStreamMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.72
+      });
+
+      const mainFallBacking = new THREE.Mesh(new THREE.BoxGeometry(0.6, 31.5, 6.2), cyanStreamMat);
+      mainFallBacking.position.set(-175.6, 16.2, 0);
+      mtnGroup.add(mainFallBacking);
+
+      for (let wIdx = 0; wIdx < 8; wIdx++) {
+        const zOff = -2.4 + (wIdx % 4) * 1.6;
+        const ribbon = new THREE.Mesh(new THREE.BoxGeometry(0.75, 7.5, 1.15), waterRibbonMat);
+        const startY = 4 + (wIdx * 3.8) % 28;
+        ribbon.position.set(-175.2, startY, zOff);
+        mtnGroup.add(ribbon);
+        waterfallRibbons.push({
+          mesh: ribbon,
+          baseY: startY,
+          speed: 11.5 + (wIdx % 3) * 2.5,
+          phase: wIdx * 0.9
+        });
+      }
+
+      // Churning White Mist & Foam Rings at Waterfall Impact Zone
+      const mistMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.75,
+        side: THREE.DoubleSide
+      });
+      [0, 1, 2].forEach((mIdx) => {
+        const ring = new THREE.Mesh(new THREE.RingGeometry(1.4 + mIdx * 1.3, 2.2 + mIdx * 1.4, 24), mistMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(-173.2, 1.05 + mIdx * 0.03, 0);
+        mtnGroup.add(ring);
+        waterfallMistRings.push({ mesh: ring, phase: mIdx * 2.1 });
+      });
+
+      // ============================================================================
+      // ACCESSIBLE MOUNTAIN CABLE CAR SYSTEM, $5 TICKET BOOTH & SUMMIT SKYWALK (Y=72m)
+      // ============================================================================
+      const SUMMIT_Y = 72.0;
+
+      // Helper to build crisp 3D signage textures for the Ticket Booth, Base Terminal & Summit Skywalk
+      const makeSignMesh = (
+        w: number,
+        h: number,
+        bgHex: string,
+        borderHex: string,
+        kicker: string,
+        headline: string,
+        subline: string
+      ) => {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 192;
+        const ctx = c.getContext('2d')!;
+        ctx.fillStyle = bgHex;
+        ctx.beginPath();
+        ctx.roundRect(8, 8, 496, 176, 24);
+        ctx.fill();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = borderHex;
+        ctx.stroke();
+
+        ctx.fillStyle = borderHex;
+        ctx.font = '800 22px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(kicker, 256, 46);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '900 40px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(headline, 256, 102);
+
+        ctx.fillStyle = '#FEF08A';
+        ctx.font = '800 24px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(subline, 256, 150);
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return new THREE.Mesh(
+          new THREE.BoxGeometry(w, h, 0.16),
+          new THREE.MeshBasicMaterial({ map: tex })
+        );
+      };
+
+      const timberMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.65 });
+      const darkSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.35 });
+      const goldTrimMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.25, metalness: 0.55 });
+      const crimsonMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35, metalness: 0.2 });
+      const stoneDeckMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.55 });
+      const glassDeckMat = new THREE.MeshStandardMaterial({
+        color: 0xbae6fd,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 0.22,
+        transparent: true,
+        opacity: 0.62,
+        roughness: 0.12,
+        metalness: 0.25
+      });
+      const glassRailingMat = new THREE.MeshStandardMaterial({
+        color: 0xe0f2fe,
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.1
+      });
+
+      // 1. LOWER FOOTHILL BASE STATION & $5 TICKET BOOTH PLAZA AT (X = -151, Z = 44)
+      // Approach stone walkway connecting West Campus Lawn to the Cable Car Terminal
+      const approachPath = new THREE.Mesh(new THREE.BoxGeometry(24, 0.12, 6.4), stoneDeckMat);
+      approachPath.position.set(-138, 0.06, 44);
+      mtnGroup.add(approachPath);
+
+      const approachTrim = new THREE.Mesh(new THREE.BoxGeometry(24, 0.14, 0.35), goldTrimMat);
+      approachTrim.position.set(-138, 0.07, 40.9);
+      mtnGroup.add(approachTrim);
+      const approachTrim2 = approachTrim.clone();
+      approachTrim2.position.z = 47.1;
+      mtnGroup.add(approachTrim2);
+
+      // Open-Air Boarding Terminal Platform at (-152, 0, 44)
+      const basePlatform = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.5, 12.0), stoneDeckMat);
+      basePlatform.position.set(-152, 0.25, 44);
+      mtnGroup.add(basePlatform);
+
+      // 4 Tall Timber Corner Pillars supporting the Base Station Canopy Roof (High clearance so cabin & student head never hit roof)
+      [
+        [-155.8, 39.2],
+        [-148.2, 39.2],
+        [-155.8, 48.8],
+        [-148.2, 48.8]
+      ].forEach(([cx, cz]) => {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 6.4, 12), timberMat);
+        col.position.set(cx, 3.45, cz);
+        mtnGroup.add(col);
+      });
+
+      const baseRoof = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.55, 13.0), timberMat);
+      baseRoof.position.set(-152, 6.75, 44);
+      mtnGroup.add(baseRoof);
+
+      const baseRoofCrest = new THREE.Mesh(new THREE.BoxGeometry(11.8, 0.25, 13.4), goldTrimMat);
+      baseRoofCrest.position.set(-152, 7.08, 44);
+      mtnGroup.add(baseRoofCrest);
+
+      // Front Welcome Sign on Base Station Canopy facing East (+X toward campus)
+      const baseMainSign = makeSignMesh(
+        8.6,
+        2.1,
+        '#0F172A',
+        '#F59E0B',
+        'WEST MOUNTAIN AERIAL TRANSIT',
+        '🚡 SUMMIT CABLE CAR',
+        '🎟️ TICKETS: $5 ERA DOLLARS PER RIDE'
+      );
+      baseMainSign.rotation.y = Math.PI / 2;
+      baseMainSign.position.set(-146.2, 7.9, 44);
+      mtnGroup.add(baseMainSign);
+
+      // 2. 3D TICKET BOOTH KIOSK ($5 PER RIDE) AT (X = -146.5, Z = 48.6)
+      const ticketBoothGroup = new THREE.Group();
+      ticketBoothGroup.position.set(-146.5, 0.5, 48.6);
+
+      const boothBody = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.5, 2.8), crimsonMat);
+      boothBody.position.y = 1.25;
+      ticketBoothGroup.add(boothBody);
+
+      const boothCounter = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.18, 3.1), timberMat);
+      boothCounter.position.y = 1.15;
+      ticketBoothGroup.add(boothCounter);
+
+      const boothGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(3.26, 1.05, 2.4),
+        new THREE.MeshStandardMaterial({
+          color: 0xe0f2fe,
+          emissive: 0x38bdf8,
+          emissiveIntensity: 0.25,
+          transparent: true,
+          opacity: 0.65,
+          roughness: 0.1
+        })
+      );
+      boothGlass.position.y = 1.75;
+      ticketBoothGroup.add(boothGlass);
+
+      const boothRoof = new THREE.Mesh(new THREE.ConeGeometry(2.55, 1.35, 4), goldTrimMat);
+      boothRoof.rotation.y = Math.PI / 4;
+      boothRoof.position.y = 3.15;
+      ticketBoothGroup.add(boothRoof);
+
+      const boothSign = makeSignMesh(
+        3.2,
+        1.1,
+        '#064E3B',
+        '#10B981',
+        'CABLE CAR FARE',
+        '🎟️ TICKET BOOTH',
+        '$5 ERA DOLLARS / RIDE'
+      );
+      boothSign.rotation.y = Math.PI / 2;
+      boothSign.position.set(1.68, 2.85, 0);
+      ticketBoothGroup.add(boothSign);
+
+      // Ticket Turnstile Gate beside the Ticket Booth
+      const turnstilePost = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 1.2, 12), darkSteelMat);
+      turnstilePost.position.set(1.6, 0.6, -2.3);
+      ticketBoothGroup.add(turnstilePost);
+
+      const turnstileBar = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 1.85), goldTrimMat);
+      turnstileBar.position.set(1.6, 1.02, -3.2);
+      ticketBoothGroup.add(turnstileBar);
+      cableCarSim.turnstileArm = turnstileBar;
+
+      // Ticket Attendant Character standing beside the Ticket Booth welcoming students
+      const ticketAttendantRig = buildCharacterAvatar({
+        shirtColor: '#dc2626',
+        hairColor: '#1e293b',
+        skinColor: '#fcd34d',
+        hatType: 'cap',
+        accessoryType: 'glasses',
+        name: 'Ticket Clerk Maya',
+        cohort: 'SUMMIT TRANSIT ($5)',
+        gender: 'girl',
+        hairStyle: 'ponytail',
+        clothingType: 'blazer',
+        pantsColor: '#0f172a'
+      });
+      ticketAttendantRig.root.position.set(2.1, 0, -0.4);
+      ticketAttendantRig.root.rotation.y = Math.PI / 2;
+      ticketBoothGroup.add(ticketAttendantRig.root);
+      cableCarSim.attendantRoot = ticketAttendantRig.root;
+
+      mtnGroup.add(ticketBoothGroup);
+
+      // 3. UPPER MOUNTAIN SUMMIT SKYWALK, CITY OVERLOOK & OBSERVATORY PLAZA AT Y = 72m
+      const summitGroup = new THREE.Group();
+
+      // Inward-Tapered Rock Cliff Spire tucked strictly under the West side of the Summit Plaza (Never overhangs the Cable Car line!)
+      const summitRockPedestal = new THREE.Mesh(
+        new THREE.CylinderGeometry(10.5, 5.6, 18, 12),
+        rockMidMat
+      );
+      summitRockPedestal.position.set(-199.5, SUMMIT_Y - 9.3, -19.5);
+      summitGroup.add(summitRockPedestal);
+
+      // Main Walkable Stone Summit Plaza Deck (X: -208..-184, Z: -30..-6, Y = 72.0)
+      const summitPlazaSlab = new THREE.Mesh(new THREE.BoxGeometry(24.0, 0.6, 24.0), stoneDeckMat);
+      summitPlazaSlab.position.set(-196, SUMMIT_Y - 0.3, -18);
+      summitGroup.add(summitPlazaSlab);
+
+      // Cantilevered Transparent Glass Skywalk Deck jutting East toward the City & Campus (X: -184..-171, Z: -26..-10)
+      const glassSkywalkFloor = new THREE.Mesh(new THREE.BoxGeometry(13.5, 0.35, 16.0), glassDeckMat);
+      glassSkywalkFloor.position.set(-177.25, SUMMIT_Y - 0.18, -18);
+      summitGroup.add(glassSkywalkFloor);
+
+      // Steel Support Trusses & Glowing Cyan Frame around the Glass Skywalk
+      const skywalkFrameEast = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 16.4), goldTrimMat);
+      skywalkFrameEast.position.set(-170.5, SUMMIT_Y - 0.15, -18);
+      summitGroup.add(skywalkFrameEast);
+
+      [-26, -10].forEach((sz) => {
+        const sideBeam = new THREE.Mesh(new THREE.BoxGeometry(13.5, 0.42, 0.42), goldTrimMat);
+        sideBeam.position.set(-177.25, SUMMIT_Y - 0.15, sz);
+        summitGroup.add(sideBeam);
+
+        // Diagonal support strut anchored into the mountain cliff
+        const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.34, 15.5, 8), darkSteelMat);
+        strut.position.set(-177.5, SUMMIT_Y - 5.2, sz);
+        strut.rotation.z = -0.82;
+        summitGroup.add(strut);
+      });
+
+      // Perimeter Safety Glass Walls & Gold Handrails around the Summit & Skywalk
+      // North Railing (Z = -30 for Plaza, Z = -26 for Skywalk)
+      const northRailPlaza = new THREE.Mesh(new THREE.BoxGeometry(24.0, 1.3, 0.2), glassRailingMat);
+      northRailPlaza.position.set(-196, SUMMIT_Y + 0.65, -30);
+      summitGroup.add(northRailPlaza);
+
+      const northRailSky = new THREE.Mesh(new THREE.BoxGeometry(13.5, 1.3, 0.2), glassRailingMat);
+      northRailSky.position.set(-177.25, SUMMIT_Y + 0.65, -26);
+      summitGroup.add(northRailSky);
+
+      const southRailPlaza = new THREE.Mesh(new THREE.BoxGeometry(16.0, 1.3, 0.2), glassRailingMat);
+      southRailPlaza.position.set(-200, SUMMIT_Y + 0.65, -6);
+      summitGroup.add(southRailPlaza);
+
+      const southRailSky = new THREE.Mesh(new THREE.BoxGeometry(13.5, 1.3, 0.2), glassRailingMat);
+      southRailSky.position.set(-177.25, SUMMIT_Y + 0.65, -10);
+      summitGroup.add(southRailSky);
+
+      const eastRailSky = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.3, 16.0), glassRailingMat);
+      eastRailSky.position.set(-170.5, SUMMIT_Y + 0.65, -18);
+      summitGroup.add(eastRailSky);
+
+      const westRailPlaza = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.3, 24.0), glassRailingMat);
+      westRailPlaza.position.set(-208, SUMMIT_Y + 0.65, -18);
+      summitGroup.add(westRailPlaza);
+
+      // Summit Observatory Dome & Alpine Sky Cafe at the West/North side of the Summit Deck (-203, 72, -23)
+      const obsBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(4.4, 5.0, 4.8, 16),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.2 })
+      );
+      obsBase.position.set(-202.5, SUMMIT_Y + 2.4, -23.5);
+      summitGroup.add(obsBase);
+
+      const obsDome = new THREE.Mesh(
+        new THREE.SphereGeometry(4.3, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          emissive: 0xd97706,
+          emissiveIntensity: 0.25,
+          roughness: 0.25,
+          metalness: 0.65
+        })
+      );
+      obsDome.position.set(-202.5, SUMMIT_Y + 4.7, -23.5);
+      summitGroup.add(obsDome);
+
+      const obsSpire = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.28, 5.5, 8),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7, roughness: 0.2 })
+      );
+      obsSpire.position.set(-202.5, SUMMIT_Y + 9.8, -23.5);
+      summitGroup.add(obsSpire);
+
+      // Alpine Sky Cafe Kiosk & Barista Counter on the Summit Terrace (-201.5, 72, -12.5)
+      const cafeCounter = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.2, 2.2), timberMat);
+      cafeCounter.position.set(-201.5, SUMMIT_Y + 0.6, -12.5);
+      summitGroup.add(cafeCounter);
+
+      const cafeCanopy = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.3, 2.8), crimsonMat);
+      cafeCanopy.position.set(-201.5, SUMMIT_Y + 3.0, -12.5);
+      summitGroup.add(cafeCanopy);
+
+      [-203.5, -199.5].forEach((px) => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.0, 8), goldTrimMat);
+        post.position.set(px, SUMMIT_Y + 1.5, -12.5);
+        summitGroup.add(post);
+      });
+
+      const cafeSign = makeSignMesh(
+        4.4,
+        1.05,
+        '#1E293B',
+        '#F59E0B',
+        '2,400M ELEVATION',
+        '☕ SUMMIT SKY CAFE',
+        'HOT COCOA & PANORAMIC CITY VIEWS'
+      );
+      cafeSign.rotation.y = Math.PI / 2;
+      cafeSign.position.set(-199.1, SUMMIT_Y + 3.65, -12.5);
+      summitGroup.add(cafeSign);
+
+      // Summit Boarding Canopy & Return Ticket Gate at the South-East edge of the Summit Plaza (-189, 72, -9.0)
+      const summitCanopy = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.45, 7.8), timberMat);
+      summitCanopy.position.set(-189, SUMMIT_Y + 6.55, -9.0);
+      summitGroup.add(summitCanopy);
+      [
+        [-192.4, -12.4],
+        [-185.6, -12.4],
+        [-192.4, -5.6],
+        [-185.6, -5.6]
+      ].forEach(([cx, cz]) => {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 6.5, 10), darkSteelMat);
+        p.position.set(cx, SUMMIT_Y + 3.25, cz);
+        summitGroup.add(p);
+      });
+
+      const summitStationSign = makeSignMesh(
+        6.8,
+        1.5,
+        '#0F172A',
+        '#38BDF8',
+        'UPPER SUMMIT TERMINAL • 2,400M',
+        '🚡 RIDE DOWN TO CAMPUS',
+        '🎟️ RETURN TICKET: $5 ERA DOLLARS'
+      );
+      summitStationSign.rotation.y = Math.PI / 2;
+      summitStationSign.position.set(-185.1, SUMMIT_Y + 7.45, -9.0);
+      summitGroup.add(summitStationSign);
+
+      // Glowing "ERA SUMMIT • CITY OVERLOOK" Photo Arch at the Skywalk Entrance (-184, 72, -18)
+      [-21.8, -14.2].forEach((az) => {
+        const archPillar = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 4.6, 12), goldTrimMat);
+        archPillar.position.set(-184.2, SUMMIT_Y + 2.3, az);
+        summitGroup.add(archPillar);
+      });
+      const photoArchSign = makeSignMesh(
+        8.2,
+        1.45,
+        '#1E1B4B',
+        '#FACC15',
+        'PANORAMIC GLASS SKYWALK • 2,400M',
+        '🏔️ ERA SUMMIT CITY OVERLOOK',
+        'LOOK NORTH FOR CITY SKYLINE & EAST FOR CAMPUS'
+      );
+      photoArchSign.rotation.y = -Math.PI / 2;
+      photoArchSign.position.set(-184.2, SUMMIT_Y + 5.1, -18);
+      summitGroup.add(photoArchSign);
+
+      // 3 Mounted Panoramic City & Campus Telescopes / Binoculars along the Skywalk Railing
+      const telescopePositions: Array<[number, number, number]> = [
+        [-175.5, -25.1, Math.PI], // North railing aiming directly at the North City Skyline!
+        [-171.3, -18.0, Math.PI / 2], // East glass skywalk edge aiming at Central Campus & Beach!
+        [-175.5, -10.9, 0] // South railing aiming at Waterfall, Campus & South Ocean!
+      ];
+      telescopePositions.forEach(([tx, tz, rotY]) => {
+        const teleGroup = new THREE.Group();
+        teleGroup.position.set(tx, SUMMIT_Y, tz);
+        teleGroup.rotation.y = rotY;
+
+        const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.22, 1.35, 10), darkSteelMat);
+        ped.position.y = 0.68;
+        teleGroup.add(ped);
+
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.19, 0.95, 12), goldTrimMat);
+        barrel.rotation.x = Math.PI / 2 - 0.18;
+        barrel.position.set(0, 1.45, 0.12);
+        teleGroup.add(barrel);
+
+        const lens = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.15, 0.15, 0.08, 12),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        lens.rotation.x = Math.PI / 2 - 0.18;
+        lens.position.set(0, 1.36, 0.58);
+        teleGroup.add(lens);
+
+        summitGroup.add(teleGroup);
+      });
+
+      // 2 Wooden Summit Viewing Benches where students can sit & overlook the City Skyline
+      [
+        { x: -181.5, z: -24.4, rotY: Math.PI }, // Facing North City Skyline
+        { x: -173.2, z: -21.5, rotY: Math.PI / 2 } // Facing East Campus & Harbor
+      ].forEach((b) => {
+        const bench = new THREE.Group();
+        bench.position.set(b.x, SUMMIT_Y, b.z);
+        bench.rotation.y = b.rotY;
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.14, 0.75), timberMat);
+        seat.position.y = 0.52;
+        bench.add(seat);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.65, 0.12), timberMat);
+        back.position.set(0, 0.88, -0.32);
+        bench.add(back);
+        [-0.95, 0.95].forEach((lx) => {
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.52, 0.68), darkSteelMat);
+          leg.position.set(lx, 0.26, 0);
+          bench.add(leg);
+        });
+        summitGroup.add(bench);
+      });
+
+      // Friendly Summit Guide NPC on the Skywalk welcoming students to the City Overlook
+      const summitGuideRig = buildCharacterAvatar({
+        shirtColor: '#0284c7',
+        hairColor: '#78350f',
+        skinColor: '#fde68a',
+        hatType: 'crown',
+        accessoryType: 'none',
+        name: 'Summit Guide Leo',
+        cohort: 'CITY SKYLINE OVERLOOK',
+        gender: 'boy',
+        hairStyle: 'short',
+        clothingType: 'hoodie',
+        pantsColor: '#1e293b'
+      });
+      summitGuideRig.root.position.set(-180.5, SUMMIT_Y, -16.2);
+      summitGuideRig.root.rotation.y = Math.PI / 2;
+      summitGroup.add(summitGuideRig.root);
+
+      mtnGroup.add(summitGroup);
+
+      // 4. DUAL SUSPENDED STEEL CABLES & SPACIOUS RIDEABLE PLAYER GONDOLA CABIN (4.55m Interior Headroom!)
+      const cableStart = new THREE.Vector3(-152, 6.2, 44);
+      const cableEnd = new THREE.Vector3(-189, SUMMIT_Y + 6.2, -9.0);
+      cableCarSim.startPos.copy(cableStart);
+      cableCarSim.endPos.copy(cableEnd);
+
+      const cableVec = new THREE.Vector3().subVectors(cableEnd, cableStart);
+      const cableLen = cableVec.length();
+      const cableMid = new THREE.Vector3().addVectors(cableStart, cableEnd).multiplyScalar(0.5);
+
+      const cableMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+      [-1.45, 1.45].forEach((offsetX) => {
+        const cableMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, cableLen, 8), cableMat);
+        cableMesh.position.set(cableMid.x + offsetX, cableMid.y, cableMid.z);
+        cableMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), cableVec.clone().normalize());
+        mtnGroup.add(cableMesh);
+      });
+
+      const gondolaRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.28, metalness: 0.25 });
+      const gondolaGlassMat = new THREE.MeshStandardMaterial({
+        color: 0xe0f2fe,
+        emissive: 0x38bdf8,
+        emissiveIntensity: 0.25,
+        transparent: true,
+        opacity: 0.35,
+        roughness: 0.08
+      });
+      const gondolaGoldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.28, metalness: 0.6 });
+
+      // Construct a tall, spacious panoramic 3D Cable Car Cabin (4.55m interior clearance so the player's head, crown & nameplate never hit the roof!)
+      const createDetailedGondolaCabin = (isPlayerCabin: boolean) => {
+        const gGroup = new THREE.Group();
+        const hanger = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.4, 8), darkSteelMat);
+        hanger.position.y = -0.7;
+        gGroup.add(hanger);
+
+        // Cabin Roof at y = -1.4
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.28, 3.8), gondolaGoldMat);
+        roof.position.y = -1.4;
+        gGroup.add(roof);
+
+        // Cabin Floor at y = -5.95 (4.55m interior height from floor to roof!)
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.25, 3.7), darkSteelMat);
+        floor.position.y = -5.95;
+        gGroup.add(floor);
+
+        // Lower Crimson Body Skirt Panels
+        [
+          [0, -5.22, 1.78, 3.3, 1.25, 0.14],
+          [0, -5.22, -1.78, 3.3, 1.25, 0.14],
+          [-1.58, -5.22, 0, 0.14, 1.25, 3.7]
+        ].forEach(([px, py, pz, sx, sy, sz]) => {
+          const panel = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), gondolaRedMat);
+          panel.position.set(px, py, pz);
+          gGroup.add(panel);
+        });
+
+        // 4 Tall Corner Frame Pillars (4.4m tall)
+        [
+          [-1.55, 1.75],
+          [1.55, 1.75],
+          [-1.55, -1.75],
+          [1.55, -1.75]
+        ].forEach(([cx, cz]) => {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.4, 0.18), gondolaRedMat);
+          post.position.set(cx, -3.68, cz);
+          gGroup.add(post);
+        });
+
+        // Tall Transparent Panoramic Windows
+        const winFront = new THREE.Mesh(new THREE.BoxGeometry(2.95, 2.85, 0.08), gondolaGlassMat);
+        winFront.position.set(0, -3.05, 1.78);
+        gGroup.add(winFront);
+        const winBack = winFront.clone();
+        winBack.position.z = -1.78;
+        gGroup.add(winBack);
+
+        if (!isPlayerCabin) {
+          const winSide = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.85, 3.45), gondolaGlassMat);
+          winSide.position.set(1.58, -3.05, 0);
+          gGroup.add(winSide);
         }
 
-        scene.add(towerGroup);
-      }
+        // Interior Wooden Passenger Bench
+        const insideBench = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.35, 3.0), timberMat);
+        insideBench.position.set(-1.05, -5.65, 0);
+        gGroup.add(insideBench);
+
+        return gGroup;
+      };
+
+      // Primary Rideable Player Gondola on the East Cable (+1.45 offset, docked at Base Station initially)
+      const playerGondola = createDetailedGondolaCabin(true);
+      playerGondola.position.set(cableStart.x + 1.45, cableStart.y, cableStart.z);
+      mtnGroup.add(playerGondola);
+      cableCarSim.playerGondola = playerGondola;
+
+      // Secondary Scenic Counter-Gondola gliding along the West Cable (-1.45 offset)
+      const scenicGondola = createDetailedGondolaCabin(false);
+      mtnGroup.add(scenicGondola);
+      cableCarGondolas.push({
+        group: scenicGondola,
+        startPos: new THREE.Vector3(cableStart.x - 1.45, cableStart.y, cableStart.z),
+        endPos: new THREE.Vector3(cableEnd.x - 1.45, cableEnd.y, cableEnd.z),
+        phaseOffset: Math.PI * 0.5
+      });
+
+      // Block player from walking past the West mountain cliff line at ground level (X < -160)
+      colliders.push({
+        minX: -250,
+        maxX: -158.5,
+        minZ: -140,
+        maxZ: 140
+      });
+
+      scene.add(mtnGroup);
     };
-    createCitySkyline();
+    buildWestMountainRange();
+
+    // C. SOUTH HORIZON (+Z): Polished Tropical Island Beach, Multi-Gradient Ocean, Lush Feathered Palm Trees,
+    //    Tropical Vegetation, Continuous Wooden Boardwalk & Pier, Tiki Beach Huts, Lifeguard Tower & Volleyball Court
+    const buildSouthBeachAndOcean = () => {
+      const beachGroup = new THREE.Group();
+
+      // Shared Ambient Occlusion Contact Shadow Disc Generator
+      const aoCanvas = document.createElement('canvas');
+      aoCanvas.width = 128;
+      aoCanvas.height = 128;
+      const aoCtx = aoCanvas.getContext('2d')!;
+      const aoGrad = aoCtx.createRadialGradient(64, 64, 6, 64, 64, 62);
+      aoGrad.addColorStop(0, 'rgba(15, 23, 42, 0.34)');
+      aoGrad.addColorStop(0.55, 'rgba(15, 23, 42, 0.16)');
+      aoGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+      aoCtx.fillStyle = aoGrad;
+      aoCtx.fillRect(0, 0, 128, 128);
+      const aoTex = new THREE.CanvasTexture(aoCanvas);
+      const aoMat = new THREE.MeshBasicMaterial({
+        map: aoTex,
+        transparent: true,
+        depthWrite: false
+      });
+      const addContactShadow = (parent: THREE.Object3D, radius: number, x = 0, z = 0, y = 0.04) => {
+        const disc = new THREE.Mesh(new THREE.PlaneGeometry(radius * 2, radius * 2), aoMat);
+        disc.rotation.x = -Math.PI / 2;
+        disc.position.set(x, y, z);
+        parent.add(disc);
+      };
+
+      // 1. South Beach Promenade Walk connecting Central Plaza past Era Gallery to the Beach Boardwalk (X = 14, Z = 0 to 88.5)
+      const southPromLen = 88.5;
+      const southPromBed = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.12, southPromLen), plazaMat);
+      southPromBed.position.set(14, 0.06, southPromLen / 2);
+      southPromBed.receiveShadow = true;
+      beachGroup.add(southPromBed);
+      [-2.95, 2.95].forEach((cx) => {
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, southPromLen), curbMatShared);
+        curb.position.set(14 + cx, 0.11, southPromLen / 2);
+        beachGroup.add(curb);
+      });
+
+      // 2. High-Resolution Fine Golden Sand Texture with Color Variations, Wet Shoreline Band & Footprints
+      const sandCanvas = document.createElement('canvas');
+      sandCanvas.width = 1024;
+      sandCanvas.height = 1024;
+      const sCtx = sandCanvas.getContext('2d')!;
+      const sandGrad = sCtx.createLinearGradient(0, 0, 0, 1024);
+      sandGrad.addColorStop(0.0, '#fef08a');   // Warm sunlit upper dune sand
+      sandGrad.addColorStop(0.32, '#fde68a');  // Soft golden mid-beach sand
+      sandGrad.addColorStop(0.68, '#fcd34d');  // Warm honey lower beach sand
+      sandGrad.addColorStop(0.84, '#f59e0b');  // Moist tidal shoreline transition
+      sandGrad.addColorStop(1.0, '#b45309');   // Wet dark golden sand under shallow surf
+      sCtx.fillStyle = sandGrad;
+      sCtx.fillRect(0, 0, 1024, 1024);
+
+      // Soft organic wind-swept sand color ripples & warm coral-sand patches
+      for (let r = 0; r < 45; r++) {
+        const rx = Math.random() * 1024;
+        const ry = Math.random() * 820;
+        const rad = 45 + Math.random() * 110;
+        const rg = sCtx.createRadialGradient(rx, ry, 5, rx, ry, rad);
+        rg.addColorStop(0, r % 2 === 0 ? 'rgba(255, 251, 235, 0.26)' : 'rgba(217, 119, 6, 0.14)');
+        rg.addColorStop(1, 'rgba(253, 230, 138, 0)');
+        sCtx.fillStyle = rg;
+        sCtx.fillRect(0, 0, 1024, 1024);
+      }
+
+      // Fine wind-ripple lines across the sand
+      sCtx.strokeStyle = 'rgba(217, 119, 6, 0.11)';
+      sCtx.lineWidth = 2;
+      for (let wy = 30; wy < 880; wy += 18) {
+        sCtx.beginPath();
+        for (let wx = 0; wx <= 1024; wx += 32) {
+          const yOff = Math.sin(wx * 0.025 + wy * 0.1) * 4;
+          if (wx === 0) sCtx.moveTo(wx, wy + yOff);
+          else sCtx.lineTo(wx, wy + yOff);
+        }
+        sCtx.stroke();
+      }
+
+      // Fine sparkling silica & coral sand micro-grains
+      for (let i = 0; i < 18000; i++) {
+        sCtx.fillStyle =
+          i % 3 === 0
+            ? 'rgba(255,255,255,0.24)'
+            : i % 3 === 1
+            ? 'rgba(180,83,9,0.15)'
+            : 'rgba(251,146,60,0.14)';
+        sCtx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 2);
+      }
+
+      // Natural Footprint Trails along the Shoreline (y = 740..860)
+      sCtx.fillStyle = 'rgba(146, 64, 14, 0.28)';
+      for (let fx = 24; fx < 1000; fx += 26) {
+        const stepSide = (fx / 26) % 2 === 0 ? -7 : 7;
+        const fy = 785 + Math.sin(fx * 0.015) * 28 + stepSide;
+        sCtx.beginPath();
+        sCtx.ellipse(fx, fy, 4.5, 2.4, 0.2 * (stepSide > 0 ? 1 : -1), 0, Math.PI * 2);
+        sCtx.fill();
+      }
+
+      const sandTex = new THREE.CanvasTexture(sandCanvas);
+      sandTex.colorSpace = THREE.SRGBColorSpace;
+      sandTex.wrapS = THREE.RepeatWrapping;
+      sandTex.wrapT = THREE.ClampToEdgeWrapping;
+      sandTex.repeat.set(7, 1);
+      sandTex.anisotropy = maxAnisotropy;
+
+      // Contoured Sand Terrain Mesh with Gentle Dune Elevation Variations & Smooth Slope into the Ocean
+      const sandGeo = new THREE.PlaneGeometry(340, 50, 96, 28);
+      const sandPos = sandGeo.attributes.position;
+      for (let i = 0; i < sandPos.count; i++) {
+        const vx = sandPos.getX(i); // local X (-170..170), world X = vx - 15
+        const vy = sandPos.getY(i); // local Y (-25..25), world Z = 113 - vy
+        const worldX = vx - 15;
+        const worldZ = 113 - vy;
+
+        // Keep boardwalk corridor around X = 14 flat and smooth so planks never clip
+        const distFromBoardwalk = Math.abs(worldX - 14);
+        const duneMask = THREE.MathUtils.smoothstep(distFromBoardwalk, 4.5, 11.0);
+
+        let elev = 0;
+        if (worldZ < 124) {
+          // Gentle rolling upper/mid beach sand dunes
+          const duneWave =
+            Math.sin(worldX * 0.09) * Math.cos((worldZ - 95) * 0.14) * 0.26 +
+            Math.sin(worldX * 0.22 + worldZ * 0.18) * 0.08;
+          elev = Math.max(0.02, (0.18 + duneWave) * duneMask);
+        } else {
+          // Natural smooth slope down into the shallow turquoise water (Z = 124..138)
+          const tShore = (worldZ - 124) / 14;
+          elev = -tShore * 0.42;
+        }
+        sandPos.setZ(i, elev);
+      }
+      sandGeo.computeVertexNormals();
+
+      const sandBeachMesh = new THREE.Mesh(
+        sandGeo,
+        new THREE.MeshStandardMaterial({
+          map: sandTex,
+          roughness: 0.86,
+          metalness: 0.03
+        })
+      );
+      sandBeachMesh.rotation.x = -Math.PI / 2;
+      sandBeachMesh.position.set(-15, 0.02, 113);
+      sandBeachMesh.receiveShadow = true;
+      beachGroup.add(sandBeachMesh);
+
+      // Decorative Rounded Sandstone Edging Stones between Grass Lawn and Sandy Beach along Z = 88.5
+      const curbStoneMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.55 });
+      const warmStoneMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
+      for (let sx = -156; sx <= 112; sx += 3.2) {
+        if (Math.abs(sx - 14) < 3.6) continue; // Leave open gateway for the wooden boardwalk
+        const stone = new THREE.Mesh(
+          new THREE.BoxGeometry(2.95, 0.26, 1.05),
+          Math.abs(Math.round(sx)) % 2 === 0 ? curbStoneMat : warmStoneMat
+        );
+        stone.position.set(sx, 0.13, 88.5);
+        stone.receiveShadow = true;
+        stone.castShadow = true;
+        beachGroup.add(stone);
+      }
+
+      // 3. Multi-Gradient Ocean: Crystal Transparent Shallow Water, Turquoise Mid-Lagoon, Deep Azure Ocean & Sun Reflections
+      const createOceanGradientTexture = () => {
+        const oc = document.createElement('canvas');
+        oc.width = 512;
+        oc.height = 512;
+        const oCtx = oc.getContext('2d')!;
+        const oGrad = oCtx.createLinearGradient(0, 0, 0, 512);
+        oGrad.addColorStop(0.0, '#67e8f9'); // Crystal shallow aqua at shoreline
+        oGrad.addColorStop(0.18, '#22d3ee'); // Bright tropical turquoise
+        oGrad.addColorStop(0.45, '#06b6d4'); // Mid lagoon cyan
+        oGrad.addColorStop(0.75, '#0284c7'); // Deep tropical azure
+        oGrad.addColorStop(1.0, '#0369a1');  // Deep horizon marine blue
+        oCtx.fillStyle = oGrad;
+        oCtx.fillRect(0, 0, 512, 512);
+
+        // Subtle sunlit caustic wave ripples & shimmering water highlights
+        oCtx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        oCtx.lineWidth = 2;
+        for (let wy = 12; wy < 512; wy += 14) {
+          oCtx.beginPath();
+          for (let wx = 0; wx <= 512; wx += 24) {
+            const yWave = Math.sin(wx * 0.05 + wy * 0.15) * 3.5;
+            if (wx === 0) oCtx.moveTo(wx, wy + yWave);
+            else oCtx.lineTo(wx, wy + yWave);
+          }
+          oCtx.stroke();
+        }
+        const tex = new THREE.CanvasTexture(oc);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.repeat.set(6, 1);
+        tex.anisotropy = maxAnisotropy;
+        return tex;
+      };
+
+      // Transparent Crystal-Clear Shallow Shoreline Water (Z = 129 to 147) revealing wet sand beneath
+      const crystalShallowMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(360, 18, 48, 8),
+        new THREE.MeshStandardMaterial({
+          color: 0x22d3ee,
+          emissive: 0x0891b2,
+          emissiveIntensity: 0.14,
+          roughness: 0.55,
+          metalness: 0.04,
+          transparent: true,
+          opacity: 0.72
+        })
+      );
+      crystalShallowMesh.rotation.x = -Math.PI / 2;
+      crystalShallowMesh.position.set(-5, -0.02, 138);
+      beachGroup.add(crystalShallowMesh);
+      oceanWaveLayers.push({ mesh: crystalShallowMesh, baseY: -0.02, speed: 2.1, amp: 0.065 });
+
+      // Main Turquoise-to-Deep-Blue Gradient Ocean Plane (Z = 140 to 270)
+      const mainOceanMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(420, 132, 64, 24),
+        new THREE.MeshStandardMaterial({
+          map: createOceanGradientTexture(),
+          emissive: 0x0369a1,
+          emissiveIntensity: 0.15,
+          roughness: 0.58,
+          metalness: 0.04,
+          transparent: true,
+          opacity: 0.95
+        })
+      );
+      mainOceanMesh.rotation.x = -Math.PI / 2;
+      mainOceanMesh.position.set(10, -0.09, 206);
+      beachGroup.add(mainOceanMesh);
+      oceanWaveLayers.push({ mesh: mainOceanMesh, baseY: -0.09, speed: 1.45, amp: 0.11 });
+
+      // Shimmering Golden Sunlight Specular ReflectionRibbons on the Ocean Water
+      const sunShimmerMat = new THREE.MeshBasicMaterial({
+        color: 0xfef9c3,
+        transparent: true,
+        opacity: 0.36
+      });
+      for (let sIdx = 0; sIdx < 14; sIdx++) {
+        const shimmerW = 10 + (sIdx % 4) * 5;
+        const shimmer = new THREE.Mesh(new THREE.PlaneGeometry(shimmerW, 0.65), sunShimmerMat);
+        shimmer.rotation.x = -Math.PI / 2;
+        const sz = 144 + sIdx * 6.5;
+        const sx = 35 + Math.sin(sIdx * 1.7) * 28;
+        shimmer.position.set(sx, 0.01, sz);
+        beachGroup.add(shimmer);
+        oceanFoamBands.push({ mesh: shimmer, baseZ: sz, phaseOffset: sIdx * 0.85 });
+      }
+
+      // Scalloped Animated White Shoreline Surf Foam Waves near the Beach (Z = 130.5..140)
+      const createScallopedFoamTexture = () => {
+        const fc = document.createElement('canvas');
+        fc.width = 512;
+        fc.height = 64;
+        const fCtx = fc.getContext('2d')!;
+        fCtx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        fCtx.beginPath();
+        fCtx.moveTo(0, 42);
+        for (let x = 0; x <= 512; x += 16) {
+          const yCurve = 18 + Math.sin(x * 0.098) * 10;
+          fCtx.lineTo(x, yCurve);
+        }
+        fCtx.lineTo(512, 54);
+        fCtx.lineTo(0, 54);
+        fCtx.closePath();
+        fCtx.fill();
+        const tex = new THREE.CanvasTexture(fc);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.repeat.set(14, 1);
+        return tex;
+      };
+      const foamWaveTex = createScallopedFoamTexture();
+
+      [0, 1, 2, 3].forEach((fIdx) => {
+        const foamMat = new THREE.MeshBasicMaterial({
+          map: foamWaveTex,
+          transparent: true,
+          opacity: 0.82 - fIdx * 0.14,
+          depthWrite: false
+        });
+        const foamBand = new THREE.Mesh(new THREE.PlaneGeometry(340, 2.2 + fIdx * 0.4), foamMat);
+        foamBand.rotation.x = -Math.PI / 2;
+        const baseZ = 130.8 + fIdx * 3.1;
+        foamBand.position.set(-15, 0.05 + fIdx * 0.01, baseZ);
+        beachGroup.add(foamBand);
+        oceanFoamBands.push({ mesh: foamBand, baseZ, phaseOffset: fIdx * 1.65 });
+      });
+
+      // 4. SEAMLESS WOODEN BOARDWALK WALKWAY (Z = 88.5 to 124) & OCEAN PIER WITH DETAILED RAILINGS & LANTERNS (Z = 124 to 172)
+      const pierGroup = new THREE.Group();
+      const pierX = 14;
+      const boardwalkStartZ = 88.5;
+      const pierStartZ = 124;
+      const pierEndZ = 172;
+      const pierW = 8.4;
+
+      const plankCanvas = document.createElement('canvas');
+      plankCanvas.width = 512;
+      plankCanvas.height = 512;
+      const pCtx = plankCanvas.getContext('2d')!;
+      pCtx.fillStyle = '#92400e';
+      pCtx.fillRect(0, 0, 512, 512);
+      for (let y = 0; y < 512; y += 24) {
+        pCtx.fillStyle = y % 48 === 0 ? '#b45309' : y % 48 === 24 ? '#9a3412' : '#78350f';
+        pCtx.fillRect(0, y, 512, 21);
+        // Subtle wood grain lines
+        pCtx.fillStyle = 'rgba(254, 243, 199, 0.08)';
+        pCtx.fillRect(0, y + 4, 512, 3);
+        // Clean dark plank seam
+        pCtx.fillStyle = '#451a03';
+        pCtx.fillRect(0, y + 21, 512, 3);
+      }
+      const plankTex = new THREE.CanvasTexture(plankCanvas);
+      plankTex.colorSpace = THREE.SRGBColorSpace;
+      plankTex.wrapS = plankTex.wrapT = THREE.RepeatWrapping;
+      plankTex.repeat.set(2, 18);
+      plankTex.anisotropy = maxAnisotropy;
+
+      const trimBeamMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 });
+      const pilingMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.85 });
+      const postWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
+      const ropeGoldMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.6 });
+      const lanternWarmMat = new THREE.MeshStandardMaterial({
+        color: 0xfef08a,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.9
+      });
+
+      // Beach Boardwalk Connector Path over the sand (Z = 88.5 to 124, width 6.4m)
+      const sandWalkLen = pierStartZ - boardwalkStartZ;
+      const sandBoardwalkDeck = new THREE.Mesh(
+        new THREE.BoxGeometry(6.4, 0.18, sandWalkLen),
+        new THREE.MeshStandardMaterial({ map: plankTex, roughness: 0.68 })
+      );
+      sandBoardwalkDeck.position.set(pierX, 0.11, boardwalkStartZ + sandWalkLen / 2);
+      sandBoardwalkDeck.receiveShadow = true;
+      pierGroup.add(sandBoardwalkDeck);
+
+      [-3.32, 3.32].forEach((xEdge) => {
+        const edgeBeam = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, sandWalkLen), trimBeamMat);
+        edgeBeam.position.set(pierX + xEdge, 0.14, boardwalkStartZ + sandWalkLen / 2);
+        edgeBeam.receiveShadow = true;
+        pierGroup.add(edgeBeam);
+      });
+
+      // Main Ocean Pier Deck (Z = 124 to 172, width 8.4m)
+      const pierLen = pierEndZ - pierStartZ;
+      const pierDeck = new THREE.Mesh(
+        new THREE.BoxGeometry(pierW, 0.32, pierLen),
+        new THREE.MeshStandardMaterial({ map: plankTex, roughness: 0.68 })
+      );
+      pierDeck.position.set(pierX, 0.22, pierStartZ + pierLen / 2);
+      pierDeck.receiveShadow = true;
+      pierDeck.castShadow = true;
+      pierGroup.add(pierDeck);
+
+      [-pierW / 2 - 0.12, pierW / 2 + 0.12].forEach((xEdge) => {
+        const pierEdgeBeam = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.4, pierLen), trimBeamMat);
+        pierEdgeBeam.position.set(pierX + xEdge, 0.24, pierStartZ + pierLen / 2);
+        pierGroup.add(pierEdgeBeam);
+      });
+
+      // Detailed Pier Pilings, Double Nautical Railings, Life Rings & Hanging Warm Lanterns
+      const buoyRedMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.4 });
+      for (let pz = pierStartZ + 2; pz <= pierEndZ - 2; pz += 6) {
+        [-pierW / 2 + 0.35, pierW / 2 - 0.35].forEach((xOff, sideIdx) => {
+          const piling = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.34, 3.4, 12), pilingMat);
+          piling.position.set(pierX + xOff, -1.1, pz);
+          pierGroup.add(piling);
+
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 1.32, 12), postWhiteMat);
+          post.position.set(pierX + xOff, 1.02, pz);
+          post.castShadow = true;
+          pierGroup.add(post);
+
+          const postCap = new THREE.Mesh(new THREE.SphereGeometry(0.19, 10, 10), ropeGoldMat);
+          postCap.position.set(pierX + xOff, 1.72, pz);
+          pierGroup.add(postCap);
+
+          // Decorative Warm Pier Lanterns every 12m
+          if ((pz - pierStartZ) % 12 === 2) {
+            const lanternArm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.15, 8), trimBeamMat);
+            lanternArm.position.set(pierX + xOff, 2.25, pz);
+            pierGroup.add(lanternArm);
+
+            const lanternGlobe = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 12), lanternWarmMat);
+            lanternGlobe.position.set(pierX + xOff, 2.85, pz);
+            pierGroup.add(lanternGlobe);
+          }
+
+          // Nautical Rescue Lifebuoy Ring on selected posts
+          if ((pz - pierStartZ) === 14 && sideIdx === 1) {
+            const lifebuoy = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.11, 10, 20), buoyRedMat);
+            lifebuoy.rotation.y = Math.PI / 2;
+            lifebuoy.position.set(pierX + xOff + 0.18, 1.1, pz);
+            pierGroup.add(lifebuoy);
+          }
+        });
+      }
+
+      // Upper and Mid Nautical Rope Railings along the Pier
+      [-pierW / 2 + 0.35, pierW / 2 - 0.35].forEach((xOff) => {
+        const topRail = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, pierLen - 3, 8), ropeGoldMat);
+        topRail.rotation.x = Math.PI / 2;
+        topRail.position.set(pierX + xOff, 1.48, pierStartZ + pierLen / 2);
+        pierGroup.add(topRail);
+
+        const midRail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, pierLen - 3, 8), postWhiteMat);
+        midRail.rotation.x = Math.PI / 2;
+        midRail.position.set(pierX + xOff, 0.98, pierStartZ + pierLen / 2);
+        pierGroup.add(midRail);
+      });
+
+      // Coastal Viewing Gazebo Pavilion at the Ocean End of the Boardwalk Pier (X = 14, Z = 166.5)
+      const gazeboZ = 166.5;
+      const gazeboRoofMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.35, metalness: 0.15 });
+      const gazeboTrimMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.4 });
+      [
+        [-3.2, -3.2],
+        [3.2, -3.2],
+        [-3.2, 3.2],
+        [3.2, 3.2]
+      ].forEach(([gx, gz]) => {
+        const gCol = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 4.3, 14), postWhiteMat);
+        gCol.position.set(pierX + gx, 2.45, gazeboZ + gz);
+        gCol.castShadow = true;
+        pierGroup.add(gCol);
+      });
+
+      const gazeboRoofLower = new THREE.Mesh(new THREE.ConeGeometry(6.1, 2.1, 8), gazeboRoofMat);
+      gazeboRoofLower.position.set(pierX, 5.4, gazeboZ);
+      gazeboRoofLower.rotation.y = Math.PI / 8;
+      gazeboRoofLower.castShadow = true;
+      pierGroup.add(gazeboRoofLower);
+
+      const gazeboRoofUpper = new THREE.Mesh(new THREE.ConeGeometry(3.4, 1.65, 8), gazeboTrimMat);
+      gazeboRoofUpper.position.set(pierX, 6.75, gazeboZ);
+      gazeboRoofUpper.rotation.y = Math.PI / 8;
+      pierGroup.add(gazeboRoofUpper);
+
+      const gazeboFinial = new THREE.Mesh(
+        new THREE.SphereGeometry(0.42, 14, 14),
+        lanternWarmMat
+      );
+      gazeboFinial.position.set(pierX, 7.75, gazeboZ);
+      pierGroup.add(gazeboFinial);
+
+      beachGroup.add(pierGroup);
+
+      // 5. UPGRADED CURVED PALM TREES WITH RINGED TRUNKS, MULTI-SHADE FEATHERED FRONDS, COCONUTS & SHADOWS
+      const trunkBarkLightMat = new THREE.MeshStandardMaterial({ color: 0x9a5b25, roughness: 0.82 });
+      const trunkBarkDarkMat = new THREE.MeshStandardMaterial({ color: 0x7c4316, roughness: 0.88 });
+      const palmLeafShades = [
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.48, side: THREE.DoubleSide }),
+        new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.45, side: THREE.DoubleSide }),
+        new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.5, side: THREE.DoubleSide })
+      ];
+      const coconutMat = new THREE.MeshStandardMaterial({ color: 0x5c2d0c, roughness: 0.72 });
+
+      const createTropicalPalmTree = (px: number, pz: number, sc = 1.0, leanDir = 1) => {
+        const palm = new THREE.Group();
+        palm.position.set(px, 0, pz);
+
+        // Soft ground ambient occlusion shadow beneath palm tree
+        addContactShadow(palm, 2.65 * sc, leanDir * 0.45 * sc, 0, 0.05);
+
+        // 6-Segment Organically Curved Coconut Palm Trunk (Optimized draw calls while preserving smooth curve)
+        const segments = 6;
+        let curX = 0;
+        let curY = 0;
+        for (let s = 0; s < segments; s++) {
+          const segH = 1.12 * sc;
+          const t = s / segments;
+          const rBot = (0.44 - t * 0.21) * sc;
+          const rTop = (0.4 - t * 0.21) * sc;
+          const seg = new THREE.Mesh(
+            new THREE.CylinderGeometry(rTop, rBot, segH, 10),
+            s % 2 === 0 ? trunkBarkLightMat : trunkBarkDarkMat
+          );
+          const tilt = (t * t * 0.42 + t * 0.08) * leanDir;
+          seg.position.set(curX + Math.sin(tilt) * (segH * 0.5), curY + segH * 0.5, 0);
+          seg.rotation.z = -tilt;
+          seg.castShadow = s % 2 === 0;
+          palm.add(seg);
+
+          curX += Math.sin(tilt) * segH;
+          curY += Math.cos(tilt) * segH * 0.96;
+        }
+
+        const crownGroup = new THREE.Group();
+        crownGroup.position.set(curX, curY, 0);
+
+        // Crown Collar & 3 Clustered Coconuts
+        const crownHeart = new THREE.Mesh(
+          new THREE.SphereGeometry(0.32 * sc, 8, 8),
+          trunkBarkDarkMat
+        );
+        crownGroup.add(crownHeart);
+
+        [
+          [-0.24, -0.14, 0.16],
+          [0.24, -0.14, 0.16],
+          [0, -0.16, -0.24]
+        ].forEach(([cx, cy, cz]) => {
+          const coco = new THREE.Mesh(new THREE.SphereGeometry(0.21 * sc, 8, 8), coconutMat);
+          coco.scale.set(0.9, 1.15, 0.9);
+          coco.position.set(cx * sc, cy * sc, cz * sc);
+          crownGroup.add(coco);
+        });
+
+        // 8 Full, Arching Feathered Palm Fronds in 3 Shades of Tropical Green (Optimized 3-arch segments per frond)
+        const totalFronds = 8;
+        for (let f = 0; f < totalFronds; f++) {
+          const isUpperTier = f >= 5;
+          const fAng = (f / totalFronds) * Math.PI * 2 + (isUpperTier ? 0.35 : 0);
+          const leafMat = palmLeafShades[f % palmLeafShades.length];
+
+          const frondPivot = new THREE.Group();
+          frondPivot.rotation.y = fAng;
+          frondPivot.rotation.x = isUpperTier ? -0.18 : 0.06;
+
+          let fY = 0.08 * sc;
+          let fZ = 0.15 * sc;
+          const archAngles = [0.14, 0.44, 0.82];
+          const segLengths = [1.22, 1.25, 1.05];
+
+          for (let a = 0; a < 3; a++) {
+            const sLen = segLengths[a] * sc * (isUpperTier ? 0.88 : 1.0);
+            const pitch = archAngles[a];
+            const widthFactor = Math.sin(((a + 0.6) / 3.4) * Math.PI);
+            const midY = fY - Math.sin(pitch) * (sLen * 0.5);
+            const midZ = fZ + Math.cos(pitch) * (sLen * 0.5);
+
+            const leafletW = (0.85 * widthFactor + 0.25) * sc;
+            const leaflet = new THREE.Mesh(
+              new THREE.BoxGeometry(leafletW, 0.04 * sc, sLen * 0.96),
+              leafMat
+            );
+            leaflet.position.set(0, midY, midZ);
+            leaflet.rotation.x = pitch;
+            frondPivot.add(leaflet);
+
+            fY -= Math.sin(pitch) * sLen;
+            fZ += Math.cos(pitch) * sLen;
+          }
+
+          crownGroup.add(frondPivot);
+        }
+
+        palm.add(crownGroup);
+        swayingPalmCrowns.push({ group: crownGroup, phase: (px + pz) * 0.25 });
+        beachGroup.add(palm);
+
+        colliders.push({
+          minX: px - 0.65,
+          maxX: px + 0.65,
+          minZ: pz - 0.65,
+          maxZ: pz + 0.65
+        });
+      };
+
+      const palmLocations: Array<[number, number, number, number]> = [
+        [-124, 94, 1.18, 1],
+        [-102, 101, 1.25, -1],
+        [-78, 93, 1.15, 1],
+        [-54, 102, 1.22, -1],
+        [-28, 93, 1.16, 1],
+        [-4, 96, 1.24, -1],
+        [6.5, 92.5, 1.14, -1],
+        [21.5, 92.5, 1.18, 1],
+        [36, 98, 1.22, -1],
+        [56, 93, 1.15, 1],
+        [82, 99, 1.26, -1],
+        [104, 94, 1.16, 1],
+        // Along the South Promenade walking path
+        [8.2, 68, 1.08, -1],
+        [19.8, 68, 1.08, 1]
+      ];
+      palmLocations.forEach(([px, pz, sc, ld]) => createTropicalPalmTree(px, pz, sc, ld));
+
+      // 6. TROPICAL VEGETATION, DECORATIVE FLOWERS, MONSTERA PLANTS, SEASHELLS, STARFISH & COASTAL ROCKS
+      const bushDarkMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.65 });
+      const bushMidMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 });
+      const bushLightMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.58 });
+      const flowerColors = [0xf43f5e, 0xfacc15, 0xfb923c, 0xec4899, 0x38bdf8];
+      const rockCoastMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.78 });
+
+      const createTropicalFlowerBush = (bx: number, bz: number, sc = 1.0, flowerHex = 0xf43f5e) => {
+        const bGroup = new THREE.Group();
+        bGroup.position.set(bx, 0, bz);
+        addContactShadow(bGroup, 1.35 * sc, 0, 0, 0.04);
+
+        const puffs: Array<[number, number, number, number, THREE.MeshStandardMaterial]> = [
+          [0, 0.48, 0, 0.68, bushDarkMat],
+          [-0.45, 0.38, 0.25, 0.52, bushMidMat],
+          [0.48, 0.4, -0.2, 0.54, bushLightMat],
+          [0.12, 0.58, 0.38, 0.46, bushMidMat]
+        ];
+        puffs.forEach(([px, py, pz, pr, mat]) => {
+          const sphere = new THREE.Mesh(new THREE.SphereGeometry(pr * sc, 12, 10), mat);
+          sphere.scale.set(1.15, 0.82, 1.1);
+          sphere.position.set(px * sc, py * sc, pz * sc);
+          sphere.castShadow = true;
+          bGroup.add(sphere);
+        });
+
+        // Tropical Hibiscus / Plumeria Flower Blossoms on the bush
+        const fMat = new THREE.MeshStandardMaterial({ color: flowerHex, roughness: 0.4 });
+        const centerMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+        [
+          [0.15, 0.88, 0.2],
+          [-0.35, 0.72, 0.35],
+          [0.42, 0.76, -0.15],
+          [-0.1, 0.82, -0.28],
+          [0.25, 0.65, 0.48]
+        ].forEach(([fx, fy, fz]) => {
+          const blossom = new THREE.Mesh(new THREE.SphereGeometry(0.12 * sc, 8, 8), fMat);
+          blossom.scale.set(1.3, 0.55, 1.3);
+          blossom.position.set(fx * sc, fy * sc, fz * sc);
+          bGroup.add(blossom);
+
+          const pistil = new THREE.Mesh(new THREE.SphereGeometry(0.05 * sc, 6, 6), centerMat);
+          pistil.position.set(fx * sc, (fy + 0.05) * sc, fz * sc);
+          bGroup.add(pistil);
+        });
+
+        // Broad-leaf tropical fern fronds radiating from the base
+        for (let f = 0; f < 5; f++) {
+          const ang = (f / 5) * Math.PI * 2 + bx;
+          const fern = new THREE.Mesh(
+            new THREE.BoxGeometry(0.28 * sc, 0.04 * sc, 0.95 * sc),
+            bushLightMat
+          );
+          fern.position.set(Math.sin(ang) * 0.65 * sc, 0.22 * sc, Math.cos(ang) * 0.65 * sc);
+          fern.rotation.y = ang;
+          fern.rotation.x = -0.25;
+          bGroup.add(fern);
+        }
+
+        beachGroup.add(bGroup);
+      };
+
+      // Distribute Tropical Bushes & Flowering Plants along the Grass-to-Beach Transition & Promenade
+      const bushCoords: Array<[number, number, number]> = [
+        [-112, 87, 1.1],
+        [-92, 90, 0.95],
+        [-74, 86.8, 1.15],
+        [-58, 91, 0.9],
+        [-36, 87, 1.05],
+        [-18, 90.5, 1.0],
+        [-6, 87.2, 1.1],
+        [7.2, 86.8, 0.95],
+        [20.8, 86.8, 0.95],
+        [32, 90.5, 1.05],
+        [52, 87, 1.12],
+        [76, 91, 0.95],
+        [96, 87, 1.1],
+        // Lawn garden accents along the South Promenade
+        [9.2, 76, 0.85],
+        [18.8, 76, 0.85],
+        [9.2, 56, 0.85],
+        [18.8, 56, 0.85]
+      ];
+      bushCoords.forEach(([bx, bz, sc], idx) =>
+        createTropicalFlowerBush(bx, bz, sc, flowerColors[idx % flowerColors.length])
+      );
+
+      // Decorative Smooth Coastal Rocks & Fallen Coconuts near Palm Groves
+      const rockLocations: Array<[number, number, number]> = [
+        [-100, 100.5, 1.0],
+        [-52, 101, 0.85],
+        [-2.5, 95.5, 0.9],
+        [23, 93.2, 0.85],
+        [54.5, 93.8, 0.95],
+        [83.5, 98.2, 1.05]
+      ];
+      rockLocations.forEach(([rx, rz, sc]) => {
+        const rGroup = new THREE.Group();
+        rGroup.position.set(rx, 0, rz);
+        const mainRock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55 * sc, 1), rockCoastMat);
+        mainRock.scale.set(1.3, 0.68, 1.1);
+        mainRock.position.y = 0.25 * sc;
+        mainRock.castShadow = true;
+        rGroup.add(mainRock);
+
+        const sideRock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35 * sc, 1), rockCoastMat);
+        sideRock.scale.set(1.1, 0.65, 1.2);
+        sideRock.position.set(0.52 * sc, 0.16 * sc, 0.25 * sc);
+        rGroup.add(sideRock);
+
+        const fallenCoco = new THREE.Mesh(new THREE.SphereGeometry(0.18 * sc, 10, 10), coconutMat);
+        fallenCoco.position.set(-0.45 * sc, 0.16 * sc, 0.35 * sc);
+        rGroup.add(fallenCoco);
+
+        beachGroup.add(rGroup);
+      });
+
+      // Scattered Shoreline Seashells & Coral Starfish along Z = 121 to 128
+      const shellPinkMat = new THREE.MeshStandardMaterial({ color: 0xfda4af, roughness: 0.45 });
+      const shellCreamMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.45 });
+      const starfishCoralMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
+
+      const shellCoords: Array<[number, number, boolean]> = [
+        [-84, 125.5, true],
+        [-64, 126.8, false],
+        [-42, 124.5, true],
+        [-26, 127.2, false],
+        [-12, 125.8, true],
+        [3.5, 126.4, false],
+        [26, 125.2, true],
+        [44, 127.0, false],
+        [68, 125.6, true],
+        [90, 126.5, false]
+      ];
+      shellCoords.forEach(([sx, sz, isStarfish], idx) => {
+        if (isStarfish) {
+          const star = new THREE.Group();
+          star.position.set(sx, 0.08, sz);
+          star.rotation.y = idx * 0.7;
+          for (let arm = 0; arm < 5; arm++) {
+            const aAng = (arm / 5) * Math.PI * 2;
+            const ray = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.32, 6), starfishCoralMat);
+            ray.rotation.x = Math.PI / 2;
+            ray.rotation.z = -aAng;
+            ray.position.set(Math.sin(aAng) * 0.12, 0.02, Math.cos(aAng) * 0.12);
+            star.add(ray);
+          }
+          beachGroup.add(star);
+        } else {
+          const shell = new THREE.Mesh(
+            new THREE.SphereGeometry(0.16, 10, 8, 0, Math.PI),
+            idx % 2 === 0 ? shellPinkMat : shellCreamMat
+          );
+          shell.rotation.x = -Math.PI / 2;
+          shell.scale.set(1.2, 1.0, 0.55);
+          shell.position.set(sx, 0.07, sz);
+          beachGroup.add(shell);
+        }
+      });
+
+      // 7. STRIPED RESORT UMBRELLAS, PREMIUM CUSHIONED SUN LOUNGERS & SMALL BEACH TABLES
+      // Coordinated Tropical Palette: Turquoise (#06b6d4), Coral (#f43f5e), Sunny Yellow (#facc15), Tropical Orange (#fb923c)
+      const resortPalettes = [
+        { hex: 0x06b6d4, css: '#06b6d4', cushion: 0x22d3ee },
+        { hex: 0xf43f5e, css: '#f43f5e', cushion: 0xfb7185 },
+        { hex: 0xfacc15, css: '#facc15', cushion: 0xfde047 },
+        { hex: 0xfb923c, css: '#fb923c', cushion: 0xfdba74 }
+      ];
+      const teakFrameMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
+      const whiteResortMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
+
+      const createStripedUmbrellaTexture = (accentCss: string) => {
+        const uc = document.createElement('canvas');
+        uc.width = 512;
+        uc.height = 256;
+        const uCtx = uc.getContext('2d')!;
+        const stripes = 8;
+        const sw = 512 / stripes;
+        for (let s = 0; s < stripes; s++) {
+          uCtx.fillStyle = s % 2 === 0 ? accentCss : '#ffffff';
+          uCtx.fillRect(s * sw, 0, sw + 1, 256);
+        }
+        // Contrasting border trim at bottom edge of umbrella canopy
+        uCtx.fillStyle = accentCss;
+        uCtx.fillRect(0, 232, 512, 24);
+        const tex = new THREE.CanvasTexture(uc);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+      };
+
+      const umbrellaMaterials = resortPalettes.map((p) => ({
+        ...p,
+        canopyMat: new THREE.MeshStandardMaterial({
+          map: createStripedUmbrellaTexture(p.css),
+          roughness: 0.45,
+          side: THREE.DoubleSide
+        }),
+        cushionMat: new THREE.MeshStandardMaterial({ color: p.cushion, roughness: 0.5 })
+      }));
+
+      const createBeachUmbrellaSpot = (ux: number, uz: number, styleIdx: number) => {
+        const style = umbrellaMaterials[styleIdx % umbrellaMaterials.length];
+        const spot = new THREE.Group();
+        spot.position.set(ux, 0.14, uz);
+
+        addContactShadow(spot, 2.5, 0, 0.2, 0.02);
+
+        // Teakwood umbrella pole
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 3.3, 12), teakFrameMat);
+        pole.position.y = 1.65;
+        pole.rotation.z = 0.06;
+        pole.castShadow = true;
+        spot.add(pole);
+
+        // Rounded 14-segment Striped Umbrella Canopy + Top Finial
+        const canopy = new THREE.Mesh(
+          new THREE.ConeGeometry(2.45, 0.98, 14, 1, true),
+          style.canopyMat
+        );
+        canopy.position.set(-0.1, 3.18, 0);
+        canopy.rotation.z = 0.06;
+        canopy.castShadow = true;
+        spot.add(canopy);
+
+        const finial = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), whiteResortMat);
+        finial.position.set(-0.13, 3.7, 0);
+        spot.add(finial);
+
+        // Small Round Wooden Beach Side Table with Tropical Drink at center
+        const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.08, 16), teakFrameMat);
+        tableTop.position.set(0, 0.52, 0.45);
+        tableTop.castShadow = true;
+        spot.add(tableTop);
+
+        const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.52, 10), teakFrameMat);
+        tableLeg.position.set(0, 0.26, 0.45);
+        spot.add(tableLeg);
+
+        const drinkCup = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.1, 0.08, 0.22, 10),
+          new THREE.MeshStandardMaterial({ color: style.hex, roughness: 0.3 })
+        );
+        drinkCup.position.set(0.12, 0.66, 0.45);
+        spot.add(drinkCup);
+
+        // Two Premium Sun Loungers with Cushions & Bolster Headrests facing the Ocean (+Z)
+        [-1.42, 1.42].forEach((lx) => {
+          const lGroup = new THREE.Group();
+          lGroup.position.set(lx, 0, 0.4);
+
+          // Teakwood resort base frame & 4 legs
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.14, 2.2), teakFrameMat);
+          frame.position.y = 0.24;
+          frame.castShadow = true;
+          lGroup.add(frame);
+
+          [
+            [-0.42, -0.92],
+            [0.42, -0.92],
+            [-0.42, 0.92],
+            [0.42, 0.92]
+          ].forEach(([legX, legZ]) => {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.24, 8), teakFrameMat);
+            leg.position.set(legX, 0.12, legZ);
+            lGroup.add(leg);
+          });
+
+          // Plush Cushioned Mattress Pad
+          const mattress = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.12, 1.55), whiteResortMat);
+          mattress.position.set(0, 0.36, 0.28);
+          mattress.castShadow = true;
+          lGroup.add(mattress);
+
+          // Reclined Cushioned Backrest
+          const backrest = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.78, 0.12), style.cushionMat);
+          backrest.position.set(0, 0.64, -0.68);
+          backrest.rotation.x = -0.52;
+          backrest.castShadow = true;
+          lGroup.add(backrest);
+
+          // Rounded Bolster Head Pillow
+          const pillow = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.68, 12), whiteResortMat);
+          pillow.rotation.z = Math.PI / 2;
+          pillow.position.set(0, 0.92, -0.82);
+          lGroup.add(pillow);
+
+          spot.add(lGroup);
+        });
+
+        beachGroup.add(spot);
+        colliders.push({
+          minX: ux - 2.2,
+          maxX: ux + 2.2,
+          minZ: uz - 1.2,
+          maxZ: uz + 1.65
+        });
+      };
+
+      const umbrellaSpots: Array<[number, number]> = [
+        [-98, 114],
+        [-72, 116],
+        [-48, 114],
+        [-22, 116],
+        [0, 114],
+        [30, 115],
+        [52, 116],
+        [86, 115]
+      ];
+      umbrellaSpots.forEach(([ux, uz], idx) => createBeachUmbrellaSpot(ux, uz, idx));
+
+      // 8. WOODEN BEACH HUTS / TIKI CABANAS WITH THATCHED ROOFS & HANGING LANTERNS (X = -35, Z = 102 & X = 42, Z = 102)
+      const thatchMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.85 });
+      const thatchLightMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.8 });
+
+      const createTropicalBeachHut = (hx: number, hz: number, titleText: string, accentHex: string) => {
+        const hut = new THREE.Group();
+        hut.position.set(hx, 0.15, hz);
+        addContactShadow(hut, 4.2, 0, 0, 0.02);
+
+        // Raised Wooden Platform Deck
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.26, 5.2), teakFrameMat);
+        deck.position.y = 0.13;
+        deck.receiveShadow = true;
+        deck.castShadow = true;
+        hut.add(deck);
+
+        // 4 Bamboo/Timber Corner Posts
+        [
+          [-2.7, -2.1],
+          [2.7, -2.1],
+          [-2.7, 2.1],
+          [2.7, 2.1]
+        ].forEach(([px, pz]) => {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 3.6, 12), pilingMat);
+          post.position.set(px, 1.9, pz);
+          post.castShadow = true;
+          hut.add(post);
+        });
+
+        // Two-Tiered Thatched Tropical Roof
+        const roofLower = new THREE.Mesh(new THREE.ConeGeometry(4.8, 1.75, 8), thatchMat);
+        roofLower.position.y = 4.35;
+        roofLower.rotation.y = Math.PI / 8;
+        roofLower.castShadow = true;
+        hut.add(roofLower);
+
+        const roofUpper = new THREE.Mesh(new THREE.ConeGeometry(2.9, 1.25, 8), thatchLightMat);
+        roofUpper.position.y = 5.25;
+        roofUpper.rotation.y = Math.PI / 8;
+        hut.add(roofUpper);
+
+        // Front Bamboo Refreshment Counter & 3 Tropical Bar Stools
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.1, 0.85), teakFrameMat);
+        counter.position.set(0, 0.8, 1.6);
+        counter.castShadow = true;
+        hut.add(counter);
+
+        const counterTop = new THREE.Mesh(new THREE.BoxGeometry(4.9, 0.12, 1.05), whiteResortMat);
+        counterTop.position.set(0, 1.38, 1.6);
+        hut.add(counterTop);
+
+        [-1.4, 0, 1.4].forEach((sx, sIdx) => {
+          const stoolLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.68, 10), pilingMat);
+          stoolLeg.position.set(sx, 0.45, 2.45);
+          hut.add(stoolLeg);
+
+          const stoolSeat = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.32, 0.3, 0.12, 14),
+            umbrellaMaterials[sIdx % umbrellaMaterials.length].cushionMat
+          );
+          stoolSeat.position.set(sx, 0.82, 2.45);
+          hut.add(stoolSeat);
+        });
+
+        // Hanging Warm Decorative Lanterns under the Hut Eaves
+        [-2.1, 2.1].forEach((lx) => {
+          const lCord = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.55, 6), pilingMat);
+          lCord.position.set(lx, 3.35, 1.85);
+          hut.add(lCord);
+
+          const lGlobe = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), lanternWarmMat);
+          lGlobe.position.set(lx, 3.0, 1.85);
+          hut.add(lGlobe);
+        });
+
+        // Tropical Surfboard Header Sign
+        const sc = document.createElement('canvas');
+        sc.width = 512;
+        sc.height = 128;
+        const sCtx2 = sc.getContext('2d')!;
+        sCtx2.fillStyle = '#0f172a';
+        sCtx2.beginPath();
+        sCtx2.roundRect(8, 8, 496, 112, 48);
+        sCtx2.fill();
+        sCtx2.lineWidth = 8;
+        sCtx2.strokeStyle = accentHex;
+        sCtx2.stroke();
+        sCtx2.fillStyle = '#ffffff';
+        sCtx2.font = '900 42px Plus Jakarta Sans, sans-serif';
+        sCtx2.textAlign = 'center';
+        sCtx2.textBaseline = 'middle';
+        sCtx2.fillText(titleText, 256, 66);
+        const signTex = new THREE.CanvasTexture(sc);
+        signTex.colorSpace = THREE.SRGBColorSpace;
+
+        const signMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.4, 0.85),
+          new THREE.MeshBasicMaterial({ map: signTex, transparent: true })
+        );
+        signMesh.position.set(0, 3.38, 2.22);
+        hut.add(signMesh);
+
+        beachGroup.add(hut);
+        colliders.push({
+          minX: hx - 3.3,
+          maxX: hx + 3.3,
+          minZ: hz - 2.6,
+          maxZ: hz + 2.8
+        });
+      };
+
+      createTropicalBeachHut(-35, 101.5, '🥥 ALOHA TIKI HUT', '#06b6d4');
+      createTropicalBeachHut(41, 101.5, '🍹 SUNSET CABANA', '#f43f5e');
+
+      // 9. COASTAL LIFEGUARD TOWER (X = -11, Z = 106)
+      const buildLifeguardTower = (lx: number, lz: number) => {
+        const lg = new THREE.Group();
+        lg.position.set(lx, 0.15, lz);
+        addContactShadow(lg, 2.8, 0, 0, 0.02);
+
+        const coralMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.42 });
+        const turquoiseMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.4 });
+        const glassBlueMat = new THREE.MeshStandardMaterial({
+          color: 0xe0f2fe,
+          emissive: 0x38bdf8,
+          emissiveIntensity: 0.3,
+          roughness: 0.1
+        });
+
+        // 4 Angled Timber Stilts
+        [
+          [-1.35, -1.35],
+          [1.35, -1.35],
+          [-1.35, 1.35],
+          [1.35, 1.35]
+        ].forEach(([sx, sz]) => {
+          const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 2.9, 10), postWhiteMat);
+          stilt.position.set(sx, 1.45, sz);
+          stilt.castShadow = true;
+          lg.add(stilt);
+        });
+
+        // Cross-bracing beams
+        const brace1 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.14, 0.14), coralMat);
+        brace1.position.set(0, 1.4, -1.35);
+        brace1.rotation.z = 0.48;
+        lg.add(brace1);
+
+        // Elevated Observation Deck Platform
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.24, 4.2), teakFrameMat);
+        deck.position.y = 2.95;
+        deck.castShadow = true;
+        lg.add(deck);
+
+        // Lifeguard Cabin Box
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.35, 2.5), postWhiteMat);
+        cabin.position.set(0, 4.22, -0.25);
+        cabin.castShadow = true;
+        lg.add(cabin);
+
+        // Coral Trim Band & Panoramic Windows
+        const trimBand = new THREE.Mesh(new THREE.BoxGeometry(2.58, 0.35, 2.58), coralMat);
+        trimBand.position.set(0, 3.35, -0.25);
+        lg.add(trimBand);
+
+        const frontWin = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.95, 2.58), glassBlueMat);
+        frontWin.position.set(0, 4.4, -0.25);
+        lg.add(frontWin);
+
+        const sideWin = new THREE.Mesh(new THREE.BoxGeometry(2.58, 0.95, 1.65), glassBlueMat);
+        sideWin.position.set(0, 4.4, -0.25);
+        lg.add(sideWin);
+
+        // Turquoise Pitched Roof
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(2.4, 1.25, 4), turquoiseMat);
+        roof.position.set(0, 6.0, -0.25);
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        lg.add(roof);
+
+        // Front Balcony Railing & Rescue Lifebuoy
+        const frontRail = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.12, 0.12), postWhiteMat);
+        frontRail.position.set(0, 3.85, 1.9);
+        lg.add(frontRail);
+
+        const rescueTorpedo = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.65, 8, 12), coralMat);
+        rescueTorpedo.rotation.z = Math.PI / 2;
+        rescueTorpedo.position.set(0, 3.55, 1.98);
+        lg.add(rescueTorpedo);
+
+        // Access Ladder on the North (-Z) side
+        [-0.38, 0.38].forEach((railX) => {
+          const lRail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.3, 8), teakFrameMat);
+          lRail.position.set(railX, 1.55, -2.15);
+          lRail.rotation.x = 0.25;
+          lg.add(lRail);
+        });
+        for (let r = 0; r < 6; r++) {
+          const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.76, 8), postWhiteMat);
+          rung.rotation.z = Math.PI / 2;
+          rung.position.set(0, 0.45 + r * 0.46, -2.48 + r * 0.11);
+          lg.add(rung);
+        }
+
+        beachGroup.add(lg);
+        colliders.push({
+          minX: lx - 2.0,
+          maxX: lx + 2.0,
+          minZ: lz - 2.4,
+          maxZ: lz + 2.1
+        });
+      };
+      buildLifeguardTower(-11, 105);
+
+      // 10. BEACH VOLLEYBALL COURT (X = 68, Z = 104)
+      const buildBeachVolleyballCourt = (vx: number, vz: number) => {
+        const vbGroup = new THREE.Group();
+        vbGroup.position.set(vx, 0.18, vz);
+
+        const courtW = 14.0;
+        const courtD = 7.6;
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+
+        // Turquoise Boundary Ribbons on the Sand
+        [
+          [0, -courtD / 2, courtW, 0.16],
+          [0, courtD / 2, courtW, 0.16],
+          [-courtW / 2, 0, 0.16, courtD],
+          [courtW / 2, 0, 0.16, courtD]
+        ].forEach(([lx, lz, lw, ld]) => {
+          const ribbon = new THREE.Mesh(new THREE.BoxGeometry(lw, 0.04, ld), lineMat);
+          ribbon.position.set(lx, 0.03, lz);
+          vbGroup.add(ribbon);
+        });
+
+        // Two Timber Volleyball Net Posts
+        [-courtD / 2 - 0.3, courtD / 2 + 0.3].forEach((pz) => {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 2.55, 12), teakFrameMat);
+          post.position.set(0, 1.28, pz);
+          post.castShadow = true;
+          vbGroup.add(post);
+
+          colliders.push({
+            minX: vx - 0.35,
+            maxX: vx + 0.35,
+            minZ: vz + pz - 0.35,
+            maxZ: vz + pz + 0.35
+          });
+        });
+
+        // Braided Volleyball Net with White Top & Bottom Canvas Tapes
+        const vbNet = new THREE.Mesh(
+          new THREE.PlaneGeometry(courtD + 0.4, 0.95),
+          new THREE.MeshStandardMaterial({
+            color: 0x0f172a,
+            transparent: true,
+            opacity: 0.65,
+            side: THREE.DoubleSide
+          })
+        );
+        vbNet.rotation.y = Math.PI / 2;
+        vbNet.position.set(0, 1.92, 0);
+        vbGroup.add(vbNet);
+
+        [2.4, 1.44].forEach((ty) => {
+          const tape = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, courtD + 0.5), whiteResortMat);
+          tape.position.set(0, ty, 0);
+          vbGroup.add(tape);
+        });
+
+        // Colorful Tropical Beach Volleyball
+        const vBall = new THREE.Mesh(
+          new THREE.SphereGeometry(0.28, 16, 16),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 })
+        );
+        vBall.position.set(1.8, 0.3, 0.8);
+        vBall.castShadow = true;
+        vbGroup.add(vBall);
+
+        beachGroup.add(vbGroup);
+      };
+      buildBeachVolleyballCourt(68, 103);
+
+      // 11. STANDING SURFBOARDS, BEACH ACCESSORIES & TROPICAL DIRECTIONAL SIGNPOST
+      const createSurfboardTexture = (baseHex: string, stripeHex: string) => {
+        const sc = document.createElement('canvas');
+        sc.width = 128;
+        sc.height = 512;
+        const sCtx3 = sc.getContext('2d')!;
+        sCtx3.fillStyle = baseHex;
+        sCtx3.fillRect(0, 0, 128, 512);
+        // Center racing stringer & tropical chevrons
+        sCtx3.fillStyle = '#ffffff';
+        sCtx3.fillRect(56, 0, 16, 512);
+        sCtx3.fillStyle = stripeHex;
+        sCtx3.fillRect(0, 170, 128, 48);
+        sCtx3.fillRect(0, 240, 128, 28);
+        const tex = new THREE.CanvasTexture(sc);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+      };
+
+      const surfConfigs: Array<[number, number, string, string, number]> = [
+        [-29.5, 102.5, '#06b6d4', '#facc15', 0.18],
+        [-28.2, 102.8, '#f43f5e', '#ffffff', -0.15],
+        [46.5, 102.5, '#fb923c', '#06b6d4', -0.16],
+        [47.8, 102.8, '#facc15', '#f43f5e', 0.14],
+        [8.5, 111.5, '#06b6d4', '#f43f5e', -0.12],
+        [19.5, 111.5, '#f43f5e', '#facc15', 0.12]
+      ];
+      surfConfigs.forEach(([sx, sz, c1, c2, tilt]) => {
+        const board = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.34, 1.65, 8, 14),
+          new THREE.MeshStandardMaterial({
+            map: createSurfboardTexture(c1, c2),
+            roughness: 0.25,
+            metalness: 0.1
+          })
+        );
+        board.scale.set(1.0, 1.0, 0.22);
+        board.position.set(sx, 1.15, sz);
+        board.rotation.z = tilt;
+        board.rotation.x = -0.12;
+        board.castShadow = true;
+        beachGroup.add(board);
+      });
+
+      // Tropical Directional Signpost at the Boardwalk Entrance (X = 9.2, Z = 90.5)
+      const buildTropicalSignpost = (sx: number, sz: number) => {
+        const signGroup = new THREE.Group();
+        signGroup.position.set(sx, 0, sz);
+        addContactShadow(signGroup, 0.9, 0, 0, 0.03);
+
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.16, 3.3, 10), teakFrameMat);
+        post.position.y = 1.65;
+        post.castShadow = true;
+        signGroup.add(post);
+
+        const boards: Array<{ label: string; bg: string; y: number; rotY: number }> = [
+          { label: '🥥 TIKI HUT & LIFEGUARD ←', bg: '#06b6d4', y: 2.85, rotY: 0.15 },
+          { label: '🌊 BOARDWALK PIER ↑', bg: '#f43f5e', y: 2.38, rotY: -0.12 },
+          { label: '🏐 BEACH VOLLEYBALL →', bg: '#f59e0b', y: 1.92, rotY: 0.1 }
+        ];
+
+        boards.forEach((b) => {
+          const bc = document.createElement('canvas');
+          bc.width = 512;
+          bc.height = 112;
+          const bCtx = bc.getContext('2d')!;
+          bCtx.fillStyle = b.bg;
+          bCtx.beginPath();
+          bCtx.roundRect(6, 6, 500, 100, 22);
+          bCtx.fill();
+          bCtx.lineWidth = 6;
+          bCtx.strokeStyle = '#ffffff';
+          bCtx.stroke();
+          bCtx.fillStyle = '#ffffff';
+          bCtx.font = '900 32px Plus Jakarta Sans, sans-serif';
+          bCtx.textAlign = 'center';
+          bCtx.textBaseline = 'middle';
+          bCtx.fillText(b.label, 256, 58);
+          const bTex = new THREE.CanvasTexture(bc);
+          bTex.colorSpace = THREE.SRGBColorSpace;
+
+          const plaque = new THREE.Mesh(
+            new THREE.BoxGeometry(2.1, 0.38, 0.08),
+            new THREE.MeshBasicMaterial({ map: bTex })
+          );
+          plaque.position.y = b.y;
+          plaque.rotation.y = b.rotY;
+          signGroup.add(plaque);
+        });
+
+        beachGroup.add(signGroup);
+        colliders.push({
+          minX: sx - 0.55,
+          maxX: sx + 0.55,
+          minZ: sz - 0.55,
+          maxZ: sz + 0.55
+        });
+      };
+      buildTropicalSignpost(9.2, 90.5);
+
+      // Ocean Waterline Colliders (Keep player on the Sandy Beach Z <= 132, except along the Walkable Boardwalk Pier X = 14 where Z goes up to 170)
+      colliders.push(
+        { minX: -220, maxX: pierX - pierW / 2 + 0.3, minZ: 132.5, maxZ: 250 },
+        { minX: pierX + pierW / 2 - 0.3, maxX: 220, minZ: 132.5, maxZ: 250 },
+        { minX: pierX - pierW / 2 - 1, maxX: pierX + pierW / 2 + 1, minZ: pierEndZ - 0.8, maxZ: 250 }
+      );
+
+      scene.add(beachGroup);
+    };
+    buildSouthBeachAndOcean();
+
+    // D. EAST HORIZON (+X): Extended Sandy Beach Behind Era Football Club, Connecting Walkway Patch,
+    //    Era Fishing Club Wooden Pier, Bait & Quiz Kiosk, $1-$10 Fish Market & Animated 3D Swimming Fish Lagoon
+    const eastLagoonFishes: Array<{
+      group: THREE.Group;
+      centerX: number;
+      centerZ: number;
+      radiusX: number;
+      radiusZ: number;
+      speed: number;
+      phase: number;
+      tailMesh: THREE.Mesh;
+    }> = [];
+
+    const buildEastBeachAndFishingClub = () => {
+      const eastGroup = new THREE.Group();
+
+      // 1. Extend East Sports Promenade Walkway Patch past Tennis & Football all the way to the East Beach & Fishing Pier (X = 16 to 122, Z = 0)
+      const eastPatchLen = 58;
+      const eastPatchBed = new THREE.Mesh(new THREE.BoxGeometry(eastPatchLen, 0.14, 6.4), plazaMat);
+      eastPatchBed.position.set(93, 0.07, 0);
+      eastPatchBed.receiveShadow = true;
+      eastGroup.add(eastPatchBed);
+      [-3.36, 3.36].forEach((cz) => {
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(eastPatchLen, 0.24, 0.32), curbMatShared);
+        curb.position.set(93, 0.12, cz);
+        curb.receiveShadow = true;
+        eastGroup.add(curb);
+      });
+
+      // South-East Football Club Side Connector Patch (Z = 51, X = 78 to 118) directly behind the South Goal of Era Football Club
+      const fbSouthPatch = new THREE.Mesh(new THREE.BoxGeometry(42, 0.14, 5.2), plazaMat);
+      fbSouthPatch.position.set(98, 0.07, 51);
+      fbSouthPatch.receiveShadow = true;
+      eastGroup.add(fbSouthPatch);
+      [-2.75, 2.75].forEach((cz) => {
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(42, 0.24, 0.28), curbMatShared);
+        curb.position.set(98, 0.12, 51 + cz);
+        eastGroup.add(curb);
+      });
+
+      // 2. EXTENDED GOLDEN SANDY BEACH WRAPPING BEHIND ERA FOOTBALL CLUB & TENNIS COURT (X = 100 to 146, Z = -95 to +136)
+      const eastSandCanvas = document.createElement('canvas');
+      eastSandCanvas.width = 512;
+      eastSandCanvas.height = 512;
+      const esCtx = eastSandCanvas.getContext('2d')!;
+      const esGrad = esCtx.createLinearGradient(0, 0, 512, 0);
+      esGrad.addColorStop(0.0, '#fef08a');  // Upper dune golden sand behind Football Club
+      esGrad.addColorStop(0.45, '#fde68a'); // Mid beach warm sand
+      esGrad.addColorStop(0.76, '#fcd34d'); // Lower beach honey sand
+      esGrad.addColorStop(0.9, '#f59e0b');  // Moist tidal shoreline
+      esGrad.addColorStop(1.0, '#b45309');  // Wet sand under turquoise shallows
+      esCtx.fillStyle = esGrad;
+      esCtx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 7000; i++) {
+        esCtx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.22)' : 'rgba(180,83,9,0.14)';
+        esCtx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+      }
+      const eastSandTex = new THREE.CanvasTexture(eastSandCanvas);
+      eastSandTex.colorSpace = THREE.SRGBColorSpace;
+      eastSandTex.wrapS = THREE.ClampToEdgeWrapping;
+      eastSandTex.wrapT = THREE.RepeatWrapping;
+      eastSandTex.repeat.set(1, 6);
+
+      const eastSandGeo = new THREE.PlaneGeometry(46, 232, 24, 72);
+      const esPos = eastSandGeo.attributes.position;
+      for (let i = 0; i < esPos.count; i++) {
+        const vx = esPos.getX(i); // local X (-23..23), world X = 123 + vx (100..146)
+        const vy = esPos.getY(i); // local Y (-116..116), world Z = 20 - vy (-96..136)
+        const worldX = 123 + vx;
+        const worldZ = 20 - vy;
+        let elev = 0.05;
+        if (worldX < 134) {
+          const wave = Math.sin(worldZ * 0.08) * Math.cos((worldX - 102) * 0.14) * 0.18;
+          elev = Math.max(0.04, 0.14 + wave);
+        } else {
+          // Gentle natural slope into the East Turquoise Fishing Lagoon (X = 134..146)
+          const tShore = (worldX - 134) / 12;
+          elev = -tShore * 0.38;
+        }
+        esPos.setZ(i, elev);
+      }
+      eastSandGeo.computeVertexNormals();
+
+      const eastSandBeach = new THREE.Mesh(
+        eastSandGeo,
+        new THREE.MeshStandardMaterial({ map: eastSandTex, roughness: 0.86, metalness: 0.03 })
+      );
+      eastSandBeach.rotation.x = -Math.PI / 2;
+      eastSandBeach.position.set(123, 0.03, 20);
+      eastSandBeach.receiveShadow = true;
+      eastGroup.add(eastSandBeach);
+
+      // Rounded Sandstone Edging Border between the Sports Park Grass Lawn and the Extended East Sandy Beach (X = 101.5)
+      const edgeStoneMat1 = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.55 });
+      const edgeStoneMat2 = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
+      for (let sz = -86; sz <= 86; sz += 3.2) {
+        if (Math.abs(sz - 0) < 3.8 || Math.abs(sz - 51) < 3.4) continue; // Keep walking patches open
+        const stone = new THREE.Mesh(
+          new THREE.BoxGeometry(1.05, 0.24, 2.9),
+          Math.abs(Math.round(sz)) % 2 === 0 ? edgeStoneMat1 : edgeStoneMat2
+        );
+        stone.position.set(101.5, 0.12, sz);
+        stone.receiveShadow = true;
+        eastGroup.add(stone);
+      }
+
+      // 3. SCENIC WOODEN COASTAL BOARDWALK PATCH BEHIND ERA FOOTBALL CLUB (X = 114, Z = -60 to +92)
+      const plankCanvas = document.createElement('canvas');
+      plankCanvas.width = 256;
+      plankCanvas.height = 256;
+      const pCtx = plankCanvas.getContext('2d')!;
+      pCtx.fillStyle = '#92400e';
+      pCtx.fillRect(0, 0, 256, 256);
+      for (let y = 0; y < 256; y += 24) {
+        pCtx.fillStyle = y % 48 === 0 ? '#b45309' : '#78350f';
+        pCtx.fillRect(0, y, 256, 21);
+        pCtx.fillStyle = '#451a03';
+        pCtx.fillRect(0, y + 21, 256, 3);
+      }
+      const eastPlankTex = new THREE.CanvasTexture(plankCanvas);
+      eastPlankTex.colorSpace = THREE.SRGBColorSpace;
+      eastPlankTex.wrapS = eastPlankTex.wrapT = THREE.RepeatWrapping;
+      eastPlankTex.repeat.set(2, 28);
+
+      const eastBoardwalkMat = new THREE.MeshStandardMaterial({ map: eastPlankTex, roughness: 0.68 });
+      const timberDarkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.72 });
+      const pilingDarkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.85 });
+      const whitePostMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
+      const goldRopeMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.55 });
+      const lanternGlowMat = new THREE.MeshStandardMaterial({
+        color: 0xfef08a,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.9
+      });
+
+      const eastWalkLen = 152;
+      const eastBoardwalk = new THREE.Mesh(
+        new THREE.BoxGeometry(5.6, 0.18, eastWalkLen),
+        eastBoardwalkMat
+      );
+      eastBoardwalk.position.set(114, 0.14, 16);
+      eastBoardwalk.receiveShadow = true;
+      eastGroup.add(eastBoardwalk);
+
+      [-2.92, 2.92].forEach((xOff) => {
+        const curbBeam = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.24, eastWalkLen), timberDarkMat);
+        curbBeam.position.set(114 + xOff, 0.17, 16);
+        eastGroup.add(curbBeam);
+      });
+
+      // 4. EAST CRYSTAL SHALLOW WATER, TURQUOISE FISHING LAGOON & ANIMATED SURF FOAM (X = 136 to 245)
+      const eastShallowWater = new THREE.Mesh(
+        new THREE.PlaneGeometry(18, 250, 8, 48),
+        new THREE.MeshStandardMaterial({
+          color: 0x22d3ee,
+          emissive: 0x0891b2,
+          emissiveIntensity: 0.15,
+          roughness: 0.55,
+          metalness: 0.04,
+          transparent: true,
+          opacity: 0.74
+        })
+      );
+      eastShallowWater.rotation.x = -Math.PI / 2;
+      eastShallowWater.position.set(143, -0.02, 16);
+      eastGroup.add(eastShallowWater);
+      oceanWaveLayers.push({ mesh: eastShallowWater, baseY: -0.02, speed: 2.0, amp: 0.06 });
+
+      const eastDeepOcean = new THREE.Mesh(
+        new THREE.PlaneGeometry(115, 270),
+        new THREE.MeshStandardMaterial({
+          color: 0x0284c7,
+          emissive: 0x0369a1,
+          emissiveIntensity: 0.16,
+          roughness: 0.58,
+          metalness: 0.04
+        })
+      );
+      eastDeepOcean.rotation.x = -Math.PI / 2;
+      eastDeepOcean.position.set(202, -0.09, 16);
+      eastGroup.add(eastDeepOcean);
+      oceanWaveLayers.push({ mesh: eastDeepOcean, baseY: -0.09, speed: 1.5, amp: 0.09 });
+
+      // White Shoreline Surf Foam Strips along the East Beach (X = 136..141)
+      const eastFoamMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.72
+      });
+      [0, 1, 2].forEach((fIdx) => {
+        const foamLine = new THREE.Mesh(new THREE.PlaneGeometry(1.4 + fIdx * 0.3, 235), eastFoamMat);
+        foamLine.rotation.x = -Math.PI / 2;
+        foamLine.position.set(136.5 + fIdx * 2.4, 0.06, 18);
+        eastGroup.add(foamLine);
+      });
+
+      // 5. ERA FISHING CLUB WOODEN PIER & ANGLER DOCK RIGHT BEHIND ERA FOOTBALL CLUB (X = 116 to 158, Z = 25)
+      const fishingPierGroup = new THREE.Group();
+      const fpCenterZ = 25; // Directly aligned behind Era Football Club (which is at X = 78, Z = 25)
+      const fpStartX = 116.8;
+      const fpEndX = 158.0;
+      const fpLen = fpEndX - fpStartX;
+      const fpW = 8.6;
+
+      const fpDeck = new THREE.Mesh(
+        new THREE.BoxGeometry(fpLen, 0.32, fpW),
+        eastBoardwalkMat
+      );
+      fpDeck.position.set(fpStartX + fpLen / 2, 0.24, fpCenterZ);
+      fpDeck.receiveShadow = true;
+      fpDeck.castShadow = true;
+      fpDeck.userData = { isFishingStation: true };
+      fishingPierGroup.add(fpDeck);
+      clickableBuildingMeshes.push(fpDeck);
+
+      // Wider Fishing Pavilion Head at the Ocean Tip of the East Pier (X = 152 to 162, Z = 17 to 33)
+      const fpHeadDeck = new THREE.Mesh(
+        new THREE.BoxGeometry(10.5, 0.34, 15.6),
+        eastBoardwalkMat
+      );
+      fpHeadDeck.position.set(156.5, 0.25, fpCenterZ);
+      fpHeadDeck.receiveShadow = true;
+      fpHeadDeck.userData = { isFishingStation: true };
+      fishingPierGroup.add(fpHeadDeck);
+      clickableBuildingMeshes.push(fpHeadDeck);
+
+      // Pilings, White Nautical Posts, Rope Railings & Warm Lanterns along the East Fishing Pier
+      for (let px = fpStartX + 2; px <= fpEndX - 1; px += 5.5) {
+        [-fpW / 2 + 0.35, fpW / 2 - 0.35].forEach((zOff) => {
+          const piling = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 3.2, 10), pilingDarkMat);
+          piling.position.set(px, -1.0, fpCenterZ + zOff);
+          fishingPierGroup.add(piling);
+
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 1.3, 10), whitePostMat);
+          post.position.set(px, 1.02, fpCenterZ + zOff);
+          fishingPierGroup.add(post);
+
+          const cap = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), goldRopeMat);
+          cap.position.set(px, 1.7, fpCenterZ + zOff);
+          fishingPierGroup.add(cap);
+        });
+      }
+
+      [-fpW / 2 + 0.35, fpW / 2 - 0.35].forEach((zOff) => {
+        const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, fpLen - 4, 8), goldRopeMat);
+        rail.rotation.z = Math.PI / 2;
+        rail.position.set(fpStartX + fpLen / 2 - 1, 1.45, fpCenterZ + zOff);
+        fishingPierGroup.add(rail);
+      });
+
+      // Mounted Wooden Fishing Rod Stands, Tackle Boxes, Fish Buckets & Floating Red/White Bobbers at the Pier Tip
+      const rodMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.45 });
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+      const bobberRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+      const bucketBlueMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
+
+      [-5.2, -1.8, 1.8, 5.2].forEach((zOffset, rIdx) => {
+        const stationZ = fpCenterZ + zOffset;
+        const stationX = 160.8;
+
+        // Blue Angler Fish Bucket & Wooden Stool on the Pier
+        const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.25, 0.52, 12), bucketBlueMat);
+        bucket.position.set(stationX - 1.1, 0.68, stationZ + 0.55);
+        bucket.userData = { isFishingStation: true };
+        fishingPierGroup.add(bucket);
+        clickableBuildingMeshes.push(bucket);
+
+        // Angled Fishing Rod extending over the East Lagoon
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.06, 3.8, 8), rodMat);
+        rod.position.set(stationX + 1.1, 1.85, stationZ);
+        rod.rotation.z = -0.78;
+        rod.userData = { isFishingStation: true };
+        fishingPierGroup.add(rod);
+        clickableBuildingMeshes.push(rod);
+
+        // Vertical Fishing Line dropping down to the Lagoon Water
+        const lineDrop = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 2.95, 6), lineMat);
+        lineDrop.position.set(stationX + 2.45, 1.48, stationZ);
+        fishingPierGroup.add(lineDrop);
+
+        // Floating Red & White Fishing Bobber on the Lagoon
+        const bobber = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), bobberRedMat);
+        bobber.position.set(stationX + 2.45, 0.04, stationZ);
+        bobber.userData = { isFishingStation: true, phase: rIdx * 1.4 };
+        fishingPierGroup.add(bobber);
+        clickableBuildingMeshes.push(bobber);
+      });
+
+      // Glowing Cyan Interactive Cast Ring on the Pier Deck (X = 155.5, Z = 25)
+      const castPad = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.4, 2.4, 0.1, 28),
+        new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.45 })
+      );
+      castPad.position.set(155.5, 0.46, fpCenterZ);
+      castPad.userData = { isFishingStation: true };
+      fishingPierGroup.add(castPad);
+      clickableBuildingMeshes.push(castPad);
+
+      eastGroup.add(fishingPierGroup);
+
+      // 6. BAIT & QUIZ SHACK ("🪱 COLLECT BAIT • COURSE QUIZ") & FISH MARKET STALL ("🐟 FISH MARKET • $1 TO $10")
+      const thatchRoofMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.82 });
+      const thatchTopMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.78 });
+      const teakMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.62 });
+
+      const buildFishingClubKiosk = (
+        kx: number,
+        kz: number,
+        titleText: string,
+        subText: string,
+        accentHex: string
+      ) => {
+        const kiosk = new THREE.Group();
+        kiosk.position.set(kx, 0.14, kz);
+
+        const baseDeck = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.26, 5.4), teakMat);
+        baseDeck.position.y = 0.13;
+        baseDeck.receiveShadow = true;
+        baseDeck.userData = { isFishingStation: true };
+        kiosk.add(baseDeck);
+        clickableBuildingMeshes.push(baseDeck);
+
+        [
+          [-2.9, -2.2],
+          [2.9, -2.2],
+          [-2.9, 2.2],
+          [2.9, 2.2]
+        ].forEach(([px, pz]) => {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 3.7, 10), pilingDarkMat);
+          post.position.set(px, 1.95, pz);
+          post.castShadow = true;
+          kiosk.add(post);
+        });
+
+        const roof1 = new THREE.Mesh(new THREE.ConeGeometry(5.0, 1.75, 8), thatchRoofMat);
+        roof1.position.y = 4.4;
+        roof1.rotation.y = Math.PI / 8;
+        roof1.castShadow = true;
+        roof1.userData = { isFishingStation: true };
+        kiosk.add(roof1);
+        clickableBuildingMeshes.push(roof1);
+
+        const roof2 = new THREE.Mesh(new THREE.ConeGeometry(3.0, 1.25, 8), thatchTopMat);
+        roof2.position.y = 5.3;
+        roof2.rotation.y = Math.PI / 8;
+        kiosk.add(roof2);
+
+        // Front Counter facing West (-X) toward Era Football Club & the Boardwalk
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.12, 4.8), teakMat);
+        counter.position.set(-1.75, 0.82, 0);
+        counter.castShadow = true;
+        counter.userData = { isFishingStation: true };
+        kiosk.add(counter);
+        clickableBuildingMeshes.push(counter);
+
+        const counterTop = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.12, 5.1), whitePostMat);
+        counterTop.position.set(-1.75, 1.42, 0);
+        kiosk.add(counterTop);
+
+        // High-Contrast Signboard on the Kiosk
+        const sc = document.createElement('canvas');
+        sc.width = 512;
+        sc.height = 160;
+        const sCtx2 = sc.getContext('2d')!;
+        sCtx2.fillStyle = '#0f172a';
+        sCtx2.beginPath();
+        sCtx2.roundRect(8, 8, 496, 144, 36);
+        sCtx2.fill();
+        sCtx2.lineWidth = 8;
+        sCtx2.strokeStyle = accentHex;
+        sCtx2.stroke();
+        sCtx2.fillStyle = '#ffffff';
+        sCtx2.font = '900 34px Plus Jakarta Sans, sans-serif';
+        sCtx2.textAlign = 'center';
+        sCtx2.fillText(titleText, 256, 64);
+        sCtx2.fillStyle = accentHex;
+        sCtx2.font = '800 24px Plus Jakarta Sans, sans-serif';
+        sCtx2.fillText(subText, 256, 114);
+        const signTex = new THREE.CanvasTexture(sc);
+        signTex.colorSpace = THREE.SRGBColorSpace;
+
+        const signPlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(4.2, 1.25),
+          new THREE.MeshBasicMaterial({ map: signTex, transparent: true, side: THREE.DoubleSide })
+        );
+        signPlane.rotation.y = -Math.PI / 2;
+        signPlane.position.set(-2.35, 3.45, 0);
+        signPlane.userData = { isFishingStation: true };
+        kiosk.add(signPlane);
+        clickableBuildingMeshes.push(signPlane);
+
+        eastGroup.add(kiosk);
+        colliders.push({
+          minX: kx - 3.3,
+          maxX: kx + 3.3,
+          minZ: kz - 2.6,
+          maxZ: kz + 2.6
+        });
+      };
+
+      buildFishingClubKiosk(
+        121.5,
+        13.5,
+        '🪱 BAIT & QUIZ HUT',
+        'ANSWER CLASS QUESTIONS → GET BAIT',
+        '#22d3ee'
+      );
+      buildFishingClubKiosk(
+        121.5,
+        36.5,
+        '🐟 ERA FISH MARKET',
+        'SELL FISH: $1 • $2 • $5 • $10 DOLLARS',
+        '#10b981'
+      );
+
+      // 7. ANIMATED 3D TROPICAL FISH SWIMMING IN THE EAST LAGOON AROUND THE FISHING PIER (X = 141..168, Z = 4..46)
+      const fishColors = [0xf97316, 0x06b6d4, 0xfacc15, 0xf43f5e, 0x10b981, 0xa855f7, 0x3b82f6];
+      for (let f = 0; f < 16; f++) {
+        const fishGroup = new THREE.Group();
+        const fCol = fishColors[f % fishColors.length];
+        const fMat = new THREE.MeshStandardMaterial({
+          color: fCol,
+          emissive: fCol,
+          emissiveIntensity: 0.25,
+          roughness: 0.25
+        });
+
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.52, 6, 10), fMat);
+        body.rotation.x = Math.PI / 2;
+        body.scale.set(0.75, 1.0, 1.15);
+        fishGroup.add(body);
+
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.38, 4), fMat);
+        tail.rotation.x = -Math.PI / 2;
+        tail.position.z = -0.45;
+        fishGroup.add(tail);
+
+        const cx = 143 + (f % 4) * 5.2;
+        const cz = 8 + Math.floor(f / 4) * 11.5;
+        fishGroup.position.set(cx, 0.02, cz);
+        fishGroup.userData = { isFishingStation: true };
+        eastGroup.add(fishGroup);
+
+        eastLagoonFishes.push({
+          group: fishGroup,
+          centerX: cx,
+          centerZ: cz,
+          radiusX: 1.8 + (f % 3) * 0.9,
+          radiusZ: 2.2 + (f % 4) * 0.8,
+          speed: 0.9 + (f % 5) * 0.28,
+          phase: f * 0.9,
+          tailMesh: tail
+        });
+      }
+
+      // 8. PALM TREES, STRIPED RESORT UMBRELLAS & SUN LOUNGERS ON THE EXTENDED EAST BEACH BEHIND FOOTBALL CLUB
+      const eastPalmTrunkMat1 = new THREE.MeshStandardMaterial({ color: 0x9a5b25, roughness: 0.82 });
+      const eastPalmTrunkMat2 = new THREE.MeshStandardMaterial({ color: 0x7c4316, roughness: 0.88 });
+      const eastPalmLeafMat1 = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.45, side: THREE.DoubleSide });
+      const eastPalmLeafMat2 = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.5, side: THREE.DoubleSide });
+
+      const spawnEastBeachPalm = (px: number, pz: number, sc = 1.12, lean = 1) => {
+        const pGroup = new THREE.Group();
+        pGroup.position.set(px, 0, pz);
+        let curX = 0;
+        let curY = 0;
+        for (let s = 0; s < 5; s++) {
+          const segH = 1.2 * sc;
+          const t = s / 5;
+          const seg = new THREE.Mesh(
+            new THREE.CylinderGeometry((0.39 - t * 0.19) * sc, (0.42 - t * 0.19) * sc, segH, 9),
+            s % 2 === 0 ? eastPalmTrunkMat1 : eastPalmTrunkMat2
+          );
+          const tilt = (t * t * 0.38 + t * 0.07) * lean;
+          seg.position.set(curX + Math.sin(tilt) * (segH * 0.5), curY + segH * 0.5, 0);
+          seg.rotation.z = -tilt;
+          seg.castShadow = s % 2 === 0;
+          pGroup.add(seg);
+          curX += Math.sin(tilt) * segH;
+          curY += Math.cos(tilt) * segH * 0.96;
+        }
+        const crown = new THREE.Group();
+        crown.position.set(curX, curY, 0);
+        for (let f = 0; f < 7; f++) {
+          const ang = (f / 7) * Math.PI * 2;
+          const frond = new THREE.Group();
+          frond.rotation.y = ang;
+          let fy = 0.06 * sc;
+          let fz = 0.14 * sc;
+          [0.18, 0.56].forEach((pitch, aIdx) => {
+            const sLen = (1.35 - aIdx * 0.2) * sc;
+            const leaflet = new THREE.Mesh(
+              new THREE.BoxGeometry(0.72 * sc, 0.04 * sc, sLen),
+              f % 2 === 0 ? eastPalmLeafMat1 : eastPalmLeafMat2
+            );
+            leaflet.position.set(0, fy - Math.sin(pitch) * (sLen * 0.5), fz + Math.cos(pitch) * (sLen * 0.5));
+            leaflet.rotation.x = pitch;
+            frond.add(leaflet);
+            fy -= Math.sin(pitch) * sLen;
+            fz += Math.cos(pitch) * sLen;
+          });
+          crown.add(frond);
+        }
+        pGroup.add(crown);
+        swayingPalmCrowns.push({ group: crown, phase: (px + pz) * 0.22 });
+        eastGroup.add(pGroup);
+        colliders.push({ minX: px - 0.65, maxX: px + 0.65, minZ: pz - 0.65, maxZ: pz + 0.65 });
+      };
+
+      const eastPalmSpots: Array<[number, number, number, number]> = [
+        [107, -64, 1.15, 1],
+        [108, -38, 1.18, -1],
+        [106, -12, 1.14, 1],
+        [107, 10, 1.2, 1],
+        [107, 42, 1.18, -1],
+        [108, 66, 1.16, 1],
+        [109, 84, 1.22, -1],
+        [124, -22, 1.15, 1],
+        [125, 56, 1.18, 1],
+        [124, 78, 1.16, -1]
+      ];
+      eastPalmSpots.forEach(([px, pz, sc, ld]) => spawnEastBeachPalm(px, pz, sc, ld));
+
+      // East Beach Umbrellas & Sun Loungers facing the East Turquoise Lagoon (+X)
+      const eastUmbrellaCols = ['#06b6d4', '#f43f5e', '#facc15', '#fb923c'];
+      const eastUmbrellaCoords: Array<[number, number]> = [
+        [126, -46],
+        [127, -8],
+        [127, 48],
+        [126, 70],
+        [125, 92]
+      ];
+      eastUmbrellaCoords.forEach(([ux, uz], idx) => {
+        const uGroup = new THREE.Group();
+        uGroup.position.set(ux, 0.14, uz);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 3.2, 10), teakMat);
+        pole.position.y = 1.6;
+        pole.castShadow = true;
+        uGroup.add(pole);
+
+        const uc = document.createElement('canvas');
+        uc.width = 256;
+        uc.height = 128;
+        const uCtx = uc.getContext('2d')!;
+        for (let s = 0; s < 8; s++) {
+          uCtx.fillStyle = s % 2 === 0 ? eastUmbrellaCols[idx % eastUmbrellaCols.length] : '#ffffff';
+          uCtx.fillRect(s * 32, 0, 33, 128);
+        }
+        const canopyTex = new THREE.CanvasTexture(uc);
+        canopyTex.colorSpace = THREE.SRGBColorSpace;
+
+        const canopy = new THREE.Mesh(
+          new THREE.ConeGeometry(2.35, 0.95, 12, 1, true),
+          new THREE.MeshStandardMaterial({ map: canopyTex, roughness: 0.45, side: THREE.DoubleSide })
+        );
+        canopy.position.y = 3.1;
+        canopy.castShadow = true;
+        uGroup.add(canopy);
+
+        [-1.35, 1.35].forEach((lz) => {
+          const lounger = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.24, 0.95), whitePostMat);
+          lounger.position.set(0.3, 0.22, lz);
+          lounger.castShadow = true;
+          uGroup.add(lounger);
+        });
+
+        eastGroup.add(uGroup);
+        colliders.push({ minX: ux - 1.6, maxX: ux + 1.6, minZ: uz - 2.1, maxZ: uz + 2.1 });
+      });
+
+      // East Shoreline Water Colliders (Allow player onto the East Sandy Beach X <= 135, and all the way out onto the East Fishing Pier X <= 160.5 when Z is between 17.5 and 32.5)
+      colliders.push(
+        { minX: 135.5, maxX: 245, minZ: -140, maxZ: fpCenterZ - 7.6 },
+        { minX: 135.5, maxX: 245, minZ: fpCenterZ + 7.6, maxZ: 132.5 },
+        { minX: 161.2, maxX: 245, minZ: fpCenterZ - 8.5, maxZ: fpCenterZ + 8.5 }
+      );
+
+      scene.add(eastGroup);
+    };
+    buildEastBeachAndFishingClub();
 
     const clouds: Array<{ group: THREE.Group; speed: number }> = [];
     const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
@@ -3931,42 +6695,10 @@ export function EraVerse() {
       clouds.push({ group: cGroup, speed: 0.8 + (i % 4) * 0.35 });
     }
 
-    const createStylizedTree = (tx: number, tz: number, scale = 1) => {
-      const tree = new THREE.Group();
-      tree.position.set(tx, 0, tz);
-
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.36 * scale, 0.54 * scale, 2.8 * scale, 12),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
-      );
-      trunk.position.y = 1.4 * scale;
-      trunk.castShadow = true;
-      tree.add(trunk);
-
-      const leafColors = [0x15803d, 0x16a34a, 0x22c55e];
-      [0, 1, 2].forEach((layer) => {
-        const crown = new THREE.Mesh(
-          new THREE.ConeGeometry((2.4 - layer * 0.45) * scale, (2.6 - layer * 0.35) * scale, 14),
-          new THREE.MeshStandardMaterial({ color: leafColors[layer], roughness: 0.6 })
-        );
-        crown.position.y = (3.1 + layer * 1.3) * scale;
-        crown.castShadow = true;
-        tree.add(crown);
-      });
-
-      scene.add(tree);
-      colliders.push({
-        minX: tx - 0.75,
-        maxX: tx + 0.75,
-        minZ: tz - 0.75,
-        maxZ: tz + 0.75
-      });
-    };
-
     const treeCoords = [
       [-22, -38, 1.2], [22, -38, 1.15], [-24, 38, 1.2], [24, 38, 1.25],
       [-28, -8, 1.05], [28, -8, 1.1], [-28, 10, 1.05], [28, 10, 1.1],
-      [-18, -58, 1.3], [18, -58, 1.3], [-18, 60, 1.3], [18, 60, 1.3]
+      [-18, -58, 1.3], [18, -58, 1.3], [-18, 60, 1.3], [26, 60, 1.3]
     ];
     treeCoords.forEach(([tx, tz, sc]) => createStylizedTree(tx, tz, sc));
 
@@ -4079,7 +6811,7 @@ export function EraVerse() {
     // ============================================================================
     // 7. HIGH-DETAIL 3D CHARACTER BUILDER (Sculpted Head, Ears, Smile, Shoes, Backpack, Collar)
     // ============================================================================
-    const createNameplateSprite = (name: string, cohort: string) => {
+    function createNameplateSprite(name: string, cohort: string) {
       const c = document.createElement('canvas');
       c.width = 360;
       c.height = 88;
@@ -4118,9 +6850,9 @@ export function EraVerse() {
       sprite.scale.set(2.65, 0.65, 1);
       sprite.position.set(0, 3.78, 0);
       return sprite;
-    };
+    }
 
-    const buildCharacterAvatar = (opts: {
+    function buildCharacterAvatar(opts: {
       shirtColor: string;
       hairColor: string;
       skinColor: string;
@@ -4136,9 +6868,9 @@ export function EraVerse() {
       beltType?: string;
       vehicleType?: string;
       [key: string]: any;
-    }) => {
+    }) {
       const root = new THREE.Group();
-      const segs = currentQuality === 'high' ? 20 : currentQuality === 'medium' ? 12 : 8;
+      const segs = currentQuality === 'high' ? 12 : currentQuality === 'medium' ? 10 : 8;
 
       const shadowDisc = new THREE.Mesh(
         new THREE.CircleGeometry(0.84, segs),
@@ -4158,7 +6890,7 @@ export function EraVerse() {
           beltStyle: opts.beltStyle || opts.beltType,
           rideStyle: opts.rideStyle || opts.vehicleType
         },
-        currentQuality === 'high' ? 'high' : 'campus'
+        'campus'
       );
 
       // Scale anatomical studio mesh (2.15m) to match campus world scale (~3.12m)
@@ -4170,6 +6902,9 @@ export function EraVerse() {
 
       return {
         root,
+        hipsGroup: built.hipsGroup,
+        defaultHipsY: built.hipsGroup.position.y,
+        vehicleGroup: built.vehicleGroup,
         bodyGroup: built.torsoGroup,
         leftLeg: built.leftLegGroup,
         rightLeg: built.rightLegGroup,
@@ -4181,6 +6916,299 @@ export function EraVerse() {
 
     let playerRig = buildCharacterAvatar(playerProfile);
     scene.add(playerRig.root);
+
+    // ============================================================================
+    // 3D FISHING POLE IN CHARACTER'S RIGHT HAND + 3D LINE, BOBBER, SPLASH & CATCHES
+    // ============================================================================
+    const createPlayerFishingPoleMesh = () => {
+      const poleGroup = new THREE.Group();
+      // Position in character's right hand extending forward
+      poleGroup.position.set(0, -0.54, 0.14);
+      poleGroup.rotation.set(Math.PI / 2.2, 0, 0);
+
+      const corkMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 });
+      const goldReelMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.45 });
+      const rodCarbonMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.25 });
+      const rodAccentMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.3 });
+
+      // Cork Grip Handle
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.036, 0.44, 10), corkMat);
+      grip.position.set(0, 0.1, 0);
+      poleGroup.add(grip);
+
+      // Spinning Reel + Crank Handle
+      const reelPivot = new THREE.Group();
+      reelPivot.position.set(0.04, 0.28, 0.06);
+      const reelBody = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), goldReelMat);
+      reelBody.rotation.z = Math.PI / 2;
+      reelPivot.add(reelBody);
+      const reelCrank = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.09, 0.018), rodAccentMat);
+      reelCrank.position.set(0.052, 0.03, 0);
+      reelPivot.add(reelCrank);
+      poleGroup.add(reelPivot);
+
+      // Lower Tapered Fishing Rod Shaft
+      const shaftLower = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.028, 0.95, 10), rodCarbonMat);
+      shaftLower.position.set(0, 0.78, 0);
+      poleGroup.add(shaftLower);
+
+      const shaftBand = new THREE.Mesh(new THREE.CylinderGeometry(0.021, 0.022, 0.14, 10), rodAccentMat);
+      shaftBand.position.set(0, 0.45, 0);
+      poleGroup.add(shaftBand);
+
+      const lowerRing = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.004, 6, 12), goldReelMat);
+      lowerRing.position.set(0, 0.85, 0.022);
+      poleGroup.add(lowerRing);
+
+      // Flexible Upper Rod Shaft Pivot (bends dynamically when a fish or trash pulls on the line!)
+      const upperPivot = new THREE.Group();
+      upperPivot.position.set(0, 1.25, 0);
+      poleGroup.add(upperPivot);
+
+      const shaftUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.018, 0.96, 10), rodCarbonMat);
+      shaftUpper.position.set(0, 0.48, 0);
+      upperPivot.add(shaftUpper);
+
+      // Line Guide Rings along Upper Rod
+      [0.12, 0.58, 0.93].forEach((gy) => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.004, 6, 12), goldReelMat);
+        ring.position.set(0, gy, 0.02);
+        upperPivot.add(ring);
+      });
+
+      // Tip Marker at the very end of the flexible upper rod for 3D fishing line attachment
+      const rodTip = new THREE.Object3D();
+      rodTip.position.set(0, 0.96, 0.02);
+      upperPivot.add(rodTip);
+
+      poleGroup.visible = false;
+      return { group: poleGroup, rodTip, upperPivot, reelPivot };
+    };
+
+    let playerFishingPole = createPlayerFishingPoleMesh();
+    playerRig.rightArm.add(playerFishingPole.group);
+
+    // 3D World Fishing Line (13-point catenary curve), Bobber, Splash Droplets, Fish & Trash
+    const fishingWorldGroup = new THREE.Group();
+    fishingWorldGroup.visible = false;
+    scene.add(fishingWorldGroup);
+
+    const FISHING_LINE_SEGMENTS = 12;
+    const fishingLinePositions = new Float32Array((FISHING_LINE_SEGMENTS + 1) * 3);
+    const fishingLineGeo = new THREE.BufferGeometry();
+    fishingLineGeo.setAttribute('position', new THREE.BufferAttribute(fishingLinePositions, 3));
+    const fishingLine3D = new THREE.Line(
+      fishingLineGeo,
+      new THREE.LineBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.95 })
+    );
+    fishingLine3D.frustumCulled = false;
+    fishingWorldGroup.add(fishingLine3D);
+
+    const bobber3D = new THREE.Group();
+    const bobberTop = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 14, 14),
+      new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.22 })
+    );
+    bobberTop.position.y = 0.08;
+    bobber3D.add(bobberTop);
+
+    const bobberCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.25, 0.07, 14),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+    );
+    bobberCollar.position.y = 0.06;
+    bobber3D.add(bobberCollar);
+
+    const bobberStick = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.025, 0.44, 8),
+      new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 })
+    );
+    bobberStick.position.y = 0.33;
+    bobber3D.add(bobberStick);
+
+    const bobberRipple1 = new THREE.Mesh(
+      new THREE.RingGeometry(0.32, 0.48, 24),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+    );
+    bobberRipple1.rotation.x = -Math.PI / 2;
+    bobberRipple1.position.y = 0.05;
+    bobber3D.add(bobberRipple1);
+
+    const bobberRipple2 = new THREE.Mesh(
+      new THREE.RingGeometry(0.56, 0.72, 24),
+      new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
+    );
+    bobberRipple2.rotation.x = -Math.PI / 2;
+    bobberRipple2.position.y = 0.04;
+    bobber3D.add(bobberRipple2);
+
+    const bobberRipple3 = new THREE.Mesh(
+      new THREE.RingGeometry(0.82, 0.96, 24),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    );
+    bobberRipple3.rotation.x = -Math.PI / 2;
+    bobberRipple3.position.y = 0.035;
+    bobber3D.add(bobberRipple3);
+
+    // 3D Floating "❗ BITE!" Sprite above the bobber when a fish/trash bites
+    const createBiteAlertSprite = () => {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 96;
+      const ctx = c.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.96)';
+        ctx.beginPath();
+        ctx.roundRect(12, 10, 232, 74, 24);
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#FEF08A';
+        ctx.stroke();
+        ctx.font = '900 36px "Plus Jakarta Sans", sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('❗ BITE!', 128, 48);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+      sp.scale.set(1.6, 0.6, 1);
+      sp.position.set(0, 1.05, 0);
+      sp.visible = false;
+      return sp;
+    };
+    const biteAlertSprite = createBiteAlertSprite();
+    bobber3D.add(biteAlertSprite);
+    fishingWorldGroup.add(bobber3D);
+
+    // 3D Water Splash Droplets Burst Group (14 water droplets bursting in parabolic arcs)
+    const splashBurstGroup = new THREE.Group();
+    const splashDropGeo = new THREE.SphereGeometry(0.075, 8, 8);
+    const splashDropMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.9 });
+    const splashDroplets: Array<{ mesh: THREE.Mesh; angle: number; speed: number; peakY: number }> = [];
+    for (let i = 0; i < 14; i++) {
+      const dropMesh = new THREE.Mesh(splashDropGeo, splashDropMat);
+      dropMesh.visible = false;
+      splashBurstGroup.add(dropMesh);
+      splashDroplets.push({
+        mesh: dropMesh,
+        angle: (i / 14) * Math.PI * 2 + (i % 2) * 0.2,
+        speed: 0.65 + (i % 4) * 0.28,
+        peakY: 0.55 + (i % 3) * 0.35
+      });
+    }
+    fishingWorldGroup.add(splashBurstGroup);
+
+    // 3D Detailed Leaping Fish Mesh (Body, Belly Stripe, Dorsal Fin, Pectoral Fins, Tail & Eyes)
+    const leapingFish3D = new THREE.Group();
+    const leapingFishMat = new THREE.MeshStandardMaterial({
+      color: 0xf97316,
+      emissive: 0xf97316,
+      emissiveIntensity: 0.25,
+      roughness: 0.22
+    });
+    const leapingFishFinMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      emissive: 0xfacc15,
+      emissiveIntensity: 0.18,
+      roughness: 0.3
+    });
+    const lfBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.25, 0.72, 10, 14), leapingFishMat);
+    lfBody.rotation.x = Math.PI / 2;
+    lfBody.scale.set(0.75, 1.0, 1.25);
+    leapingFish3D.add(lfBody);
+
+    const lfBelly = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.21, 0.58, 8, 12),
+      new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.35 })
+    );
+    lfBelly.rotation.x = Math.PI / 2;
+    lfBelly.position.set(0, -0.06, 0.02);
+    lfBelly.scale.set(0.68, 0.85, 1.15);
+    leapingFish3D.add(lfBelly);
+
+    const lfDorsal = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.38, 4), leapingFishFinMat);
+    lfDorsal.position.set(0, 0.28, -0.05);
+    lfDorsal.rotation.x = -0.35;
+    lfDorsal.scale.set(0.35, 1, 1.2);
+    leapingFish3D.add(lfDorsal);
+
+    [-1, 1].forEach((side) => {
+      const pectFin = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 4), leapingFishFinMat);
+      pectFin.position.set(side * 0.22, -0.02, 0.14);
+      pectFin.rotation.z = side * -1.1;
+      pectFin.rotation.x = -0.3;
+      pectFin.scale.set(0.35, 1, 1);
+      leapingFish3D.add(pectFin);
+    });
+
+    const lfTail = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.48, 4), leapingFishFinMat);
+    lfTail.rotation.x = -Math.PI / 2;
+    lfTail.scale.set(0.42, 1.05, 1.2);
+    lfTail.position.z = -0.65;
+    leapingFish3D.add(lfTail);
+
+    const lfEyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const lfPupilMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    [-0.145, 0.145].forEach((ex) => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), lfEyeMat);
+      eye.position.set(ex, 0.08, 0.38);
+      leapingFish3D.add(eye);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8), lfPupilMat);
+      pupil.position.set(ex * 1.12, 0.08, 0.42);
+      leapingFish3D.add(pupil);
+    });
+    leapingFish3D.visible = false;
+    fishingWorldGroup.add(leapingFish3D);
+
+    // 3D Ocean Trash Mesh ($0 Value: Old Muddy Boot / Rusty Can + Tangled Green Seaweed Strands)
+    const leapingTrash3D = new THREE.Group();
+    const trashBootMat = new THREE.MeshStandardMaterial({
+      color: 0x78350f,
+      roughness: 0.85,
+      metalness: 0.15
+    });
+    const trashSoleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+    const trashSeaweedMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 });
+
+    const bootShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.52, 10), trashBootMat);
+    bootShaft.position.set(0, 0.18, -0.06);
+    bootShaft.rotation.x = -0.15;
+    leapingTrash3D.add(bootShaft);
+
+    const bootFoot = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.34, 8, 10), trashBootMat);
+    bootFoot.rotation.x = Math.PI / 2;
+    bootFoot.position.set(0, -0.06, 0.08);
+    leapingTrash3D.add(bootFoot);
+
+    const bootSole = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.64), trashSoleMat);
+    bootSole.position.set(0, -0.2, 0.08);
+    leapingTrash3D.add(bootSole);
+
+    // Dripping Seaweed strands wrapped around the trash
+    [-0.16, 0.16].forEach((sx, idx) => {
+      const weed = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.015, 0.55, 6), trashSeaweedMat);
+      weed.position.set(sx, -0.05, idx === 0 ? 0.12 : -0.1);
+      weed.rotation.z = sx * 1.2;
+      leapingTrash3D.add(weed);
+    });
+    leapingTrash3D.visible = false;
+    fishingWorldGroup.add(leapingTrash3D);
+
+    const fishingSimState = {
+      phase: 'idle' as 'idle' | 'casting' | 'bobbing' | 'bite_ready' | 'reeling_in',
+      timer: 0,
+      startX: 0,
+      startZ: 0,
+      waterX: 0,
+      waterZ: 0,
+      splashTimer: 0,
+      celebrateTimer: 0,
+      hookedFish: null as FishSpeciesSpec | null,
+      celebratedCatch: null as FishSpeciesSpec | null
+    };
+    const _rodTipWorldPos = new THREE.Vector3();
 
     // Active 3D speech bubbles above characters
     const activeSpeechBubbles: Array<{
@@ -4382,20 +7410,13 @@ export function EraVerse() {
           assignedTennisCount++;
         } else if (gamesNames.has(lowerName) && assignedGamesCount < 4) {
           initialActivity = 'play_games';
-          if (assignedGamesCount < 2) {
-            // Bouncing on the Playground Trampoline
-            startX = TRAMPOLINE_POS.x + (assignedGamesCount === 0 ? -0.9 : 0.9);
-            startZ = TRAMPOLINE_POS.z + (assignedGamesCount === 0 ? -0.6 : 0.6);
-            targetX = startX;
-            targetZ = startZ;
-          } else {
-            // Playing outside EraGames Arcade Plaza
-            const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || targetB;
-            startX = eraGamesB.doorX + (assignedGamesCount === 2 ? -3.5 : 3.5);
-            startZ = eraGamesB.doorZ + eraGamesB.frontDir * 4.5;
-            targetX = eraGamesB.doorX;
-            targetZ = eraGamesB.doorZ + eraGamesB.frontDir * 3.4;
-          }
+          // Playing outside EraGames Arcade Plaza
+          const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || targetB;
+          const offsetSide = (assignedGamesCount - 1.5) * 2.2;
+          startX = eraGamesB.doorX + offsetSide;
+          startZ = eraGamesB.doorZ + eraGamesB.frontDir * 4.5;
+          targetX = eraGamesB.doorX + offsetSide * 0.6;
+          targetZ = eraGamesB.doorZ + eraGamesB.frontDir * 3.4;
           assignedGamesCount++;
         } else {
           // Distribute across classrooms and hub doors (some walking in, some walking out, some heading to class)
@@ -4483,12 +7504,21 @@ export function EraVerse() {
       baseRotY: number;
       speechTimer: number;
       bubbleIndex: number;
+      isWalker: boolean;
+      targetX: number;
+      targetZ: number;
+      walkPhase: number;
+      pauseTimer: number;
+      walkSpeed: number;
+      waypointIdx: number;
     }
     let facultyNpcActors: FacultyNpcActor[] = [];
     let currentFacultyFloor: 1 | 2 = 1;
 
     let clickableBoardMeshes: THREE.Object3D[] = [];
     let currentInteriorBoards: Array<{ spec: WallBoardSpec; x: number; z: number; mesh: THREE.Mesh }> = [];
+    let interiorColliders: Array<{ minX: number; maxX: number; minZ: number; maxZ: number }> = [];
+    let interiorPersonBlockers: Array<{ x: number; z: number; radius: number }> = [];
     let activeInteriorBuilding: BuildingZone | null = null;
     let savedExteriorPos = { x: 0, z: 14, rotY: Math.PI };
     let doorCooldownTimer = 0;
@@ -4639,9 +7669,28 @@ export function EraVerse() {
       currentInteriorBoards = [];
       interiorNpcActors = [];
       facultyNpcActors = [];
+      interiorColliders = [];
+      interiorPersonBlockers = [];
       currentFacultyFloor = 1;
       setFacultyInteriorFloor(1);
       setNearClassroomDesk(null);
+
+      const addInteriorCollider = (minX: number, maxX: number, minZ: number, maxZ: number) => {
+        interiorColliders.push({
+          minX: INTERIOR_ORIGIN.x + minX,
+          maxX: INTERIOR_ORIGIN.x + maxX,
+          minZ: INTERIOR_ORIGIN.z + minZ,
+          maxZ: INTERIOR_ORIGIN.z + maxZ
+        });
+      };
+
+      const addInteriorPerson = (localX: number, localZ: number, radius = 0.72) => {
+        interiorPersonBlockers.push({
+          x: INTERIOR_ORIGIN.x + localX,
+          z: INTERIOR_ORIGIN.z + localZ,
+          radius
+        });
+      };
 
       const isFacultyOffice = building.id === 'faculty_hq';
       const roomW = isFacultyOffice ? 30 : 28;
@@ -5282,6 +8331,8 @@ export function EraVerse() {
         candyRig.root.add(candyWelcomeBubble);
         counterGroup.add(candyRig.root);
         interiorGroup.add(counterGroup);
+        addInteriorCollider(-3.9, 3.9, -roomD / 2 + 4.7, -roomD / 2 + 6.9);
+        addInteriorPerson(0, -roomD / 2 + 4.25, 0.85);
 
         // 3D Display Pedestals showcasing a 3D Bike (Left) and 3D Skateboard (Right) with Price Tags
         const createShopPedestal = (px: number, pz: number, itemType: 'bike' | 'skateboard') => {
@@ -5387,6 +8438,10 @@ export function EraVerse() {
         };
         createExtraVehiclePedestal(-7.2, 5.2, 'gold_bike', 'Gold Cruiser Bike', '150 💎');
         createExtraVehiclePedestal(7.2, 5.2, 'scooter', 'Pro Street Scooter', '95 💎');
+        addInteriorCollider(-9.1, -4.5, -1.8, 2.8);
+        addInteriorCollider(4.5, 9.1, -1.8, 2.8);
+        addInteriorCollider(-9.3, -5.1, 3.1, 7.3);
+        addInteriorCollider(5.1, 9.3, 3.1, 7.3);
 
         // ====================================================================
         // LEFT WALL: BOUTIQUE CLOTHES RACKS & SIGNATURE OUTFIT MANNEQUINS
@@ -5593,6 +8648,9 @@ export function EraVerse() {
           bGroup.add(seat, base);
           interiorGroup.add(bGroup);
         });
+        addInteriorCollider(-3.5, 3.5, -3.6, 0.0);
+        addInteriorCollider(-5.6, -4.0, -0.1, 3.7);
+        addInteriorCollider(4.0, 5.6, -0.1, 3.7);
       } else if (building.id === 'speaking') {
         // EraGames Arcade Arena: Neon Floor Stage, Host NPC ("Pixel"), Gamer NPCs, Arcade Cabinets & Champion Podium
         const arcadeCarpet = new THREE.Mesh(
@@ -5787,6 +8845,13 @@ export function EraVerse() {
         arenaStriker.rightArm.rotation.z = 1.1;
         podiumGroup.add(arenaStriker.root);
         interiorGroup.add(podiumGroup);
+        addInteriorCollider(-3.3, 3.3, -6.8, -4.8);
+        addInteriorPerson(0, -7.25, 0.85);
+        addInteriorCollider(-7.9, -5.7, -2.7, -0.9);
+        addInteriorCollider(5.7, 7.9, -2.7, -0.9);
+        addInteriorPerson(-6.8, 0.25, 0.78);
+        addInteriorPerson(6.8, 0.25, 0.78);
+        addInteriorCollider(-1.95, 1.95, -1.15, 2.75);
       } else if (building.id.startsWith('class_')) {
         // ====================================================================
         // AUTHENTIC 3D CLASSROOM INTERIOR (STARTERS, MOVERS, FLYERS, KET, PET, IELTS)
@@ -6127,6 +9192,8 @@ export function EraVerse() {
         clickableBoardMeshes.push(teacherBubble);
         teacherRig.root.add(teacherBubble);
         interiorGroup.add(teacherRig.root);
+        addInteriorCollider(-6.1, -2.5, -roomD / 2 + 1.6, -roomD / 2 + 3.3);
+        addInteriorPerson(3.6, -roomD / 2 + 2.3, 0.82);
 
         // Side-Wall Educational Posters & Framed Windows along Left and Right Classroom Walls
         const posterMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.5 });
@@ -6340,6 +9407,8 @@ export function EraVerse() {
 
             unitGroup.add(chairGroup);
             interiorGroup.add(unitGroup);
+            // Collider on the wooden desk table top (leaving the chair at rz + 0.95 accessible so players can walk up and sit down)
+            addInteriorCollider(cx - 1.05, cx + 1.05, rz - 0.56, rz + 0.48);
           });
         });
 
@@ -6388,20 +9457,23 @@ export function EraVerse() {
             pantsColor: matchedProf?.pantsColor || '#1e293b',
             beltType: matchedProf?.beltType || 'none'
           });
-          // True seated pose on the classroom chair (y = 0.42, bent knees, arms resting on the desk)
-          stRig.root.position.set(seatX, 0.42, seatZ);
+          // True seated pose directly on the classroom chair seat cushion (root.y = 0, hipsGroup.y = 0.56 -> world hip y = 0.81m on the 0.76m chair seat, feet tucked under desk)
+          stRig.root.position.set(seatX, 0, seatZ);
           stRig.root.rotation.y = Math.PI; // Facing the front chalkboard
-          stRig.leftLeg.rotation.x = -1.35;
-          stRig.rightLeg.rotation.x = -1.35;
-          stRig.leftArm.rotation.x = -0.65;
-          stRig.rightArm.rotation.x = -0.65;
+          stRig.hipsGroup.position.y = 0.56;
+          stRig.vehicleGroup.visible = false;
+          stRig.leftLeg.rotation.x = -1.12;
+          stRig.rightLeg.rotation.x = -1.12;
+          stRig.leftArm.rotation.x = -0.68;
+          stRig.rightArm.rotation.x = -0.68;
           stRig.root.children.forEach((child) => {
             if ((child as THREE.Sprite).isSprite) {
               child.scale.multiplyScalar(0.68);
-              child.position.y = 3.45;
+              child.position.y = 2.95;
             }
           });
           interiorGroup.add(stRig.root);
+          addInteriorPerson(seatX, seatZ, 0.72);
 
           const synthProf: IeltsCharacterProfile = matchedProf || {
             id: `${building.id}-student-${idx}`,
@@ -6464,6 +9536,7 @@ export function EraVerse() {
             }
           }
           interiorGroup.add(shelfGroup);
+          addInteriorCollider(bx - 1.6, bx + 1.6, -roomD / 2 + 0.5, -roomD / 2 + 1.7);
         });
       } else if (building.id === 'practice_tests') {
         // ====================================================================
@@ -6501,8 +9574,10 @@ export function EraVerse() {
         proctorRig.root.position.set(0, 0, -1.2);
         proctorGroup.add(proctorRig.root);
         interiorGroup.add(proctorGroup);
+        addInteriorCollider(-2.4, 2.4, -5.6, -4.0);
+        addInteriorPerson(0, -6.0, 0.82);
 
-        // 6 Computer Testing Booths (2 Columns × 3 Rows) with Seated Student Test-Takers
+        // 4 Computer Testing Booths with Seated Student Test-Takers
         const boothPositions = [
           { x: -4.2, z: -1.2 },
           { x: 4.2, z: -1.2 },
@@ -6547,6 +9622,7 @@ export function EraVerse() {
 
           bGroup.add(backDiv, leftDiv, rightDiv, deskTop, monStand, monFrame, monScreen, kb, seat, back, pedestal);
           interiorGroup.add(bGroup);
+          addInteriorCollider(bp.x - 1.35, bp.x + 1.35, bp.z - 0.72, bp.z + 0.65);
 
           // Seated Student taking Computer IELTS Practice Test with Headphones
           const prof =
@@ -6566,19 +9642,22 @@ export function EraVerse() {
             pantsColor: prof.pantsColor,
             beltType: prof.beltType
           });
-          testerRig.root.position.set(bp.x, 0.42, bp.z + 0.82);
+          testerRig.root.position.set(bp.x, 0, bp.z + 0.82);
           testerRig.root.rotation.y = Math.PI;
-          testerRig.leftLeg.rotation.x = -1.35;
-          testerRig.rightLeg.rotation.x = -1.35;
-          testerRig.leftArm.rotation.x = -0.7;
-          testerRig.rightArm.rotation.x = -0.7;
+          testerRig.hipsGroup.position.y = 0.56;
+          testerRig.vehicleGroup.visible = false;
+          testerRig.leftLeg.rotation.x = -1.12;
+          testerRig.rightLeg.rotation.x = -1.12;
+          testerRig.leftArm.rotation.x = -0.68;
+          testerRig.rightArm.rotation.x = -0.68;
           testerRig.root.children.forEach((child) => {
             if ((child as THREE.Sprite).isSprite) {
               child.scale.multiplyScalar(0.62);
-              child.position.y = 3.4;
+              child.position.y = 2.95;
             }
           });
           interiorGroup.add(testerRig.root);
+          addInteriorPerson(bp.x, bp.z + 0.82, 0.75);
         });
       } else if (building.id === 'homework') {
         // ====================================================================
@@ -6651,6 +9730,7 @@ export function EraVerse() {
           tGroup.add(chairSeat, chairBack);
 
           interiorGroup.add(tGroup);
+          addInteriorCollider(tc.x - 1.75, tc.x + 1.75, tc.z - 0.88, tc.z + 0.88);
 
           const prof =
             studentPool[(tIdx + 3) % Math.max(1, studentPool.length)] ||
@@ -6669,19 +9749,22 @@ export function EraVerse() {
             pantsColor: prof.pantsColor,
             beltType: prof.beltType
           });
-          hwRig.root.position.set(tc.x, 0.42, tc.z + 1.02);
+          hwRig.root.position.set(tc.x, 0, tc.z + 1.02);
           hwRig.root.rotation.y = Math.PI;
-          hwRig.leftLeg.rotation.x = -1.35;
-          hwRig.rightLeg.rotation.x = -1.35;
-          hwRig.leftArm.rotation.x = -0.65;
-          hwRig.rightArm.rotation.x = -0.65;
+          hwRig.hipsGroup.position.y = 0.56;
+          hwRig.vehicleGroup.visible = false;
+          hwRig.leftLeg.rotation.x = -1.12;
+          hwRig.rightLeg.rotation.x = -1.12;
+          hwRig.leftArm.rotation.x = -0.68;
+          hwRig.rightArm.rotation.x = -0.68;
           hwRig.root.children.forEach((child) => {
             if ((child as THREE.Sprite).isSprite) {
               child.scale.multiplyScalar(0.62);
-              child.position.y = 3.4;
+              child.position.y = 2.95;
             }
           });
           interiorGroup.add(hwRig.root);
+          addInteriorPerson(tc.x, tc.z + 1.02, 0.75);
         });
       } else if (building.id === 'dashboard') {
         // ====================================================================
@@ -6710,6 +9793,7 @@ export function EraVerse() {
           capital.position.y = roomH - 0.35;
           colGroup.add(base, shaft, capital);
           interiorGroup.add(colGroup);
+          addInteriorCollider(cx - 0.75, cx + 0.75, cz - 0.75, cz + 0.75);
         });
 
         // Central Academy Honor Trophy Pedestal
@@ -6726,6 +9810,7 @@ export function EraVerse() {
         goldRing.position.y = 2.05;
         trophyGroup.add(pedBase, goldCup, goldRing);
         interiorGroup.add(trophyGroup);
+        addInteriorCollider(-1.95, 1.95, -2.45, 1.45);
 
         // Two Velvet Academic Viewing Benches flanking the center aisle
         [-4.6, 4.6].forEach((bx) => {
@@ -6737,6 +9822,7 @@ export function EraVerse() {
           goldTrim.position.y = 0.48;
           bench.add(cushion, goldTrim);
           interiorGroup.add(bench);
+          addInteriorCollider(bx - 0.85, bx + 0.85, -1.45, 2.45);
         });
       }
 
@@ -7252,54 +10338,71 @@ export function EraVerse() {
         });
         const crumpledPaperMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
 
-        // Separate the 22 employees into 20 seated cubicle specialists + 2 central-aisle walking coordinators
-        const walkingIds = new Set(['emp_coordinator', 'emp_pet']);
+        // Separate the 22 employees into 16 seated cubicle specialists (facing the door +Z) + 6 roaming office employees walking naturally around the room
+        const walkingIds = new Set([
+          'emp_coordinator',
+          'emp_pet',
+          'emp_lesson_planner',
+          'emp_game_designer',
+          'emp_student_affairs',
+          'emp_creative_director'
+        ]);
         const seatedEmployees = INITIAL_FACULTY_EMPLOYEES.filter((e) => !walkingIds.has(e.id));
         const walkingEmployees = INITIAL_FACULTY_EMPLOYEES.filter((e) => walkingIds.has(e.id));
 
-        // 5 Cubicle Rows from Back to Front, 4 Cubicles per Row (Left Outer, Left Inner, Right Inner, Right Outer) = 20 Cubicles
-        const rowZPositions = [-7.8, -4.0, -0.2, 3.6, 7.4];
+        // 4 Spacious Cubicle Rows from Back to Front, 4 Cubicles per Row = 16 Cubicles (Redesigned so ALL desks, chairs & employees face the Front Door at +Z!)
+        const rowZPositions = [-6.8, -2.4, 2.0, 6.4];
         const colXPositions = [-9.6, -4.6, 4.6, 9.6];
+
+        addInteriorCollider(-2.2, -0.5, -10.8, -9.5); // Flip-chart stand collider
 
         seatedEmployees.forEach((emp, idx) => {
           const rowIdx = Math.floor(idx / 4);
           const colIdx = idx % 4;
           const cx = colXPositions[colIdx];
-          const cz = rowZPositions[rowIdx] ?? 7.4;
+          const cz = rowZPositions[rowIdx] ?? 6.4;
           const isLeftWing = cx < 0;
           const isInnerAisleCubicle = Math.abs(cx) < 6.0;
 
           const cubicleGroup = new THREE.Group();
           cubicleGroup.position.set(cx, 0, cz);
 
-          // Back Cubicle Partition Wall (separating rows along Z)
-          const backPart = buildCubiclePartitionWall(3.6, idx % 2 === 0);
-          backPart.position.set(0, 0, -1.55);
+          // Back Cubicle Partition Wall behind the employee's chair (at -Z so the employee faces +Z toward the Front Door!)
+          const backPart = buildCubiclePartitionWall(3.5, idx % 2 === 0);
+          backPart.position.set(0, 0, -1.25);
           cubicleGroup.add(backPart);
 
-          // Front Cubicle Half-Partition Wall on frontmost row to frame the foreground cubicles
-          if (rowIdx === 3 || rowIdx === 4) {
-            const frontPart = buildCubiclePartitionWall(3.6, true);
-            frontPart.position.set(0, 0, 1.55);
-            cubicleGroup.add(frontPart);
-          }
+          // Low Half-Height Front Modesty Partition in front of the desk (+Z) so employees have a clear view facing the Door (+Z)
+          const frontLowWall = new THREE.Group();
+          frontLowWall.position.set(0, 0, 1.05);
+          const lowWood = new THREE.Mesh(new THREE.BoxGeometry(3.42, 0.86, 0.09), cubicleWoodMat);
+          lowWood.position.y = 0.46;
+          lowWood.castShadow = true;
+          const lowGlass = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.28, 0.05), cubicleGlassMat);
+          lowGlass.position.y = 1.04;
+          const lowTopRail = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.06, 0.11), cubicleFrameMat);
+          lowTopRail.position.y = 1.2;
+          const lowMidRail = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.05, 0.11), cubicleFrameMat);
+          lowMidRail.position.y = 0.89;
+          frontLowWall.add(lowWood, lowGlass, lowTopRail, lowMidRail);
+          cubicleGroup.add(frontLowWall);
 
-          // Side Cubicle Partition Wall (separating cubicle from central aisle or outer wall)
-          const aisleSideX = isLeftWing ? 1.75 : -1.75;
-          const sidePart = buildCubiclePartitionWall(1.85, idx % 3 === 0);
+          // Side Cubicle Partition Wall (separating cubicle from central aisle or outer wall, leaving an entry gap on the chair side)
+          const aisleSideX = isLeftWing ? 1.72 : -1.72;
+          const sidePart = buildCubiclePartitionWall(1.65, idx % 3 === 0);
           sidePart.rotation.y = Math.PI / 2;
-          sidePart.position.set(aisleSideX, 0, -0.62);
+          sidePart.position.set(aisleSideX, 0, 0.22);
           cubicleGroup.add(sidePart);
 
           if (!isInnerAisleCubicle) {
-            const outerPart = buildCubiclePartitionWall(3.1, false);
+            const outerPart = buildCubiclePartitionWall(2.3, false);
             outerPart.rotation.y = Math.PI / 2;
-            outerPart.position.set(isLeftWing ? -1.75 : 1.75, 0, 0);
+            outerPart.position.set(isLeftWing ? -1.72 : 1.72, 0, -0.1);
             cubicleGroup.add(outerPart);
           }
 
-          // WHITE OFFICE DESK inside the cubicle (oriented parallel to the aisle or back wall)
-          const deskZOffset = -0.78;
+          // WHITE OFFICE DESK placed in front of the employee (+Z side of cubicle so employee sits at -Z and faces +Z toward the Door)
+          const deskZOffset = 0.42;
           const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.08, 1.05), whiteDeskMat);
           deskTop.position.set(0, 0.78, deskZOffset);
           deskTop.castShadow = true;
@@ -7320,7 +10423,7 @@ export function EraVerse() {
             cubicleGroup.add(leg);
           });
 
-          // 3-DRAWER DARK GREY PEDESTAL FILING CABINET under one end of the desk
+          // 3-DRAWER DARK GREY PEDESTAL FILING CABINET under one end of the desk (drawers facing -Z toward the employee)
           const cabX = isLeftWing ? -0.76 : 0.76;
           const cabBody = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.72, 0.88), drawerBodyMat);
           cabBody.position.set(cabX, 0.36, deskZOffset);
@@ -7328,15 +10431,15 @@ export function EraVerse() {
 
           [0.16, 0.38, 0.6].forEach((dy) => {
             const drawerFace = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.18, 0.04), drawerFrontMat);
-            drawerFace.position.set(cabX, dy, deskZOffset + 0.45);
+            drawerFace.position.set(cabX, dy, deskZOffset - 0.45);
             const handle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.04), darkMetalMat);
-            handle.position.set(cabX, dy, deskZOffset + 0.48);
+            handle.position.set(cabX, dy, deskZOffset - 0.48);
             cubicleGroup.add(drawerFace, handle);
           });
 
-          // OPEN SILVER/DARK-GREY LAPTOP OR MONITOR + KEYBOARD + MOUSEPAD ON DESK
+          // OPEN SILVER/DARK-GREY LAPTOP ON DESK (Oriented so the employee facing +Z looks at the screen)
           const laptopGroup = new THREE.Group();
-          laptopGroup.position.set(isLeftWing ? 0.18 : -0.18, 0.82, deskZOffset + 0.05);
+          laptopGroup.position.set(isLeftWing ? 0.18 : -0.18, 0.82, deskZOffset - 0.04);
           const lapBase = new THREE.Mesh(
             new THREE.BoxGeometry(0.56, 0.025, 0.38),
             new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.5 })
@@ -7345,19 +10448,20 @@ export function EraVerse() {
             new THREE.BoxGeometry(0.46, 0.03, 0.22),
             darkMetalMat
           );
-          lapKeys.position.set(0, 0.005, 0.02);
+          lapKeys.position.set(0, 0.005, -0.02);
           const lapScreenFrame = new THREE.Mesh(
             new THREE.BoxGeometry(0.56, 0.38, 0.025),
             darkMetalMat
           );
-          lapScreenFrame.position.set(0, 0.19, -0.18);
-          lapScreenFrame.rotation.x = -0.22;
+          lapScreenFrame.position.set(0, 0.19, 0.18);
+          lapScreenFrame.rotation.x = 0.22;
           lapScreenFrame.userData = { isFacultyEmployee: true, employeeProfile: emp };
           const lapDisplay = new THREE.Mesh(
             new THREE.PlaneGeometry(0.5, 0.32),
             new THREE.MeshBasicMaterial({ color: idx % 2 === 0 ? 0xbae6fd : 0xd1fae5 })
           );
-          lapDisplay.position.set(0, 0.19, -0.165);
+          lapDisplay.position.set(0, 0.19, 0.165);
+          lapDisplay.rotation.y = Math.PI;
           lapDisplay.rotation.x = -0.22;
           lapDisplay.userData = { isFacultyEmployee: true, employeeProfile: emp };
           laptopGroup.add(lapBase, lapKeys, lapScreenFrame, lapDisplay);
@@ -7369,26 +10473,26 @@ export function EraVerse() {
             new THREE.BoxGeometry(0.28, 0.012, 0.24),
             new THREE.MeshStandardMaterial({ color: idx % 2 === 0 ? 0xfacc15 : 0x38bdf8, roughness: 0.6 })
           );
-          mousePad.position.set(isLeftWing ? 0.62 : -0.62, 0.825, deskZOffset + 0.12);
+          mousePad.position.set(isLeftWing ? 0.62 : -0.62, 0.825, deskZOffset - 0.1);
           const mouse = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, 0.035, 0.12),
             drawerFrontMat
           );
-          mouse.position.set(isLeftWing ? 0.62 : -0.62, 0.84, deskZOffset + 0.12);
+          mouse.position.set(isLeftWing ? 0.62 : -0.62, 0.84, deskZOffset - 0.1);
           cubicleGroup.add(mousePad, mouse);
 
-          // TWO-TIER WIRE PAPER INBOX TRAY WITH WHITE PAPER STACK + PEN CUP + DESK PHONE
+          // TWO-TIER WIRE PAPER INBOX TRAY WITH WHITE PAPER STACK + PEN CUP
           const trayX = isLeftWing ? -0.68 : 0.68;
           const trayFrame = new THREE.Mesh(
             new THREE.BoxGeometry(0.46, 0.14, 0.34),
             wireBinMat
           );
-          trayFrame.position.set(trayX, 0.89, deskZOffset + 0.08);
+          trayFrame.position.set(trayX, 0.89, deskZOffset + 0.06);
           const paperStack = new THREE.Mesh(
             new THREE.BoxGeometry(0.38, 0.07, 0.28),
             crumpledPaperMat
           );
-          paperStack.position.set(trayX, 0.87, deskZOffset + 0.08);
+          paperStack.position.set(trayX, 0.87, deskZOffset + 0.06);
           paperStack.rotation.y = 0.08;
           cubicleGroup.add(trayFrame, paperStack);
 
@@ -7397,7 +10501,7 @@ export function EraVerse() {
             new THREE.CylinderGeometry(0.055, 0.048, 0.14, 12),
             drawerFrontMat
           );
-          penCup.position.set(isLeftWing ? 0.88 : -0.88, 0.89, deskZOffset - 0.18);
+          penCup.position.set(isLeftWing ? 0.88 : -0.88, 0.89, deskZOffset + 0.18);
           cubicleGroup.add(penCup);
           [0xef4444, 0xfacc15, 0x3b82f6].forEach((pCol, pIdx) => {
             const pen = new THREE.Mesh(
@@ -7407,7 +10511,7 @@ export function EraVerse() {
             pen.position.set(
               (isLeftWing ? 0.88 : -0.88) + (pIdx - 1) * 0.02,
               0.96,
-              deskZOffset - 0.18
+              deskZOffset + 0.18
             );
             pen.rotation.z = (pIdx - 1) * 0.18;
             cubicleGroup.add(pen);
@@ -7415,7 +10519,7 @@ export function EraVerse() {
 
           // WIRE-MESH WASTEBASKET WITH CRUMPLED WHITE PAPER BALLS BESIDE THE DESK
           const binX = isLeftWing ? 1.28 : -1.28;
-          const binZ = deskZOffset + 0.28;
+          const binZ = deskZOffset - 0.28;
           const wasteBin = new THREE.Mesh(
             new THREE.CylinderGeometry(0.22, 0.16, 0.44, 12, 2, true),
             wireBinMat
@@ -7423,23 +10527,20 @@ export function EraVerse() {
           wasteBin.position.set(binX, 0.22, binZ);
           cubicleGroup.add(wasteBin);
 
-          // 3 Crumpled paper balls inside the wastebasket + 1 on the carpet
           [
             [binX - 0.05, 0.1, binZ + 0.03],
             [binX + 0.06, 0.14, binZ - 0.04],
-            [binX, 0.22, binZ + 0.02],
-            [binX + (isLeftWing ? 0.28 : -0.28), 0.07, binZ + 0.22]
+            [binX, 0.22, binZ + 0.02]
           ].forEach(([px, py, pz], pIdx) => {
-            if (pIdx === 3 && idx % 3 !== 0) return;
             const paperBall = new THREE.Mesh(new THREE.IcosahedronGeometry(0.075, 0), crumpledPaperMat);
             paperBall.position.set(px, py, pz);
             paperBall.rotation.set(pIdx, pIdx * 1.3, 0);
             cubicleGroup.add(paperBall);
           });
 
-          // COLORFUL ERGONOMIC SWIVEL OFFICE CHAIR (5-Star Base, White Cushion, Colored Backrest)
+          // COLORFUL ERGONOMIC SWIVEL OFFICE CHAIR (Positioned at -Z facing +Z toward the desk and Front Door!)
           const chairGroup = new THREE.Group();
-          const chairZ = 0.22;
+          const chairZ = -0.38;
           chairGroup.position.set(0, 0, chairZ);
 
           const chairStem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.42, 10), darkMetalMat);
@@ -7466,24 +10567,27 @@ export function EraVerse() {
           // Loop Armrests
           [-0.29, 0.29].forEach((ax) => {
             const armRest = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.36), drawerBodyMat);
-            armRest.position.set(ax, 0.6, -0.02);
+            armRest.position.set(ax, 0.6, 0.02);
             chairGroup.add(armRest);
           });
 
-          // Colorful Curved Backrest facing the desk (-Z)
+          // Colorful Curved Backrest at -Z (behind the employee so the chair faces +Z toward the Door!)
           const backCol = chairBackColors[idx % chairBackColors.length];
           const chairBack = new THREE.Mesh(
             new THREE.BoxGeometry(0.52, 0.58, 0.09),
             new THREE.MeshStandardMaterial({ color: backCol, roughness: 0.35 })
           );
-          chairBack.position.set(0, 0.82, 0.24);
-          chairBack.rotation.x = 0.1;
+          chairBack.position.set(0, 0.82, -0.24);
+          chairBack.rotation.x = -0.1;
           chairGroup.add(chairBack);
 
           cubicleGroup.add(chairGroup);
           interiorGroup.add(cubicleGroup);
 
-          // SPAWN SEATED AI EMPLOYEE AT THEIR CUBICLE DESK (Facing -Z toward their laptop)
+          // Register cubicle obstacle collider so characters never walk through cubicle walls or desks
+          addInteriorCollider(cx - 1.75, cx + 1.75, cz - 1.3, cz + 1.12);
+
+          // SPAWN SEATED AI EMPLOYEE ON THEIR OFFICE CHAIR FACING THE FRONT DOOR (+Z, rotY = 0)
           const empRig = buildCharacterAvatar({
             shirtColor: emp.shirtColor,
             hairColor: emp.hairColor,
@@ -7498,28 +10602,32 @@ export function EraVerse() {
             pantsColor: emp.pantsColor
           });
           const empWorldX = cx;
-          const empWorldZ = cz + 0.08;
-          const empRotY = Math.PI; // Facing desk & laptop (-Z)
+          const empWorldZ = cz - 0.36;
+          const empRotY = 0; // Facing +Z toward their desk and the Front Entrance/Exit Door!
           empRig.root.scale.setScalar(0.82);
-          empRig.root.position.set(empWorldX, -0.32, empWorldZ);
+          empRig.root.position.set(empWorldX, 0, empWorldZ);
           empRig.root.rotation.y = empRotY;
-          empRig.leftArm.rotation.x = -0.65;
-          empRig.rightArm.rotation.x = -0.65;
-          // Keep cubicle overhead nameplates compact so they don't block the upper office ceiling view
+          empRig.hipsGroup.position.y = 0.46;
+          empRig.vehicleGroup.visible = false;
+          empRig.leftLeg.rotation.x = -1.08;
+          empRig.rightLeg.rotation.x = -1.08;
+          empRig.leftArm.rotation.x = -0.68;
+          empRig.rightArm.rotation.x = -0.68;
           empRig.root.children.forEach((child) => {
             if ((child as THREE.Sprite).isSprite) {
               child.scale.multiplyScalar(0.52);
-              child.position.y = 3.55;
+              child.position.y = 3.1;
             }
           });
           interiorGroup.add(empRig.root);
+          addInteriorPerson(empWorldX, empWorldZ, 0.72);
 
           // Invisible Click Hitbox cylinder around the AI Employee & Workstation
           const empHitbox = new THREE.Mesh(
             new THREE.CylinderGeometry(1.05, 1.05, 3.0, 12),
             new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false })
           );
-          empHitbox.position.set(empWorldX, 1.4, empWorldZ - 0.25);
+          empHitbox.position.set(empWorldX, 1.4, empWorldZ + 0.25);
           empHitbox.userData = { isFacultyEmployee: true, employeeProfile: emp };
           interiorGroup.add(empHitbox);
           clickableBoardMeshes.push(empHitbox);
@@ -7533,11 +10641,33 @@ export function EraVerse() {
             baseZ: empWorldZ,
             baseRotY: empRotY,
             speechTimer: 2.5 + (idx % 7) * 2.2,
-            bubbleIndex: 0
+            bubbleIndex: 0,
+            isWalker: false,
+            targetX: empWorldX,
+            targetZ: empWorldZ,
+            walkPhase: idx * 0.8,
+            pauseTimer: 0,
+            walkSpeed: 0,
+            waypointIdx: 0
           });
         });
 
-        // 8. SPAWN CENTRAL-AISLE WALKING COORDINATORS (Walking naturally along the patterned carpet aisle)
+        // 8. SPAWN 6 NATURAL ROAMING FACULTY EMPLOYEES WALKING AROUND THE OFFICE ROOM
+        const officeWaypoints = [
+          { x: -1.1, z: -8.6 },
+          { x: 1.1, z: -8.6 },
+          { x: -1.2, z: -4.6 },
+          { x: 1.2, z: -4.6 },
+          { x: -1.1, z: -0.2 },
+          { x: 1.1, z: -0.2 },
+          { x: -1.2, z: 4.2 },
+          { x: 1.2, z: 4.2 },
+          { x: -3.2, z: 8.4 },
+          { x: 0.0, z: 8.6 },
+          { x: 3.2, z: 8.4 },
+          { x: 2.4, z: -9.2 }
+        ];
+
         walkingEmployees.forEach((emp, wIdx) => {
           const empRig = buildCharacterAvatar({
             shirtColor: emp.shirtColor,
@@ -7552,15 +10682,15 @@ export function EraVerse() {
             clothingType: emp.clothingType,
             pantsColor: emp.pantsColor
           });
-          const walkX = wIdx === 0 ? -0.55 : 0.65;
-          const walkZ = wIdx === 0 ? -3.2 : 1.8;
+          const startWp = officeWaypoints[(wIdx * 2) % officeWaypoints.length];
+          const nextWp = officeWaypoints[(wIdx * 2 + 3) % officeWaypoints.length];
           empRig.root.scale.setScalar(0.86);
-          empRig.root.position.set(walkX, 0, walkZ);
-          empRig.root.rotation.y = wIdx === 0 ? 0 : Math.PI;
+          empRig.root.position.set(startWp.x, 0, startWp.z);
+          empRig.root.rotation.y = 0; // Initially facing +Z toward the door
           empRig.root.children.forEach((child) => {
             if ((child as THREE.Sprite).isSprite) {
               child.scale.multiplyScalar(0.55);
-              child.position.y = 3.6;
+              child.position.y = 3.5;
             }
           });
           interiorGroup.add(empRig.root);
@@ -7578,12 +10708,19 @@ export function EraVerse() {
             employee: emp,
             rig: empRig,
             floor: 1,
-            baseX: walkX,
+            baseX: startWp.x,
             baseY: 0,
-            baseZ: walkZ,
+            baseZ: startWp.z,
             baseRotY: 0,
-            speechTimer: 4.0 + wIdx * 3.5,
-            bubbleIndex: 0
+            speechTimer: 3.5 + wIdx * 2.8,
+            bubbleIndex: 0,
+            isWalker: true,
+            targetX: nextWp.x,
+            targetZ: nextWp.z,
+            walkPhase: wIdx * 1.3,
+            pauseTimer: (wIdx % 3) * 0.8,
+            walkSpeed: 2.3 + (wIdx % 3) * 0.25,
+            waypointIdx: (wIdx * 2 + 3) % officeWaypoints.length
           });
         });
       } else if (!building.id.startsWith('class_')) {
@@ -7686,12 +10823,16 @@ export function EraVerse() {
       setIsCrouching(false);
       setIsSittingAtDesk(true);
       playerState.x = desk.seatX;
-      playerState.y = 0.42;
+      playerState.y = 0;
       playerState.z = desk.seatZ;
       playerState.vx = 0;
       playerState.vz = 0;
       playerState.vy = 0;
       playerState.rotY = Math.PI; // Face the front classroom chalkboard
+      playerRig.hipsGroup.position.y = 0.56;
+      playerRig.vehicleGroup.visible = false;
+      playerRig.leftLeg.rotation.x = -1.12;
+      playerRig.rightLeg.rotation.x = -1.12;
       showToast(
         `Seated at ${desk.deskName}`,
         `Studying with ${desk.classCohort} class! Press [Space] or Move (W/A/S/D) to stand up.`,
@@ -7705,7 +10846,9 @@ export function EraVerse() {
       playerState.isSitting = false;
       setIsSittingAtDesk(false);
       playerState.y = 0;
-      playerState.z += 0.35;
+      playerState.z += 0.48;
+      playerRig.hipsGroup.position.y = playerRig.defaultHipsY;
+      playerRig.vehicleGroup.visible = true;
     };
 
     const enterBuildingInterior = (b: BuildingZone) => {
@@ -7733,6 +10876,8 @@ export function EraVerse() {
       activeInteriorBuilding = b;
       playerState.isSitting = false;
       setIsSittingAtDesk(false);
+      playerRig.hipsGroup.position.y = playerRig.defaultHipsY;
+      playerRig.vehicleGroup.visible = true;
       buildInteriorRoom(b);
       interiorGroup.visible = true;
       playerState.x = INTERIOR_ORIGIN.x;
@@ -7797,6 +10942,8 @@ export function EraVerse() {
       activeInteriorBuilding = null;
       playerState.isSitting = false;
       setIsSittingAtDesk(false);
+      playerRig.hipsGroup.position.y = playerRig.defaultHipsY;
+      playerRig.vehicleGroup.visible = true;
       setNearClassroomDesk(null);
       interiorGroup.visible = false;
       playerState.x = savedExteriorPos.x;
@@ -7849,10 +10996,14 @@ export function EraVerse() {
       applyAvatarAppearance: (prof) => {
         const oldPos = playerRig.root.position.clone();
         const oldRot = playerRig.root.rotation.y;
+        const wasPoleVisible = playerFishingPole.group.visible;
         scene.remove(playerRig.root);
         playerRig = buildCharacterAvatar(prof);
         playerRig.root.position.copy(oldPos);
         playerRig.root.rotation.y = oldRot;
+        playerFishingPole = createPlayerFishingPoleMesh();
+        playerFishingPole.group.visible = wasPoleVisible;
+        playerRig.rightArm.add(playerFishingPole.group);
         scene.add(playerRig.root);
         if (activeInteriorBuilding?.id === 'dashboard') {
           buildInteriorRoom(activeInteriorBuilding);
@@ -7861,12 +11012,12 @@ export function EraVerse() {
       setGraphicsQuality: (q: GraphicsQuality) => {
         currentQuality = q;
         if (q === 'high') {
-          renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio * 1.25, 2.5));
+          renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 1.5));
           renderer.shadowMap.enabled = !isSoftwareGl;
           renderer.toneMappingExposure = 0.96;
           scene.fog = new THREE.FogExp2(0x7dd3fc, 0.003);
         } else if (q === 'medium') {
-          renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 1.5));
+          renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 1.15));
           renderer.shadowMap.enabled = !isSoftwareGl;
           renderer.toneMappingExposure = 0.94;
           scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0042);
@@ -7878,10 +11029,14 @@ export function EraVerse() {
         }
         const oldPos = playerRig.root.position.clone();
         const oldRot = playerRig.root.rotation.y;
+        const wasPoleVisible = playerFishingPole.group.visible;
         scene.remove(playerRig.root);
         playerRig = buildCharacterAvatar(playerProfile);
         playerRig.root.position.copy(oldPos);
         playerRig.root.rotation.y = oldRot;
+        playerFishingPole = createPlayerFishingPoleMesh();
+        playerFishingPole.group.visible = wasPoleVisible;
+        playerRig.rightArm.add(playerFishingPole.group);
         scene.add(playerRig.root);
       },
       setSkyPreset: (mode) => {
@@ -8032,6 +11187,333 @@ export function EraVerse() {
           playerState.vy = 0;
           showToast('Floor 1: Head Admin & Exam Department', 'Click Teacher Jan or any Cambridge/IELTS Examiner on Floor 1!', '#D97706');
         }
+      },
+      castFishingPole: () => {
+        if (activeInteriorBuilding) {
+          exitBuildingInterior();
+        }
+        // If a fish is currently biting, clicking pulls/reels it in immediately!
+        if (fishingSimState.phase === 'bite_ready' || fishingSimState.phase === 'bobbing') {
+          gameActionsRef.current?.reelInFish();
+          return;
+        }
+        if (fishingSimState.phase !== 'idle') return;
+
+        if (fishingBaitCountRef.current <= 0) {
+          soundEngine.playUiClick();
+          setShowFishingModal(true);
+          showToast('Out of Bait! 🪱', 'Answer a quick class question to collect +2 Bait!', '#06B6D4');
+          return;
+        }
+
+        // Consume 1 Bait
+        handleUpdateFishingBait(fishingBaitCountRef.current - 1);
+        soundEngine.playJump(false);
+
+        // Ensure character is standing at the beach shoreline or pier facing the ocean water
+        const onSouthBeach = playerState.z > 88 && playerState.x <= 104;
+        const onEastBeach = playerState.x > 100;
+
+        if (onSouthBeach) {
+          // Face South (+Z) toward South Ocean
+          if (playerState.z < 125 && Math.abs(playerState.x - 14) > 4.5) {
+            playerState.z = 127.5;
+          }
+          playerState.rotY = 0;
+        } else if (onEastBeach) {
+          // Face East (+X) toward East Fishing Lagoon behind Era Football Club
+          if (playerState.x < 131) {
+            playerState.x = 134.5;
+          }
+          playerState.rotY = Math.PI / 2;
+        } else {
+          // Teleport to East Beach Shoreline/Pier behind Era Football Club facing the Lagoon
+          playerState.x = 134.5;
+          playerState.z = 25;
+          playerState.y = 0;
+          playerState.rotY = Math.PI / 2;
+          camState.yaw = -Math.PI / 2;
+        }
+
+        const castDist = 7.5;
+        fishingSimState.startX = playerState.x;
+        fishingSimState.startZ = playerState.z;
+        fishingSimState.waterX = playerState.x + Math.sin(playerState.rotY) * castDist;
+        fishingSimState.waterZ = playerState.z + Math.cos(playerState.rotY) * castDist;
+        fishingSimState.hookedFish = pickRandomCaughtFish();
+        fishingSimState.celebrateTimer = 0;
+        fishingSimState.splashTimer = 0;
+
+        if (fishingSimState.hookedFish.isTrash) {
+          trashBootMat.color.setHex(fishingSimState.hookedFish.hexColor);
+        } else {
+          leapingFishMat.color.setHex(fishingSimState.hookedFish.hexColor);
+          leapingFishMat.emissive.setHex(fishingSimState.hookedFish.hexColor);
+        }
+        leapingFish3D.visible = false;
+        leapingTrash3D.visible = false;
+        biteAlertSprite.visible = false;
+        bobber3D.visible = true;
+        fishingLine3D.visible = true;
+
+        playerFishingPole.group.visible = true;
+        fishingWorldGroup.visible = true;
+        fishingSimState.phase = 'casting';
+        fishingSimState.timer = 0;
+        setFishingPhase('casting');
+      },
+      reelInFish: () => {
+        if (fishingSimState.phase !== 'bite_ready' && fishingSimState.phase !== 'bobbing') return;
+        soundEngine.playCrystalCollect();
+        fishingSimState.phase = 'reeling_in';
+        fishingSimState.timer = 0;
+        fishingSimState.splashTimer = 0.55;
+        biteAlertSprite.visible = false;
+        const isTrashCatch = Boolean(fishingSimState.hookedFish?.isTrash);
+        leapingFish3D.visible = !isTrashCatch;
+        leapingTrash3D.visible = isTrashCatch;
+        setFishingPhase('reeling_in');
+      },
+      buyTicketAtBooth: () => {
+        if (hasCableCarTicketRef.current) {
+          soundEngine.playUiClick();
+          showToast(
+            'Ride Ticket Ready! 🎟️',
+            'You already have a $5 Cable Car ticket! Step onto the platform & board the cabin!',
+            '#10B981'
+          );
+          return;
+        }
+        if (eraDollarsRef.current < 5) {
+          soundEngine.playBallKick();
+          if (cableCarSim.attendantRoot) {
+            attachSpeechBubble(
+              cableCarSim.attendantRoot,
+              'Ticket Clerk Maya',
+              'Tickets are $5 Era Dollars! Catch fish at the beach or play EraGames to earn $5!',
+              true
+            );
+          }
+          showToast(
+            'Not Enough Era Dollars! ($5 Needed) 🎟️',
+            `You have $${eraDollarsRef.current} Era Dollars. Catch fish at the beach or play EraGames to earn $5!`,
+            '#F43F5E'
+          );
+          return;
+        }
+
+        // Deduct $5 Era Dollars at the Ticket Booth
+        soundEngine.playCrystalCollect();
+        setEraDollars((prev) => {
+          const next = Math.max(0, prev - 5);
+          eraDollarsRef.current = next;
+          try {
+            localStorage.setItem('eraverse_dollars_v2', String(next));
+          } catch {}
+          return next;
+        });
+        hasCableCarTicketRef.current = true;
+        setHasCableCarTicket(true);
+
+        if (cableCarSim.turnstileArm) {
+          cableCarSim.turnstileArm.rotation.x += Math.PI / 2;
+        }
+        if (cableCarSim.attendantRoot) {
+          attachSpeechBubble(
+            cableCarSim.attendantRoot,
+            'Ticket Clerk Maya',
+            'Ticket purchased (-$5 💵)! Gate open — enjoy your ride up to the Summit Skywalk!',
+            false
+          );
+        }
+        showToast(
+          'Purchased Cable Car Ticket (-$5 💵) 🎟️',
+          'Ticket validated at the booth! Board the Cable Car cabin to ride!',
+          '#10B981'
+        );
+      },
+      boardCableCar: (freeReturnFallback = false) => {
+        if (activeInteriorBuilding) {
+          exitBuildingInterior();
+        }
+        if (cableCarSim.phase !== 'idle') return;
+        if (playerState.isSitting) {
+          standUpFromDesk();
+        }
+        cableCarSim.activeTelescope = null;
+        setActiveTelescopeView(null);
+
+        const ridingDown = cableCarSim.isAtSummit || playerState.y > 35;
+
+        // Validate or purchase $5 ticket per ride (unless using free return trail fallback from summit with $0)
+        if (!freeReturnFallback) {
+          if (hasCableCarTicketRef.current) {
+            hasCableCarTicketRef.current = false;
+            setHasCableCarTicket(false);
+          } else {
+            if (eraDollarsRef.current < 5) {
+              soundEngine.playBallKick();
+              if (cableCarSim.attendantRoot && !ridingDown) {
+                attachSpeechBubble(
+                  cableCarSim.attendantRoot,
+                  'Ticket Clerk Maya',
+                  'Each Cable Car ride costs $5 Era Dollars at the Ticket Booth!',
+                  true
+                );
+              }
+              showToast(
+                'Cable Car Ticket Required ($5 💵) 🎟️',
+                `Each ride costs $5 Era Dollars (You have $${eraDollarsRef.current}). Go fishing or play EraGames to earn $5!`,
+                '#F43F5E'
+              );
+              return;
+            }
+            // Auto-deduct $5 Era Dollars at the Ticket Booth Turnstile
+            setEraDollars((prev) => {
+              const next = Math.max(0, prev - 5);
+              eraDollarsRef.current = next;
+              try {
+                localStorage.setItem('eraverse_dollars_v2', String(next));
+              } catch {}
+              return next;
+            });
+          }
+        }
+
+        soundEngine.playGoalCheer();
+        if (cableCarSim.turnstileArm) {
+          cableCarSim.turnstileArm.rotation.x += Math.PI / 2;
+        }
+
+        if (!ridingDown) {
+          cableCarSim.phase = 'ascending';
+          cableCarSim.progress = 0;
+          setCableCarRidePhase('ascending');
+          if (cableCarSim.attendantRoot) {
+            attachSpeechBubble(
+              cableCarSim.attendantRoot,
+              'Ticket Clerk Maya',
+              'Ticket validated (-$5 💵)! Ascending to Summit City Overlook (2,400m)!',
+              false
+            );
+          }
+          showToast(
+            'Boarding Summit Cable Car (-$5 💵) 🚡',
+            'Gliding up to the Mountain Summit Glass Skywalk & City Overlook!',
+            '#F59E0B'
+          );
+        } else {
+          cableCarSim.phase = 'descending';
+          cableCarSim.progress = 1;
+          setCableCarRidePhase('descending');
+          showToast(
+            freeReturnFallback ? 'Returning to Campus Base Station 🚡' : 'Boarding Return Cable Car (-$5 💵) 🚡',
+            'Descending from the Mountain Summit back to the West Campus Base Station!',
+            '#38BDF8'
+          );
+        }
+      },
+      skipCableCarRide: () => {
+        if (cableCarSim.phase === 'ascending') {
+          cableCarSim.progress = 1;
+        } else if (cableCarSim.phase === 'descending') {
+          cableCarSim.progress = 0;
+        }
+      },
+      teleportToCableCarStation: () => {
+        if (activeInteriorBuilding) {
+          exitBuildingInterior();
+        }
+        if (playerState.isSitting) {
+          standUpFromDesk();
+        }
+        cableCarSim.activeTelescope = null;
+        setActiveTelescopeView(null);
+        soundEngine.playUiClick();
+
+        if (cableCarSim.isAtSummit) {
+          // Move right to the Summit Boarding Gate
+          playerState.x = -189.0;
+          playerState.y = 72.0;
+          playerState.z = -10.5;
+          playerState.rotY = -Math.PI / 2;
+          showToast(
+            'Upper Summit Cable Car Terminal (2,400m) 🏔️',
+            'Walk out onto the Glass Skywalk to view the City from above, or pay $5 to ride down!',
+            '#38BDF8'
+          );
+        } else {
+          // Teleport right in front of the $5 Ticket Booth & Base Station at West Mountain Foothills
+          playerState.x = -142.8;
+          playerState.y = 0;
+          playerState.z = 45.2;
+          playerState.vx = 0;
+          playerState.vz = 0;
+          playerState.rotY = -Math.PI / 2;
+          camState.yaw = -Math.PI / 2;
+          if (cableCarSim.attendantRoot) {
+            attachSpeechBubble(
+              cableCarSim.attendantRoot,
+              'Ticket Clerk Maya',
+              'Welcome to West Mountain Cable Car! Tickets are $5 Era Dollars per ride!',
+              false
+            );
+          }
+          showToast(
+            'West Mountain Cable Car & $5 Ticket Booth 🎟️',
+            'Pay $5 Era Dollars at the Ticket Booth to ride the Cable Car up to the Summit City Overlook!',
+            '#F59E0B'
+          );
+        }
+      },
+      setTelescopePreset: (preset) => {
+        soundEngine.playUiClick();
+        cableCarSim.activeTelescope = preset;
+        setActiveTelescopeView(preset);
+        if (preset === 'city') {
+          showToast(
+            '🔭 Viewing: North City Metropolis from Above (2,400m)',
+            'Bird’s-eye panorama of the Downtown High-Rise Skyline, Highway & Campus!',
+            '#38BDF8'
+          );
+        } else if (preset === 'campus') {
+          showToast(
+            '🔭 Viewing: EraVerse Central Campus & Classrooms',
+            'Aerial view of Cambridge & IELTS Classrooms, Holographic Fountain & Sports Park!',
+            '#10B981'
+          );
+        } else if (preset === 'beach') {
+          showToast(
+            '🔭 Viewing: South Tropical Beach & East Fishing Lagoon',
+            'Overlooking the Turquoise Ocean, Boardwalk Pier, Palm Trees & Fishing Dock!',
+            '#F59E0B'
+          );
+        } else if (preset === 'waterfall') {
+          showToast(
+            '🔭 Viewing: West Alpine Waterfall & Pine Forest Valley',
+            'Looking down at the Cascading Mountain Waterfall and Cable Car Line!',
+            '#06B6D4'
+          );
+        }
+      },
+      sitAtSummitBench: (bench) => {
+        soundEngine.playUiClick();
+        playerState.isSitting = true;
+        playerState.isCrouching = false;
+        setIsCrouching(false);
+        setIsSittingAtDesk(true);
+        playerState.x = bench.seatX;
+        playerState.y = 72.0;
+        playerState.z = bench.seatZ;
+        playerState.vx = 0;
+        playerState.vz = 0;
+        playerState.vy = 0;
+        playerState.rotY = bench.rotY;
+        showToast(
+          'Seated at Summit City Overlook Bench 🏔️',
+          'Enjoying the high-altitude view of the North City Skyline! Press Space or E to stand up.',
+          '#38BDF8'
+        );
       }
     };
 
@@ -8125,9 +11607,84 @@ export function EraVerse() {
         } else {
           // Check if standing near the Central Fountain Holographic Class Leaderboard
           const distToFountain = Math.hypot(playerState.x, playerState.z);
-          if (distToFountain < 10.5) {
+          if (distToFountain < 10.5 && playerState.y < 10) {
             soundEngine.playUiClick();
             setDashboardHallModal('class_dashboard');
+            return;
+          }
+          // If currently viewing through a Summit Telescope, pressing E exits telescope mode
+          if (cableCarSim.activeTelescope) {
+            gameActionsRef.current?.setTelescopePreset(null);
+            return;
+          }
+          // Check if standing on the Upper Mountain Summit Skywalk (Y > 40)
+          if (cableCarSim.isAtSummit || playerState.y > 40) {
+            if (playerState.isSitting) {
+              standUpFromDesk();
+              return;
+            }
+            // Check Summit Telescopes
+            const teleSpots: Array<{ x: number; z: number; preset: 'city' | 'campus' | 'waterfall' }> = [
+              { x: -175.5, z: -25.1, preset: 'city' },
+              { x: -171.3, z: -18.0, preset: 'campus' },
+              { x: -175.5, z: -10.9, preset: 'waterfall' }
+            ];
+            for (const ts of teleSpots) {
+              if (Math.hypot(playerState.x - ts.x, playerState.z - ts.z) < 3.4) {
+                gameActionsRef.current?.setTelescopePreset(ts.preset);
+                return;
+              }
+            }
+            // Check Summit Viewing Benches
+            const summitBenches = [
+              { seatX: -181.5, seatZ: -24.4, rotY: Math.PI },
+              { seatX: -173.2, seatZ: -21.5, rotY: Math.PI / 2 }
+            ];
+            for (const sb of summitBenches) {
+              if (Math.hypot(playerState.x - sb.seatX, playerState.z - sb.seatZ) < 2.6) {
+                gameActionsRef.current?.sitAtSummitBench(sb);
+                return;
+              }
+            }
+            // Check Summit Sky Cafe Kiosk (-201.5, -12.5)
+            if (Math.hypot(playerState.x - -201.5, playerState.z - -12.5) < 4.2) {
+              soundEngine.playCrystalCollect();
+              attachSpeechBubble(
+                playerRig.root,
+                playerProfile.name,
+                'Sipping hot cocoa at 2,400m overlooking the North City Skyline! ☕🏔️',
+                false
+              );
+              showToast(
+                'Summit Sky Cafe Hot Cocoa! ☕',
+                'Warm alpine cocoa served at 2,400m overlooking the city and ocean!',
+                '#F59E0B'
+              );
+              return;
+            }
+            // Check Upper Summit Cable Car Boarding Platform (-189, -9.0)
+            if (Math.hypot(playerState.x - -189.0, playerState.z - -9.0) < 8.5) {
+              gameActionsRef.current?.boardCableCar(eraDollarsRef.current < 5);
+              return;
+            }
+          }
+          // Check if standing near the Lower Foothill Cable Car Base Station & $5 Ticket Booth (-148, 45)
+          if (playerState.y < 15 && Math.hypot(playerState.x - -148.5, playerState.z - 45.5) < 10.5) {
+            gameActionsRef.current?.boardCableCar(false);
+            return;
+          }
+          // Check if standing at the South Beach or East Beach Fishing Zone
+          const atBeachFishingZone =
+            playerState.z > 94 || (playerState.x > 100 && playerState.z > -90 && playerState.z < 135);
+          if (atBeachFishingZone) {
+            if (fishingSimState.phase === 'bite_ready' || fishingSimState.phase === 'bobbing') {
+              gameActionsRef.current?.reelInFish();
+            } else if (fishingBaitCountRef.current > 0) {
+              gameActionsRef.current?.castFishingPole();
+            } else {
+              soundEngine.playUiClick();
+              setShowFishingModal(true);
+            }
             return;
           }
           let closestB: BuildingZone | null = null;
@@ -8147,6 +11704,10 @@ export function EraVerse() {
         e.preventDefault();
         setShowChatModal((prev) => !prev);
       } else if (code === 'Escape') {
+        if (cableCarSim.activeTelescope) {
+          gameActionsRef.current?.setTelescopePreset(null);
+          return;
+        }
         setShowChatModal(false);
         if (activeInteriorBuilding) {
           exitBuildingInterior();
@@ -8250,6 +11811,11 @@ export function EraVerse() {
               setDashboardHallModal('class_dashboard');
               return;
             }
+            if (hitUserData?.isFishingStation) {
+              soundEngine.playUiClick();
+              setShowFishingModal(true);
+              return;
+            }
             const bId = hitUserData?.buildingId;
             const foundB = BUILDINGS.find((item) => item.id === bId);
             if (foundB) {
@@ -8338,6 +11904,21 @@ export function EraVerse() {
 
     let lastHoloSignature = '';
 
+    // Cache last-committed HUD proximity values so tick() never triggers redundant 60fps React re-renders
+    const hudSyncCache = {
+      facultyEmpId: '' as string,
+      npcId: '' as string,
+      boardKey: '' as string,
+      deskKey: '' as string,
+      buildingId: '' as string,
+      nearFishing: false,
+      cableStation: null as 'base' | 'summit' | null,
+      nearTelescope: false,
+      benchKey: '' as string,
+      nearCafe: false,
+      lastElevMeters: 120
+    };
+
     function tick() {
       if (isDisposed) return;
       const dt = Math.min(clock.getDelta(), 0.05);
@@ -8384,6 +11965,60 @@ export function EraVerse() {
         cl.group.position.x += cl.speed * dt;
         if (cl.group.position.x > 140) cl.group.position.x = -140;
       });
+
+      // Animate Four-Horizon World Elements: South Ocean Waves & Surf Foam, West Mountain Waterfall & Aerial Cable Cars, and Palm Fronds
+      if (!activeInteriorBuilding) {
+        oceanWaveLayers.forEach((wl, wIdx) => {
+          wl.mesh.position.y = wl.baseY + Math.sin(elapsed * wl.speed + wIdx * 1.3) * wl.amp;
+        });
+
+        oceanFoamBands.forEach((fb) => {
+          const waveCycle = Math.sin(elapsed * 1.65 + fb.phaseOffset);
+          fb.mesh.position.z = fb.baseZ - waveCycle * 1.45;
+          const mat = fb.mesh.material as THREE.MeshBasicMaterial;
+          mat.opacity = 0.42 + (waveCycle + 1) * 0.22;
+        });
+
+        waterfallRibbons.forEach((wr) => {
+          wr.mesh.position.y -= wr.speed * dt;
+          if (wr.mesh.position.y < 3.5) {
+            wr.mesh.position.y = 30.5;
+          }
+        });
+
+        waterfallMistRings.forEach((mr) => {
+          const pulse = ((elapsed * 1.4 + mr.phase) % 3.0) / 3.0;
+          const sc = 0.75 + pulse * 1.35;
+          mr.mesh.scale.set(sc, sc, 1);
+          const mat = mr.mesh.material as THREE.MeshBasicMaterial;
+          mat.opacity = (1 - pulse) * 0.75;
+        });
+
+        cableCarGondolas.forEach((cc) => {
+          const t = (Math.sin(elapsed * 0.22 + cc.phaseOffset) + 1) * 0.5;
+          cc.group.position.lerpVectors(cc.startPos, cc.endPos, t);
+          cc.group.rotation.z = Math.sin(elapsed * 1.8 + cc.phaseOffset) * 0.035;
+        });
+
+        swayingPalmCrowns.forEach((pc) => {
+          pc.group.rotation.z = Math.sin(elapsed * 1.6 + pc.phase) * 0.06;
+          pc.group.rotation.x = Math.cos(elapsed * 1.3 + pc.phase) * 0.04;
+        });
+
+        // Animate 3D Tropical Fish swimming in oval loops around the East Beach Fishing Pier
+        eastLagoonFishes.forEach((lf) => {
+          const ang = elapsed * lf.speed + lf.phase;
+          const nextX = lf.centerX + Math.cos(ang) * lf.radiusX;
+          const nextZ = lf.centerZ + Math.sin(ang) * lf.radiusZ;
+          const dx = -Math.sin(ang) * lf.radiusX;
+          const dz = Math.cos(ang) * lf.radiusZ;
+          lf.group.position.x = nextX;
+          lf.group.position.z = nextZ;
+          lf.group.position.y = -0.02 + Math.sin(elapsed * 3.5 + lf.phase) * 0.05;
+          lf.group.rotation.y = Math.atan2(dx, dz);
+          lf.tailMesh.rotation.y = Math.sin(elapsed * 14 + lf.phase) * 0.35;
+        });
+      }
 
       // AUTOMATIC SLIDING DOORS (Exterior & Interior Exit Door)
       if (!activeInteriorBuilding) {
@@ -8496,10 +12131,66 @@ export function EraVerse() {
       if (speedNow > 0.15) {
         const nextX = playerState.x + playerState.vx * dt;
         const nextZ = playerState.z + playerState.vz * dt;
+        const playerRadius = 0.48;
 
         if (activeInteriorBuilding) {
-          playerState.x = Math.max(INTERIOR_ORIGIN.x - 12.8, Math.min(INTERIOR_ORIGIN.x + 12.8, nextX));
-          playerState.z = Math.max(INTERIOR_ORIGIN.z - 10.8, Math.min(INTERIOR_ORIGIN.z + 11.2, nextZ));
+          let blockedX = false;
+          let blockedZ = false;
+          for (const c of interiorColliders) {
+            if (
+              nextX > c.minX - playerRadius &&
+              nextX < c.maxX + playerRadius &&
+              playerState.z > c.minZ - playerRadius &&
+              playerState.z < c.maxZ + playerRadius
+            ) {
+              blockedX = true;
+            }
+            if (
+              playerState.x > c.minX - playerRadius &&
+              playerState.x < c.maxX + playerRadius &&
+              nextZ > c.minZ - playerRadius &&
+              nextZ < c.maxZ + playerRadius
+            ) {
+              blockedZ = true;
+            }
+          }
+
+          // Check interior person blockers (clerk NPCs, teachers, seated students, and walking faculty/students)
+          const checkInteriorPersonHit = (tx: number, tz: number, curDistSq: number) => {
+            for (const pb of interiorPersonBlockers) {
+              const minD = pb.radius + playerRadius;
+              const dSq = (tx - pb.x) * (tx - pb.x) + (tz - pb.z) * (tz - pb.z);
+              if (dSq < minD * minD && dSq < curDistSq) return true;
+            }
+            for (const inpc of interiorNpcActors) {
+              if (!inpc.rig.root.visible) continue;
+              const px = INTERIOR_ORIGIN.x + inpc.rig.root.position.x;
+              const pz = INTERIOR_ORIGIN.z + inpc.rig.root.position.z;
+              const minD = 0.88;
+              const dSq = (tx - px) * (tx - px) + (tz - pz) * (tz - pz);
+              const curSq = (playerState.x - px) * (playerState.x - px) + (playerState.z - pz) * (playerState.z - pz);
+              if (dSq < minD * minD && dSq < curSq) return true;
+            }
+            for (const fa of facultyNpcActors) {
+              const px = INTERIOR_ORIGIN.x + fa.rig.root.position.x;
+              const pz = INTERIOR_ORIGIN.z + fa.rig.root.position.z;
+              const minD = 0.88;
+              const dSq = (tx - px) * (tx - px) + (tz - pz) * (tz - pz);
+              const curSq = (playerState.x - px) * (playerState.x - px) + (playerState.z - pz) * (playerState.z - pz);
+              if (dSq < minD * minD && dSq < curSq) return true;
+            }
+            return false;
+          };
+
+          if (!blockedX && checkInteriorPersonHit(nextX, playerState.z, 999)) blockedX = true;
+          if (!blockedZ && checkInteriorPersonHit(playerState.x, nextZ, 999)) blockedZ = true;
+
+          if (!blockedX) {
+            playerState.x = Math.max(INTERIOR_ORIGIN.x - 12.8, Math.min(INTERIOR_ORIGIN.x + 12.8, nextX));
+          }
+          if (!blockedZ) {
+            playerState.z = Math.max(INTERIOR_ORIGIN.z - 10.8, Math.min(INTERIOR_ORIGIN.z + 11.2, nextZ));
+          }
 
           if (
             doorCooldownTimer <= 0 &&
@@ -8508,19 +12199,72 @@ export function EraVerse() {
           ) {
             exitBuildingInterior();
           }
+        } else if (cableCarSim.phase !== 'idle') {
+          // Player is currently riding inside the 3D Cable Car Gondola Cabin!
+          playerState.vx = 0;
+          playerState.vz = 0;
+        } else if (cableCarSim.isAtSummit || playerState.y > 40) {
+          // Player is walking on the Upper Mountain Summit Plaza & Cantilevered Glass Skywalk (Y = 72m)!
+          // Summit Main Plaza: X in [-207.2, -184.0], Z in [-29.2, -6.8]
+          // Cantilevered Glass Skywalk: X in [-184.0, -171.2], Z in [-25.2, -10.8]
+          // Avoid walking through Observatory Dome cylinder at (-202.5, -23.5, radius 5.3)
+          const obsDist = Math.hypot(nextX - -202.5, nextZ - -23.5);
+          if (obsDist > 5.35) {
+            const clampedX = Math.max(-207.2, Math.min(-171.2, nextX));
+            const inSkywalkZone = clampedX > -184.2;
+            const minAllowedZ = inSkywalkZone ? -25.2 : -29.2;
+            const maxAllowedZ = inSkywalkZone ? -10.8 : -6.8;
+            playerState.x = clampedX;
+            playerState.z = Math.max(minAllowedZ, Math.min(maxAllowedZ, nextZ));
+          }
         } else {
           let blockedX = false;
           let blockedZ = false;
           for (const c of colliders) {
-            if (nextX > c.minX && nextX < c.maxX && playerState.z > c.minZ && playerState.z < c.maxZ) {
+            if (
+              nextX > c.minX - playerRadius &&
+              nextX < c.maxX + playerRadius &&
+              playerState.z > c.minZ - playerRadius &&
+              playerState.z < c.maxZ + playerRadius
+            ) {
               blockedX = true;
             }
-            if (playerState.x > c.minX && playerState.x < c.maxX && nextZ > c.minZ && nextZ < c.maxZ) {
+            if (
+              playerState.x > c.minX - playerRadius &&
+              playerState.x < c.maxX + playerRadius &&
+              nextZ > c.minZ - playerRadius &&
+              nextZ < c.maxZ + playerRadius
+            ) {
               blockedZ = true;
             }
           }
-          if (!blockedX) playerState.x = Math.max(-162, Math.min(145, nextX));
-          if (!blockedZ) playerState.z = Math.max(-145, Math.min(145, nextZ));
+
+          // Check exterior person blockers (all visible NPCs, Coach Leo, Keeper Max)
+          const checkExteriorPersonHit = (tx: number, tz: number) => {
+            const minD = 0.96;
+            const minDSq = minD * minD;
+            for (const npc of npcActors) {
+              if (!npc.rig.root.visible) continue;
+              const px = npc.rig.root.position.x;
+              const pz = npc.rig.root.position.z;
+              const dSq = (tx - px) * (tx - px) + (tz - pz) * (tz - pz);
+              const curSq = (playerState.x - px) * (playerState.x - px) + (playerState.z - pz) * (playerState.z - pz);
+              if (dSq < minDSq && dSq < curSq) return true;
+            }
+            const specialRigs = [pickleOpponentRig.root.position, footballKeeperRig.root.position];
+            for (const sp of specialRigs) {
+              const dSq = (tx - sp.x) * (tx - sp.x) + (tz - sp.z) * (tz - sp.z);
+              const curSq = (playerState.x - sp.x) * (playerState.x - sp.x) + (playerState.z - sp.z) * (playerState.z - sp.z);
+              if (dSq < minDSq && dSq < curSq) return true;
+            }
+            return false;
+          };
+
+          if (!blockedX && checkExteriorPersonHit(nextX, playerState.z)) blockedX = true;
+          if (!blockedZ && checkExteriorPersonHit(playerState.x, nextZ)) blockedZ = true;
+
+          if (!blockedX) playerState.x = Math.max(-158, Math.min(161, nextX));
+          if (!blockedZ) playerState.z = Math.max(-106, Math.min(170, nextZ));
         }
 
         playerState.walkCycle += dt * (speedNow * 1.15);
@@ -8534,15 +12278,19 @@ export function EraVerse() {
           soundEngine.playFootstep(playerState.sprinting, Boolean(activeInteriorBuilding));
         }
       } else if (playerState.isSitting) {
-        // Seated at classroom desk facing front chalkboard
-        playerRig.leftLeg.rotation.x = THREE.MathUtils.damp(playerRig.leftLeg.rotation.x, -1.35, 12, dt);
-        playerRig.rightLeg.rotation.x = THREE.MathUtils.damp(playerRig.rightLeg.rotation.x, -1.35, 12, dt);
+        // Seated directly on the classroom chair seat facing front chalkboard
+        playerRig.hipsGroup.position.y = 0.56;
+        playerRig.vehicleGroup.visible = false;
+        playerRig.leftLeg.rotation.x = THREE.MathUtils.damp(playerRig.leftLeg.rotation.x, -1.12, 12, dt);
+        playerRig.rightLeg.rotation.x = THREE.MathUtils.damp(playerRig.rightLeg.rotation.x, -1.12, 12, dt);
         playerRig.leftArm.rotation.x = THREE.MathUtils.damp(playerRig.leftArm.rotation.x, -0.65, 12, dt);
         if (playerState.waveTimer <= 0) {
           playerRig.rightArm.rotation.x = THREE.MathUtils.damp(playerRig.rightArm.rotation.x, -0.65, 12, dt);
           playerRig.rightArm.rotation.z = THREE.MathUtils.damp(playerRig.rightArm.rotation.z, 0, 12, dt);
         }
       } else {
+        playerRig.hipsGroup.position.y = playerRig.defaultHipsY;
+        playerRig.vehicleGroup.visible = true;
         playerRig.leftLeg.rotation.x *= 0.85;
         playerRig.rightLeg.rotation.x *= 0.85;
         playerRig.leftArm.rotation.x *= 0.85;
@@ -8584,31 +12332,422 @@ export function EraVerse() {
         playerRig.rightArm.rotation.z = Math.sin(elapsed * 14) * 0.35 - 0.3;
       }
 
-      // Vertical Jump + Playground Trampoline Bounce + Classroom Chair Height
-      if (playerState.isSitting) {
-        playerState.y = 0.42;
-        playerState.vy = 0;
-        playerState.isGrounded = true;
+      // ============================================================================
+      // 3D FISHING POLE CASTING, CURVED LINE, WATER SPLASH & FISH / TRASH ANIMATION
+      // ============================================================================
+      const isPlayerAtBeachZone =
+        !activeInteriorBuilding &&
+        (playerState.z > 94 || (playerState.x > 100 && playerState.z > -90 && playerState.z < 135));
+      playerFishingPole.group.visible =
+        isPlayerAtBeachZone || fishingSimState.phase !== 'idle' || fishingSimState.celebrateTimer > 0;
+
+      // Cancel active cast if player walks far away from casting spot
+      if (
+        fishingSimState.phase !== 'idle' &&
+        Math.hypot(playerState.x - fishingSimState.startX, playerState.z - fishingSimState.startZ) > 3.2
+      ) {
+        fishingSimState.phase = 'idle';
+        fishingSimState.celebrateTimer = 0;
+        fishingWorldGroup.visible = false;
+        leapingFish3D.visible = false;
+        leapingTrash3D.visible = false;
+        biteAlertSprite.visible = false;
+        playerFishingPole.upperPivot.rotation.set(0, 0, 0);
+        setFishingPhase('idle');
+      }
+
+      // Animate 3D Splash Water Droplets whenever splashTimer > 0
+      if (fishingSimState.splashTimer > 0) {
+        fishingSimState.splashTimer = Math.max(0, fishingSimState.splashTimer - dt);
+        const spProgress = 1 - fishingSimState.splashTimer / 0.55;
+        splashBurstGroup.position.set(fishingSimState.waterX, 0.04, fishingSimState.waterZ);
+        for (let i = 0; i < splashDroplets.length; i++) {
+          const d = splashDroplets[i];
+          if (fishingSimState.splashTimer <= 0) {
+            d.mesh.visible = false;
+          } else {
+            d.mesh.visible = true;
+            const r = spProgress * d.speed * 1.45;
+            const dy = Math.sin(spProgress * Math.PI) * d.peakY;
+            d.mesh.position.set(Math.cos(d.angle) * r, Math.max(0, dy), Math.sin(d.angle) * r);
+            const s = Math.max(0.2, 1 - spProgress * 0.65);
+            d.mesh.scale.setScalar(s);
+          }
+        }
       } else {
-        playerState.vy -= 26 * dt;
-        playerState.y += playerState.vy * dt;
+        for (let i = 0; i < splashDroplets.length; i++) {
+          splashDroplets[i].mesh.visible = false;
+        }
+      }
 
-        const groundFloorY = 0;
+      // 3D Trophy Showcase Hold after catching a Fish ($1-$10) or Trash ($0)
+      if (fishingSimState.phase === 'idle' && fishingSimState.celebrateTimer > 0) {
+        fishingSimState.celebrateTimer = Math.max(0, fishingSimState.celebrateTimer - dt);
+        fishingWorldGroup.visible = true;
+        bobber3D.visible = false;
+        fishingLine3D.visible = false;
+        const isTrashItem = Boolean(fishingSimState.celebratedCatch?.isTrash);
+        const showcaseMesh = isTrashItem ? leapingTrash3D : leapingFish3D;
+        leapingFish3D.visible = !isTrashItem;
+        leapingTrash3D.visible = isTrashItem;
 
-        if (!activeInteriorBuilding) {
-          const distTramp = Math.hypot(playerState.x - TRAMPOLINE_POS.x, playerState.z - TRAMPOLINE_POS.z);
-          if (distTramp < 2.8 && playerState.y <= 0.75 && playerState.vy <= 0) {
-            playerState.vy = 20.5;
-            playerState.isGrounded = false;
-            soundEngine.playJump(true);
-            showToast('Trampoline Super Bounce!', 'Wheee! Playground Super Jump!', '#EC4899');
+        // Float & spin the caught 3D fish or 3D trash right in front/above the player character
+        const frontX = playerState.x + Math.sin(playerState.rotY) * 1.25;
+        const frontZ = playerState.z + Math.cos(playerState.rotY) * 1.25;
+        showcaseMesh.position.set(frontX, playerState.y + 2.15 + Math.sin(elapsed * 6) * 0.12, frontZ);
+        showcaseMesh.rotation.set(0, elapsed * 3.8, isTrashItem ? 0.25 : Math.sin(elapsed * 14) * 0.18);
+        showcaseMesh.scale.setScalar(1.35);
+
+        if (fishingSimState.celebrateTimer <= 0) {
+          leapingFish3D.visible = false;
+          leapingTrash3D.visible = false;
+          leapingFish3D.scale.setScalar(1);
+          leapingTrash3D.scale.setScalar(1);
+          fishingWorldGroup.visible = false;
+        }
+      }
+
+      if (fishingSimState.phase !== 'idle') {
+        fishingSimState.timer += dt;
+        fishingWorldGroup.visible = true;
+        bobber3D.visible = true;
+        fishingLine3D.visible = true;
+        leapingFish3D.scale.setScalar(1);
+        leapingTrash3D.scale.setScalar(1);
+        const isTrashHooked = Boolean(fishingSimState.hookedFish?.isTrash);
+
+        if (fishingSimState.phase === 'casting') {
+          // Whip right arm & 3D fishing pole forward (0 -> 0.5s)
+          const t = Math.min(1, fishingSimState.timer / 0.5);
+          playerRig.rightArm.rotation.x = -1.85 + t * 1.02;
+          playerRig.rightArm.rotation.z = 0;
+          playerFishingPole.upperPivot.rotation.x = -Math.sin(t * Math.PI) * 0.28;
+
+          const curX = THREE.MathUtils.lerp(fishingSimState.startX, fishingSimState.waterX, t);
+          const curZ = THREE.MathUtils.lerp(fishingSimState.startZ, fishingSimState.waterZ, t);
+          const arcY = Math.sin(t * Math.PI) * 2.8 + (1 - t) * 1.4;
+          bobber3D.position.set(curX, arcY, curZ);
+          bobberRipple1.visible = false;
+          bobberRipple2.visible = false;
+          bobberRipple3.visible = false;
+          biteAlertSprite.visible = false;
+
+          if (fishingSimState.timer >= 0.5) {
+            fishingSimState.phase = 'bobbing';
+            fishingSimState.timer = 0;
+            fishingSimState.splashTimer = 0.55; // Trigger splash burst on water impact!
+            setFishingPhase('bobbing');
+          }
+        } else if (fishingSimState.phase === 'bobbing') {
+          // Hold 3D fishing pole steady over the water while bobber floats (0 -> 1.3s)
+          playerRig.rightArm.rotation.x = -0.82 + Math.sin(elapsed * 2.5) * 0.04;
+          playerRig.rightArm.rotation.z = 0;
+          playerFishingPole.upperPivot.rotation.x = 0.04 + Math.sin(elapsed * 3) * 0.02;
+
+          bobber3D.position.set(
+            fishingSimState.waterX,
+            0.03 + Math.sin(elapsed * 4.5) * 0.05,
+            fishingSimState.waterZ
+          );
+          bobberRipple1.visible = true;
+          bobberRipple2.visible = true;
+          bobberRipple3.visible = true;
+          biteAlertSprite.visible = false;
+          const rScale = 0.85 + ((elapsed * 1.2) % 1.0) * 0.8;
+          bobberRipple1.scale.set(rScale, rScale, 1);
+          bobberRipple2.scale.set(rScale * 1.18, rScale * 1.18, 1);
+          bobberRipple3.scale.set(rScale * 1.35, rScale * 1.35, 1);
+
+          // Show shadow/silhouette of fish or drifting trash under the bobber
+          const activeCatchMesh = isTrashHooked ? leapingTrash3D : leapingFish3D;
+          leapingFish3D.visible = !isTrashHooked;
+          leapingTrash3D.visible = isTrashHooked;
+          const swimAngle = elapsed * (isTrashHooked ? 1.4 : 3.4);
+          const orbitR = isTrashHooked ? 0.35 : 0.9;
+          activeCatchMesh.position.set(
+            fishingSimState.waterX + Math.cos(swimAngle) * orbitR,
+            -0.08,
+            fishingSimState.waterZ + Math.sin(swimAngle) * orbitR
+          );
+          activeCatchMesh.rotation.set(0, -swimAngle, 0);
+          if (!isTrashHooked) {
+            lfTail.rotation.y = Math.sin(elapsed * 18) * 0.35;
+          }
+
+          if (fishingSimState.timer >= 1.3) {
+            fishingSimState.phase = 'bite_ready';
+            fishingSimState.timer = 0;
+            fishingSimState.splashTimer = 0.55;
+            soundEngine.playUiClick();
+            setFishingPhase('bite_ready');
+          }
+        } else if (fishingSimState.phase === 'bite_ready') {
+          // Hooked! Bobber plunges rapidly, ❗ BITE! sprite pulses, & upper rod bends strongly!
+          playerRig.rightArm.rotation.x = -0.95 + Math.sin(elapsed * 18) * 0.14;
+          playerFishingPole.upperPivot.rotation.x = 0.34 + Math.sin(elapsed * 22) * 0.12;
+          playerFishingPole.reelPivot.rotation.x += dt * 10;
+
+          bobber3D.position.set(
+            fishingSimState.waterX + Math.sin(elapsed * 22) * 0.1,
+            -0.06 + Math.sin(elapsed * 20) * 0.18,
+            fishingSimState.waterZ + Math.cos(elapsed * 22) * 0.1
+          );
+          biteAlertSprite.visible = true;
+          const alertPulse = 1 + Math.sin(elapsed * 16) * 0.18;
+          biteAlertSprite.scale.set(1.65 * alertPulse, 0.62 * alertPulse, 1);
+
+          const splashScale = 1.0 + Math.abs(Math.sin(elapsed * 15)) * 1.05;
+          bobberRipple1.scale.set(splashScale, splashScale, 1);
+          bobberRipple2.scale.set(splashScale * 1.28, splashScale * 1.28, 1);
+          bobberRipple3.scale.set(splashScale * 1.55, splashScale * 1.55, 1);
+
+          // Repeat mini splash bursts while fish/trash thrashes
+          if (fishingSimState.splashTimer <= 0.1) {
+            fishingSimState.splashTimer = 0.45;
+          }
+
+          const activeCatchMesh = isTrashHooked ? leapingTrash3D : leapingFish3D;
+          leapingFish3D.visible = !isTrashHooked;
+          leapingTrash3D.visible = isTrashHooked;
+          activeCatchMesh.position.set(fishingSimState.waterX, -0.02, fishingSimState.waterZ);
+          activeCatchMesh.rotation.y = elapsed * (isTrashHooked ? 4 : 9);
+
+          if (fishingSimState.timer >= 1.35) {
+            gameActionsRef.current?.reelInFish();
+          }
+        } else if (fishingSimState.phase === 'reeling_in') {
+          // Pull fishing pole up, bend rod tip & leap the 3D Fish or 3D Trash out of the water in a high arc!
+          const t = Math.min(1, fishingSimState.timer / 0.82);
+          playerRig.rightArm.rotation.x = -1.68;
+          playerRig.rightArm.rotation.z = 0;
+          playerFishingPole.upperPivot.rotation.x = Math.sin((1 - t) * Math.PI) * 0.42;
+          playerFishingPole.reelPivot.rotation.x += dt * 22;
+
+          const catchX = THREE.MathUtils.lerp(fishingSimState.waterX, playerState.x, t);
+          const catchZ = THREE.MathUtils.lerp(fishingSimState.waterZ, playerState.z, t);
+          const catchY = Math.sin(t * Math.PI) * 3.6 + t * 1.55;
+
+          bobber3D.position.set(catchX, catchY + 0.28, catchZ);
+          bobberRipple1.visible = false;
+          bobberRipple2.visible = false;
+          bobberRipple3.visible = false;
+          biteAlertSprite.visible = false;
+
+          const activeCatchMesh = isTrashHooked ? leapingTrash3D : leapingFish3D;
+          leapingFish3D.visible = !isTrashHooked;
+          leapingTrash3D.visible = isTrashHooked;
+          activeCatchMesh.position.set(catchX, catchY, catchZ);
+          if (isTrashHooked) {
+            // Trash tumbles end-over-end through the air
+            activeCatchMesh.rotation.set(t * Math.PI * 3.5, playerState.rotY + t * 4, t * 2.5);
+          } else {
+            // Fish arcs gracefully and wags its tail rapidly
+            activeCatchMesh.rotation.set(
+              -Math.cos(t * Math.PI) * 0.85,
+              playerState.rotY + Math.PI,
+              Math.sin(elapsed * 22) * 0.28
+            );
+            lfTail.rotation.y = Math.sin(elapsed * 28) * 0.48;
+          }
+
+          if (fishingSimState.timer >= 0.82) {
+            const caught = fishingSimState.hookedFish || pickRandomCaughtFish();
+            fishingSimState.phase = 'idle';
+            fishingSimState.celebratedCatch = caught;
+            fishingSimState.celebrateTimer = 2.4; // Showcase the 3D catch floating beside the player!
+            playerFishingPole.upperPivot.rotation.set(0, 0, 0);
+            setFishingPhase('idle');
+            setLastCaughtFish(caught);
+            setActiveCatchCard(caught);
+            setCatchHistory((prev) => [caught, ...prev].slice(0, 6));
+
+            if (caught.isTrash || caught.price <= 0) {
+              // Caught Ocean Trash ($0 Value)!
+              soundEngine.playBallKick();
+              if (caught.xpReward > 0) {
+                setXp((prev) => prev + caught.xpReward);
+              }
+              attachSpeechBubble(
+                playerRig.root,
+                playerProfile.name,
+                `Caught Trash: ${caught.emoji} ${caught.name} ($0 Value)!`,
+                true
+              );
+              showToast(
+                `Trash Caught: ${caught.emoji} ${caught.name} ($0 Value)`,
+                `Ocean trash is worth $0 Era Dollars! Cast again for $1–$10 fish!`,
+                '#F43F5E'
+              );
+            } else {
+              // Award the fish's Dollar Price ($1 to $10 Era Dollars) and XP!
+              soundEngine.playGoalCheer();
+              setEraDollars((prev) => {
+                const next = prev + caught.price;
+                try {
+                  localStorage.setItem('eraverse_dollars_v2', String(next));
+                } catch {}
+                return next;
+              });
+              setXp((prev) => prev + caught.xpReward);
+              attachSpeechBubble(
+                playerRig.root,
+                playerProfile.name,
+                `Caught ${caught.emoji} ${caught.name} (+$${caught.price})!`,
+                false
+              );
+              showToast(
+                `Caught ${caught.emoji} ${caught.name} (+$${caught.price} 💵)!`,
+                `Added +$${caught.price} Era Dollars & +${caught.xpReward} XP to your wallet!`,
+                '#10B981'
+              );
+            }
           }
         }
 
-        if (playerState.y <= groundFloorY) {
-          playerState.y = groundFloorY;
+        // Update 13-point Curved Catenary 3D Fishing Line from rodTip to bobber3D
+        playerRig.root.updateMatrixWorld(true);
+        playerFishingPole.rodTip.getWorldPosition(_rodTipWorldPos);
+        const posArr = fishingLineGeo.attributes.position.array as Float32Array;
+        const endX = bobber3D.position.x;
+        const endY = bobber3D.position.y + 0.24;
+        const endZ = bobber3D.position.z;
+
+        // Line sag when floating vs taut vibration when biting/reeling
+        const sagAmount =
+          fishingSimState.phase === 'bobbing'
+            ? 0.42 + Math.sin(elapsed * 3) * 0.05
+            : fishingSimState.phase === 'casting'
+            ? 0.22
+            : 0.03;
+
+        for (let i = 0; i <= FISHING_LINE_SEGMENTS; i++) {
+          const u = i / FISHING_LINE_SEGMENTS;
+          const lx = THREE.MathUtils.lerp(_rodTipWorldPos.x, endX, u);
+          const lz = THREE.MathUtils.lerp(_rodTipWorldPos.z, endZ, u);
+          const parabola = 4 * u * (1 - u);
+          const jitter =
+            fishingSimState.phase === 'bite_ready'
+              ? Math.sin(elapsed * 45 + i * 1.7) * 0.04 * parabola
+              : 0;
+          const ly = THREE.MathUtils.lerp(_rodTipWorldPos.y, endY, u) - parabola * sagAmount + jitter;
+          const idx = i * 3;
+          posArr[idx] = lx;
+          posArr[idx + 1] = ly;
+          posArr[idx + 2] = lz;
+        }
+        fishingLineGeo.attributes.position.needsUpdate = true;
+      }
+
+      // ============================================================================
+      // 3D MOUNTAIN CABLE CAR RIDE ANIMATION & MULTI-ELEVATION GROUND PHYSICS (Y=0 vs Y=72)
+      // ============================================================================
+      if (cableCarSim.phase !== 'idle' && cableCarSim.playerGondola) {
+        const rideDurationSec = 9.0;
+        if (cableCarSim.phase === 'ascending') {
+          cableCarSim.progress = Math.min(1, cableCarSim.progress + dt / rideDurationSec);
+        } else {
+          cableCarSim.progress = Math.max(0, cableCarSim.progress - dt / rideDurationSec);
+        }
+
+        // Smooth ease-in-out interpolation along the mountain steel cable
+        const p = cableCarSim.progress;
+        const smoothP = p * p * (3 - 2 * p);
+        const gx = THREE.MathUtils.lerp(cableCarSim.startPos.x + 1.45, cableCarSim.endPos.x + 1.45, smoothP);
+        const gy = THREE.MathUtils.lerp(cableCarSim.startPos.y, cableCarSim.endPos.y, smoothP);
+        const gz = THREE.MathUtils.lerp(cableCarSim.startPos.z, cableCarSim.endPos.z, smoothP);
+
+        cableCarSim.playerGondola.position.set(gx, gy, gz);
+        cableCarSim.playerGondola.rotation.z = Math.sin(elapsed * 2.2) * 0.02;
+
+        // Place player character on the cabin floor (y = gy - 5.82) with 1.25m+ clear headroom below the cabin roof (gy - 1.4)!
+        playerState.x = gx + 0.12;
+        playerState.y = gy - 5.82;
+        playerState.z = gz;
+        playerState.vy = 0;
+        playerState.isGrounded = true;
+        playerState.rotY = Math.PI / 2; // Face East/North toward the City & Campus view
+        playerRig.vehicleGroup.visible = false;
+
+        const elevMeters = Math.round(120 + smoothP * 2280);
+        if (Math.abs(elevMeters - hudSyncCache.lastElevMeters) >= 35) {
+          hudSyncCache.lastElevMeters = elevMeters;
+          setCableCarElevationMeters(elevMeters);
+        }
+
+        if (cableCarSim.phase === 'ascending' && cableCarSim.progress >= 1) {
+          // Arrived at Upper Mountain Summit Skywalk (Y = 72m)!
+          cableCarSim.phase = 'idle';
+          cableCarSim.isAtSummit = true;
+          hudSyncCache.lastElevMeters = 2400;
+          setCableCarRidePhase('idle');
+          setIsAtMountainSummit(true);
+          setCableCarElevationMeters(2400);
+          playerState.x = -187.5;
+          playerState.y = 72.0;
+          playerState.z = -14.0;
+          playerState.rotY = Math.PI / 2; // Facing out toward the Glass Skywalk & City Skyline
+          camState.yaw = -Math.PI / 2;
+          soundEngine.playGoalCheer();
+          attachSpeechBubble(
+            playerRig.root,
+            playerProfile.name,
+            'Arrived at the Mountain Summit Skywalk (2,400m)! Look at the City Skyline from above! 🏔️🏙️',
+            false
+          );
+          showToast(
+            'Welcome to Mountain Summit Skywalk (2,400m)! 🏔️🏙️',
+            'Walk out onto the Glass Skywalk or use the Telescopes (E) to see the City from above!',
+            '#10B981'
+          );
+        } else if (cableCarSim.phase === 'descending' && cableCarSim.progress <= 0) {
+          // Arrived back at Lower Foothill Base Station (Y = 0m)!
+          cableCarSim.phase = 'idle';
+          cableCarSim.isAtSummit = false;
+          hudSyncCache.lastElevMeters = 120;
+          setCableCarRidePhase('idle');
+          setIsAtMountainSummit(false);
+          setCableCarElevationMeters(120);
+          playerState.x = -145.0;
+          playerState.y = 0;
+          playerState.z = 44.0;
+          playerState.rotY = Math.PI / 2;
+          soundEngine.playGoalCheer();
+          showToast(
+            'Arrived at West Campus Base Station 🚡',
+            'Visit the $5 Ticket Booth anytime to ride back up to the Summit City Overlook!',
+            '#38BDF8'
+          );
+        }
+      } else {
+        // Keep docked player gondola waiting at whichever terminal the player is currently near
+        if (cableCarSim.playerGondola) {
+          const targetP = cableCarSim.isAtSummit ? 1 : 0;
+          const gx = THREE.MathUtils.lerp(cableCarSim.startPos.x + 1.45, cableCarSim.endPos.x + 1.45, targetP);
+          const gy = THREE.MathUtils.lerp(cableCarSim.startPos.y, cableCarSim.endPos.y, targetP);
+          const gz = THREE.MathUtils.lerp(cableCarSim.startPos.z, cableCarSim.endPos.z, targetP);
+          cableCarSim.playerGondola.position.set(gx, gy, gz);
+          cableCarSim.playerGondola.rotation.z = Math.sin(elapsed * 1.5) * 0.012;
+        }
+
+        // Vertical Jump & Multi-Elevation Ground Floor Physics (Y = 72.0 on Summit Deck, Y = 0 on Campus)
+        const activeGroundFloorY =
+          !activeInteriorBuilding && (cableCarSim.isAtSummit || (playerState.x < -168 && playerState.y > 40))
+            ? 72.0
+            : 0;
+
+        if (playerState.isSitting) {
+          playerState.y = activeGroundFloorY;
           playerState.vy = 0;
           playerState.isGrounded = true;
+        } else {
+          playerState.vy -= 26 * dt;
+          playerState.y += playerState.vy * dt;
+
+          if (playerState.y <= activeGroundFloorY) {
+            playerState.y = activeGroundFloorY;
+            playerState.vy = 0;
+            playerState.isGrounded = true;
+          }
         }
       }
 
@@ -9027,15 +13166,10 @@ export function EraVerse() {
         } else if (activeGamers < 4 && roll < 0.66) {
           npc.activity = 'play_games';
           npc.activityTimer = 20 + Math.random() * 14;
-          if (Math.random() < 0.55) {
-            npc.targetX = TRAMPOLINE_POS.x + (Math.random() - 0.5) * 1.8;
-            npc.targetZ = TRAMPOLINE_POS.z + (Math.random() - 0.5) * 1.8;
-          } else {
-            const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || BUILDINGS[0];
-            npc.targetBuilding = eraGamesB;
-            npc.targetX = eraGamesB.doorX + (Math.random() - 0.5) * 5.0;
-            npc.targetZ = eraGamesB.doorZ + eraGamesB.frontDir * 4.2;
-          }
+          const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || BUILDINGS[0];
+          npc.targetBuilding = eraGamesB;
+          npc.targetX = eraGamesB.doorX + (Math.random() - 0.5) * 5.0;
+          npc.targetZ = eraGamesB.doorZ + eraGamesB.frontDir * 4.2;
         } else {
           npc.activity = 'going_to_room';
           npc.activityTimer = 24 + Math.random() * 14;
@@ -9200,61 +13334,29 @@ export function EraVerse() {
           }
         }
 
-        // 4. PLAYING GAMES (Trampoline Bounce & EraGames Bubble Island Plaza)
+        // 4. PLAYING GAMES (EraGames Bubble Island Plaza)
         else if (npc.activity === 'play_games') {
-          const distToTrampoline = Math.hypot(
-            npc.targetX - TRAMPOLINE_POS.x,
-            npc.targetZ - TRAMPOLINE_POS.z
+          const dArcade = Math.hypot(
+            npc.rig.root.position.x - npc.targetX,
+            npc.rig.root.position.z - npc.targetZ
           );
-          if (distToTrampoline < 5.5) {
-            // Bouncing on the Playground Trampoline!
-            const dPad = Math.hypot(
-              npc.rig.root.position.x - npc.targetX,
-              npc.rig.root.position.z - npc.targetZ
-            );
-            if (dPad < 1.6) {
-              const bounceH = Math.abs(Math.sin(elapsed * 5.4 + idx * 1.3)) * 2.35;
-              npc.rig.root.position.y = 0.45 + bounceH;
-              npc.rig.leftArm.rotation.z = -2.1;
-              npc.rig.rightArm.rotation.z = 2.1;
-              npc.rig.leftLeg.rotation.x = 0.25;
-              npc.rig.rightLeg.rotation.x = -0.25;
-              if (npc.chatCooldown <= 0 && Math.random() < 0.35) {
-                attachSpeechBubble(npc.rig.root, npc.profile.name, 'Trampoline high jump! 🤸', false);
-                npc.chatCooldown = 16 + Math.random() * 8;
-              }
-              if (npc.activityTimer <= 0) {
-                npc.rig.root.position.y = 0;
-                npc.rig.leftArm.rotation.z = 0;
-                npc.rig.rightArm.rotation.z = 0;
-                assignNextExteriorActivity(npc, idx);
-              }
-              return;
+          if (dArcade < 1.6) {
+            npc.rig.root.position.y = Math.abs(Math.sin(elapsed * 6.5 + idx)) * 0.35;
+            if (npc.chatCooldown <= 0) {
+              attachSpeechBubble(
+                npc.rig.root,
+                npc.profile.name,
+                'Going inside EraGames to play Bubble Island! 🫧🎮',
+                false
+              );
+              npc.chatCooldown = 16;
             }
-          } else {
-            // Playing near EraGames Arcade before walking inside to play Bubble Island
-            const dArcade = Math.hypot(
-              npc.rig.root.position.x - npc.targetX,
-              npc.rig.root.position.z - npc.targetZ
-            );
-            if (dArcade < 1.6) {
-              npc.rig.root.position.y = Math.abs(Math.sin(elapsed * 6.5 + idx)) * 0.35;
-              if (npc.chatCooldown <= 0) {
-                attachSpeechBubble(
-                  npc.rig.root,
-                  npc.profile.name,
-                  'Going inside EraGames to play Bubble Island! 🫧🎮',
-                  false
-                );
-                npc.chatCooldown = 16;
-              }
-              if (npc.activityTimer <= 12) {
-                const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || npc.targetBuilding;
-                npc.targetBuilding = eraGamesB;
-                npc.activity = 'entering_door';
-                npc.targetX = eraGamesB.doorX;
-                npc.targetZ = eraGamesB.doorZ - eraGamesB.frontDir * 1.5;
-              }
+            if (npc.activityTimer <= 12) {
+              const eraGamesB = BUILDINGS.find((b) => b.id === 'speaking') || npc.targetBuilding;
+              npc.targetBuilding = eraGamesB;
+              npc.activity = 'entering_door';
+              npc.targetX = eraGamesB.doorX;
+              npc.targetZ = eraGamesB.doorZ - eraGamesB.frontDir * 1.5;
             }
           }
           if (npc.activityTimer <= 0) {
@@ -9343,8 +13445,35 @@ export function EraVerse() {
 
           if (dist > 0.35) {
             const ang = Math.atan2(dx, dz);
-            npc.rig.root.position.x += Math.sin(ang) * moveSpeed * dt;
-            npc.rig.root.position.z += Math.cos(ang) * moveSpeed * dt;
+            const curX = npc.rig.root.position.x;
+            const curZ = npc.rig.root.position.z;
+            const nextX = curX + Math.sin(ang) * moveSpeed * dt;
+            const nextZ = curZ + Math.cos(ang) * moveSpeed * dt;
+            const isDoorTransit = npc.activity === 'entering_door' || npc.activity === 'exiting_door';
+
+            let blockedNpcX = false;
+            let blockedNpcZ = false;
+            if (!isDoorTransit) {
+              for (const c of colliders) {
+                if (nextX > c.minX - 0.35 && nextX < c.maxX + 0.35 && curZ > c.minZ - 0.35 && curZ < c.maxZ + 0.35) {
+                  blockedNpcX = true;
+                }
+                if (curX > c.minX - 0.35 && curX < c.maxX + 0.35 && nextZ > c.minZ - 0.35 && nextZ < c.maxZ + 0.35) {
+                  blockedNpcZ = true;
+                }
+              }
+            }
+            if (!activeInteriorBuilding) {
+              const dPlayerNext = (nextX - playerState.x) * (nextX - playerState.x) + (nextZ - playerState.z) * (nextZ - playerState.z);
+              const dPlayerCur = (curX - playerState.x) * (curX - playerState.x) + (curZ - playerState.z) * (curZ - playerState.z);
+              if (dPlayerNext < 1.05 * 1.05 && dPlayerNext < dPlayerCur) {
+                blockedNpcX = true;
+                blockedNpcZ = true;
+              }
+            }
+
+            if (!blockedNpcX) npc.rig.root.position.x = nextX;
+            if (!blockedNpcZ) npc.rig.root.position.z = nextZ;
             npc.rig.root.rotation.y = npc.activity === 'tennis' ? Math.PI : ang;
             npc.walkPhase += dt * (npc.activity === 'football' ? 10.2 : 7.8);
             const sw = Math.sin(npc.walkPhase) * (npc.activity === 'football' ? 0.58 : 0.45);
@@ -9398,7 +13527,12 @@ export function EraVerse() {
         interiorNpcActors.forEach((inpc, idx) => {
           inpc.timer -= dt;
           if (inpc.role === 'seated_student') {
-            // Seated students face the chalkboard, take notes, and periodically raise their hand to answer
+            // Seated students sit directly on their chair facing the chalkboard, take notes, and raise their hand
+            inpc.rig.root.position.y = 0;
+            inpc.rig.hipsGroup.position.y = 0.56;
+            inpc.rig.vehicleGroup.visible = false;
+            inpc.rig.leftLeg.rotation.x = -1.12;
+            inpc.rig.rightLeg.rotation.x = -1.12;
             inpc.rig.root.rotation.y = Math.PI + Math.sin(elapsed * 1.2 + idx) * 0.08;
             if (inpc.handRaiseTimer > 0) {
               inpc.handRaiseTimer -= dt;
@@ -9443,8 +13577,20 @@ export function EraVerse() {
 
             if (dist > 0.35) {
               const ang = Math.atan2(dx, dz);
-              inpc.rig.root.position.x += Math.sin(ang) * 3.4 * dt;
-              inpc.rig.root.position.z += Math.cos(ang) * 3.4 * dt;
+              const nextLocalX = inpc.rig.root.position.x + Math.sin(ang) * 3.2 * dt;
+              const nextLocalZ = inpc.rig.root.position.z + Math.cos(ang) * 3.2 * dt;
+              const nextWorldX = INTERIOR_ORIGIN.x + nextLocalX;
+              const nextWorldZ = INTERIOR_ORIGIN.z + nextLocalZ;
+              const curWorldX = INTERIOR_ORIGIN.x + inpc.rig.root.position.x;
+              const curWorldZ = INTERIOR_ORIGIN.z + inpc.rig.root.position.z;
+
+              const dPlayerNext = (nextWorldX - playerState.x) * (nextWorldX - playerState.x) + (nextWorldZ - playerState.z) * (nextWorldZ - playerState.z);
+              const dPlayerCur = (curWorldX - playerState.x) * (curWorldX - playerState.x) + (curWorldZ - playerState.z) * (curWorldZ - playerState.z);
+
+              if (!(dPlayerNext < 0.92 * 0.92 && dPlayerNext < dPlayerCur)) {
+                inpc.rig.root.position.x = nextLocalX;
+                inpc.rig.root.position.z = nextLocalZ;
+              }
               inpc.rig.root.rotation.y = ang;
               inpc.walkPhase += dt * 7.2;
               const sw = Math.sin(inpc.walkPhase) * 0.42;
@@ -9465,9 +13611,8 @@ export function EraVerse() {
               } else if (inpc.state === 'at_spot') {
                 if (inpc.timer <= 0) {
                   if (Math.random() < 0.48) {
-                    // Walk to another spot inside the room first
-                    inpc.targetX = (Math.random() - 0.5) * 11.0;
-                    inpc.targetZ = -4.5 + Math.random() * 8.0;
+                    inpc.targetX = (Math.random() - 0.5) * 8.5;
+                    inpc.targetZ = 4.2 + Math.random() * 4.2;
                     inpc.timer = 5.5 + Math.random() * 4.5;
                   } else {
                     // Head out the exit door
@@ -9499,27 +13644,105 @@ export function EraVerse() {
       // Animate AI Employees inside ERA FACULTY & detect proximity to cubicle workstations
       let closestFacEmp: FacultyEmployeeProfile | null = null;
       if (activeInteriorBuilding && activeInteriorBuilding.id === 'faculty_hq') {
+        const facultyWaypoints = [
+          { x: -1.15, z: -6.8 },
+          { x: 1.15, z: -6.8 },
+          { x: -1.15, z: -2.4 },
+          { x: 1.15, z: -2.4 },
+          { x: -1.15, z: 2.2 },
+          { x: 1.15, z: 2.2 },
+          { x: -1.15, z: 7.4 },
+          { x: 1.15, z: 7.4 },
+          { x: -4.8, z: 8.6 },
+          { x: 4.8, z: 8.6 },
+          { x: -7.8, z: 8.8 },
+          { x: 7.8, z: 8.8 }
+        ];
         let minFacDist = 3.8;
         facultyNpcActors.forEach((fa, fIdx) => {
-          const isAisleWalker = fa.employee.id === 'emp_coordinator' || fa.employee.id === 'emp_pet';
-          if (isAisleWalker) {
-            // Natural office walking up and down the central patterned-carpet aisle
-            const speed = 0.52;
-            const phase = elapsed * speed + (fa.employee.id === 'emp_pet' ? Math.PI : 0);
-            const curZ = Math.sin(phase) * 6.5 - 1.2;
-            const dirZ = Math.cos(phase);
-            fa.rig.root.position.x = fa.baseX;
-            fa.rig.root.position.z = curZ;
-            fa.rig.root.position.y = Math.abs(Math.sin(elapsed * 7.5 + fIdx)) * 0.05;
-            fa.rig.root.rotation.y = dirZ >= 0 ? 0 : Math.PI;
-            const swing = Math.sin(elapsed * 7.5 + fIdx) * 0.45;
-            fa.rig.leftArm.rotation.x = swing;
-            fa.rig.rightArm.rotation.x = -swing;
-            fa.rig.leftLeg.rotation.x = -swing;
-            fa.rig.rightLeg.rotation.x = swing;
+          if (fa.isWalker) {
+            // Natural office roaming around the room: walking along the central avenue, front door concourse & back analytics wall
+            if (fa.pauseTimer > 0) {
+              fa.pauseTimer -= dt;
+              fa.rig.root.position.y = 0;
+              fa.rig.leftLeg.rotation.x *= 0.82;
+              fa.rig.rightLeg.rotation.x *= 0.82;
+              fa.rig.leftArm.rotation.x *= 0.82;
+              fa.rig.rightArm.rotation.x *= 0.82;
+              if (fa.pauseTimer <= 0) {
+                fa.waypointIdx = (fa.waypointIdx + 1 + Math.floor(Math.random() * 3)) % facultyWaypoints.length;
+                const nextWp = facultyWaypoints[fa.waypointIdx];
+                fa.targetX = nextWp.x + (Math.random() - 0.5) * 0.45;
+                fa.targetZ = nextWp.z + (Math.random() - 0.5) * 0.45;
+              }
+            } else {
+              const dx = fa.targetX - fa.rig.root.position.x;
+              const dz = fa.targetZ - fa.rig.root.position.z;
+              const dist = Math.hypot(dx, dz);
+              if (dist > 0.28) {
+                const ang = Math.atan2(dx, dz);
+                const nextLocalX = fa.rig.root.position.x + Math.sin(ang) * fa.walkSpeed * dt;
+                const nextLocalZ = fa.rig.root.position.z + Math.cos(ang) * fa.walkSpeed * dt;
+                const nextWorldX = INTERIOR_ORIGIN.x + nextLocalX;
+                const nextWorldZ = INTERIOR_ORIGIN.z + nextLocalZ;
+                const curWorldX = INTERIOR_ORIGIN.x + fa.rig.root.position.x;
+                const curWorldZ = INTERIOR_ORIGIN.z + fa.rig.root.position.z;
+
+                // Avoid walking through the human player or other walking faculty staff
+                let blockedByPerson = false;
+                const dPlayerNext = (nextWorldX - playerState.x) * (nextWorldX - playerState.x) + (nextWorldZ - playerState.z) * (nextWorldZ - playerState.z);
+                const dPlayerCur = (curWorldX - playerState.x) * (curWorldX - playerState.x) + (curWorldZ - playerState.z) * (curWorldZ - playerState.z);
+                if (dPlayerNext < 0.95 * 0.95 && dPlayerNext < dPlayerCur) {
+                  blockedByPerson = true;
+                }
+                for (const otherFa of facultyNpcActors) {
+                  if (otherFa === fa || !otherFa.isWalker) continue;
+                  const ox = otherFa.rig.root.position.x;
+                  const oz = otherFa.rig.root.position.z;
+                  const dOtherNext = (nextLocalX - ox) * (nextLocalX - ox) + (nextLocalZ - oz) * (nextLocalZ - oz);
+                  const dOtherCur = (fa.rig.root.position.x - ox) * (fa.rig.root.position.x - ox) + (fa.rig.root.position.z - oz) * (fa.rig.root.position.z - oz);
+                  if (dOtherNext < 0.85 * 0.85 && dOtherNext < dOtherCur) {
+                    blockedByPerson = true;
+                    break;
+                  }
+                }
+
+                if (!blockedByPerson) {
+                  fa.rig.root.position.x = nextLocalX;
+                  fa.rig.root.position.z = nextLocalZ;
+                } else {
+                  // Pick a new open waypoint if blocked
+                  fa.waypointIdx = (fa.waypointIdx + 2) % facultyWaypoints.length;
+                  fa.targetX = facultyWaypoints[fa.waypointIdx].x;
+                  fa.targetZ = facultyWaypoints[fa.waypointIdx].z;
+                }
+
+                let rotDiff = ang - fa.rig.root.rotation.y;
+                while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+                while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+                fa.rig.root.rotation.y += rotDiff * Math.min(1, dt * 10);
+
+                fa.walkPhase += dt * (fa.walkSpeed * 3.1);
+                fa.rig.root.position.y = Math.abs(Math.sin(fa.walkPhase)) * 0.04;
+                const swing = Math.sin(fa.walkPhase) * 0.44;
+                fa.rig.leftArm.rotation.x = swing;
+                fa.rig.rightArm.rotation.x = -swing;
+                fa.rig.leftLeg.rotation.x = -swing;
+                fa.rig.rightLeg.rotation.x = swing;
+              } else {
+                fa.pauseTimer = 1.6 + Math.random() * 2.4;
+                // While pausing, orient toward the front entrance door (+Z) or nearby cubicle
+                fa.rig.root.rotation.y = THREE.MathUtils.damp(fa.rig.root.rotation.y, 0, 8, dt);
+              }
+            }
           } else {
-            // Seated typing & reviewing papers at their cubicle desk
-            fa.rig.root.rotation.y = fa.baseRotY + Math.sin(elapsed * 1.4 + fIdx) * 0.08;
+            // Seated on office chair at cubicle desk facing the front entrance door (+Z, baseRotY = 0)
+            fa.rig.root.position.y = 0;
+            fa.rig.hipsGroup.position.y = 0.46;
+            fa.rig.vehicleGroup.visible = false;
+            fa.rig.leftLeg.rotation.x = -1.08;
+            fa.rig.rightLeg.rotation.x = -1.08;
+            fa.rig.root.rotation.y = fa.baseRotY + Math.sin(elapsed * 1.4 + fIdx) * 0.07;
             fa.rig.leftArm.rotation.x = -0.68 + Math.sin(elapsed * 6.5 + fIdx) * 0.12;
             fa.rig.rightArm.rotation.x = -0.68 + Math.cos(elapsed * 6.5 + fIdx) * 0.12;
           }
@@ -9543,10 +13766,19 @@ export function EraVerse() {
           }
         });
       }
-      setNearFacultyEmployee(closestFacEmp);
-      setNearCharacterPrompt(closestNpc);
+      const nextFacId = closestFacEmp ? closestFacEmp.id : '';
+      if (nextFacId !== hudSyncCache.facultyEmpId) {
+        hudSyncCache.facultyEmpId = nextFacId;
+        setNearFacultyEmployee(closestFacEmp);
+      }
 
-      // Proximity Prompts
+      const nextNpcId = closestNpc ? closestNpc.id : '';
+      if (nextNpcId !== hudSyncCache.npcId) {
+        hudSyncCache.npcId = nextNpcId;
+        setNearCharacterPrompt(closestNpc);
+      }
+
+      // Proximity Prompts (Cached so React state only updates when proximity target actually changes)
       if (activeInteriorBuilding) {
         let nearBoard: WallBoardSpec | null = null;
         let minBoardDist = 4.6;
@@ -9598,7 +13830,11 @@ export function EraVerse() {
             };
           }
         }
-        setNearBoardPrompt(nearBoard);
+        const nextBoardKey = nearBoard ? `${nearBoard.slot}:${nearBoard.title}` : '';
+        if (nextBoardKey !== hudSyncCache.boardKey) {
+          hudSyncCache.boardKey = nextBoardKey;
+          setNearBoardPrompt(nearBoard);
+        }
 
         if (activeInteriorBuilding.id.startsWith('class_') && !playerState.isSitting) {
           let closestDesk: {
@@ -9625,12 +13861,20 @@ export function EraVerse() {
               }
             }
           });
-          setNearClassroomDesk(closestDesk);
-        } else {
+          const nextDeskKey = closestDesk ? `${closestDesk.deskName}:${closestDesk.seatX}` : '';
+          if (nextDeskKey !== hudSyncCache.deskKey) {
+            hudSyncCache.deskKey = nextDeskKey;
+            setNearClassroomDesk(closestDesk);
+          }
+        } else if (hudSyncCache.deskKey !== '') {
+          hudSyncCache.deskKey = '';
           setNearClassroomDesk(null);
         }
       } else {
-        setNearClassroomDesk(null);
+        if (hudSyncCache.deskKey !== '') {
+          hudSyncCache.deskKey = '';
+          setNearClassroomDesk(null);
+        }
         let nearB: BuildingZone | null = null;
         let minDoorDist = 6.5;
         BUILDINGS.forEach((b) => {
@@ -9640,76 +13884,186 @@ export function EraVerse() {
             nearB = b;
           }
         });
-        setNearBuildingPrompt(nearB);
-      }
+        const nextBId = nearB ? (nearB as BuildingZone).id : '';
+        if (nextBId !== hudSyncCache.buildingId) {
+          hudSyncCache.buildingId = nextBId;
+          setNearBuildingPrompt(nearB);
+        }
 
-      // Camera Anti-Occlusion & Smooth Orbit (Full Up/Down Vertical Pitch & Pan Support)
-      const basePivotY = playerState.y + 2.0;
-      // When pitch < 0 (panning view UP toward ceiling/clock/sky), tilt lookTarget Y upward;
-      // when pitch > 0.35 (panning view DOWN toward cubicles/floor), tilt lookTarget Y downward.
-      const lookTiltY =
-        camState.pitch < 0
-          ? -camState.pitch * 6.2
-          : camState.pitch > 0.35
-          ? -(camState.pitch - 0.35) * 2.0
-          : 0;
-      _camTarget.set(playerState.x, basePivotY + lookTiltY, playerState.z);
+        const isNearAnyBeachFishingSpot =
+          playerState.y < 15 &&
+          (playerState.z > 94 || (playerState.x > 100 && playerState.z > -90 && playerState.z < 135));
+        if (isNearAnyBeachFishingSpot !== hudSyncCache.nearFishing) {
+          hudSyncCache.nearFishing = isNearAnyBeachFishingSpot;
+          setNearFishingZone(isNearAnyBeachFishingSpot);
+        }
 
-      const effectiveOrbitPitch = Math.max(-0.18, camState.pitch);
-      const horizDist = camState.distance * Math.cos(effectiveOrbitPitch);
-      const vertDist = camState.distance * Math.sin(effectiveOrbitPitch);
+        // Detect proximity to Lower Base Cable Car Station / $5 Ticket Booth OR Upper Summit Terminal
+        if (cableCarSim.phase === 'idle') {
+          const distBaseStation =
+            playerState.y < 15 ? Math.hypot(playerState.x - -148.5, playerState.z - 45.5) : 999;
+          const distSummitStation =
+            playerState.y > 40 ? Math.hypot(playerState.x - -189.0, playerState.z - -9.0) : 999;
+          const nextCableStation: 'base' | 'summit' | null =
+            distBaseStation < 11.0 ? 'base' : distSummitStation < 8.5 ? 'summit' : null;
+          if (nextCableStation !== hudSyncCache.cableStation) {
+            hudSyncCache.cableStation = nextCableStation;
+            setNearCableCarStation(nextCableStation);
+          }
 
-      const maxInteriorCamY =
-        activeInteriorBuilding?.id === 'faculty_hq'
-          ? 6.65
-          : activeInteriorBuilding
-          ? 9.8
-          : 95.0;
+          // Detect proximity to Summit Panoramic Telescopes, Viewing Benches & Sky Cafe
+          if (playerState.y > 40) {
+            const teleDist = Math.min(
+              Math.hypot(playerState.x - -175.5, playerState.z - -25.1),
+              Math.hypot(playerState.x - -171.3, playerState.z - -18.0),
+              Math.hypot(playerState.x - -175.5, playerState.z - -10.9)
+            );
+            const nextTele = teleDist < 3.6;
+            if (nextTele !== hudSyncCache.nearTelescope) {
+              hudSyncCache.nearTelescope = nextTele;
+              setNearSummitTelescope(nextTele);
+            }
 
-      const rawCamY = basePivotY + vertDist;
-      const clampedCamY = Math.max(playerState.y + 1.15, Math.min(maxInteriorCamY, rawCamY));
+            const summitBenches = [
+              { seatX: -181.5, seatZ: -24.4, rotY: Math.PI },
+              { seatX: -173.2, seatZ: -21.5, rotY: Math.PI / 2 }
+            ];
+            let foundBench: { seatX: number; seatZ: number; rotY: number } | null = null;
+            for (const sb of summitBenches) {
+              if (Math.hypot(playerState.x - sb.seatX, playerState.z - sb.seatZ) < 2.6) {
+                foundBench = sb;
+                break;
+              }
+            }
+            const nextBenchKey = foundBench ? `${foundBench.seatX}:${foundBench.seatZ}` : '';
+            if (nextBenchKey !== hudSyncCache.benchKey) {
+              hudSyncCache.benchKey = nextBenchKey;
+              setNearSummitBench(foundBench);
+            }
 
-      _desiredCamPos.set(
-        playerState.x + Math.sin(camState.yaw) * horizDist,
-        clampedCamY,
-        playerState.z + Math.cos(camState.yaw) * horizDist
-      );
-
-      doorControllers.forEach((dc) => {
-        dc.wallMaterials.forEach((mat) => {
-          mat.opacity = THREE.MathUtils.damp(mat.opacity, 1.0, 10, dt);
-        });
-      });
-
-      if (!activeInteriorBuilding) {
-        _rayDir.subVectors(_desiredCamPos, _camTarget);
-        const rayLen = _rayDir.length();
-        if (rayLen > 0.1) {
-          _rayDir.normalize();
-          camOcclusionRaycaster.set(_camTarget, _rayDir);
-          camOcclusionRaycaster.far = rayLen;
-          const hits = camOcclusionRaycaster.intersectObjects(allBuildingOccluderMeshes, false);
-          if (hits.length > 0) {
-            const safeDist = Math.max(1.0, hits[0].distance - 0.35);
-            _desiredCamPos.copy(_camTarget).addScaledVector(_rayDir, safeDist);
-            const hitBuildingId = hits[0].object.userData?.buildingId;
-            const dc = doorControllers.find((d) => d.building.id === hitBuildingId);
-            if (dc) {
-              dc.wallMaterials.forEach((mat) => {
-                mat.opacity = 0.35;
-              });
+            const nextCafe = Math.hypot(playerState.x - -201.5, playerState.z - -12.5) < 4.2;
+            if (nextCafe !== hudSyncCache.nearCafe) {
+              hudSyncCache.nearCafe = nextCafe;
+              setNearSummitCafe(nextCafe);
+            }
+          } else {
+            if (hudSyncCache.nearTelescope) {
+              hudSyncCache.nearTelescope = false;
+              setNearSummitTelescope(false);
+            }
+            if (hudSyncCache.benchKey !== '') {
+              hudSyncCache.benchKey = '';
+              setNearSummitBench(null);
+            }
+            if (hudSyncCache.nearCafe) {
+              hudSyncCache.nearCafe = false;
+              setNearSummitCafe(false);
             }
           }
+        } else {
+          if (hudSyncCache.cableStation !== null) {
+            hudSyncCache.cableStation = null;
+            setNearCableCarStation(null);
+          }
+          if (hudSyncCache.nearTelescope) {
+            hudSyncCache.nearTelescope = false;
+            setNearSummitTelescope(false);
+          }
+          if (hudSyncCache.benchKey !== '') {
+            hudSyncCache.benchKey = '';
+            setNearSummitBench(null);
+          }
+          if (hudSyncCache.nearCafe) {
+            hudSyncCache.nearCafe = false;
+            setNearSummitCafe(false);
+          }
         }
-      } else {
-        const maxWallX = activeInteriorBuilding.id === 'faculty_hq' ? 14.2 : 13.0;
-        const maxWallZ = activeInteriorBuilding.id === 'faculty_hq' ? 12.2 : 11.0;
-        _desiredCamPos.x = Math.max(INTERIOR_ORIGIN.x - maxWallX, Math.min(INTERIOR_ORIGIN.x + maxWallX, _desiredCamPos.x));
-        _desiredCamPos.z = Math.max(INTERIOR_ORIGIN.z - maxWallZ, Math.min(INTERIOR_ORIGIN.z + maxWallZ, _desiredCamPos.z));
       }
 
-      camera.position.lerp(_desiredCamPos, Math.min(1, dt * 16));
-      camera.lookAt(_camTarget);
+      // Camera Anti-Occlusion, Panoramic Telescope View & Smooth Orbit
+      if (!activeInteriorBuilding && cableCarSim.activeTelescope) {
+        // High-Altitude Panoramic Telescope View from the Mountain Summit (Y = 76m+) overlooking the City & Campus!
+        if (cableCarSim.activeTelescope === 'city') {
+          _desiredCamPos.set(-165, 82.0, -32);
+          _camTarget.set(-10, 26.0, -142); // Aim directly at the North City Metropolis Skyline!
+        } else if (cableCarSim.activeTelescope === 'campus') {
+          _desiredCamPos.set(-164, 80.0, -18);
+          _camTarget.set(0, 6.0, 0); // Aim at Central Campus Plaza, Classrooms & Fountain
+        } else if (cableCarSim.activeTelescope === 'beach') {
+          _desiredCamPos.set(-164, 80.0, -12);
+          _camTarget.set(45, 2.0, 115); // Aim at South Tropical Beach, Pier & East Fishing Lagoon
+        } else {
+          _desiredCamPos.set(-166, 76.0, -8);
+          _camTarget.set(-174, 15.0, 0); // Aim at Cascading Alpine Waterfall & Plunge Pool
+        }
+        camera.position.lerp(_desiredCamPos, Math.min(1, dt * 8));
+        camera.lookAt(_camTarget);
+      } else {
+        const basePivotY = playerState.y + 2.0;
+        const lookTiltY =
+          camState.pitch < 0
+            ? -camState.pitch * 6.2
+            : camState.pitch > 0.35
+            ? -(camState.pitch - 0.35) * 2.0
+            : 0;
+        _camTarget.set(playerState.x, basePivotY + lookTiltY, playerState.z);
+
+        const effectiveOrbitPitch = Math.max(-0.18, camState.pitch);
+        const horizDist = camState.distance * Math.cos(effectiveOrbitPitch);
+        const vertDist = camState.distance * Math.sin(effectiveOrbitPitch);
+
+        const maxInteriorCamY =
+          activeInteriorBuilding?.id === 'faculty_hq'
+            ? 6.65
+            : activeInteriorBuilding
+            ? 9.8
+            : 125.0;
+
+        const rawCamY = basePivotY + vertDist;
+        const clampedCamY = Math.max(playerState.y + 1.15, Math.min(maxInteriorCamY, rawCamY));
+
+        _desiredCamPos.set(
+          playerState.x + Math.sin(camState.yaw) * horizDist,
+          clampedCamY,
+          playerState.z + Math.cos(camState.yaw) * horizDist
+        );
+
+        doorControllers.forEach((dc) => {
+          dc.wallMaterials.forEach((mat) => {
+            mat.opacity = THREE.MathUtils.damp(mat.opacity, 1.0, 10, dt);
+          });
+        });
+
+        if (!activeInteriorBuilding && playerState.y < 35 && cableCarSim.phase === 'idle') {
+          _rayDir.subVectors(_desiredCamPos, _camTarget);
+          const rayLen = _rayDir.length();
+          if (rayLen > 0.1) {
+            _rayDir.normalize();
+            camOcclusionRaycaster.set(_camTarget, _rayDir);
+            camOcclusionRaycaster.far = rayLen;
+            const hits = camOcclusionRaycaster.intersectObjects(allBuildingOccluderMeshes, false);
+            if (hits.length > 0) {
+              const safeDist = Math.max(1.0, hits[0].distance - 0.35);
+              _desiredCamPos.copy(_camTarget).addScaledVector(_rayDir, safeDist);
+              const hitBuildingId = hits[0].object.userData?.buildingId;
+              const dc = doorControllers.find((d) => d.building.id === hitBuildingId);
+              if (dc) {
+                dc.wallMaterials.forEach((mat) => {
+                  mat.opacity = 0.35;
+                });
+              }
+            }
+          }
+        } else if (activeInteriorBuilding) {
+          const maxWallX = activeInteriorBuilding.id === 'faculty_hq' ? 14.2 : 13.0;
+          const maxWallZ = activeInteriorBuilding.id === 'faculty_hq' ? 12.2 : 11.0;
+          _desiredCamPos.x = Math.max(INTERIOR_ORIGIN.x - maxWallX, Math.min(INTERIOR_ORIGIN.x + maxWallX, _desiredCamPos.x));
+          _desiredCamPos.z = Math.max(INTERIOR_ORIGIN.z - maxWallZ, Math.min(INTERIOR_ORIGIN.z + maxWallZ, _desiredCamPos.z));
+        }
+
+        camera.position.lerp(_desiredCamPos, Math.min(1, dt * 16));
+        camera.lookAt(_camTarget);
+      }
 
       renderer.render(scene, camera);
 
@@ -9901,7 +14255,7 @@ export function EraVerse() {
               <span className="text-[9px] font-extrabold uppercase tracking-wider text-pink-300 leading-none">
                 Era Gems
               </span>
-              <span className="text-sm font-black text-white leading-tight">{(isSuperAdminTeacherJan ? eraGems : 0).toLocaleString()}</span>
+              <span className="text-sm font-black text-white leading-tight">{eraGems.toLocaleString()}</span>
             </div>
           </div>
 
@@ -9912,7 +14266,7 @@ export function EraVerse() {
               <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-300 leading-none">
                 Era Dollar
               </span>
-              <span className="text-sm font-black text-white leading-tight">${(isSuperAdminTeacherJan ? eraDollars : 0).toLocaleString()}</span>
+              <span className="text-sm font-black text-white leading-tight">${eraDollars.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -9945,7 +14299,50 @@ export function EraVerse() {
             className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs px-4 py-3 rounded-2xl shadow-lg border border-pink-400/40 transition-all cursor-pointer animate-bounce"
           >
             <ShoppingBag className="w-4 h-4 text-amber-200" />
-            <span>EraSHOP (💎 {isSuperAdminTeacherJan ? eraGems : 0} • 💵 ${isSuperAdminTeacherJan ? eraDollars : 0})</span>
+            <span>EraSHOP (💎 {eraGems} • 💵 ${eraDollars})</span>
+          </button>
+        )}
+
+        {/* East Beach Fishing Club Button */}
+        {!insideBuilding && (
+          <button
+            type="button"
+            onClick={() => {
+              soundEngine.playUiClick();
+              setShowFishingModal(true);
+            }}
+            className={`flex items-center gap-2 font-extrabold text-xs px-3.5 py-3 rounded-2xl shadow-lg border transition-all cursor-pointer ${
+              nearFishingZone
+                ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 border-amber-300 ring-2 ring-amber-300/60 animate-bounce'
+                : 'bg-slate-900/90 hover:bg-cyan-950/90 text-cyan-200 border-cyan-400/35'
+            }`}
+            title="East Beach Fishing Lagoon behind Era Football Club — Answer Course Questions for Bait & Catch $1–$10 Fish!"
+          >
+            <span className="text-base leading-none">🎣</span>
+            <span>Fishing ({fishingBaitCount} 🪱)</span>
+          </button>
+        )}
+
+        {/* West Mountain Cable Car ($5 Ticket Booth) & Summit Skywalk Button */}
+        {!insideBuilding && (
+          <button
+            type="button"
+            onClick={() => gameActionsRef.current?.teleportToCableCarStation()}
+            className={`flex items-center gap-2 font-extrabold text-xs px-3.5 py-3 rounded-2xl shadow-lg border transition-all cursor-pointer ${
+              isAtMountainSummit || cableCarRidePhase !== 'idle' || nearCableCarStation
+                ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 border-yellow-200 ring-2 ring-amber-300/60'
+                : 'bg-slate-900/90 hover:bg-amber-950/90 text-amber-200 border-amber-400/35'
+            }`}
+            title="West Mountain Cable Car & $5 Ticket Booth — Ride up to the Summit Glass Skywalk & see the City from above!"
+          >
+            <span className="text-base leading-none">🚡</span>
+            <span>
+              {isAtMountainSummit
+                ? 'Summit Skywalk (2,400m)'
+                : cableCarRidePhase !== 'idle'
+                ? `Cable Car (${cableCarElevationMeters}m)`
+                : 'Cable Car ($5 🎟️)'}
+            </span>
           </button>
         )}
 
@@ -10323,6 +14720,389 @@ export function EraVerse() {
               <span>Enter Building (E)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6B. MOUNTAIN CABLE CAR $5 TICKET BOOTH, LIVE AERIAL RIDE & SUMMIT CITY OVERLOOK HUD */}
+      {!insideBuilding &&
+        !nearBuildingPrompt &&
+        (nearCableCarStation !== null ||
+          cableCarRidePhase !== 'idle' ||
+          isAtMountainSummit ||
+          activeTelescopeView !== null) && (
+          <div className="absolute bottom-6 inset-x-0 z-10 flex flex-col items-center gap-2.5 pointer-events-none px-4">
+            {/* Active Panoramic Telescope City Overlook Bar */}
+            {activeTelescopeView !== null && (
+              <div className="bg-slate-950/95 border-2 border-sky-400/80 rounded-2xl px-4 py-3 text-white shadow-2xl flex flex-wrap items-center gap-2.5 pointer-events-auto">
+                <div className="flex items-center gap-2 pr-2">
+                  <span className="text-2xl">🔭</span>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider text-sky-300">
+                      SUMMIT TELESCOPE • 2,400M ELEVATION
+                    </div>
+                    <div className="text-sm font-black text-white">
+                      Panoramic City & Island Overlook
+                    </div>
+                  </div>
+                </div>
+
+                {(
+                  [
+                    { id: 'city', label: '🏙️ North City Skyline' },
+                    { id: 'campus', label: '🏫 Central Campus' },
+                    { id: 'beach', label: '🏖️ South Beach & Lagoon' },
+                    { id: 'waterfall', label: '🌊 Alpine Waterfall' }
+                  ] as const
+                ).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => gameActionsRef.current?.setTelescopePreset(t.id)}
+                    className={`px-3 py-2 rounded-xl font-extrabold text-xs cursor-pointer transition-all border ${
+                      activeTelescopeView === t.id
+                        ? 'bg-sky-500 text-slate-950 border-sky-200 shadow-md'
+                        : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-white/15'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => gameActionsRef.current?.setTelescopePreset(null)}
+                  className="bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-md cursor-pointer"
+                >
+                  Exit Telescope (ESC)
+                </button>
+              </div>
+            )}
+
+            {/* Live 3D Cable Car Aerial Ride Progress Bar */}
+            {cableCarRidePhase !== 'idle' && (
+              <div className="bg-slate-950/95 border-2 border-amber-400/80 rounded-2xl px-5 py-3.5 text-white shadow-2xl flex flex-wrap items-center gap-4 pointer-events-auto">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">🚡</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                        {cableCarRidePhase === 'ascending'
+                          ? 'ASCENDING TO SUMMIT CITY OVERLOOK'
+                          : 'DESCENDING TO WEST CAMPUS BASE'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black tabular-nums">
+                        🎟️ $5 TICKET PAID
+                      </span>
+                    </div>
+                    <div className="text-base font-black text-white tabular-nums">
+                      Altitude: {cableCarElevationMeters.toLocaleString()}m / 2,400m • Drag Mouse to Look Around the City!
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => gameActionsRef.current?.skipCableCarRide()}
+                  className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer"
+                >
+                  ⏩ Skip to Station
+                </button>
+              </div>
+            )}
+
+            {/* Base Station $5 Ticket Booth OR Upper Summit Skywalk Controls */}
+            {cableCarRidePhase === 'idle' && activeTelescopeView === null && (
+              <div className="bg-slate-950/95 border-2 border-amber-400/60 rounded-2xl px-4 py-3 text-white shadow-2xl flex flex-wrap items-center gap-3 pointer-events-auto">
+                <div className="flex items-center gap-2.5 pr-1">
+                  <span className="text-2xl">{isAtMountainSummit ? '🏔️' : '🎟️'}</span>
+                  <div>
+                    <div className="text-xs font-black text-white flex items-center gap-2">
+                      <span>
+                        {isAtMountainSummit
+                          ? 'Mountain Summit Skywalk & City Overlook (2,400m)'
+                          : 'Mountain Cable Car & Ticket Booth'}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-lg text-[11px] font-black border ${
+                          hasCableCarTicket
+                            ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+                            : 'bg-amber-500/20 border-amber-400/40 text-amber-200'
+                        }`}
+                      >
+                        {hasCableCarTicket ? '🎟️ Ticket Ready' : '🎟️ $5 / Ride'}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-semibold text-slate-300">
+                      {isAtMountainSummit
+                        ? 'Walk onto the Glass Skywalk, use Telescopes to view the North City Skyline, or ride down!'
+                        : `Ticket Clerk Maya: Pay $5 Era Dollars per ride (Your Wallet: $${eraDollars})`}
+                    </div>
+                  </div>
+                </div>
+
+                {!isAtMountainSummit ? (
+                  <>
+                    {!hasCableCarTicket && (
+                      <button
+                        type="button"
+                        onClick={() => gameActionsRef.current?.buyTicketAtBooth()}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>🎟️ Buy $5 Ticket at Booth</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => gameActionsRef.current?.boardCableCar(false)}
+                      className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>
+                        {hasCableCarTicket
+                          ? '🚡 Board Cable Car to Summit (E)'
+                          : '🚡 Pay $5 & Ride to Summit (E)'}
+                      </span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => gameActionsRef.current?.setTelescopePreset('city')}
+                      className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>🔭 View City from Above {nearSummitTelescope ? '(E)' : ''}</span>
+                    </button>
+
+                    {nearSummitBench && !isSittingAtDesk && (
+                      <button
+                        type="button"
+                        onClick={() => gameActionsRef.current?.sitAtSummitBench(nearSummitBench)}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md cursor-pointer"
+                      >
+                        <span>🪑 Sit on Overlook Bench (E)</span>
+                      </button>
+                    )}
+
+                    {isSittingAtDesk && (
+                      <button
+                        type="button"
+                        onClick={() => gameActionsRef.current?.standUpFromDesk()}
+                        className="bg-indigo-500 hover:bg-indigo-400 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md cursor-pointer"
+                      >
+                        <span>Stand Up (Space)</span>
+                      </button>
+                    )}
+
+                    {nearSummitCafe && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundEngine.playCrystalCollect();
+                          showToast(
+                            'Summit Sky Cafe Hot Cocoa! ☕',
+                            'Enjoying warm alpine hot cocoa at 2,400m overlooking the city!',
+                            '#F59E0B'
+                          );
+                        }}
+                        className="bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md cursor-pointer"
+                      >
+                        <span>☕ Get Sky Cafe Cocoa (E)</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => gameActionsRef.current?.boardCableCar(eraDollars < 5)}
+                      className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>
+                        {hasCableCarTicket
+                          ? '🚡 Ride Cable Car Down (Ticket Ready)'
+                          : eraDollars >= 5
+                          ? '🚡 Pay $5 & Ride Down to Campus'
+                          : '🚡 Ride Down to Campus (Free Return)'}
+                      </span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+      {(nearFishingZone || fishingPhase !== 'idle' || activeCatchCard) && !nearBuildingPrompt && !insideBuilding && (
+        <div className="absolute bottom-6 inset-x-0 z-10 flex flex-col items-center gap-2.5 pointer-events-none px-4">
+          {/* Catch Result Showcase Card: Shows exact Fish Caught (+$1 to +$10) OR Trash Caught ($0 Value) */}
+          {activeCatchCard && (
+            <div
+              className={`pointer-events-auto rounded-2xl px-4 py-3 shadow-2xl border-2 flex items-center gap-3.5 transition-all max-w-md w-full ${
+                activeCatchCard.isTrash || activeCatchCard.price <= 0
+                  ? 'bg-slate-950/95 border-rose-500/80 text-white'
+                  : 'bg-slate-950/95 border-emerald-400/80 text-white'
+              }`}
+            >
+              <div
+                className={`w-13 h-13 rounded-2xl flex items-center justify-center text-3xl shrink-0 border ${
+                  activeCatchCard.isTrash || activeCatchCard.price <= 0
+                    ? 'bg-rose-950/80 border-rose-500/50'
+                    : 'bg-emerald-950/80 border-emerald-400/50'
+                }`}
+              >
+                {activeCatchCard.emoji}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                      activeCatchCard.isTrash || activeCatchCard.price <= 0
+                        ? 'bg-rose-500/25 text-rose-300 border border-rose-400/40'
+                        : 'bg-emerald-500/25 text-emerald-300 border border-emerald-400/40'
+                    }`}
+                  >
+                    {activeCatchCard.isTrash || activeCatchCard.price <= 0
+                      ? '🗑️ TRASH CAUGHT'
+                      : `🐟 ${activeCatchCard.rarity.toUpperCase()} FISH CAUGHT`}
+                  </span>
+                  {activeCatchCard.xpReward > 0 && (
+                    <span className="text-[10px] font-extrabold text-amber-300">
+                      +{activeCatchCard.xpReward} XP
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-base font-black text-white truncate mt-0.5">
+                  {activeCatchCard.name}
+                </div>
+                <div className="text-[11px] font-semibold text-slate-300">
+                  {activeCatchCard.isTrash || activeCatchCard.price <= 0
+                    ? 'No dollar value — keep fishing for $1 to $10 fish!'
+                    : `Added +$${activeCatchCard.price} Era Dollars directly to your wallet!`}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <div
+                  className={`px-3 py-1.5 rounded-xl font-black text-sm border shadow-md ${
+                    activeCatchCard.isTrash || activeCatchCard.price <= 0
+                      ? 'bg-rose-600 text-white border-rose-300'
+                      : 'bg-emerald-500 text-slate-950 border-emerald-200'
+                  }`}
+                >
+                  {activeCatchCard.isTrash || activeCatchCard.price <= 0
+                    ? '$0 VALUE'
+                    : `+$${activeCatchCard.price} 💵`}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveCatchCard(null)}
+                  className="text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer"
+                >
+                  Dismiss ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Main Beach Fishing Control Bar */}
+          <div className="bg-slate-950/95 border-2 border-cyan-400/50 rounded-2xl px-4 py-3 text-white shadow-2xl flex flex-col gap-2 pointer-events-auto">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2.5 pr-1">
+                <span className="text-2xl">🎣</span>
+                <div>
+                  <div className="text-xs font-black text-white flex items-center gap-2">
+                    <span>Beach Fishing</span>
+                    <span className="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[11px]">
+                      🪱 {fishingBaitCount} Bait
+                    </span>
+                  </div>
+                  {lastCaughtFish ? (
+                    <div
+                      className={`text-[11px] font-extrabold ${
+                        lastCaughtFish.isTrash || lastCaughtFish.price <= 0
+                          ? 'text-rose-400'
+                          : 'text-emerald-400'
+                      }`}
+                    >
+                      Last catch: {lastCaughtFish.emoji} {lastCaughtFish.name} (
+                      {lastCaughtFish.isTrash || lastCaughtFish.price <= 0
+                        ? '$0 Trash'
+                        : `+$${lastCaughtFish.price}`}
+                      )
+                    </div>
+                  ) : (
+                    <div className="text-[11px] font-semibold text-slate-400">
+                      Fish worth $1–$10 • Watch out for $0 ocean trash!
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {fishingPhase === 'bite_ready' || fishingPhase === 'bobbing' ? (
+                <button
+                  type="button"
+                  onClick={() => gameActionsRef.current?.reelInFish()}
+                  className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer animate-bounce"
+                >
+                  <span>🐟 Pull / Reel In! (E)</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={fishingPhase !== 'idle'}
+                  onClick={() => gameActionsRef.current?.castFishingPole()}
+                  className="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 disabled:opacity-50 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>
+                    {fishingBaitCount > 0 ? '🎣 Cast Fishing Pole (1 🪱)' : '🪱 Get Bait to Fish'}
+                  </span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playUiClick();
+                  setShowFishingModal(true);
+                }}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>➕ Get Bait (Quiz)</span>
+              </button>
+            </div>
+
+            {/* Recent Catches Pill Strip (Fish $1-$10 & Trash $0) */}
+            {catchHistory.length > 0 && (
+              <div className="pt-1.5 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto max-w-xl">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">
+                  Catches:
+                </span>
+                {catchHistory.map((item, idx) => {
+                  const isTrash = item.isTrash || item.price <= 0;
+                  return (
+                    <span
+                      key={`${item.id}-${idx}`}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1 shrink-0 border ${
+                        isTrash
+                          ? 'bg-rose-950/70 border-rose-500/40 text-rose-300'
+                          : 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+                      }`}
+                    >
+                      <span>{item.emoji}</span>
+                      <span>{item.name}</span>
+                      <span
+                        className={`px-1 rounded font-black ${
+                          isTrash ? 'bg-rose-500/30 text-rose-200' : 'bg-emerald-500/30 text-emerald-200'
+                        }`}
+                      >
+                        {isTrash ? '$0' : `+$${item.price}`}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -10800,8 +15580,8 @@ export function EraVerse() {
           }}
           initialTab={showCustomizerModal ? 'customizer' : eraShopInitialTab}
           initialCategory={eraShopInitialCat}
-          eraGems={isSuperAdminTeacherJan ? eraGems : 0}
-          eraDollars={isSuperAdminTeacherJan ? eraDollars : 0}
+          eraGems={eraGems}
+          eraDollars={eraDollars}
           ownedItems={ownedShopItems}
           isAdmin={isAdmin}
           playerProfile={playerProfile}
@@ -11087,6 +15867,45 @@ export function EraVerse() {
         }}
         studentRoster={allStudentsSkillScores}
         firestoreFolders={firestoreFolders}
+      />
+
+      {/* ============================================================================
+          MODAL 9: EAST BEACH ERA FISHING CLUB — COURSE QUESTIONS FOR BAIT & $1-$10 FISH MARKET
+          ============================================================================ */}
+      <EraFishingClubModal
+        isOpen={showFishingModal}
+        onClose={() => setShowFishingModal(false)}
+        studentName={playerProfile.name}
+        studentCourse={userCourse || playerProfile.cohort}
+        studentCohort={playerProfile.cohort}
+        baitCount={fishingBaitCount}
+        onUpdateBaitCount={handleUpdateFishingBait}
+        userId={user?.uid || null}
+        isAdmin={isAdmin}
+        eraDollars={eraDollars}
+        eraGems={eraGems}
+        onOpenEraShop={() => {
+          soundEngine.playUiClick();
+          setShowFishingModal(false);
+          setEraShopInitialTab('shop');
+          setEraShopInitialCat('all');
+          setActiveBuildingModal('reading');
+        }}
+        onCastFishingPoleIn3D={() => {
+          gameActionsRef.current?.castFishingPole();
+        }}
+        onEarnDollars={(dollarsWon, xpWon, reason) => {
+          soundEngine.playGoalCheer();
+          const nextDollars = eraDollars + dollarsWon;
+          setEraDollars(nextDollars);
+          setXp((prev) => prev + xpWon);
+          persistAvatarCustomization(playerProfile, eraGems, ownedShopItems, nextDollars);
+          showToast(
+            `+$${dollarsWon} 💵 Era Dollars & +${xpWon} XP!`,
+            reason,
+            '#10B981'
+          );
+        }}
       />
     </div>
   );
